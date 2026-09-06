@@ -1,0 +1,12 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=TenServer;Database=HOMESTAY_DB;Trusted_Connection=True;TrustServerCertificate=True;"//Sửa tên Server = tên trên máy
+  }
+}

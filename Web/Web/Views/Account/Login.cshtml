@@ -1,0 +1,161 @@
+﻿@{
+    ViewBag.Title = "Đăng nhập & Đăng ký";
+    Layout = null; // Tạm tắt layout chung để thiết kế trang độc lập
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Hệ thống Homestay - Đăng nhập</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f7f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .auth-box {
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .nav-tabs .nav-link {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-box">
+        <!-- Tabs chuyển đổi -->
+        <ul class="nav nav-tabs nav-fill mb-4" id="authTabs">
+            <li class="nav-item">
+                <a class="nav-link active" id="tab-login" onclick="switchTab('login')">Đăng nhập</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="tab-register" onclick="switchTab('register')">Đăng ký</a>
+            </li>
+        </ul>
+
+        <!-- Form Đăng nhập -->
+        <div id="form-login">
+            <div class="mb-3">
+                <label class="form-label">Tên đăng nhập</label>
+                <input type="text" id="loginUsername" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Mật khẩu</label>
+                <input type="password" id="loginPassword" class="form-control" required>
+            </div>
+            <button class="btn btn-primary w-100" onclick="login()">Đăng nhập</button>
+        </div>
+
+        <!-- Form Đăng ký -->
+        <div id="form-register" style="display: none;">
+            <div class="mb-3">
+                <label class="form-label">Tên đăng nhập</label>
+                <input type="text" id="regUsername" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Họ và tên</label>
+                <input type="text" id="regFullName" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Số điện thoại</label>
+                <input type="text" id="regPhone" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" id="regEmail" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Mật khẩu</label>
+                <input type="password" id="regPassword" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Bạn là:</label>
+                <select id="regRole" class="form-select">
+                    <option value="GUEST">Khách thuê phòng</option>
+                    <option value="OWNER">Chủ Homestay</option>
+                </select>
+            </div>
+            <button class="btn btn-success w-100" onclick="register()">Đăng ký tài khoản</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://localhost:7200/api';
+
+        function switchTab(tab) {
+            document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+            document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+            document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+            document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+        }
+
+        async function login() {
+            const payload = {
+                TenDangNhap: document.getElementById('loginUsername').value,
+                MatKhau: document.getElementById('loginPassword').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/Auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert('Đăng nhập thành công!');
+                    localStorage.setItem('user', JSON.stringify(result.user));
+                    window.location.href = '/Home/Index';
+                } else {
+                    alert('Lỗi: ' + (result.message || result));
+                }
+            } catch (error) {
+                alert('Không thể kết nối đến API.');
+            }
+        }
+
+        async function register() {
+            const payload = {
+                TenDangNhap: document.getElementById('regUsername').value,
+                HoTen: document.getElementById('regFullName').value,
+                Phone: document.getElementById('regPhone').value,
+                Email: document.getElementById('regEmail').value,
+                MatKhau: document.getElementById('regPassword').value,
+                VaiTro: document.getElementById('regRole').value,
+                TrangThai: true
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/Auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert('Đăng ký thành công! Vui lòng đăng nhập.');
+                    switchTab('login');
+                } else {
+                    alert('Lỗi: ' + (result.message || result));
+                }
+            } catch (error) {
+                alert('Không thể kết nối đến API.');
+            }
+        }
+    </script>
+</body>
+</html>

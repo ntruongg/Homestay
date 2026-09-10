@@ -1,32 +1,110 @@
-# Build results
+# Build output
+[Bb]in/
+[Oo]bj/
 [Dd]ebug/
-[Dd]ebugPublic/
 [Rr]elease/
+[Dd]ebugPublic/
 [Rr]eleases/
 x64/
 x86/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
 bld/
-[Bb]in/
-[Oo]bj/
-[Ll]og/
-[Ll]ogs/
+Log/
+Logs/
+TestResults/
 
-bin/
-obj/
-
-# Visual Studio files
+# Visual Studio
 .vs/
 *.user
 *.userosscache
-*.sln.docstates
 *.suo
+*.sln.docstates
+*.rsuser
+*.ncb
+*.opendb
+*.VC.db
 
-# Mac/Windows OS files
+# Visual Studio Code
+.vscode/
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+.nuget/
+project.lock.json
+project.fragment.lock.json
+
+# ASP.NET and local application files
+App_Data/
+wwwroot/uploads/
+uploads/
+*.log
+
+# Local databases
+*.mdf
+*.ldf
+*.ndf
+*.db
+*.sqlite
+*.sqlite3
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# ASP.NET Core local settings
+appsettings.Local.json
+appsettings.*.Local.json
+
+# Do not commit local settings containing secrets
+appsettings.json
+appsettings.Development.json
+secrets.json
+
+# Allow configuration templates
+!appsettings.example.json
+
+# ASP.NET deployment files
+.azure/
+*.publishsettings
+PublishProfiles/
+
+# Node.js and future frontend projects
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Frontend build output
+dist/
+build/
+coverage/
+.next/
+.nuxt/
+.svelte-kit/
+.angular/
+.parcel-cache/
+.turbo/
+
+# Frontend environment files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Operating system files
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# Cấu hình nhạy cảm local
-appsettings.json
-secrets.json
+# Temporary and backup files
+*.tmp
+*.temp
+*.cache
+*.bak
+*.swp

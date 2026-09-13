@@ -1,0 +1,29 @@
+@model IReadOnlyList<Booking>
+
+@{
+    ViewData["Title"] = "My trips";
+}
+
+<section class="section container">
+    <p class="eyebrow">Your travel journal</p>
+    <h1>My trips</h1>
+
+    <div class="trip-list">
+        @if (!Model.Any())
+        {
+            <p class="muted">Your next adventure is waiting.</p>
+        }
+
+        @foreach (var booking in Model)
+        {
+            <article class="trip">
+                <div>
+                    <h3>Room @booking.RoomId</h3>
+                    <p class="muted">@booking.CheckIn.ToString("dd MMM yyyy") ? @booking.CheckOut.ToString("dd MMM yyyy")</p>
+                </div>
+                <span class="status">@booking.Status</span>
+                <strong>$@booking.TotalAmount.ToString("N0")</strong>
+            </article>
+        }
+    </div>
+</section>

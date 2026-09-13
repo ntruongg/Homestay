@@ -1,0 +1,107 @@
+@model IReadOnlyList<PropertySummary>
+@{
+    ViewData["Title"] = "Find your next stay";
+}
+
+<section class="hero">
+    <div class="container hero-content">
+        <p class="eyebrow">A better way to get away</p>
+        <h1>
+            Stay somewhere<br>
+            <em>worth remembering.</em>
+        </h1>
+        <p class="hero-copy">Handpicked homestays, warm hosts, and places that feel like your own.</p>
+
+        <form class="search" asp-action="Index" method="get">
+            <label>
+                Where
+                <input name="location" value="@ViewBag.Location" placeholder="Search a destination">
+            </label>
+            <label>
+                Check in
+                <input type="date">
+            </label>
+            <label>
+                Check out
+                <input type="date">
+            </label>
+            <label>
+                Guests
+                <select>
+                    <option>2 guests</option>
+                    <option>3 guests</option>
+                    <option>4 guests</option>
+                </select>
+            </label>
+            <button class="search-button">?</button>
+        </form>
+    </div>
+</section>
+
+<section class="section container" id="stays">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Find your place</p>
+            <h2>Stays made for <em>slow mornings</em></h2>
+        </div>
+        <span class="muted">@Model.Count stays found</span>
+    </div>
+
+    @if (ViewBag.Error is string error)
+    {
+        <div class="alert error">@error</div>
+    }
+
+    <div class="stay-grid">
+        @foreach (var property in Model)
+        {
+            <article class="stay-card">
+                <div class="stay-image @(string.IsNullOrWhiteSpace(property.CoverImageUrl) ? "placeholder" : "")"
+                     style="@(string.IsNullOrWhiteSpace(property.CoverImageUrl) ? "" : $"background-image:url('{property.CoverImageUrl}')")">
+                    @if (string.IsNullOrWhiteSpace(property.CoverImageUrl))
+                    {
+                        <span>?</span>
+                    }
+                </div>
+                <div class="stay-body">
+                    <small>@(property.Type ?? "HOMESTAY")</small>
+                    <h3>@property.Name</h3>
+                    <p>? @(property.Address ?? "A beautiful local stay")</p>
+                    <div class="stay-footer">
+                        <strong>$@property.MinimumPrice.ToString("N0") <small>/ night</small></strong>
+                        <a asp-action="Details" asp-route-id="@property.Id">View stay ?</a>
+                    </div>
+                </div>
+            </article>
+        }
+    </div>
+</section>
+
+<section class="why">
+    <div class="container why-grid">
+        <div>
+            <p class="eyebrow">The Stayly standard</p>
+            <h2>
+                More than a room.<br>
+                <em>A feeling.</em>
+            </h2>
+        </div>
+        <div class="perks">
+            <div>
+                <b>?</b>
+                <h3>Places with character</h3>
+                <p>Thoughtful spaces chosen for the way they make you feel.</p>
+            </div>
+            <div>
+                <b>?</b>
+                <h3>Hosts who care</h3>
+                <p>Real people ready to make your stay comfortable.</p>
+            </div>
+            <div>
+                <b>?</b>
+                <h3>Simple from start</h3>
+                <p>Browse, book, and manage every trip in one calm place.</p>
+            </div>
+        </div>
+    </div>
+</section>

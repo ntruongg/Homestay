@@ -1,5 +1,6 @@
 using API.Data;
 using System.Text;
+using System.IdentityModel.Tokens.Jwt;
 using API.Data;
 using API.Models;
 using API.Services;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<HomestayDbContext>(options =>
@@ -19,6 +21,7 @@ var jwtKey = builder.Configuration["Jwt:Key"]
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
@@ -26,16 +29,48 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuer = false,
             ValidateAudience = false,
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromMinutes(1)
+            ClockSkew = TimeSpan.FromMinutes(1),
+            NameClaimType = JwtRegisteredClaimNames.Sub,
+            RoleClaimType = "role"
         };
     });
 builder.Services.AddAuthorization();
+builder.Services.AddCors(options => options.AddPolicy("WebClient", policy =>
+    policy.WithOrigins("http://localhost:5500", "http://127.0.0.1:5500", "http://localhost:5173", "http://127.0.0.1:5173")
+        .AllowAnyHeader()
+        .AllowAnyMethod()));
 // Add services to the container.
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter a JWT token as: Bearer {token}"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
@@ -56,12 +91,17 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-app.UseHttpsRedirection();
-
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+app.UseCors("WebClient");
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.Run();
+
+
+

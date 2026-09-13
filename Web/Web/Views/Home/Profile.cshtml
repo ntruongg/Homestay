@@ -1,0 +1,264 @@
+@model ProfileViewModel
+
+@{
+    ViewData["Title"] = "My Profile";
+    var profile = Model.Profile;
+    var isOwner = profile.Role == "OWNER";
+    var initials = !string.IsNullOrWhiteSpace(profile.FullName) 
+        ? profile.FullName.Substring(0, 1).ToUpper() 
+        : "U";
+    var activeTab = string.IsNullOrWhiteSpace(Model.ActiveTab) ? "personal" : Model.ActiveTab.ToLowerInvariant();
+}
+
+<div class="app-shell">
+    <!-- Profile Top Banner -->
+    <div class="profile-banner">
+        <div class="profile-avatar-wrap">
+            <div class="profile-avatar">@initials</div>
+            <div class="profile-title-info">
+                <h1>@profile.FullName</h1>
+                <div class="profile-meta-tags">
+                    <span>@profile.Email</span>
+                    <span>&bull;</span>
+                    @if (isOwner)
+                    {
+                        <span class="role-tag owner">&#9733; Homestay Host / Owner</span>
+                    }
+                    else
+                    {
+                        <span class="role-tag guest">&#9873; Traveler / Guest</span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div>
+            @if (isOwner)
+            {
+                <a asp-action="Dashboard" class="button">Go to Owner Dashboard &rarr;</a>
+            }
+            else
+            {
+                <a asp-action="Trips" class="button outline">View My Trips</a>
+            }
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tabs-nav-bar" id="profileTabsNav">
+        <button type="button" class="tab-nav-btn @(activeTab == "personal" ? "active" : "")" data-tab="tab-personal">
+            <span>&#128100;</span> Personal Details
+        </button>
+        <button type="button" class="tab-nav-btn @(activeTab == "security" ? "active" : "")" data-tab="tab-security">
+            <span>&#128274;</span> Security &amp; Password
+        </button>
+        <button type="button" class="tab-nav-btn @(activeTab == "account" ? "active" : "")" data-tab="tab-account">
+            <span>&#128203;</span> Account Overview
+        </button>
+    </div>
+
+    <!-- TAB 1: Personal Details -->
+    <div id="tab-personal" class="tab-pane @(activeTab == "personal" ? "active" : "")">
+        <div class="content-card">
+            <div class="content-card-header">
+                <div>
+                    <h2>Personal Information</h2>
+                    <p>Update your public profile, contact details and identity information.</p>
+                </div>
+            </div>
+
+            <div asp-validation-summary="ModelOnly" class="form-error"></div>
+
+            <form asp-action="Profile" method="post">
+                <input type="hidden" name="tab" value="personal" />
+
+                <label>
+                    Full name
+                    <input asp-for="Input.FullName" required placeholder="e.g. Nguyen Van A">
+                </label>
+
+                <div class="form-row">
+                    <label>
+                        Date of birth
+                        <input asp-for="Input.DateOfBirth" type="date">
+                    </label>
+
+                    <label>
+                        Gender
+                        <select asp-for="Input.Gender">
+                            <option value="">Select gender</option>
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="form-row">
+                    <label>
+                        Phone number
+                        <input asp-for="Input.Phone" type="tel" required placeholder="e.g. 0912345678">
+                    </label>
+
+                    <label>
+                        Email address
+                        <input asp-for="Input.Email" type="email" required placeholder="e.g. name@example.com">
+                    </label>
+                </div>
+
+                @if (isOwner)
+                {
+                    <div class="form-row">
+                        <label>
+                            Citizen ID (CCCD)
+                            <input asp-for="Input.CitizenId" required placeholder="e.g. 012345678901">
+                        </label>
+
+                        <label>
+                            Bank Information
+                            <input asp-for="Input.BankInformation" required placeholder="Bank name, Account number, Account name">
+                        </label>
+                    </div>
+                }
+
+                <div style="margin-top: 16px;">
+                    <button class="button" type="submit">Save Changes</button>
+                </div>
+
+                @Html.AntiForgeryToken()
+            </form>
+        </div>
+    </div>
+
+    <!-- TAB 2: Security & Password -->
+    <div id="tab-security" class="tab-pane @(activeTab == "security" ? "active" : "")">
+        <div class="content-card">
+            <div class="content-card-header">
+                <div>
+                    <h2>Security &amp; Password</h2>
+                    <p>Manage your account password and security credentials.</p>
+                </div>
+            </div>
+
+            <div class="security-tip-box">
+                <strong>Password recommendation:</strong> Use at least 8 characters including uppercase letters, numbers, and symbols to ensure maximum safety for your Stayly account.
+            </div>
+
+            <form asp-action="ChangePassword" method="post" style="max-width: 520px;">
+                <label>
+                    Current Password
+                    <input asp-for="PasswordInput.CurrentPassword" type="password" required placeholder="Enter current password">
+                </label>
+
+                <label>
+                    New Password
+                    <input asp-for="PasswordInput.NewPassword" type="password" required minlength="8" placeholder="Minimum 8 characters">
+                </label>
+
+                <label>
+                    Confirm New Password
+                    <input asp-for="PasswordInput.ConfirmPassword" type="password" required placeholder="Re-enter new password">
+                </label>
+
+                <div style="margin-top: 18px;">
+                    <button class="button" type="submit">Update Password</button>
+                </div>
+
+                @Html.AntiForgeryToken()
+            </form>
+        </div>
+    </div>
+
+    <!-- TAB 3: Account Overview -->
+    <div id="tab-account" class="tab-pane @(activeTab == "account" ? "active" : "")">
+        <div class="content-card">
+            <div class="content-card-header">
+                <div>
+                    <h2>Account Overview</h2>
+                    <p>Summary of your Stayly member credentials and active permissions.</p>
+                </div>
+            </div>
+
+            <div class="overview-grid">
+                <div class="overview-tile">
+                    <label>Account ID</label>
+                    <div class="val">#@profile.Id</div>
+                </div>
+
+                <div class="overview-tile">
+                    <label>Membership Role</label>
+                    <div class="val">
+                        @if (isOwner)
+                        {
+                            <span class="role-tag owner">&#9733; OWNER (Host)</span>
+                        }
+                        else
+                        {
+                            <span class="role-tag guest">&#9873; GUEST (Traveler)</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="overview-tile">
+                    <label>Verified Email</label>
+                    <div class="val">@profile.Email</div>
+                </div>
+
+                <div class="overview-tile">
+                    <label>Contact Phone</label>
+                    <div class="val">@profile.Phone</div>
+                </div>
+
+                @if (isOwner)
+                {
+                    <div class="overview-tile">
+                        <label>Citizen Identification</label>
+                        <div class="val">@(string.IsNullOrWhiteSpace(profile.CitizenId) ? "Not provided" : profile.CitizenId)</div>
+                    </div>
+
+                    <div class="overview-tile">
+                        <label>Bank Account</label>
+                        <div class="val">@(string.IsNullOrWhiteSpace(profile.BankInformation) ? "Not provided" : profile.BankInformation)</div>
+                    </div>
+                }
+            </div>
+
+            <div style="border-top: 1px solid var(--line); padding-top: 24px; display: flex; gap: 16px; flex-wrap: wrap;">
+                @if (isOwner)
+                {
+                    <a asp-action="Dashboard" class="button">Open Owner Dashboard</a>
+                }
+                <a asp-action="Trips" class="button outline">View My Bookings &amp; Trips</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const navButtons = document.querySelectorAll("#profileTabsNav .tab-nav-btn");
+            const panes = document.querySelectorAll(".tab-pane");
+
+            navButtons.forEach(btn => {
+                btn.addEventListener("click", function () {
+                    const targetId = this.getAttribute("data-tab");
+
+                    navButtons.forEach(b => b.classList.remove("active"));
+                    panes.forEach(p => p.classList.remove("active"));
+
+                    this.classList.add("active");
+                    const targetPane = document.getElementById(targetId);
+                    if (targetPane) {
+                        targetPane.classList.add("active");
+                    }
+
+                    // Update URL without page refresh
+                    const tabKey = targetId.replace("tab-", "");
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set("tab", tabKey);
+                    window.history.replaceState({}, "", newUrl);
+                });
+            });
+        });
+    </script>
+}

@@ -1,0 +1,39 @@
+@model LoginInput
+
+@{
+    ViewData["Title"] = "Log in";
+}
+
+<section class="form-page">
+    <div class="form-card">
+        <p class="eyebrow">Welcome back</p>
+        <h1>Log in to Stayly</h1>
+
+        <div asp-validation-summary="ModelOnly" class="form-error"></div>
+
+        <form asp-action="Login" method="post">
+            <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl">
+
+            <label>
+                Email
+                <input asp-for="Email" type="email" required>
+            </label>
+
+            <label>
+                Password
+                <input asp-for="Password" type="password" required>
+            </label>
+
+            <button class="button" type="submit">
+                Log in
+            </button>
+
+            @Html.AntiForgeryToken()
+        </form>
+
+        <p class="switch">
+            New to Stayly?
+            <a asp-action="Register">Create a guest account</a>
+        </p>
+    </div>
+</section>

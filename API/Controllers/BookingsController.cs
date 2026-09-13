@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 using API.Data;
 using API.DTOs.Bookings;
 using API.Models;
@@ -17,97 +18,99 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
     public async Task<ActionResult<BookingResponse>> Create(
         CreateBookingRequest request, CancellationToken cancellationToken)
     {
-        var accountId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var customerExists = await db.KhachHangs.AnyAsync(c => c.MaKhachHang == accountId, cancellationToken);
-        if (!customerExists)
-            return Forbid();
-
+        var accountId = GetAccountId();
         await using var transaction = await db.Database.BeginTransactionAsync(
             System.Data.IsolationLevel.Serializable, cancellationToken);
 
-        var room = await db.Phongs.SingleOrDefaultAsync(r => r.MaPhong == request.RoomId, cancellationToken);
-        if (room is null)
-            return NotFound("Room was not found.");
-        if (request.GuestCount > room.SucChua)
+        var rooms = await db.Phongs.Where(r => request.RoomIds.Contains(r.MaPhong)).ToListAsync(cancellationToken);
+        if (rooms.Count != request.RoomIds.Count)
+            return NotFound("One or more rooms were not found.");
+        if (rooms.Any(r => r.SucChua < request.GuestCount))
             return BadRequest("Guest count exceeds room capacity.");
 
-        var hasBooking = await db.DonDatPhongs.AnyAsync(b => b.MaPhong == request.RoomId &&
-            (b.TrangThai == "PENDING" || b.TrangThai == "CONFIRMED") &&
-            b.NgayDen < request.CheckOut && b.NgayDi > request.CheckIn, cancellationToken);
-        var hasUnavailableDate = await db.LichLuuTrus.AnyAsync(d => d.MaPhong == request.RoomId &&
-            d.Ngay >= request.CheckIn.Date && d.Ngay < request.CheckOut.Date &&
-            d.TrangThai != "Tr?ng" && d.TrangThai != "AVAILABLE", cancellationToken);
+        var hasBooking = await db.ChiTietDons.AnyAsync(d => request.RoomIds.Contains(d.MaPhong) &&
+            (d.DonDatPhong.TrangThai == "Pending" || d.DonDatPhong.TrangThai == "Confirmed") &&
+            d.DonDatPhong.NgayDen < request.CheckOut && d.DonDatPhong.NgayDi > request.CheckIn,
+            cancellationToken);
+        var hasUnavailableDate = await db.LichLuuTrus.AnyAsync(d => request.RoomIds.Contains(d.MaPhong) &&
+            d.Ngay >= request.CheckIn.Date && d.Ngay < request.CheckOut.Date && d.TrangThai != "Trống",
+            cancellationToken);
 
         if (hasBooking || hasUnavailableDate)
-            return Conflict("Room is not available for the selected dates.");
+            return Conflict("One or more rooms are not available for the selected dates.");
 
         var nights = (request.CheckOut.Date - request.CheckIn.Date).Days;
+        var total = rooms.Sum(r => r.GiaGoc) * nights;
         var booking = new DonDatPhong
         {
             MaKhachHang = accountId,
-            MaPhong = room.MaPhong,
             NgayDat = DateTime.UtcNow,
             NgayDen = request.CheckIn,
             NgayDi = request.CheckOut,
             SoNguoi = request.GuestCount,
-            TrangThai = "PENDING",
-            TongTien = room.GiaHienTai * nights
+            TrangThai = "Pending",
+            ChiTietDons = rooms.Select(r => new ChiTietDon { MaPhong = r.MaPhong }).ToList()
         };
 
         db.DonDatPhongs.Add(booking);
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        return CreatedAtAction(nameof(GetById), new { id = booking.MaDonDatPhong }, ToResponse(booking));
+        return CreatedAtAction(nameof(GetById), new { id = booking.MaDonDatPhong },
+            ToResponse(booking, request.RoomIds, total));
     }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<BookingResponse>>> GetMine(CancellationToken cancellationToken)
     {
-        var accountId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var accountId = GetAccountId();
         var bookings = await db.DonDatPhongs.AsNoTracking()
             .Where(b => b.MaKhachHang == accountId)
-            .OrderByDescending(b => b.NgayDat)
-            .Select(b => new BookingResponse(
-                b.MaDonDatPhong, b.MaPhong, b.NgayDen, b.NgayDi,
-                b.SoNguoi, b.TrangThai, b.TongTien))
-            .ToListAsync(cancellationToken);
+            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong)
+            .OrderByDescending(b => b.NgayDat).ToListAsync(cancellationToken);
 
-        return Ok(bookings);
+        return Ok(bookings.Select(b => ToResponse(b, b.ChiTietDons.Select(d => d.MaPhong),
+            b.ChiTietDons.Sum(d => d.Phong.GiaGoc) * (b.NgayDi.Date - b.NgayDen.Date).Days)));
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<BookingResponse>> GetById(int id, CancellationToken cancellationToken)
     {
-        var accountId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var booking = await db.DonDatPhongs.AsNoTracking()
-            .Where(b => b.MaDonDatPhong == id && b.MaKhachHang == accountId)
-            .Select(b => new BookingResponse(
-                b.MaDonDatPhong, b.MaPhong, b.NgayDen, b.NgayDi,
-                b.SoNguoi, b.TrangThai, b.TongTien))
+            .Where(b => b.MaDonDatPhong == id && b.MaKhachHang == GetAccountId())
+            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong)
             .SingleOrDefaultAsync(cancellationToken);
 
-        return booking is null ? NotFound() : Ok(booking);
+        return booking is null
+            ? NotFound()
+            : Ok(ToResponse(booking, booking.ChiTietDons.Select(d => d.MaPhong),
+                booking.ChiTietDons.Sum(d => d.Phong.GiaGoc) * (booking.NgayDi.Date - booking.NgayDen.Date).Days));
     }
 
     [HttpPut("{id:int}/cancel")]
     public async Task<IActionResult> Cancel(int id, CancellationToken cancellationToken)
     {
-        var accountId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var booking = await db.DonDatPhongs.SingleOrDefaultAsync(
-            b => b.MaDonDatPhong == id && b.MaKhachHang == accountId, cancellationToken);
-
+            b => b.MaDonDatPhong == id && b.MaKhachHang == GetAccountId(), cancellationToken);
         if (booking is null)
             return NotFound();
-        if (booking.TrangThai is not ("PENDING" or "CONFIRMED"))
+        if (booking.TrangThai is not ("Pending" or "Confirmed"))
             return Conflict("Only pending or confirmed bookings can be cancelled.");
 
-        booking.TrangThai = "CANCELLED";
+        booking.TrangThai = "Cancelled";
         await db.SaveChangesAsync(cancellationToken);
         return NoContent();
     }
 
-    private static BookingResponse ToResponse(DonDatPhong booking) => new(
-        booking.MaDonDatPhong, booking.MaPhong, booking.NgayDen, booking.NgayDi,
-        booking.SoNguoi, booking.TrangThai, booking.TongTien);
+    private int GetAccountId()
+    {
+        var claim = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
+            ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("nameid");
+        return int.Parse(claim!);
+    }
+
+    private static BookingResponse ToResponse(DonDatPhong booking, IEnumerable<int> roomIds, decimal total) =>
+        new(booking.MaDonDatPhong, roomIds.ToArray(), booking.NgayDen, booking.NgayDi,
+            booking.SoNguoi, booking.TrangThai, total);
 }

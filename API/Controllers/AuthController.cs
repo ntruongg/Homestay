@@ -15,73 +15,116 @@ public sealed class AuthController(
     IPasswordHasher<TaiKhoan> passwordHasher,
     JwtTokenService tokenService) : ControllerBase
 {
-    [HttpPost("register")]
-    public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request, CancellationToken cancellationToken)
+    [HttpPost("register/guest")]
+    public async Task<ActionResult<AuthResponse>> RegisterGuest(
+        RegisterGuestRequest request,
+        CancellationToken cancellationToken)
     {
-        var userName = request.UserName.Trim();
         var email = request.Email.Trim().ToLowerInvariant();
-        if (await db.TaiKhoans.AnyAsync(a => a.TenDangNhap == userName || a.Email == email, cancellationToken))
-            return Conflict("Username or email is already registered.");
+        var phone = request.Phone.Trim();
 
-        if (request.Role == "OWNER" && (string.IsNullOrWhiteSpace(request.CitizenId) ||
-            string.IsNullOrWhiteSpace(request.BankInformation)))
-            return BadRequest("Owner registration requires citizen ID and bank information.");
+        if (await IsContactAlreadyRegistered(email, phone, cancellationToken))
+            return Conflict("Email or phone number is already registered.");
 
         var account = new TaiKhoan
         {
-            TenDangNhap = userName,
-            HoTen = request.FullName.Trim(),
-            Phone = request.Phone.Trim(),
             Email = email,
-            VaiTro = request.Role,
+            HoTen = request.FullName.Trim(),
+            NgaySinh = request.DateOfBirth,
+            GioiTinh = request.Gender,
+            DienThoai = phone,
+            VaiTro = "GUEST",
+            ThongTinNganHang = null,
+            CCCD = null,
             TrangThai = true,
             NgayTao = DateTime.UtcNow
         };
+
         account.MatKhau = passwordHasher.HashPassword(account, request.Password);
 
         db.TaiKhoans.Add(account);
         await db.SaveChangesAsync(cancellationToken);
 
-        if (request.Role == "OWNER")
-        {
-            db.ChuCoSoLuuTrus.Add(new ChuCoSoLuuTru
-            {
-                MaChuCoSoLuuTru = account.MaTaiKhoan,
-                CCCD = request.CitizenId!,
-                ThongTinNganHang = request.BankInformation!
-            });
-        }
-        else
-        {
-            db.KhachHangs.Add(new KhachHang
-            {
-                MaKhachHang = account.MaTaiKhoan,
-                DiaChi = request.Address ?? string.Empty
-            });
-        }
+        return Ok(CreateAuthResponse(account));
+    }
 
+    [HttpPost("register/owner")]
+    public async Task<ActionResult<AuthResponse>> RegisterOwner(
+        RegisterOwnerRequest request,
+        CancellationToken cancellationToken)
+    {
+        var email = request.Email.Trim().ToLowerInvariant();
+        var phone = request.Phone.Trim();
+
+        if (await IsContactAlreadyRegistered(email, phone, cancellationToken))
+            return Conflict("Email or phone number is already registered.");
+
+        var account = new TaiKhoan
+        {
+            Email = email,
+            HoTen = request.FullName.Trim(),
+            NgaySinh = request.DateOfBirth,
+            GioiTinh = request.Gender,
+            DienThoai = phone,
+            VaiTro = "OWNER",
+            ThongTinNganHang = request.BankInformation.Trim(),
+            CCCD = request.CitizenId.Trim(),
+            TrangThai = true,
+            NgayTao = DateTime.UtcNow
+        };
+
+        account.MatKhau = passwordHasher.HashPassword(account, request.Password);
+
+        db.TaiKhoans.Add(account);
         await db.SaveChangesAsync(cancellationToken);
+
         return Ok(CreateAuthResponse(account));
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<AuthResponse>> Login(LoginRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<AuthResponse>> Login(
+        LoginRequest request,
+        CancellationToken cancellationToken)
     {
-        var login = request.UserNameOrEmail.Trim();
-        var account = await db.TaiKhoans.SingleOrDefaultAsync(
-            a => a.TenDangNhap == login || a.Email == login.ToLower(), cancellationToken);
+        var email = request.Email.Trim().ToLowerInvariant();
 
-        if (account is null || !account.TrangThai ||
-            passwordHasher.VerifyHashedPassword(account, account.MatKhau, request.Password) == PasswordVerificationResult.Failed)
+        var account = await db.TaiKhoans
+            .SingleOrDefaultAsync(a => a.Email == email, cancellationToken);
+
+        if (account is null ||
+            !account.TrangThai ||
+            passwordHasher.VerifyHashedPassword(
+                account,
+                account.MatKhau,
+                request.Password) == PasswordVerificationResult.Failed)
+        {
             return Unauthorized("Invalid credentials.");
+        }
 
         return Ok(CreateAuthResponse(account));
+    }
+
+    private async Task<bool> IsContactAlreadyRegistered(
+        string email,
+        string phone,
+        CancellationToken cancellationToken)
+    {
+        return await db.TaiKhoans.AnyAsync(
+            account => account.Email == email || account.DienThoai == phone,
+            cancellationToken);
     }
 
     private AuthResponse CreateAuthResponse(TaiKhoan account)
     {
         var token = tokenService.CreateToken(account);
-        return new AuthResponse(token.Token, token.ExpiresAt,
-            new UserResponse(account.MaTaiKhoan, account.TenDangNhap, account.HoTen, account.VaiTro));
+
+        return new AuthResponse(
+            token.Token,
+            token.ExpiresAt,
+            new UserResponse(
+                account.MaTaiKhoan,
+                account.Email,
+                account.HoTen,
+                account.VaiTro));
     }
 }

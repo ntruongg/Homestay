@@ -1,0 +1,15 @@
+@model RegisterOwnerInput
+
+<partial name="_GuestRegistrationFields" model="Model" />
+
+<label>
+    Citizen ID
+    <input asp-for="CitizenId" required>
+</label>
+
+<label>
+    Bank information
+    <input asp-for="BankInformation"
+           placeholder="Bank name and account number"
+           required>
+</label>

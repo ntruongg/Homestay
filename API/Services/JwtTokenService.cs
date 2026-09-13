@@ -16,9 +16,9 @@ public sealed class JwtTokenService(IConfiguration configuration)
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, account.MaTaiKhoan.ToString()),
-            new Claim(ClaimTypes.Name, account.TenDangNhap),
-            new Claim(ClaimTypes.Role, account.VaiTro)
+            new Claim(JwtRegisteredClaimNames.Sub, account.MaTaiKhoan.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, account.Email),
+            new Claim("role", account.VaiTro)
         };
         var credentials = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
@@ -28,3 +28,5 @@ public sealed class JwtTokenService(IConfiguration configuration)
         return (new JwtSecurityTokenHandler().WriteToken(token), expiresAt);
     }
 }
+
+

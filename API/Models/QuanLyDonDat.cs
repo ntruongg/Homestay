@@ -1,63 +1,82 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-namespace API.Models
+
+namespace API.Models;
+
+public class DonDatPhong
 {
-    public class DonDatPhong
-    {
-        [Key]
-        public int MaDonDatPhong { get; set; }
-        public int MaKhachHang { get; set; }
-        [ForeignKey("MaKhachHang")]
-        public KhachHang KhachHang { get; set; }
+    [Key]
+    public int MaDonDatPhong { get; set; }
+    public int MaKhachHang { get; set; }
+    [ForeignKey(nameof(MaKhachHang))]
+    public TaiKhoan KhachHang { get; set; } = null!;
+    public int? MaGiamGia { get; set; }
+    public GiamGia? GiamGia { get; set; }
+    public DateTime NgayDat { get; set; } = DateTime.UtcNow;
+    public DateTime NgayDen { get; set; }
+    public DateTime NgayDi { get; set; }
+    public int SoNguoi { get; set; }
+    [StringLength(30)]
+    public string TrangThai { get; set; } = "Pending";
+    public ICollection<ChiTietDon> ChiTietDons { get; set; } = [];
+    public ThanhToan? ThanhToan { get; set; }
+    public DanhGia? DanhGia { get; set; }
+}
 
-        public int MaPhong { get; set; }
-        [ForeignKey("MaPhong")]
-        public Phong Phong { get; set; }
+public class ChiTietDon
+{
+    public int MaDonDatPhong { get; set; }
+    public DonDatPhong DonDatPhong { get; set; } = null!;
 
-        public DateTime NgayDat { get; set; } = DateTime.Now;
-        public DateTime NgayDen { get; set; }
-        public DateTime NgayDi { get; set; }
-        public int SoNguoi { get; set; }
-        [StringLength(30)]
-        public string TrangThai { get; set; }
-        public decimal TongTien { get; set; }
-    }
+    public int MaPhong { get; set; }
+    public Phong Phong { get; set; } = null!;
+}
 
-    public class LichLuuTru
-    {
-        [Key]
-        public int MaLich { get; set; }
-        public int MaPhong { get; set; }
-        [ForeignKey("MaPhong")]
-        public Phong Phong { get; set; }
-        public DateTime Ngay { get; set; }
-        [StringLength(30)]
-        public string TrangThai { get; set; } = "Trống";
-    }
+public class GiamGia
+{
+    [Key]
+    public int MaGiamGia { get; set; }
+    [StringLength(50)]
+    public string TenMa { get; set; } = string.Empty;
+    public int PhanTram { get; set; }
+    public decimal? ToiDa { get; set; }
+    public DateTime? NgayHetHan { get; set; }
+    public ICollection<DonDatPhong> DonDatPhongs { get; set; } = [];
+}
 
-    public class HoaDon
-    {
-        [Key]
-        public int MaHoaDon { get; set; }
-        public int MaDonDatPhong { get; set; }
-        [ForeignKey("MaDonDatPhong")]
-        public DonDatPhong DonDatPhong { get; set; }
-        public DateTime NgayLap { get; set; } = DateTime.Now;
-        public decimal TongTien { get; set; }
-        [StringLength(30)]
-        public string PhuongThucThanhToan { get; set; }
-    }
+public class ThanhToan
+{
+    [Key]
+    public int MaHoaDon { get; set; }
+    public DonDatPhong DonDatPhong { get; set; } = null!;
+    public decimal TongTien { get; set; }
+    public decimal TienGoc { get; set; }
+    public string PTTT { get; set; } = string.Empty;
+}
 
-    public class ChiTietHoaDon
-    {
-        [Key]
-        public int MaChiTiet { get; set; }
-        public int MaHoaDon { get; set; }
-        [ForeignKey("MaHoaDon")]
-        public HoaDon HoaDon { get; set; }
-        [StringLength(200)]
-        public string MoTa { get; set; }
-        public decimal DonGia { get; set; }
-        public int SoLuong { get; set; }
-    }
+public class LichLuuTru
+{
+    [Key]
+    public int MaLich { get; set; }
+    public int MaPhong { get; set; }
+    public Phong Phong { get; set; } = null!;
+    public DateTime Ngay { get; set; }
+    [StringLength(30)]
+    public string TrangThai { get; set; } = "Trống";
+}
+
+public class DanhGia
+{
+    [Key]
+    public int MaDanhGia { get; set; }
+
+    public int MaDonDatPhong { get; set; }
+    public DonDatPhong DonDatPhong { get; set; } = null!;
+
+    [Range(1, 5)]
+    public int DiemSo { get; set; }
+
+    public string? NoiDungDanhGia { get; set; }
+
+    public DateTime NgayDanhGia { get; set; } = DateTime.UtcNow;
 }

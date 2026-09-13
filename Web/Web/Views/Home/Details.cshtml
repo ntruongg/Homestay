@@ -1,0 +1,48 @@
+@model PropertyDetails
+
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<section class="section container details">
+    <a class="back" asp-action="Index">? Back to stays</a>
+
+    <div class="details-head">
+        <div>
+            <p class="eyebrow">@(Model.Type ?? "HOMESTAY")</p>
+            <h1>@Model.Name</h1>
+            <p class="muted">? @Model.Address</p>
+        </div>
+    </div>
+
+    <div class="rooms">
+        <h2>Choose your room</h2>
+
+        @foreach (var room in Model.Rooms)
+        {
+            <article class="room">
+                <div>
+                    <h3>Room @room.RoomNumber @(room.RoomType is null ? "" : $"· {room.RoomType}")</h3>
+                    <p class="muted">Up to @room.Capacity guests · $@room.CurrentPrice.ToString("N0") / night</p>
+                </div>
+                <form asp-action="Book" method="post">
+                    <input type="hidden" name="RoomId" value="@room.Id">
+                    <label>
+                        Check in
+                        <input name="CheckIn" type="date" required>
+                    </label>
+                    <label>
+                        Check out
+                        <input name="CheckOut" type="date" required>
+                    </label>
+                    <label>
+                        Guests
+                        <input name="GuestCount" type="number" min="1" max="@room.Capacity" value="2" required>
+                    </label>
+                    <button class="button" type="submit">Request booking</button>
+                    @Html.AntiForgeryToken()
+                </form>
+            </article>
+        }
+    </div>
+</section>

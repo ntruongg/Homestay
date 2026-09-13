@@ -1,0 +1,50 @@
+@model RegisterGuestInput
+
+@{
+    var isPartner = ViewBag.IsPartner is true;
+    ViewData["Title"] = isPartner ? "Register as an owner" : "Create account";
+}
+
+<section class="form-page">
+    <div class="form-card">
+        <p class="eyebrow">
+            @(isPartner ? "List your homestay with Stayly" : "Welcome to Stayly")
+        </p>
+
+        <h1>
+            @(isPartner ? "Create an owner account" : "Create a guest account")
+        </h1>
+
+        <div asp-validation-summary="ModelOnly" class="form-error"></div>
+
+        @if (isPartner)
+        {
+            <form asp-action="RegisterOwner" method="post">
+                <partial name="_OwnerRegistrationFields" model="Model" />
+                @Html.AntiForgeryToken()
+
+                <button class="button" type="submit">
+                    Register as owner
+                </button>
+            </form>
+        }
+        else
+        {
+            <form asp-action="Register" asp-route-partner="false" method="post">
+                <partial name="_GuestRegistrationFields" model="Model" />
+                @Html.AntiForgeryToken()
+
+                <button class="button" type="submit">
+                    Create guest account
+                </button>
+            </form>
+        }
+
+        <p class="switch">
+            @(isPartner ? "Looking for a guest account?" : "Want to list your property?")
+            <a asp-action="Register" asp-route-partner="@(!isPartner)">
+                @(isPartner ? "Register as a guest" : "Register as an owner")
+            </a>
+        </p>
+    </div>
+</section>

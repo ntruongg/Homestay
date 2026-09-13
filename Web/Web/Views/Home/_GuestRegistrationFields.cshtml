@@ -1,0 +1,36 @@
+@model RegisterGuestInput
+
+<label>
+    Full name
+    <input asp-for="FullName" required>
+</label>
+
+<div class="form-row">
+    <label>
+        Date of birth
+        <input asp-for="DateOfBirth" type="date">
+    </label>
+
+    <label>
+        Gender
+        <select asp-for="Gender">
+            <option value="F">Female</option>
+            <option value="M">Male</option>
+        </select>
+    </label>
+</div>
+
+<label>
+    Phone
+    <input asp-for="Phone" type="tel" required>
+</label>
+
+<label>
+    Email
+    <input asp-for="Email" type="email" required>
+</label>
+
+<label>
+    Password
+    <input asp-for="Password" type="password" minlength="8" required>
+</label>

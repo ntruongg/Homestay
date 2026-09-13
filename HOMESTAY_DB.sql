@@ -1,41 +1,36 @@
-CREATE TABLE TaiKhoan (
+﻿CREATE TABLE TaiKhoan (
     MaTaiKhoan INT IDENTITY PRIMARY KEY,
-    TenDangNhap NVARCHAR(50) NOT NULL UNIQUE,
+	Email NVARCHAR(50) NOT NULL UNIQUE,
     HoTen NVARCHAR(100) NOT NULL,
     NgaySinh DATE,
-    GioiTinh CHAR(1) CHECK (GioiTinh IN ('M', 'F', 'O')),
-    Phone VARCHAR(20) NOT NULL UNIQUE,
-    Email NVARCHAR(50) NOT NULL UNIQUE,
+    GioiTinh CHAR(1) CHECK (GioiTinh IN ('M', 'F')),
+    DienThoai VARCHAR(20) NOT NULL UNIQUE,
     MatKhau NVARCHAR(100) NOT NULL,
-    VaiTro NVARCHAR(30) CHECK (VaiTro IN ('OWNER', 'GUEST')),
+    VaiTro NVARCHAR(30) CHECK (VaiTro IN ('OWNER', 'GUEST', 'ADMIN')),
     TrangThai BIT DEFAULT 1,
-    NgayTao DATE DEFAULT GETDATE()
-);
-
-CREATE TABLE KhachHang (
-    MaKhachHang INT PRIMARY KEY REFERENCES TaiKhoan(MaTaiKhoan),
-    DiaChi NVARCHAR(200)
-);
-
-CREATE TABLE ChuCoSoLuuTru (
-    MaChuCoSoLuuTru INT PRIMARY KEY REFERENCES TaiKhoan(MaTaiKhoan),
-    ThongTinNganHang NVARCHAR(100) NOT NULL,
-    CCCD VARCHAR(20) NOT NULL UNIQUE
+    NgayTao DATE DEFAULT GETDATE(),
+	--Nếu là khách thì NULL
+	ThongTinNganHang NVARCHAR(100),
+    CCCD VARCHAR(20) UNIQUE
 );
 
 CREATE TABLE CoSoLuuTru (
     MaCoSoLuuTru INT IDENTITY PRIMARY KEY,
-    MaChuCoSoLuuTru INT FOREIGN KEY REFERENCES ChuCoSoLuuTru(MaChuCoSoLuuTru),
-    TenCoSoLuuTru NVARCHAR(100) NOT NULL,
+    MaChuCoSoLuuTru INT FOREIGN KEY REFERENCES TaiKhoan(MaTaiKhoan),
+    TenCoSoLuuTru NVARCHAR(100),
     DienThoai NVARCHAR(20),
     Email NVARCHAR(100),
-    DiaChi NVARCHAR(200),
+	DiaChi NVARCHAR(200),
+	PhuongXa NVARCHAR(200),
+    ThanhPho NVARCHAR(200),
     TrangThaiDuyet NVARCHAR(20),
     LyDoTuChoi NVARCHAR(200),
     GiayPhepKD_URL NVARCHAR(200),
     GiayToPCCC_URL NVARCHAR(200),
     GiayToANTT_URL NVARCHAR(200),
-    LoaiHinh NVARCHAR(50) CHECK (LoaiHinh IN ('Homestay', 'Hotel', 'Motel')) DEFAULT 'Homestay'
+    LoaiHinh NVARCHAR(50) CHECK (LoaiHinh IN ('Homestay', 'Hotel')) DEFAULT 'Homestay',
+	ChinhSach NVARCHAR(200),
+	TrangThai BIT DEFAULT 1,
 );
 
 CREATE TABLE LoaiPhong (
@@ -47,45 +42,46 @@ CREATE TABLE LoaiPhong (
 CREATE TABLE Phong (
     MaPhong INT IDENTITY PRIMARY KEY,
     MaCoSoLuuTru INT REFERENCES CoSoLuuTru(MaCoSoLuuTru),
-    SoPhong NVARCHAR(50) NOT NULL, -- Dùng để lưu tên phòng hoặc chữ "Nguyên căn"
+    SoPhong NVARCHAR(50),
     SucChua INT CHECK (SucChua > 0),
     MaLoaiPhong INT REFERENCES LoaiPhong(MaLoaiPhong),
     TinhTrang NVARCHAR(30) CHECK (TinhTrang IN (N'Trống', N'Đang sử dụng', N'Bảo trì', N'Booked')),
-    GiaHienTai DECIMAL(12,2)
+    GiaGoc DECIMAL(12,2)
+);
+
+
+CREATE TABLE GiamGia (
+	MaGiamGia INT IDENTITY PRIMARY KEY,
+	TenMa NVARCHAR(50),
+	PhanTram INT,
+	ToiDa DECIMAL (12,2),
+	NgayHetHan DATE
 );
 
 CREATE TABLE DonDatPhong (
     MaDonDatPhong INT IDENTITY PRIMARY KEY,
-    MaKhachHang INT REFERENCES KhachHang(MaKhachHang),
-    MaPhong INT REFERENCES Phong(MaPhong) NOT NULL, -- Ràng buộc đơn giản, sạch sẽ
-    NgayDat DATE NOT NULL DEFAULT GETDATE(),
+    MaKhachHang INT REFERENCES TaiKhoan(MaTaiKhoan),
+	MaGiamGia INT REFERENCES GiamGia(MaGiamGia),
+    NgayDat DATE DEFAULT GETDATE(),
     NgayDen DATE,
     NgayDi DATE,
     SoNguoi INT CHECK (SoNguoi > 0),
     TrangThai NVARCHAR(30) CHECK (TrangThai IN ('Pending', 'Confirmed', 'CheckedIn', 'CheckedOut', 'Cancelled')),
-    TongTien DECIMAL(12,2)
 );
 
-CREATE TABLE HoaDon (
-    MaHoaDon INT IDENTITY PRIMARY KEY,
-    MaDonDatPhong INT REFERENCES DonDatPhong(MaDonDatPhong),
-    NgayLap DATE DEFAULT GETDATE(),
-    TongTien DECIMAL(12,2),
-    PhuongThucThanhToan NVARCHAR(30)
+CREATE TABLE ChiTietDon (
+	MaDonDatPhong INT REFERENCES DonDatPhong(MaDonDatPhong) NOT NULL,
+	MaPhong INT REFERENCES Phong(MaPhong) NOT NULL,
 );
 
-CREATE TABLE ChiTietHoaDon (
-    MaChiTiet INT IDENTITY PRIMARY KEY,
-    MaHoaDon INT REFERENCES HoaDon(MaHoaDon),
-    MoTa NVARCHAR(200),
-    DonGia DECIMAL(12,2),
-    SoLuong INT,
-    ThanhTien AS (DonGia * SoLuong)
+CREATE TABLE ThanhToan(
+	MaHoaDon INT REFERENCES DonDatPhong(MaDonDatPhong),
+	TongTien DECIMAL(12,2),
+	TienGoc DECIMAL(12,2),
 );
-
 CREATE TABLE LichLuuTru (
     MaLich INT IDENTITY PRIMARY KEY,
-    MaPhong INT REFERENCES Phong(MaPhong) NOT NULL, -- Quản lý lịch tập trung theo phòng
+    MaPhong INT REFERENCES Phong(MaPhong) NOT NULL,
     Ngay DATE NOT NULL,
     TrangThai NVARCHAR(30) CHECK (TrangThai IN (N'Trống', N'Đã đặt', N'Đang thanh toán')) DEFAULT N'Trống',
     CONSTRAINT UQ_LichPhong_Ngay UNIQUE (MaPhong, Ngay)
@@ -122,6 +118,5 @@ CREATE TABLE DanhGia (
     MaDonDatPhong INT REFERENCES DonDatPhong(MaDonDatPhong) NOT NULL UNIQUE,
     DiemSo INT CHECK (DiemSo BETWEEN 1 AND 5) NOT NULL,
     NoiDungDanhGia NVARCHAR(MAX),
-    PhanHoiChuCoSoLuuTru NVARCHAR(MAX),
     NgayDanhGia DATETIME DEFAULT GETDATE()
 );

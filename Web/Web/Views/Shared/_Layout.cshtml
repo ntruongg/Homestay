@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@ViewData["Title"] ? Stayly</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/site.css" asp-append-version="true">
+</head>
+<body>
+    <header>
+        <nav class="nav container">
+            <a class="brand" asp-controller="Home" asp-action="Index"><b>?</b> stayly</a>
+            <div class="nav-links">
+                <a asp-controller="Home" asp-action="Index" asp-fragment="stays">Explore stays</a>
+                @if (Context.Session.GetString("role") == "OWNER")
+                {
+                    <a asp-controller="Home" asp-action="Dashboard" class="owner-highlight-link">
+                        <span class="owner-pill">Host</span> Owner Dashboard
+                    </a>
+                }
+                <a asp-controller="Home" asp-action="Trips">My trips</a>
+            </div>
+            <div class="nav-user">
+                @if (Context.Session.GetString("userName") is string name)
+                {
+                    <span>Hi, @name</span>
+                    @if (Context.Session.GetString("role") == "OWNER")
+                    {
+                        <a class="button outline owner-btn-nav" asp-controller="Home" asp-action="Dashboard">Dashboard</a>
+                    }
+                    <a asp-controller="Home" asp-action="Profile">My profile</a>
+
+                    <form asp-controller="Home" asp-action="Logout" method="post">
+                        <button class="button outline">Log out</button>
+                        @Html.AntiForgeryToken()
+                    </form>
+                }
+                else
+                {
+                    <a asp-controller="Home" asp-action="Register">Register</a>
+                    <a asp-controller="Home" asp-action="Register" asp-route-partner="true">
+                        Register as owner
+                    </a>
+                    <a class="button outline" asp-controller="Home" asp-action="Login">
+                        Log in
+                    </a>
+                }
+            </div>
+        </nav>
+    </header>
+    <main>
+        @if (TempData["Error"] is string error)
+        {
+            <div class="alert error">@error</div>
+        }
+        @if (TempData["Success"] is string success)
+        {
+            <div class="alert success">@success</div>
+        }
+        @RenderBody()
+    </main>
+    <footer>
+        <div class="container">
+            ? stayly
+            <span>Thoughtful stays for memorable trips.</span>
+        </div>
+    </footer>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

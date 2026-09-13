@@ -1,0 +1,647 @@
+@model OwnerDashboardViewModel
+
+@{
+    ViewData["Title"] = "Owner Dashboard";
+    var activeTab = string.IsNullOrWhiteSpace(Model.ActiveTab) ? "properties" : Model.ActiveTab.ToLowerInvariant();
+    var approvedProps = Model.Properties.Where(p => (p.ApprovalStatus ?? "").Equals("Approved", StringComparison.OrdinalIgnoreCase)).ToList();
+    var pendingProps = Model.Properties.Where(p => (p.ApprovalStatus ?? "").Equals("Pending", StringComparison.OrdinalIgnoreCase)).ToList();
+    var rejectedProps = Model.Properties.Where(p => (p.ApprovalStatus ?? "").Equals("Rejected", StringComparison.OrdinalIgnoreCase)).ToList();
+}
+
+<div class="app-shell">
+    <!-- Top Hero Banner -->
+    <div class="dashboard-hero">
+        <div>
+            <h1>Host &amp; Owner Dashboard</h1>
+            <p>Track performance, manage approved listings, room availability, guest bookings, and earnings.</p>
+        </div>
+        <div class="dashboard-hero-actions">
+            <button type="button" class="button" onclick="toggleForm('createPropertyBox')">
+                &#43; Register New Homestay
+            </button>
+            @if (approvedProps.Any())
+            {
+                <button type="button" class="button outline" onclick="toggleForm('createRoomBox')">
+                    &#43; Add Room
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- 4 KPI Summary Cards -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap green">&#127968;</div>
+            <div class="kpi-stat-info">
+                <span class="kpi-number">@Model.Summary.ApprovedProperties</span>
+                <span class="kpi-label">Active Approved Stays</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap peach">&#9203;</div>
+            <div class="kpi-stat-info">
+                <span class="kpi-number">@Model.Summary.PendingProperties</span>
+                <span class="kpi-label">Pending Admin Approval</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap sage">&#128716;</div>
+            <div class="kpi-stat-info">
+                <span class="kpi-number">@Model.Summary.TotalRooms</span>
+                <span class="kpi-label">Active Rooms</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap gold">&#128176;</div>
+            <div class="kpi-stat-info">
+                <span class="kpi-number">@Model.Summary.TotalRevenue.ToString("N0") &#8363;</span>
+                <span class="kpi-label">Total Revenue</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Collapsible Add Property Form -->
+    <div id="createPropertyBox" class="collapsible-form-wrap" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3>Register New Homestay Property</h3>
+            <button type="button" class="action-btn-mini" onclick="toggleForm('createPropertyBox')">&times; Close</button>
+        </div>
+        <div class="admin-pending-alert" style="margin-top: 0; margin-bottom: 18px;">
+            <strong>Admin Approval Notice:</strong> Newly registered homestays are submitted to the Admin portal (WPF) for review and verification. Once approved by the administrator, your listing will automatically appear on the public website and unlock room setup.
+        </div>
+        <form asp-action="CreateProperty" method="post">
+            <div class="form-row">
+                <label>
+                    Homestay Name *
+                    <input asp-for="NewProperty.Name" required placeholder="e.g. Pine Hill Mountain Villa" />
+                </label>
+                <label>
+                    Property Type
+                    <select asp-for="NewProperty.Type">
+                        <option value="Homestay">Homestay</option>
+                        <option value="Hotel">Hotel</option>
+                        <option value="Villa">Villa</option>
+                        <option value="Resort">Resort</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="form-row">
+                <label>
+                    Street Address *
+                    <input asp-for="NewProperty.Address" required placeholder="e.g. 123 Tran Phu" />
+                </label>
+                <label>
+                    Ward / Commune
+                    <input asp-for="NewProperty.Ward" placeholder="e.g. Ward 3" />
+                </label>
+                <label>
+                    City / Province *
+                    <input asp-for="NewProperty.City" required placeholder="e.g. Da Lat" />
+                </label>
+            </div>
+
+            <div class="form-row">
+                <label>
+                    Contact Phone
+                    <input asp-for="NewProperty.Phone" placeholder="e.g. 0988776655" />
+                </label>
+                <label>
+                    Contact Email
+                    <input asp-for="NewProperty.Email" type="email" placeholder="e.g. stay@pinehill.com" />
+                </label>
+            </div>
+
+            <label>
+                House Rules &amp; Cancellation Policy
+                <textarea asp-for="NewProperty.Policy" rows="2" placeholder="e.g. Check-in after 14:00, no loud parties after 22:00"></textarea>
+            </label>
+
+            <div style="margin-top: 14px;">
+                <button type="submit" class="button">Submit for Admin Approval &rarr;</button>
+            </div>
+            @Html.AntiForgeryToken()
+        </form>
+    </div>
+
+    <!-- Collapsible Add Room Form -->
+    <div id="createRoomBox" class="collapsible-form-wrap" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3>Add New Room to Homestay</h3>
+            <button type="button" class="action-btn-mini" onclick="toggleForm('createRoomBox')">&times; Close</button>
+        </div>
+
+        @if (!approvedProps.Any())
+        {
+            <div class="admin-pending-alert">
+                <strong>No approved homestays available:</strong> You cannot add rooms yet because your homestay listings are currently pending approval by the Admin via WPF. As soon as Admin approves a listing, it will be selectable here.
+            </div>
+        }
+        else
+        {
+            <form asp-action="CreateRoom" method="post">
+                <div class="form-row">
+                    <label>
+                        Select Approved Homestay Property *
+                        <select asp-for="NewRoom.PropertyId" id="roomPropertySelect" required>
+                            @foreach (var prop in approvedProps)
+                            {
+                                <option value="@prop.Id">@prop.Name (@(prop.City ?? "Local"))</option>
+                            }
+                        </select>
+                    </label>
+
+                    <label>
+                        Room Name or Number *
+                        <input asp-for="NewRoom.RoomNumber" required placeholder="e.g. Room 101 or Entire Villa" />
+                    </label>
+                </div>
+
+                <div class="form-row">
+                    <label>
+                        Capacity (Guests) *
+                        <input asp-for="NewRoom.Capacity" type="number" min="1" max="20" required value="2" />
+                    </label>
+
+                    <label>
+                        Price per Night (VND) *
+                        <input asp-for="NewRoom.OriginalPrice" type="number" min="50000" step="10000" required value="500000" />
+                    </label>
+
+                    <label>
+                        Initial Status
+                        <select asp-for="NewRoom.Status">
+                            <option value="Trống">Available (Trống)</option>
+                            <option value="Bảo trì">Maintenance (Bảo trì)</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div style="margin-top: 14px;">
+                    <button type="submit" class="button">Create Room</button>
+                </div>
+                @Html.AntiForgeryToken()
+            </form>
+        }
+    </div>
+
+    <!-- Dashboard Tabs Navigation -->
+    <div class="tabs-nav-bar" id="dashboardTabsNav">
+        <button type="button" class="tab-nav-btn @(activeTab == "properties" ? "active" : "")" data-tab="tab-properties">
+            <span>&#127968;</span> Properties <span class="tab-count">@Model.Properties.Count</span>
+        </button>
+        <button type="button" class="tab-nav-btn @(activeTab == "rooms" ? "active" : "")" data-tab="tab-rooms">
+            <span>&#128716;</span> Rooms <span class="tab-count">@Model.Rooms.Count</span>
+        </button>
+        <button type="button" class="tab-nav-btn @(activeTab == "bookings" ? "active" : "")" data-tab="tab-bookings">
+            <span>&#128197;</span> Bookings <span class="tab-count">@Model.Bookings.Count</span>
+        </button>
+        <button type="button" class="tab-nav-btn @(activeTab == "invoices" ? "active" : "")" data-tab="tab-invoices">
+            <span>&#128176;</span> Invoices &amp; Revenue <span class="tab-count">@Model.Invoices.Count</span>
+        </button>
+    </div>
+
+    <!-- ==================== TAB 1: PROPERTIES ==================== -->
+    <div id="tab-properties" class="tab-pane @(activeTab == "properties" ? "active" : "")">
+        <div class="content-card-header">
+            <div>
+                <h2>My Homestay Properties</h2>
+                <p>Manage your verified accommodations and track listings submitted for Admin verification.</p>
+            </div>
+            <button type="button" class="button outline" onclick="toggleForm('createPropertyBox')">
+                &#43; Register New Property
+            </button>
+        </div>
+
+        @if (!Model.Properties.Any())
+        {
+            <div class="content-card empty-state-box">
+                <span class="empty-icon">&#127968;</span>
+                <h4>No homestays registered yet</h4>
+                <p>Register your first property. It will be sent to Admin for review and activated once approved.</p>
+                <button type="button" class="button" onclick="toggleForm('createPropertyBox')">Register Your First Homestay</button>
+            </div>
+        }
+        else
+        {
+            <!-- SECTION 1: Active & Approved Listings -->
+            <div style="margin-bottom: 32px;">
+                <h3 style="margin-bottom: 14px; font-size: 1.15rem; color: var(--green-dark);">
+                    &#9989; Active &amp; Approved Properties (@approvedProps.Count)
+                </h3>
+
+                @if (!approvedProps.Any())
+                {
+                    <div class="overview-tile" style="margin-bottom: 24px;">
+                        <span style="color: var(--muted); font-size: 0.9rem;">
+                            You do not have any active approved listings yet. Any newly created listings below are awaiting Admin approval.
+                        </span>
+                    </div>
+                }
+                else
+                {
+                    <div class="prop-grid-owner" style="margin-bottom: 28px;">
+                        @foreach (var prop in approvedProps)
+                        {
+                            <div class="prop-card-owner">
+                                <div class="prop-thumb-wrap">
+                                    @if (!string.IsNullOrWhiteSpace(prop.CoverImageUrl))
+                                    {
+                                        <img src="@prop.CoverImageUrl" alt="@prop.Name" />
+                                    }
+                                    else
+                                    {
+                                        <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.7); font-size: 2.5rem;">
+                                            &#127968;
+                                        </div>
+                                    }
+                                    <span class="prop-status-tag approved">&#10003; Approved &amp; Live</span>
+                                </div>
+                                <div class="prop-body-owner">
+                                    <h3>@prop.Name</h3>
+                                    <div class="prop-location">
+                                        &#128205; @prop.Address@(string.IsNullOrWhiteSpace(prop.City) ? "" : $", {prop.City}")
+                                    </div>
+                                    <div class="prop-meta-bar">
+                                        <span>&#128716; <b>@prop.RoomsCount</b> rooms</span>
+                                        <button type="button" class="action-btn-mini" onclick="openAddRoomFor('@prop.Id')">
+                                            &#43; Add Room
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- SECTION 2: Pending Admin Approval (WPF Admin Review) -->
+            @if (pendingProps.Any())
+            {
+                <div style="margin-bottom: 32px;">
+                    <h3 style="margin-bottom: 14px; font-size: 1.15rem; color: #b45309;">
+                        &#9203; Awaiting Admin Approval via WPF (@pendingProps.Count)
+                    </h3>
+                    <div class="admin-pending-alert">
+                        <strong>Sent to Admin for Review:</strong> The properties below have been submitted and are currently in the administrator's review queue. Once approved by the Admin, they will automatically appear on the public web list and room setup will be enabled.
+                    </div>
+
+                    <div class="prop-grid-owner">
+                        @foreach (var prop in pendingProps)
+                        {
+                            <div class="prop-card-owner pending-lock">
+                                <div class="prop-thumb-wrap">
+                                    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.8); font-size: 2.5rem;">
+                                        &#9203;
+                                    </div>
+                                    <span class="prop-status-tag pending">&#9203; Pending Approval</span>
+                                </div>
+                                <div class="prop-body-owner">
+                                    <h3>@prop.Name</h3>
+                                    <div class="prop-location">
+                                        &#128205; @prop.Address@(string.IsNullOrWhiteSpace(prop.City) ? "" : $", {prop.City}")
+                                    </div>
+                                    <div class="prop-meta-bar">
+                                        <span style="font-size: 0.8rem; color: #b45309;">&#128274; Room setup locked until approved</span>
+                                        <span class="status-pill pending">Under Review</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- SECTION 3: Rejected Listings (if any) -->
+            @if (rejectedProps.Any())
+            {
+                <div>
+                    <h3 style="margin-bottom: 14px; font-size: 1.15rem; color: #b91c1c;">
+                        &#10060; Rejected by Admin (@rejectedProps.Count)
+                    </h3>
+                    <div class="prop-grid-owner">
+                        @foreach (var prop in rejectedProps)
+                        {
+                            <div class="prop-card-owner" style="border: 1px solid #f87171;">
+                                <div class="prop-thumb-wrap" style="background: #991b1b;">
+                                    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.8); font-size: 2.5rem;">
+                                        &#10060;
+                                    </div>
+                                    <span class="prop-status-tag rejected">Rejected</span>
+                                </div>
+                                <div class="prop-body-owner">
+                                    <h3>@prop.Name</h3>
+                                    <div class="prop-location">&#128205; @prop.Address</div>
+                                    @if (!string.IsNullOrWhiteSpace(prop.RejectionReason))
+                                    {
+                                        <div class="admin-rejected-alert" style="margin: 8px 0 0; padding: 8px 12px; font-size: 0.82rem;">
+                                            <strong>Reason:</strong> @prop.RejectionReason
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <!-- ==================== TAB 2: ROOMS ==================== -->
+    <div id="tab-rooms" class="tab-pane @(activeTab == "rooms" ? "active" : "")">
+        <div class="content-card-header">
+            <div>
+                <h2>Rooms Management</h2>
+                <p>Monitor individual rooms in approved homestays, set guest capacities, and update nightly rates.</p>
+            </div>
+            @if (approvedProps.Any())
+            {
+                <button type="button" class="button outline" onclick="toggleForm('createRoomBox')">
+                    &#43; Add Room
+                </button>
+            }
+        </div>
+
+        @if (!Model.Rooms.Any())
+        {
+            <div class="content-card empty-state-box">
+                <span class="empty-icon">&#128716;</span>
+                <h4>No rooms added yet</h4>
+                @if (approvedProps.Any())
+                {
+                    <p>Add rooms to your approved properties so travelers can book them.</p>
+                    <button type="button" class="button" onclick="toggleForm('createRoomBox')">Add Room Now</button>
+                }
+                else
+                {
+                    <p>You can add rooms as soon as the administrator verifies and approves your homestay property.</p>
+                    <button type="button" class="button outline" onclick="toggleForm('createPropertyBox')">Register Another Property</button>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="data-table-container">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>Room # / Name</th>
+                            <th>Homestay Property</th>
+                            <th>Room Type</th>
+                            <th>Capacity</th>
+                            <th>Nightly Price</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var room in Model.Rooms)
+                        {
+                            var statusClass = (room.Status ?? "Trống") switch
+                            {
+                                "Trống" => "empty",
+                                "Đang sử dụng" => "occupied",
+                                "Booked" => "confirmed",
+                                _ => "pending"
+                            };
+
+                            <tr>
+                                <td><b>@room.RoomNumber</b></td>
+                                <td>@room.PropertyName</td>
+                                <td><span class="role-tag guest">@room.RoomType</span></td>
+                                <td>@room.Capacity guests</td>
+                                <td><b>@room.Price.ToString("N0") &#8363;</b> / night</td>
+                                <td>
+                                    <span class="status-pill @statusClass">@room.Status</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <!-- ==================== TAB 3: BOOKINGS ==================== -->
+    <div id="tab-bookings" class="tab-pane @(activeTab == "bookings" ? "active" : "")">
+        <div class="content-card-header">
+            <div>
+                <h2>Guest Bookings Management</h2>
+                <p>Manage reservations made for your homestay properties and change stay status.</p>
+            </div>
+        </div>
+
+        @if (!Model.Bookings.Any())
+        {
+            <div class="content-card empty-state-box">
+                <span class="empty-icon">&#128197;</span>
+                <h4>No bookings received yet</h4>
+                <p>When travelers book rooms at your approved homestays, their reservations will appear here.</p>
+            </div>
+        }
+        else
+        {
+            <div class="data-table-container">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Property &amp; Rooms</th>
+                            <th>Guest Details</th>
+                            <th>Stay Dates</th>
+                            <th>Guests</th>
+                            <th>Total Price</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in Model.Bookings)
+                        {
+                            var statusClass = b.Status.ToLowerInvariant();
+                            <tr>
+                                <td><b>#@b.Id</b></td>
+                                <td>
+                                    <strong>@b.PropertyName</strong>
+                                    <div style="font-size: 0.8rem; color: var(--muted);">Room: @string.Join(", ", b.RoomNumbers)</div>
+                                </td>
+                                <td>
+                                    <div><b>@b.GuestName</b></div>
+                                    <div style="font-size: 0.8rem; color: var(--muted);">@b.GuestPhone</div>
+                                </td>
+                                <td>
+                                    <div>@b.CheckIn.ToString("dd/MM/yyyy") &rarr; @b.CheckOut.ToString("dd/MM/yyyy")</div>
+                                    <div style="font-size: 0.8rem; color: var(--muted);">@Math.Max(1, (b.CheckOut.Date - b.CheckIn.Date).Days) nights</div>
+                                </td>
+                                <td>@b.GuestCount guests</td>
+                                <td><strong style="color: var(--green-dark);">@b.TotalAmount.ToString("N0") &#8363;</strong></td>
+                                <td>
+                                    <span class="status-pill @statusClass">@b.Status</span>
+                                </td>
+                                <td>
+                                    <div class="action-btn-group">
+                                        @if (b.Status == "Pending")
+                                        {
+                                            <form asp-action="UpdateBookingStatus" method="post" style="display:inline;">
+                                                <input type="hidden" name="bookingId" value="@b.Id" />
+                                                <input type="hidden" name="status" value="Confirmed" />
+                                                <button type="submit" class="action-btn-mini">&#10003; Confirm</button>
+                                                @Html.AntiForgeryToken()
+                                            </form>
+                                            <form asp-action="UpdateBookingStatus" method="post" style="display:inline;">
+                                                <input type="hidden" name="bookingId" value="@b.Id" />
+                                                <input type="hidden" name="status" value="Cancelled" />
+                                                <button type="submit" class="action-btn-mini danger">&times; Cancel</button>
+                                                @Html.AntiForgeryToken()
+                                            </form>
+                                        }
+                                        else if (b.Status == "Confirmed")
+                                        {
+                                            <form asp-action="UpdateBookingStatus" method="post" style="display:inline;">
+                                                <input type="hidden" name="bookingId" value="@b.Id" />
+                                                <input type="hidden" name="status" value="CheckedIn" />
+                                                <button type="submit" class="action-btn-mini">&#128204; Check In</button>
+                                                @Html.AntiForgeryToken()
+                                            </form>
+                                            <form asp-action="UpdateBookingStatus" method="post" style="display:inline;">
+                                                <input type="hidden" name="bookingId" value="@b.Id" />
+                                                <input type="hidden" name="status" value="Cancelled" />
+                                                <button type="submit" class="action-btn-mini danger">&times; Cancel</button>
+                                                @Html.AntiForgeryToken()
+                                            </form>
+                                        }
+                                        else if (b.Status == "CheckedIn")
+                                        {
+                                            <form asp-action="UpdateBookingStatus" method="post" style="display:inline;">
+                                                <input type="hidden" name="bookingId" value="@b.Id" />
+                                                <input type="hidden" name="status" value="CheckedOut" />
+                                                <button type="submit" class="action-btn-mini">&#10004; Check Out</button>
+                                                @Html.AntiForgeryToken()
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <span style="font-size: 0.8rem; color: var(--muted);">-</span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <!-- ==================== TAB 4: INVOICES & REVENUE ==================== -->
+    <div id="tab-invoices" class="tab-pane @(activeTab == "invoices" ? "active" : "")">
+        <div class="content-card-header">
+            <div>
+                <h2>Invoices &amp; Revenue Records</h2>
+                <p>Financial ledger, guest payments, and breakdown of homestay earnings.</p>
+            </div>
+            <div>
+                <strong style="font-size: 1.1rem; color: var(--green-dark);">Total Earned: @Model.Summary.TotalRevenue.ToString("N0") &#8363;</strong>
+            </div>
+        </div>
+
+        @if (!Model.Invoices.Any())
+        {
+            <div class="content-card empty-state-box">
+                <span class="empty-icon">&#128176;</span>
+                <h4>No invoices generated yet</h4>
+                <p>Invoices will be recorded automatically when bookings are confirmed and paid.</p>
+            </div>
+        }
+        else
+        {
+            <div class="data-table-container">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Booking Ref</th>
+                            <th>Property</th>
+                            <th>Guest Name</th>
+                            <th>Date Issued</th>
+                            <th>Total Amount</th>
+                            <th>Payment Method</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var inv in Model.Invoices)
+                        {
+                            <tr>
+                                <td><b>#INV-@inv.Id</b></td>
+                                <td><a href="#tab-bookings" onclick="switchToBookings()">#@inv.BookingId</a></td>
+                                <td>@inv.PropertyName</td>
+                                <td>@inv.GuestName</td>
+                                <td>@inv.CreatedDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td><strong style="color: var(--green-dark);">@inv.TotalAmount.ToString("N0") &#8363;</strong></td>
+                                <td><span class="role-tag guest">@inv.PaymentMethod</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const navButtons = document.querySelectorAll("#dashboardTabsNav .tab-nav-btn");
+            const panes = document.querySelectorAll(".tab-pane");
+
+            navButtons.forEach(btn => {
+                btn.addEventListener("click", function () {
+                    const targetId = this.getAttribute("data-tab");
+
+                    navButtons.forEach(b => b.classList.remove("active"));
+                    panes.forEach(p => p.classList.remove("active"));
+
+                    this.classList.add("active");
+                    const targetPane = document.getElementById(targetId);
+                    if (targetPane) {
+                        targetPane.classList.add("active");
+                    }
+
+                    const tabKey = targetId.replace("tab-", "");
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set("tab", tabKey);
+                    window.history.replaceState({}, "", newUrl);
+                });
+            });
+        });
+
+        function toggleForm(elementId) {
+            const el = document.getElementById(elementId);
+            if (el) {
+                if (el.style.display === "none" || el.style.display === "") {
+                    el.style.display = "block";
+                    el.scrollIntoView({ behavior: "smooth", block: "start" });
+                } else {
+                    el.style.display = "none";
+                }
+            }
+        }
+
+        function openAddRoomFor(propertyId) {
+            const select = document.getElementById("roomPropertySelect");
+            if (select) {
+                select.value = propertyId;
+            }
+            toggleForm("createRoomBox");
+        }
+
+        function switchToBookings() {
+            const bookingsBtn = document.querySelector("#dashboardTabsNav [data-tab='tab-bookings']");
+            if (bookingsBtn) {
+                bookingsBtn.click();
+            }
+        }
+    </script>
+}

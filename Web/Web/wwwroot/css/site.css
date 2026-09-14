@@ -797,6 +797,222 @@ footer .container {
     font-weight: 700;
 }
 
+/* ==========================================================================
+   Column Tabs Management (Vertical Sidebar Navigation Layout)
+   ========================================================================== */
+.column-tabs-layout {
+    display: grid;
+    grid-template-columns: 290px 1fr;
+    gap: 32px;
+    align-items: start;
+}
+
+/* Sidebar Column */
+.column-tabs-sidebar {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(36, 49, 45, 0.05);
+    position: sticky;
+    top: 24px;
+}
+
+.sidebar-section-title {
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    padding: 4px 8px 12px;
+    display: block;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 12px;
+}
+
+.column-tabs-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.column-tab-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    text-align: left;
+}
+
+.column-tab-btn:hover {
+    background: #f3f6f3;
+    border-color: rgba(72, 107, 89, 0.15);
+    color: var(--green-dark);
+    transform: translateX(2px);
+}
+
+.column-tab-btn.active {
+    background: linear-gradient(135deg, #edf5f0, #e2eee6);
+    border-color: rgba(72, 107, 89, 0.28);
+    color: var(--green-dark);
+    box-shadow: 0 3px 12px rgba(72, 107, 89, 0.1);
+}
+
+.column-tab-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.column-tab-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #f1f5f1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.column-tab-btn:hover .column-tab-icon {
+    background: #e5ece5;
+}
+
+.column-tab-btn.active .column-tab-icon {
+    background: var(--green);
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(72, 107, 89, 0.25);
+}
+
+.column-tab-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.column-tab-title {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--ink);
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.column-tab-btn.active .column-tab-title {
+    color: var(--green-dark);
+}
+
+.column-tab-sub {
+    font-size: 0.76rem;
+    color: var(--muted);
+    font-weight: 400;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.column-tab-btn.active .column-tab-sub {
+    color: #3f604e;
+}
+
+.column-tab-badge {
+    background: var(--sage);
+    color: var(--green-dark);
+    font-size: 0.75rem;
+    padding: 3px 9px;
+    border-radius: 9999px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.column-tab-btn.active .column-tab-badge {
+    background: var(--green);
+    color: #ffffff;
+}
+
+.column-tab-arrow {
+    font-size: 1.1rem;
+    color: #94a3b8;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.column-tab-btn.active .column-tab-arrow {
+    color: var(--green);
+    transform: translateX(2px);
+}
+
+/* Sidebar Host Actions Box */
+.sidebar-action-box {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sidebar-tip-box {
+    margin-top: 16px;
+    background: #f8faf8;
+    border: 1px dashed rgba(72, 107, 89, 0.3);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 0.8rem;
+    color: #4a6756;
+    line-height: 1.4;
+}
+
+/* Content Column */
+.column-tabs-content {
+    min-width: 0;
+}
+
+/* Responsive adjustment */
+@media (max-width: 960px) {
+    .column-tabs-layout {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .column-tabs-sidebar {
+        position: static;
+    }
+
+    .column-tabs-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        padding-bottom: 6px;
+    }
+
+    .column-tab-btn {
+        width: auto;
+        white-space: nowrap;
+        padding: 10px 14px;
+    }
+
+    .column-tab-sub {
+        display: none;
+    }
+}
+
 /* Tab Panels */
 .tab-pane {
     display: none;

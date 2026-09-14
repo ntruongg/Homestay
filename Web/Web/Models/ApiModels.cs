@@ -160,6 +160,16 @@ public sealed record OwnerProperty(
     string? CoverImageUrl
 );
 
+public sealed record ApprovalHistoryItem(
+    int Id,
+    int PropertyId,
+    string Status,
+    string? RejectionReason,
+    int? ReviewerId,
+    string? ReviewerName,
+    DateTime ReviewedAt
+);
+
 public sealed record OwnerRoom(
     int Id,
     int PropertyId,

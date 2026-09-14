@@ -14,11 +14,18 @@ public sealed class JwtTokenService(IConfiguration configuration)
         var key = configuration["Jwt:Key"]
             ?? throw new InvalidOperationException("Jwt:Key is not configured.");
 
+        var role = account.VaiTro?.TenVaiTro ?? (account.MaVaiTro switch
+        {
+            VaiTro.OWNER => "OWNER",
+            VaiTro.ADMIN => "ADMIN",
+            _ => "GUEST"
+        });
+
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, account.MaTaiKhoan.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, account.Email),
-            new Claim("role", account.VaiTro)
+            new Claim("role", role)
         };
         var credentials = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),

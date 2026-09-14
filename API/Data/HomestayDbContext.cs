@@ -1,4 +1,4 @@
-﻿using API.Models;
+using API.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Data;
@@ -19,6 +19,9 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
     public DbSet<Phong_TienNghi> Phong_TienNghis => Set<Phong_TienNghi>();
     public DbSet<HinhAnh> HinhAnhs => Set<HinhAnh>();
     public DbSet<DanhGia> DanhGias => Set<DanhGia>();
+    public DbSet<LichSuDuyet> LichSuDuyets => Set<LichSuDuyet>();
+    public DbSet<VaiTro> VaiTros => Set<VaiTro>();
+    public DbSet<PhuThu> PhuThus => Set<PhuThu>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -31,6 +34,8 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
             entity.Property(x => x.NgayTao).HasColumnType("date");
             entity.HasIndex(x => x.Email).IsUnique();
             entity.HasIndex(x => x.DienThoai).IsUnique();
+            entity.HasOne(x => x.VaiTro).WithMany(x => x.TaiKhoans)
+                .HasForeignKey(x => x.MaVaiTro).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<CoSoLuuTru>(entity =>
@@ -54,6 +59,7 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
         {
             entity.ToTable("GiamGia");
             entity.Property(x => x.ToiDa).HasColumnType("decimal(12,2)");
+            entity.Property(x => x.NgayBatDau).HasColumnType("date");
             entity.Property(x => x.NgayHetHan).HasColumnType("date");
         });
 
@@ -117,6 +123,44 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
 
             entity.HasIndex(x => x.MaDonDatPhong)
                 .IsUnique();
+        });
+
+        modelBuilder.Entity<LichSuDuyet>(entity =>
+        {
+            entity.ToTable("LichSuDuyet");
+            entity.HasKey(x => x.MaLichSu);
+            entity.Property(x => x.TrangThaiDuyet).HasMaxLength(30);
+            entity.Property(x => x.LyDoTuChoi).HasMaxLength(500);
+            entity.Property(x => x.NgayDuyet).HasColumnType("datetime");
+            entity.HasOne(x => x.CoSoLuuTru)
+                .WithMany(x => x.LichSuDuyets)
+                .HasForeignKey(x => x.MaCoSoLuuTru)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.NguoiDuyet)
+                .WithMany()
+                .HasForeignKey(x => x.MaNguoiDuyet)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<VaiTro>(entity =>
+        {
+            entity.ToTable("VaiTro");
+            entity.HasKey(x => x.MaVaiTro);
+            entity.HasData(
+                new VaiTro { MaVaiTro = 1, TenVaiTro = "GUEST", MoTa = "Traveler / Guest" },
+                new VaiTro { MaVaiTro = 2, TenVaiTro = "OWNER", MoTa = "Homestay Host / Owner" },
+                new VaiTro { MaVaiTro = 3, TenVaiTro = "ADMIN", MoTa = "System Administrator" }
+            );
+        });
+
+        modelBuilder.Entity<PhuThu>(entity =>
+        {
+            entity.ToTable("PhuThu");
+            entity.HasKey(x => x.MaPhuThu);
+            entity.HasOne(x => x.DonDatPhong)
+                .WithMany(x => x.PhuThus)
+                .HasForeignKey(x => x.MaDonDatPhong)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

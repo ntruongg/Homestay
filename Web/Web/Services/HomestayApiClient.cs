@@ -288,6 +288,15 @@ public sealed class HomestayApiClient(HttpClient http)
             (int)response.StatusCode);
     }
 
+    public async Task<IReadOnlyList<ApprovalHistoryItem>> GetPropertyApprovalHistoryAsync(
+        int propertyId,
+        CancellationToken cancellationToken = default)
+    {
+        return await http.GetFromJsonAsync<List<ApprovalHistoryItem>>(
+            $"properties/{propertyId}/approval-history",
+            cancellationToken) ?? [];
+    }
+
     private static HttpRequestMessage CreateAuthorizedRequest(
         HttpMethod method,
         string path,

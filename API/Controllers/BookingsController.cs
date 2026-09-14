@@ -39,17 +39,36 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
         if (hasBooking || hasUnavailableDate)
             return Conflict("One or more rooms are not available for the selected dates.");
 
+        var adults = request.Adults > 0 ? request.Adults : Math.Max(1, request.GuestCount);
+        var children = request.Children;
+        var guestCount = adults + children;
+
+        var extraFees = request.ExtraFees?.Select(f => new PhuThu
+        {
+            TenPhuThu = f.Name.Trim(),
+            SoLuong = Math.Max(1, f.Quantity),
+            DonGia = f.Price,
+            ThanhTien = Math.Max(1, f.Quantity) * f.Price,
+            GhiChu = f.Note?.Trim()
+        }).ToList() ?? [];
+
         var nights = (request.CheckOut.Date - request.CheckIn.Date).Days;
-        var total = rooms.Sum(r => r.GiaGoc) * nights;
+        var roomTotal = rooms.Sum(r => r.GiaGoc) * nights;
+        var extraFeesTotal = extraFees.Sum(f => f.ThanhTien);
+        var total = roomTotal + extraFeesTotal;
+
         var booking = new DonDatPhong
         {
             MaKhachHang = accountId,
             NgayDat = DateTime.UtcNow,
             NgayDen = request.CheckIn,
             NgayDi = request.CheckOut,
-            SoNguoi = request.GuestCount,
+            SoNguoiLon = adults,
+            SoTreEm = children,
+            SoNguoi = guestCount,
             TrangThai = "Pending",
-            ChiTietDons = rooms.Select(r => new ChiTietDon { MaPhong = r.MaPhong }).ToList()
+            ChiTietDons = rooms.Select(r => new ChiTietDon { MaPhong = r.MaPhong }).ToList(),
+            PhuThus = extraFees
         };
 
         db.DonDatPhongs.Add(booking);
@@ -67,10 +86,11 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
         var bookings = await db.DonDatPhongs.AsNoTracking()
             .Where(b => b.MaKhachHang == accountId)
             .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong)
+            .Include(b => b.PhuThus)
             .OrderByDescending(b => b.NgayDat).ToListAsync(cancellationToken);
 
         return Ok(bookings.Select(b => ToResponse(b, b.ChiTietDons.Select(d => d.MaPhong),
-            b.ChiTietDons.Sum(d => d.Phong.GiaGoc) * (b.NgayDi.Date - b.NgayDen.Date).Days)));
+            b.ChiTietDons.Sum(d => d.Phong.GiaGoc) * (b.NgayDi.Date - b.NgayDen.Date).Days + b.PhuThus.Sum(f => f.ThanhTien))));
     }
 
     [HttpGet("{id:int}")]
@@ -79,12 +99,13 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
         var booking = await db.DonDatPhongs.AsNoTracking()
             .Where(b => b.MaDonDatPhong == id && b.MaKhachHang == GetAccountId())
             .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong)
+            .Include(b => b.PhuThus)
             .SingleOrDefaultAsync(cancellationToken);
 
         return booking is null
             ? NotFound()
             : Ok(ToResponse(booking, booking.ChiTietDons.Select(d => d.MaPhong),
-                booking.ChiTietDons.Sum(d => d.Phong.GiaGoc) * (booking.NgayDi.Date - booking.NgayDen.Date).Days));
+                booking.ChiTietDons.Sum(d => d.Phong.GiaGoc) * (booking.NgayDi.Date - booking.NgayDen.Date).Days + booking.PhuThus.Sum(f => f.ThanhTien)));
     }
 
     [HttpPut("{id:int}/cancel")]
@@ -110,7 +131,21 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
         return int.Parse(claim!);
     }
 
-    private static BookingResponse ToResponse(DonDatPhong booking, IEnumerable<int> roomIds, decimal total) =>
-        new(booking.MaDonDatPhong, roomIds.ToArray(), booking.NgayDen, booking.NgayDi,
-            booking.SoNguoi, booking.TrangThai, total);
+    private static BookingResponse ToResponse(DonDatPhong booking, IEnumerable<int> roomIds, decimal total)
+    {
+        var extraFeeDtos = (booking.PhuThus ?? []).Select(f => new PhuThuResponse(
+            f.MaPhuThu, f.TenPhuThu, f.SoLuong, f.DonGia, f.ThanhTien, f.GhiChu)).ToList();
+
+        return new BookingResponse(
+            booking.MaDonDatPhong,
+            roomIds.ToArray(),
+            booking.NgayDen,
+            booking.NgayDi,
+            booking.SoNguoi,
+            booking.SoNguoiLon,
+            booking.SoTreEm,
+            booking.TrangThai,
+            total,
+            extraFeeDtos);
+    }
 }

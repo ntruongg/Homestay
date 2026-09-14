@@ -21,7 +21,7 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
         var query = db.CoSoLuuTrus.AsNoTracking()
-            .Where(p => p.TrangThai && (p.TrangThaiDuyet == "Approved" || p.TrangThaiDuyet == "APPROVED"));
+            .Where(p => p.TrangThai);
 
         if (!string.IsNullOrWhiteSpace(location))
             query = query.Where(p => (p.DiaChi ?? "").Contains(location) || (p.ThanhPho ?? "").Contains(location));
@@ -42,8 +42,7 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
     public async Task<ActionResult<PropertyDetailsResponse>> GetProperty(int id, CancellationToken cancellationToken)
     {
         var property = await db.CoSoLuuTrus.AsNoTracking()
-            .Where(p => p.MaCoSoLuuTru == id && p.TrangThai &&
-                (p.TrangThaiDuyet == "Approved" || p.TrangThaiDuyet == "APPROVED"))
+            .Where(p => p.MaCoSoLuuTru == id && p.TrangThai)
             .Select(p => new PropertyDetailsResponse(
                 p.MaCoSoLuuTru, p.TenCoSoLuuTru, p.DienThoai, p.Email, p.DiaChi, p.LoaiHinh,
                 db.HinhAnhs.Where(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru).Select(i => i.UrlHinhAnh).ToList(),
@@ -75,13 +74,43 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
             GiayPhepKinhDoanhUrl = request.BusinessLicenseUrl,
             GiayToPcccUrl = request.FireSafetyDocumentUrl,
             GiayToAnttUrl = request.SecurityDocumentUrl,
-            TrangThaiDuyet = "Pending",
-            TrangThai = true
+            TrangThai = false
         };
 
         db.CoSoLuuTrus.Add(property);
+
+        var initialHistory = new LichSuDuyet
+        {
+            CoSoLuuTru = property,
+            TrangThaiDuyet = "Pending",
+            LyDoTuChoi = null,
+            NgayDuyet = DateTime.UtcNow
+        };
+        db.LichSuDuyets.Add(initialHistory);
+
         await db.SaveChangesAsync(cancellationToken);
         return CreatedAtAction(nameof(GetProperty), new { id = property.MaCoSoLuuTru }, new { property.MaCoSoLuuTru });
+    }
+
+    [HttpGet("{id:int}/approval-history")]
+    public async Task<ActionResult<IReadOnlyList<ApprovalHistoryDto>>> GetApprovalHistory(
+        int id, CancellationToken cancellationToken)
+    {
+        var history = await db.LichSuDuyets.AsNoTracking()
+            .Where(h => h.MaCoSoLuuTru == id)
+            .Include(h => h.NguoiDuyet)
+            .OrderByDescending(h => h.NgayDuyet)
+            .Select(h => new ApprovalHistoryDto(
+                h.MaLichSu,
+                h.MaCoSoLuuTru,
+                h.TrangThaiDuyet,
+                h.LyDoTuChoi,
+                h.MaNguoiDuyet,
+                h.NguoiDuyet != null ? h.NguoiDuyet.HoTen : null,
+                h.NgayDuyet))
+            .ToListAsync(cancellationToken);
+
+        return Ok(history);
     }
 
     [Authorize(Roles = "OWNER")]
@@ -94,7 +123,7 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
         if (property is null)
             return NotFound("Property was not found.");
 
-        if (property.TrangThaiDuyet != "Approved" && property.TrangThaiDuyet != "APPROVED")
+        if (!property.TrangThai)
             return BadRequest("Cannot add rooms to a property that is pending admin approval.");
 
         var duplicate = await db.Phongs.AnyAsync(

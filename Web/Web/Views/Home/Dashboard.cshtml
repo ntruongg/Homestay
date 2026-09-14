@@ -63,8 +63,79 @@
         </div>
     </div>
 
-    <!-- Collapsible Add Property Form -->
-    <div id="createPropertyBox" class="collapsible-form-wrap" style="display: none;">
+    <!-- Main Column Tabs Management Layout -->
+    <div class="column-tabs-layout">
+        <!-- Left Column: Tabs Navigation Sidebar -->
+        <aside class="column-tabs-sidebar">
+            <span class="sidebar-section-title">Host Management</span>
+            <nav class="column-tabs-nav" id="dashboardTabsNav">
+                <button type="button" class="tab-nav-btn column-tab-btn @(activeTab == "properties" ? "active" : "")" data-tab="tab-properties">
+                    <div class="column-tab-left">
+                        <div class="column-tab-icon">&#127968;</div>
+                        <div class="column-tab-meta">
+                            <span class="column-tab-title">Properties</span>
+                            <span class="column-tab-sub">Listings &amp; review</span>
+                        </div>
+                    </div>
+                    <span class="column-tab-badge">@Model.Properties.Count</span>
+                </button>
+
+                <button type="button" class="tab-nav-btn column-tab-btn @(activeTab == "rooms" ? "active" : "")" data-tab="tab-rooms">
+                    <div class="column-tab-left">
+                        <div class="column-tab-icon">&#128716;</div>
+                        <div class="column-tab-meta">
+                            <span class="column-tab-title">Rooms</span>
+                            <span class="column-tab-sub">Capacities &amp; rates</span>
+                        </div>
+                    </div>
+                    <span class="column-tab-badge">@Model.Rooms.Count</span>
+                </button>
+
+                <button type="button" class="tab-nav-btn column-tab-btn @(activeTab == "bookings" ? "active" : "")" data-tab="tab-bookings">
+                    <div class="column-tab-left">
+                        <div class="column-tab-icon">&#128197;</div>
+                        <div class="column-tab-meta">
+                            <span class="column-tab-title">Bookings</span>
+                            <span class="column-tab-sub">Reservations &amp; guests</span>
+                        </div>
+                    </div>
+                    <span class="column-tab-badge">@Model.Bookings.Count</span>
+                </button>
+
+                <button type="button" class="tab-nav-btn column-tab-btn @(activeTab == "invoices" ? "active" : "")" data-tab="tab-invoices">
+                    <div class="column-tab-left">
+                        <div class="column-tab-icon">&#128176;</div>
+                        <div class="column-tab-meta">
+                            <span class="column-tab-title">Invoices</span>
+                            <span class="column-tab-sub">Revenue &amp; payouts</span>
+                        </div>
+                    </div>
+                    <span class="column-tab-badge">@Model.Invoices.Count</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-action-box">
+                <span class="sidebar-section-title" style="border: none; padding: 0 0 4px; margin: 0;">Quick Actions</span>
+                <button type="button" class="button small" style="width: 100%; justify-content: center;" onclick="toggleForm('createPropertyBox')">
+                    &#43; Register Homestay
+                </button>
+                @if (approvedProps.Any())
+                {
+                    <button type="button" class="button outline small" style="width: 100%; justify-content: center;" onclick="toggleForm('createRoomBox')">
+                        &#43; Add Room
+                    </button>
+                }
+            </div>
+
+            <div class="sidebar-tip-box">
+                &#128161; <strong>Host Tip:</strong> Listings undergo admin verification. Once verified, room setup unlocks automatically.
+            </div>
+        </aside>
+
+        <!-- Right Column: Content Column -->
+        <main class="column-tabs-content">
+            <!-- Collapsible Add Property Form -->
+            <div id="createPropertyBox" class="collapsible-form-wrap" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h3>Register New Homestay Property</h3>
             <button type="button" class="action-btn-mini" onclick="toggleForm('createPropertyBox')">&times; Close</button>
@@ -188,22 +259,6 @@
         }
     </div>
 
-    <!-- Dashboard Tabs Navigation -->
-    <div class="tabs-nav-bar" id="dashboardTabsNav">
-        <button type="button" class="tab-nav-btn @(activeTab == "properties" ? "active" : "")" data-tab="tab-properties">
-            <span>&#127968;</span> Properties <span class="tab-count">@Model.Properties.Count</span>
-        </button>
-        <button type="button" class="tab-nav-btn @(activeTab == "rooms" ? "active" : "")" data-tab="tab-rooms">
-            <span>&#128716;</span> Rooms <span class="tab-count">@Model.Rooms.Count</span>
-        </button>
-        <button type="button" class="tab-nav-btn @(activeTab == "bookings" ? "active" : "")" data-tab="tab-bookings">
-            <span>&#128197;</span> Bookings <span class="tab-count">@Model.Bookings.Count</span>
-        </button>
-        <button type="button" class="tab-nav-btn @(activeTab == "invoices" ? "active" : "")" data-tab="tab-invoices">
-            <span>&#128176;</span> Invoices &amp; Revenue <span class="tab-count">@Model.Invoices.Count</span>
-        </button>
-    </div>
-
     <!-- ==================== TAB 1: PROPERTIES ==================== -->
     <div id="tab-properties" class="tab-pane @(activeTab == "properties" ? "active" : "")">
         <div class="content-card-header">
@@ -267,9 +322,14 @@
                                     </div>
                                     <div class="prop-meta-bar">
                                         <span>&#128716; <b>@prop.RoomsCount</b> rooms</span>
-                                        <button type="button" class="action-btn-mini" onclick="openAddRoomFor('@prop.Id')">
-                                            &#43; Add Room
-                                        </button>
+                                        <div style="display: flex; gap: 6px;">
+                                            <button type="button" class="action-btn-mini" style="background: #eef2ff; color: #3730a3;" onclick="viewApprovalHistory(@prop.Id, '@Html.Raw(Html.Encode(prop.Name))')">
+                                                &#128220; History
+                                            </button>
+                                            <button type="button" class="action-btn-mini" onclick="openAddRoomFor('@prop.Id')">
+                                                &#43; Add Room
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -306,7 +366,12 @@
                                     </div>
                                     <div class="prop-meta-bar">
                                         <span style="font-size: 0.8rem; color: #b45309;">&#128274; Room setup locked until approved</span>
-                                        <span class="status-pill pending">Under Review</span>
+                                        <div style="display: flex; gap: 6px; align-items: center;">
+                                            <button type="button" class="action-btn-mini" style="background: #fef3c7; color: #92400e;" onclick="viewApprovalHistory(@prop.Id, '@Html.Raw(Html.Encode(prop.Name))')">
+                                                &#128220; History
+                                            </button>
+                                            <span class="status-pill pending">Under Review</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -341,6 +406,12 @@
                                             <strong>Reason:</strong> @prop.RejectionReason
                                         </div>
                                     }
+                                    <div class="prop-meta-bar" style="margin-top: 8px;">
+                                        <span class="status-pill rejected">Action Required</span>
+                                        <button type="button" class="action-btn-mini" style="background: #fee2e2; color: #991b1b;" onclick="viewApprovalHistory(@prop.Id, '@Html.Raw(Html.Encode(prop.Name))')">
+                                            &#128220; View Timeline
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         }
@@ -588,6 +659,8 @@
             </div>
         }
     </div>
+        </main>
+    </div>
 </div>
 
 @section Scripts {
@@ -643,5 +716,76 @@
                 bookingsBtn.click();
             }
         }
+
+        async function viewApprovalHistory(propId, propName) {
+            const overlay = document.getElementById("historyModalOverlay");
+            const title = document.getElementById("historyModalTitle");
+            const subtitle = document.getElementById("historyModalSubtitle");
+            const content = document.getElementById("historyModalContent");
+
+            title.innerText = "Approval History";
+            subtitle.innerText = propName;
+            content.innerHTML = '<div style="text-align: center; padding: 24px; color: #64748b;">Loading history...</div>';
+            overlay.style.display = "flex";
+
+            try {
+                const res = await fetch(`/Home/PropertyApprovalHistory?id=${propId}`);
+                if (!res.ok) throw new Error("Could not load history");
+                const items = await res.json();
+
+                if (!items || items.length === 0) {
+                    content.innerHTML = '<div style="text-align: center; padding: 24px; color: #94a3b8;">No approval history recorded yet.</div>';
+                    return;
+                }
+
+                let html = '<div style="display: flex; flex-direction: column; gap: 14px;">';
+                items.forEach((item) => {
+                    const isApproved = item.status === 'Approved';
+                    const isRejected = item.status === 'Rejected';
+                    const badgeBg = isApproved ? '#dcfce7' : (isRejected ? '#fee2e2' : '#fef3c7');
+                    const badgeColor = isApproved ? '#166534' : (isRejected ? '#991b1b' : '#92400e');
+                    const icon = isApproved ? '&#10003;' : (isRejected ? '&#10060;' : '&#9203;');
+                    const dateStr = new Date(item.reviewedAt).toLocaleString();
+
+                    html += `
+                        <div style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; background: #f8fafc;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <span style="font-size: 0.8rem; font-weight: 700; padding: 3px 10px; border-radius: 9999px; background: ${badgeBg}; color: ${badgeColor}; display: inline-flex; align-items: center; gap: 4px;">
+                                    ${icon} ${item.status}
+                                </span>
+                                <span style="font-size: 0.78rem; color: #64748b;">${dateStr}</span>
+                            </div>
+                            ${item.reviewerName ? `<div style="font-size: 0.8rem; color: #475569; margin-bottom: 4px;"><strong>Reviewer:</strong> ${item.reviewerName}</div>` : ''}
+                            ${item.rejectionReason ? `<div style="font-size: 0.85rem; color: #991b1b; background: #fff5f5; padding: 8px 10px; border-radius: 6px; border-left: 3px solid #ef4444; margin-top: 6px;"><strong>Note / Denial Reason:</strong> ${item.rejectionReason}</div>` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                content.innerHTML = html;
+            } catch (err) {
+                content.innerHTML = `<div style="text-align: center; padding: 24px; color: #ef4444;">Error loading history: ${err.message}</div>`;
+            }
+        }
+
+        function closeHistoryModal() {
+            const overlay = document.getElementById("historyModalOverlay");
+            if (overlay) overlay.style.display = "none";
+        }
     </script>
+
+    <!-- Approval History Modal Overlay -->
+    <div id="historyModalOverlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+        <div style="background: #fff; border-radius: 16px; max-width: 580px; width: 92%; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.25); padding: 24px; position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
+                <div>
+                    <h3 id="historyModalTitle" style="margin: 0; font-size: 1.25rem; color: #1e293b;">Approval History</h3>
+                    <p id="historyModalSubtitle" style="margin: 4px 0 0; font-size: 0.85rem; color: #64748b;"></p>
+                </div>
+                <button type="button" onclick="closeHistoryModal()" style="background: transparent; border: none; font-size: 1.5rem; line-height: 1; cursor: pointer; color: #94a3b8;">&times;</button>
+            </div>
+            <div id="historyModalContent">
+                <div style="text-align: center; padding: 24px; color: #64748b;">Loading history...</div>
+            </div>
+        </div>
+    </div>
 }

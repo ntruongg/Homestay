@@ -41,7 +41,7 @@ public sealed class ProfileController(
         account.NgaySinh = request.DateOfBirth;
         account.GioiTinh = request.Gender;
         account.DienThoai = phone;
-        if (account.VaiTro == "OWNER")
+        if (account.MaVaiTro == VaiTro.OWNER)
         {
             account.ThongTinNganHang = request.BankInformation?.Trim();
             account.CCCD = request.CitizenId?.Trim();
@@ -74,14 +74,27 @@ public sealed class ProfileController(
         if (!int.TryParse(claim, out var accountId))
             return null;
 
-        return await db.TaiKhoans.SingleOrDefaultAsync(x => x.MaTaiKhoan == accountId && x.TrangThai, cancellationToken);
+        return await db.TaiKhoans
+            .Include(x => x.VaiTro)
+            .SingleOrDefaultAsync(x => x.MaTaiKhoan == accountId && x.TrangThai, cancellationToken);
     }
 
-    private static ProfileResponse ToResponse(TaiKhoan account) => new(
-        account.MaTaiKhoan, account.Email, account.HoTen, account.NgaySinh,
-        account.GioiTinh, account.DienThoai, account.VaiTro,
-        account.VaiTro == "OWNER" ? account.ThongTinNganHang : null,
-        account.VaiTro == "OWNER" ? account.CCCD : null);
+    private static ProfileResponse ToResponse(TaiKhoan account)
+    {
+        var roleName = account.VaiTro?.TenVaiTro ?? (account.MaVaiTro switch
+        {
+            VaiTro.OWNER => "OWNER",
+            VaiTro.ADMIN => "ADMIN",
+            _ => "GUEST"
+        });
+        var isOwner = account.MaVaiTro == VaiTro.OWNER || roleName == "OWNER";
+
+        return new(
+            account.MaTaiKhoan, account.Email, account.HoTen, account.NgaySinh,
+            account.GioiTinh, account.DienThoai, roleName,
+            isOwner ? account.ThongTinNganHang : null,
+            isOwner ? account.CCCD : null);
+    }
 }
 
 

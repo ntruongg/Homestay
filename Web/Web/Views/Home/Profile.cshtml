@@ -44,21 +44,55 @@
         </div>
     </div>
 
-    <!-- Tab Navigation -->
-    <div class="tabs-nav-bar" id="profileTabsNav">
-        <button type="button" class="tab-nav-btn @(activeTab == "personal" ? "active" : "")" data-tab="tab-personal">
-            <span>&#128100;</span> Personal Details
-        </button>
-        <button type="button" class="tab-nav-btn @(activeTab == "security" ? "active" : "")" data-tab="tab-security">
-            <span>&#128274;</span> Security &amp; Password
-        </button>
-        <button type="button" class="tab-nav-btn @(activeTab == "account" ? "active" : "")" data-tab="tab-account">
-            <span>&#128203;</span> Account Overview
-        </button>
-    </div>
+    <!-- Column Tabs Layout -->
+    <div class="column-tabs-layout">
+        <!-- Left Column: Tab Management Sidebar -->
+        <aside class="column-tabs-sidebar">
+            <span class="sidebar-section-title">Account Settings</span>
+            <nav class="column-tabs-nav" id="profileTabsNav">
+                <button type="button" class="tab-nav-btn column-tab-btn @(activeTab == "personal" ? "active" : "")" data-tab="tab-personal">
+                    <div class="column-tab-left">
+                        <div class="column-tab-icon">&#128100;</div>
+                        <div class="column-tab-meta">
+                            <span class="column-tab-title">Personal Details</span>
+                            <span class="column-tab-sub">Profile, contact &amp; bio</span>
+                        </div>
+                    </div>
+                    <span class="column-tab-arrow">&rsaquo;</span>
+                </button>
 
-    <!-- TAB 1: Personal Details -->
-    <div id="tab-personal" class="tab-pane @(activeTab == "personal" ? "active" : "")">
+                <button type="button" class="tab-nav-btn column-tab-btn @(activeTab == "security" ? "active" : "")" data-tab="tab-security">
+                    <div class="column-tab-left">
+                        <div class="column-tab-icon">&#128274;</div>
+                        <div class="column-tab-meta">
+                            <span class="column-tab-title">Security &amp; Password</span>
+                            <span class="column-tab-sub">Password credentials</span>
+                        </div>
+                    </div>
+                    <span class="column-tab-arrow">&rsaquo;</span>
+                </button>
+
+                <button type="button" class="tab-nav-btn column-tab-btn @(activeTab == "account" ? "active" : "")" data-tab="tab-account">
+                    <div class="column-tab-left">
+                        <div class="column-tab-icon">&#128203;</div>
+                        <div class="column-tab-meta">
+                            <span class="column-tab-title">Account Overview</span>
+                            <span class="column-tab-sub">Role &amp; membership</span>
+                        </div>
+                    </div>
+                    <span class="column-tab-arrow">&rsaquo;</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-tip-box">
+                &#128161; <strong>Tip:</strong> Keep your contact details up-to-date for instant booking notifications.
+            </div>
+        </aside>
+
+        <!-- Right Column: Tab Panes Content -->
+        <main class="column-tabs-content">
+            <!-- TAB 1: Personal Details -->
+            <div id="tab-personal" class="tab-pane @(activeTab == "personal" ? "active" : "")">
         <div class="content-card">
             <div class="content-card-header">
                 <div>
@@ -230,6 +264,8 @@
                 <a asp-action="Trips" class="button outline">View My Bookings &amp; Trips</a>
             </div>
         </div>
+    </div>
+        </main>
     </div>
 </div>
 

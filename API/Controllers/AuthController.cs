@@ -33,7 +33,7 @@ public sealed class AuthController(
             NgaySinh = request.DateOfBirth,
             GioiTinh = request.Gender,
             DienThoai = phone,
-            VaiTro = "GUEST",
+            MaVaiTro = VaiTro.GUEST,
             ThongTinNganHang = null,
             CCCD = null,
             TrangThai = true,
@@ -66,7 +66,7 @@ public sealed class AuthController(
             NgaySinh = request.DateOfBirth,
             GioiTinh = request.Gender,
             DienThoai = phone,
-            VaiTro = "OWNER",
+            MaVaiTro = VaiTro.OWNER,
             ThongTinNganHang = request.BankInformation.Trim(),
             CCCD = request.CitizenId.Trim(),
             TrangThai = true,
@@ -89,6 +89,7 @@ public sealed class AuthController(
         var email = request.Email.Trim().ToLowerInvariant();
 
         var account = await db.TaiKhoans
+            .Include(a => a.VaiTro)
             .SingleOrDefaultAsync(a => a.Email == email, cancellationToken);
 
         if (account is null ||
@@ -117,6 +118,12 @@ public sealed class AuthController(
     private AuthResponse CreateAuthResponse(TaiKhoan account)
     {
         var token = tokenService.CreateToken(account);
+        var roleName = account.VaiTro?.TenVaiTro ?? (account.MaVaiTro switch
+        {
+            VaiTro.OWNER => "OWNER",
+            VaiTro.ADMIN => "ADMIN",
+            _ => "GUEST"
+        });
 
         return new AuthResponse(
             token.Token,
@@ -125,6 +132,6 @@ public sealed class AuthController(
                 account.MaTaiKhoan,
                 account.Email,
                 account.HoTen,
-                account.VaiTro));
+                roleName));
     }
 }

@@ -19,7 +19,8 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
         var ownerId = GetAccountId();
 
         var properties = await db.CoSoLuuTrus.AsNoTracking()
-            .Where(p => p.MaChuCoSoLuuTru == ownerId && p.TrangThai)
+            .Where(p => p.MaChuCoSoLuuTru == ownerId)
+            .Include(p => p.LichSuDuyets)
             .Include(p => p.Phongs).ThenInclude(r => r.LoaiPhong)
             .ToListAsync(cancellationToken);
 
@@ -45,21 +46,28 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
             .Include(t => t.DonDatPhong).ThenInclude(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(r => r.CoSoLuuTru)
             .ToListAsync(cancellationToken);
 
-        var propDtos = properties.Select(p => new OwnerPropertyDto(
-            p.MaCoSoLuuTru,
-            p.TenCoSoLuuTru,
-            p.DiaChi,
-            p.PhuongXa,
-            p.ThanhPho,
-            p.DienThoai,
-            p.Email,
-            p.LoaiHinh,
-            p.TrangThaiDuyet ?? "Pending",
-            p.ChinhSach,
-            p.LyDoTuChoi,
-            p.Phongs.Count,
-            coverImages.FirstOrDefault(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru)?.UrlHinhAnh
-        )).ToList();
+        var propDtos = properties.Select(p =>
+        {
+            var latestApproval = p.LichSuDuyets.OrderByDescending(h => h.NgayDuyet).FirstOrDefault();
+            var approvalStatus = p.TrangThai ? "Approved" : (latestApproval?.TrangThaiDuyet ?? "Pending");
+            var rejectionReason = latestApproval?.LyDoTuChoi;
+
+            return new OwnerPropertyDto(
+                p.MaCoSoLuuTru,
+                p.TenCoSoLuuTru,
+                p.DiaChi,
+                p.PhuongXa,
+                p.ThanhPho,
+                p.DienThoai,
+                p.Email,
+                p.LoaiHinh,
+                approvalStatus,
+                p.ChinhSach,
+                rejectionReason,
+                p.Phongs.Count,
+                coverImages.FirstOrDefault(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru)?.UrlHinhAnh
+            );
+        }).ToList();
 
         var roomDtos = allRooms.Select(r => new OwnerRoomDto(
             r.MaPhong,
@@ -119,8 +127,9 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
                 .Where(b => b.Status is "Confirmed" or "CheckedIn" or "CheckedOut")
                 .Sum(b => b.TotalAmount);
 
-        var approvedProperties = properties.Count(p => p.TrangThaiDuyet == "Approved" || p.TrangThaiDuyet == "APPROVED");
-        var pendingProperties = properties.Count(p => p.TrangThaiDuyet == "Pending");
+        var approvedProperties = properties.Count(p => p.TrangThai);
+        var pendingProperties = properties.Count(p => !p.TrangThai &&
+            (p.LichSuDuyets.OrderByDescending(h => h.NgayDuyet).FirstOrDefault()?.TrangThaiDuyet ?? "Pending") == "Pending");
 
         var summary = new OwnerSummaryDto(
             properties.Count,

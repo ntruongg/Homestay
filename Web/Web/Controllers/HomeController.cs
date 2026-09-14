@@ -355,6 +355,13 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
     }
 
+    [HttpGet]
+    public async Task<IActionResult> PropertyApprovalHistory(int id, CancellationToken cancellationToken)
+    {
+        var history = await api.GetPropertyApprovalHistoryAsync(id, cancellationToken);
+        return Json(history);
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateRoom(

@@ -3,6 +3,9 @@ using System.Text;
 using System.IdentityModel.Tokens.Jwt;
 using API.Models;
 using API.Services;
+using API.Services.Auth;
+using API.Services.Cloudinary;
+using API.Services.Email;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -10,11 +13,15 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddMemoryCache();
 builder.Services.AddDbContext<HomestayDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<IPasswordHasher<TaiKhoan>, PasswordHasher<TaiKhoan>>();
 builder.Services.AddSingleton<JwtTokenService>();
+builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
+builder.Services.AddSingleton<IRazorTemplateRenderer, RazorTemplateRenderer>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IOtpService, OtpService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("Jwt:Key is not configured.");
@@ -81,7 +88,7 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<HomestayDbContext>();
         context.Database.Migrate();
     }
-    catch (Exception ex)
+    catch (Exception)
     {
     }
 }

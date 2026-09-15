@@ -1,0 +1,69 @@
+@model API.DTOs.Email.AccountOtpEmailModel
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mã xác thực OTP Stayly</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 32px 16px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" style="max-width: 580px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 32px 32px 28px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 26px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">STAYLY</h1>
+                            <p style="margin: 6px 0 0; color: #bfdbfe; font-size: 14px; font-weight: 500;">Nền tảng Đặt phòng Homestay Thông minh</p>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 36px 32px 28px;">
+                            <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 700; color: #0f172a;">Xác thực tài khoản của bạn</h2>
+                            <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.6; color: #475569;">
+                                Xin chào <strong>@Model.RecipientName</strong>,
+                            </p>
+                            <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.6; color: #475569;">
+                                Cảm ơn bạn đã đăng ký tài khoản tại Stayly. Để hoàn tất xác thực danh tính, vui lòng sử dụng mã xác thực (OTP) dưới đây:
+                            </p>
+
+                            <!-- OTP Code Box -->
+                            <div style="background-color: #f1f5f9; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0; border: 1px dashed #cbd5e1;">
+                                <span style="font-size: 13px; font-weight: 600; text-transform: uppercase; color: #64748b; letter-spacing: 1px; display: block; margin-bottom: 8px;">Mã xác thực OTP của bạn</span>
+                                <div style="font-family: 'Courier New', Courier, monospace; font-size: 38px; font-weight: 800; letter-spacing: 8px; color: #2563eb; padding: 4px 0;">
+                                    @Model.OtpCode
+                                </div>
+                                <span style="font-size: 13px; color: #94a3b8; display: block; margin-top: 8px;">Mã có hiệu lực trong vòng <strong>@Model.ExpireMinutes phút</strong></span>
+                            </div>
+
+                            <!-- Security Warning -->
+                            <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 4px; margin: 24px 0;">
+                                <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #92400e;">
+                                    <strong>Bảo mật tài khoản:</strong> Tuyệt đối không chia sẻ mã này cho bất kỳ ai, bao gồm cả nhân viên hỗ trợ Stayly.
+                                </p>
+                            </div>
+
+                            <p style="margin: 24px 0 0; font-size: 14px; line-height: 1.6; color: #64748b;">
+                                Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này hoặc liên hệ hỗ trợ tại <a href="mailto:@Model.SupportEmail" style="color: #2563eb; text-decoration: none;">@Model.SupportEmail</a>.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8fafc; padding: 24px 32px; border-top: 1px solid #e2e8f0; text-align: center;">
+                            <p style="margin: 0; font-size: 12px; color: #94a3b8;">
+                                &copy; @DateTime.UtcNow.Year Stayly. Tất cả các quyền được bảo lưu.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

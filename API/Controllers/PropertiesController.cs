@@ -1,9 +1,13 @@
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using API.Data;
+using API.DTOs.Email;
 using API.DTOs.Properties;
 using API.Models;
+using API.Services;
+using API.Services.Cloudinary;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +15,10 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/properties")]
-public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
+public sealed class PropertiesController(
+    HomestayDbContext db,
+    IEmailService emailService,
+    ICloudinaryService cloudinaryService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<PropertySummaryResponse>>> GetProperties(
@@ -89,7 +96,105 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
         db.LichSuDuyets.Add(initialHistory);
 
         await db.SaveChangesAsync(cancellationToken);
+
+        // Send email to owner that property submission was received and is under review
+        var owner = await db.TaiKhoans.FindAsync([ownerId], cancellationToken);
+        var recipientEmail = property.Email ?? owner?.Email;
+        if (!string.IsNullOrWhiteSpace(recipientEmail))
+        {
+            var addressParts = new[] { property.DiaChi, property.PhuongXa, property.ThanhPho }
+                .Where(s => !string.IsNullOrWhiteSpace(s));
+
+            var emailModel = new PropertySubmissionEmailModel(
+                OwnerName: owner?.HoTen ?? "Đối tác",
+                PropertyName: property.TenCoSoLuuTru,
+                PropertyAddress: string.Join(", ", addressParts),
+                PropertyType: property.LoaiHinh,
+                SubmissionDate: DateTime.UtcNow,
+                ReferenceId: property.MaCoSoLuuTru
+            );
+
+            var subject = $"[Stayly] Đã tiếp nhận hồ sơ đăng ký cơ sở: {property.TenCoSoLuuTru}";
+            await emailService.SendTemplateEmailAsync(
+                recipientEmail,
+                subject,
+                "PropertySubmissionReceived",
+                emailModel,
+                cancellationToken);
+        }
+
         return CreatedAtAction(nameof(GetProperty), new { id = property.MaCoSoLuuTru }, new { property.MaCoSoLuuTru });
+    }
+
+    [Authorize(Roles = "OWNER")]
+    [HttpPost("{id:int}/photos")]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<IReadOnlyList<string>>> UploadPropertyPhotos(
+        int id,
+        [FromForm] List<IFormFile> files,
+        CancellationToken cancellationToken)
+    {
+        var ownerId = GetAccountId();
+        var property = await db.CoSoLuuTrus.FirstOrDefaultAsync(
+            p => p.MaCoSoLuuTru == id && p.MaChuCoSoLuuTru == ownerId, cancellationToken);
+        if (property is null)
+            return NotFound("Property not found or you do not have permission.");
+
+        if (files == null || files.Count == 0)
+            return BadRequest("No photo files provided.");
+
+        var uploads = await cloudinaryService.UploadImagesAsync(
+            files,
+            folder: $"stayly/properties/{id}",
+            cancellationToken: cancellationToken);
+
+        var photoEntities = uploads.Select(u => new HinhAnh
+        {
+            MaCoSoLuuTru = id,
+            MaPhong = null,
+            UrlHinhAnh = u.SecureUrl
+        }).ToList();
+
+        db.HinhAnhs.AddRange(photoEntities);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Ok(photoEntities.Select(p => p.UrlHinhAnh).ToList());
+    }
+
+    [Authorize(Roles = "OWNER")]
+    [HttpPost("{propertyId:int}/rooms/{roomId:int}/photos")]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<IReadOnlyList<string>>> UploadRoomPhotos(
+        int propertyId,
+        int roomId,
+        [FromForm] List<IFormFile> files,
+        CancellationToken cancellationToken)
+    {
+        var ownerId = GetAccountId();
+        var room = await db.Phongs.Include(r => r.CoSoLuuTru)
+            .FirstOrDefaultAsync(r => r.MaPhong == roomId && r.MaCoSoLuuTru == propertyId && r.CoSoLuuTru.MaChuCoSoLuuTru == ownerId, cancellationToken);
+        if (room is null)
+            return NotFound("Room not found or you do not have permission.");
+
+        if (files == null || files.Count == 0)
+            return BadRequest("No photo files provided.");
+
+        var uploads = await cloudinaryService.UploadImagesAsync(
+            files,
+            folder: $"stayly/rooms/{roomId}",
+            cancellationToken: cancellationToken);
+
+        var photoEntities = uploads.Select(u => new HinhAnh
+        {
+            MaCoSoLuuTru = propertyId,
+            MaPhong = roomId,
+            UrlHinhAnh = u.SecureUrl
+        }).ToList();
+
+        db.HinhAnhs.AddRange(photoEntities);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Ok(photoEntities.Select(p => p.UrlHinhAnh).ToList());
     }
 
     [HttpGet("{id:int}/approval-history")]

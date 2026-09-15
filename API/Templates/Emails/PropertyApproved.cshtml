@@ -1,0 +1,71 @@
+@model API.DTOs.Email.PropertyApprovalEmailModel
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chúc mừng! Cơ sở lưu trú đã được duyệt</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 32px 16px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" style="max-width: 580px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 32px 32px 28px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 26px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">STAYLY</h1>
+                            <p style="margin: 6px 0 0; color: #d1fae5; font-size: 14px; font-weight: 500;">Thông báo Phê duyệt Chính thức</p>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 36px 32px 28px;">
+                            <div style="display: inline-block; background-color: #d1fae5; color: #047857; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 700; margin-bottom: 16px; text-transform: uppercase;">
+                                ✓ Đã phê duyệt
+                            </div>
+                            <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 700; color: #0f172a;">Chúc mừng! Cơ sở lưu trú của bạn đã sẵn sàng</h2>
+                            <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.6; color: #475569;">
+                                Xin chào đối tác <strong>@Model.OwnerName</strong>,
+                            </p>
+                            <p style="margin: 0 0 20px; font-size: 15px; line-height: 1.6; color: #475569;">
+                                Ban Quản trị Stayly trân trọng thông báo cơ sở lưu trú <strong>@Model.PropertyName</strong> (Mã: #@Model.PropertyId) đã được kiểm duyệt và phê duyệt thành công vào ngày @Model.ApprovalDate.ToString("dd/MM/yyyy").
+                            </p>
+
+                            <!-- Success Banner -->
+                            <div style="background-color: #f0fdf4; border-radius: 12px; padding: 20px; border: 1px solid #bbf7d0; margin: 20px 0;">
+                                <h3 style="margin: 0 0 8px; font-size: 15px; font-weight: 700; color: #15803d;">Cơ sở đã chính thức hoạt động!</h3>
+                                <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #166534;">
+                                    Cơ sở của bạn đã được kích hoạt trên hệ thống tìm kiếm Stayly. Giờ đây bạn có thể thêm phòng, cài đặt giá niêm yết và đăng tải hình ảnh đẹp để đón những lượt khách đầu tiên.
+                                </p>
+                            </div>
+
+                            <!-- CTA Button -->
+                            <div style="text-align: center; margin: 32px 0 24px;">
+                                <a href="@Model.DashboardUrl" style="display: inline-block; background: #10b981; color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 10px; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">
+                                    Truy cập Bảng điều khiển Đối tác
+                                </a>
+                            </div>
+
+                            <p style="margin: 24px 0 0; font-size: 14px; line-height: 1.6; color: #64748b;">
+                                Nếu cần hỗ trợ trong quá trình quản lý phòng và tiếp đón khách, đội ngũ đối tác Stayly luôn sẵn sàng đồng hành cùng bạn.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8fafc; padding: 24px 32px; border-top: 1px solid #e2e8f0; text-align: center;">
+                            <p style="margin: 0; font-size: 12px; color: #94a3b8;">
+                                &copy; @DateTime.UtcNow.Year Stayly Partner Hub.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

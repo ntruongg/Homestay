@@ -3,7 +3,24 @@
     "DefaultConnection": "Server=tensv;Database=HOMESTAY_DB;Trusted_Connection=True;TrustServerCertificate=True;"
   },
   "Jwt": {
-    "Key": "keybimat" //t cài key trên máy riêng nên đoạn này nhờ ai tạo code gen key nhé
+    "Key": "keybimat"
+  },
+  "Cloudinary": {
+    "CloudName": "your_cloud_name",
+    "ApiKey": "your_api_key",
+    "ApiSecret": "your_api_secret"
+  },
+  "Smtp": {
+    "Host": "smtp.gmail.com",
+    "Port": 587,
+    "Username": "your_email@gmail.com",
+    "Password": "your_16_char_app_password",
+    "EnableSsl": true,
+    "FromEmail": "no-reply@stayly.com",
+    "FromName": "Stayly Support"
+  },
+  "Auth": {
+    "RequireOtp": false
   },
   "Logging": {
     "LogLevel": {

@@ -1,0 +1,73 @@
+@model API.DTOs.Email.PropertyRejectionEmailModel
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thông báo kết quả xét duyệt cơ sở lưu trú</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 32px 16px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" style="max-width: 580px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #e11d48 0%, #be123c 100%); padding: 32px 32px 28px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 26px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">STAYLY</h1>
+                            <p style="margin: 6px 0 0; color: #fecdd3; font-size: 14px; font-weight: 500;">Thông báo Kết quả Thẩm định</p>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 36px 32px 28px;">
+                            <div style="display: inline-block; background-color: #ffe4e6; color: #be123c; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 700; margin-bottom: 16px; text-transform: uppercase;">
+                                Chưa được duyệt
+                            </div>
+                            <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 700; color: #0f172a;">Hồ sơ cơ sở lưu trú cần được điều chỉnh</h2>
+                            <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.6; color: #475569;">
+                                Xin chào đối tác <strong>@Model.OwnerName</strong>,
+                            </p>
+                            <p style="margin: 0 0 20px; font-size: 15px; line-height: 1.6; color: #475569;">
+                                Cảm ơn bạn đã quan tâm và nộp hồ sơ đăng ký cơ sở lưu trú <strong>@Model.PropertyName</strong> (Mã: #@Model.PropertyId). Sau khi thẩm định giấy tờ và các điều kiện kinh doanh, chúng tôi rất tiếc phải thông báo hồ sơ này hiện chưa thể phê duyệt.
+                            </p>
+
+                            <!-- Rejection Reason Alert Box -->
+                            <div style="background-color: #fff1f2; border-radius: 12px; padding: 20px; border: 1px solid #fecdd3; border-left: 5px solid #e11d48; margin: 20px 0;">
+                                <span style="font-size: 12px; font-weight: 700; color: #be123c; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">Lý do từ chối:</span>
+                                <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #9f1239; font-weight: 500;">
+                                    @Model.RejectionReason
+                                </p>
+                            </div>
+
+                            <div style="background-color: #f8fafc; border-radius: 12px; padding: 18px; border: 1px solid #e2e8f0; margin: 24px 0;">
+                                <h4 style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #334155;">Hướng dẫn khắc phục:</h4>
+                                <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: #64748b;">
+                                    <li>Kiểm tra lại hình ảnh và tính hợp lệ của Giấy phép Kinh doanh, Giấy tờ PCCC, ANTT.</li>
+                                    <li>Đảm bảo thông tin địa chỉ và số điện thoại liên hệ chính xác.</li>
+                                    <li>Đăng nhập vào Bảng điều khiển Đối tác để cập nhật lại thông tin theo phản hồi.</li>
+                                </ul>
+                            </div>
+
+                            <p style="margin: 24px 0 0; font-size: 14px; line-height: 1.6; color: #64748b;">
+                                Nếu bạn có thắc mắc hoặc cần giải đáp chi tiết, vui lòng gửi phản hồi về email <a href="mailto:@Model.SupportEmail" style="color: #2563eb; text-decoration: none;">@Model.SupportEmail</a>.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8fafc; padding: 24px 32px; border-top: 1px solid #e2e8f0; text-align: center;">
+                            <p style="margin: 0; font-size: 12px; color: #94a3b8;">
+                                &copy; @DateTime.UtcNow.Year Stayly Partner Compliance.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

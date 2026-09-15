@@ -159,6 +159,15 @@ public sealed class ProcessRefundRequest
     public string DecisionNote { get; set; } = string.Empty;
 }
 
+public sealed class DenyRefundRequest
+{
+    [Required, StringLength(500, MinimumLength = 3, ErrorMessage = "Please provide the denial reason.")]
+    public string Reason { get; set; } = string.Empty;
+
+    [StringLength(1000)]
+    public string? DecisionNote { get; set; }
+}
+
 public sealed record RefundResponse(
     int BookingId,
     decimal RefundAmount,

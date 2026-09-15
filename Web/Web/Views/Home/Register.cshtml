@@ -19,22 +19,22 @@
 
         @if (isPartner)
         {
-            <form asp-action="RegisterOwner" method="post">
+            <form id="registerForm" asp-action="RegisterOwner" method="post">
                 <partial name="_OwnerRegistrationFields" model="Model" />
                 @Html.AntiForgeryToken()
 
-                <button class="button" type="submit">
+                <button id="submitRegisterBtn" class="button" type="submit">
                     Register as owner
                 </button>
             </form>
         }
         else
         {
-            <form asp-action="Register" asp-route-partner="false" method="post">
+            <form id="registerForm" asp-action="Register" asp-route-partner="false" method="post">
                 <partial name="_GuestRegistrationFields" model="Model" />
                 @Html.AntiForgeryToken()
 
-                <button class="button" type="submit">
+                <button id="submitRegisterBtn" class="button" type="submit">
                     Create guest account
                 </button>
             </form>
@@ -48,3 +48,471 @@
         </p>
     </div>
 </section>
+
+<!-- Modern OTP Verification Popup Modal -->
+<div id="otpModalBackdrop" class="otp-backdrop" style="display: none;">
+    <div class="otp-modal-box">
+        <button type="button" class="otp-close-btn" id="closeOtpModalBtn" aria-label="Đóng">&times;</button>
+        
+        <div class="otp-icon-header">
+            <div class="otp-shield-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="m9 12 2 2 4-4"/>
+                </svg>
+            </div>
+            <h3>Xác thực mã OTP</h3>
+            <p class="otp-subtitle">
+                Chúng tôi đã gửi mã xác thực gồm 6 chữ số đến email:
+                <br/><strong id="otpEmailDisplay" style="color: #0f172a; word-break: break-all;"></strong>
+            </p>
+        </div>
+
+        <div id="otpModalAlert" class="otp-alert" style="display: none;"></div>
+
+        <div class="otp-input-wrapper">
+            <label for="otpCodeEntry" class="otp-input-label">Nhập 6 chữ số OTP</label>
+            <input type="text"
+                   id="otpCodeEntry"
+                   maxlength="6"
+                   pattern="\d{6}"
+                   inputmode="numeric"
+                   autocomplete="one-time-code"
+                   placeholder="· · · · · ·"
+                   class="otp-digit-input" />
+        </div>
+
+        <div class="otp-timer-row">
+            <span>Mã hết hạn trong: <strong id="otpCountdown">10:00</strong></span>
+        </div>
+
+        <div class="otp-actions">
+            <button type="button" id="confirmOtpBtn" class="button otp-confirm-btn">
+                Xác nhận & Hoàn tất đăng ký
+            </button>
+
+            <button type="button" id="resendOtpBtn" class="otp-resend-btn" disabled>
+                Chưa nhận được mã? <span id="resendText">Gửi lại (60s)</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .otp-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(6px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999;
+        padding: 16px;
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    .otp-modal-box {
+        background: #ffffff;
+        border-radius: 20px;
+        max-width: 440px;
+        width: 100%;
+        padding: 32px 28px 28px;
+        position: relative;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        text-align: center;
+        animation: popUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        border: 1px solid #e2e8f0;
+    }
+
+    .otp-close-btn {
+        position: absolute;
+        top: 16px;
+        right: 18px;
+        background: transparent;
+        border: none;
+        font-size: 26px;
+        line-height: 1;
+        color: #94a3b8;
+        cursor: pointer;
+        transition: color 0.15s;
+    }
+    .otp-close-btn:hover {
+        color: #334155;
+    }
+
+    .otp-icon-header {
+        margin-bottom: 20px;
+    }
+
+    .otp-shield-icon {
+        width: 56px;
+        height: 56px;
+        background: #eff6ff;
+        color: #2563eb;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12px;
+        box-shadow: 0 0 0 8px #f8fafc;
+    }
+
+    .otp-icon-header h3 {
+        margin: 0 0 8px 0;
+        font-size: 21px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .otp-subtitle {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #64748b;
+    }
+
+    .otp-alert {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 13px;
+        margin-bottom: 16px;
+        text-align: left;
+    }
+
+    .otp-input-wrapper {
+        margin: 20px 0 12px;
+    }
+
+    .otp-input-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #64748b;
+        margin-bottom: 8px;
+    }
+
+    .otp-digit-input {
+        width: 100%;
+        box-sizing: border-box;
+        text-align: center;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: 12px;
+        padding: 12px 8px 12px 20px;
+        border: 2px solid #cbd5e1;
+        border-radius: 12px;
+        outline: none;
+        color: #1e293b;
+        background: #f8fafc;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .otp-digit-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        background: #ffffff;
+    }
+
+    .otp-timer-row {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 20px;
+    }
+
+    .otp-timer-row strong {
+        color: #2563eb;
+    }
+
+    .otp-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .otp-confirm-btn {
+        width: 100%;
+        padding: 12px;
+        font-size: 15px;
+        font-weight: 600;
+        border-radius: 10px;
+        background: #2563eb;
+        color: #ffffff;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.15s;
+    }
+    .otp-confirm-btn:hover {
+        background: #1d4ed8;
+    }
+
+    .otp-resend-btn {
+        background: transparent;
+        border: none;
+        font-size: 13px;
+        color: #64748b;
+        cursor: pointer;
+        padding: 6px;
+    }
+    .otp-resend-btn:not([disabled]) {
+        color: #2563eb;
+        font-weight: 600;
+    }
+    .otp-resend-btn[disabled] {
+        cursor: not-allowed;
+        color: #94a3b8;
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @@keyframes popUp {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+</style>
+
+@section Scripts {
+<script>
+    (function () {
+        const form = document.getElementById('registerForm');
+        const submitBtn = document.getElementById('submitRegisterBtn');
+        const otpModal = document.getElementById('otpModalBackdrop');
+        const closeBtn = document.getElementById('closeOtpModalBtn');
+        const confirmBtn = document.getElementById('confirmOtpBtn');
+        const resendBtn = document.getElementById('resendOtpBtn');
+        const resendText = document.getElementById('resendText');
+        const otpInput = document.getElementById('otpCodeEntry');
+        const otpEmailDisplay = document.getElementById('otpEmailDisplay');
+        const otpCountdown = document.getElementById('otpCountdown');
+        const otpAlert = document.getElementById('otpModalAlert');
+
+        let countdownInterval = null;
+        let resendInterval = null;
+        let countdownSeconds = 600; // 10 minutes
+        let resendCooldown = 60;
+
+        if (!form) return;
+
+        form.addEventListener('submit', async function (e) {
+            const hiddenOtp = document.getElementById('OtpCodeInput');
+            if (hiddenOtp && hiddenOtp.value && hiddenOtp.value.trim().length === 6) {
+                // OTP already entered and confirmed, allow form to submit
+                return true;
+            }
+
+            e.preventDefault();
+
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const emailInput = document.getElementById('EmailInput') || form.querySelector('input[type="email"]');
+            const fullNameInput = document.getElementById('FullNameInput') || form.querySelector('input[name="FullName"]');
+
+            const email = emailInput ? emailInput.value.trim() : '';
+            const fullName = fullNameInput ? fullNameInput.value.trim() : '';
+
+            if (!email) {
+                alert('Vui lòng nhập địa chỉ email hợp lệ.');
+                return;
+            }
+
+            // Trigger OTP sending
+            const originalBtnText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Đang gửi mã OTP...';
+
+            try {
+                const response = await fetch('/Home/RequestRegisterOtp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email: email, fullName: fullName, purpose: 'Register' })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    alert(data.message || 'Không thể gửi mã OTP. Vui lòng thử lại.');
+                    return;
+                }
+
+                // Show modal
+                otpEmailDisplay.textContent = email;
+                showOtpModal();
+            } catch (err) {
+                alert('Lỗi kết nối khi gửi mã OTP. Vui lòng kiểm tra lại mạng hoặc thử lại sau.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+            }
+        });
+
+        function showOtpModal() {
+            otpModal.style.display = 'flex';
+            otpInput.value = '';
+            otpAlert.style.display = 'none';
+            otpInput.focus();
+
+            startCountdown();
+            startResendCooldown();
+        }
+
+        function hideOtpModal() {
+            otpModal.style.display = 'none';
+            clearInterval(countdownInterval);
+            clearInterval(resendInterval);
+        }
+
+        closeBtn.addEventListener('click', hideOtpModal);
+
+        otpModal.addEventListener('click', function (e) {
+            if (e.target === otpModal) {
+                hideOtpModal();
+            }
+        });
+
+        // Auto format and only allow digits
+        otpInput.addEventListener('input', function () {
+            this.value = this.value.replace(/\D/g, '').slice(0, 6);
+            if (this.value.length === 6) {
+                confirmBtn.focus();
+            }
+        });
+
+        otpInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmBtn.click();
+            }
+        });
+
+        confirmBtn.addEventListener('click', function () {
+            const code = otpInput.value.trim();
+            if (code.length !== 6) {
+                showModalError('Vui lòng nhập đủ 6 chữ số mã OTP.');
+                otpInput.focus();
+                return;
+            }
+
+            // Set hidden field and submit the main registration form
+            const hiddenOtp = document.getElementById('OtpCodeInput');
+            if (hiddenOtp) {
+                hiddenOtp.value = code;
+            }
+
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Đang xử lý đăng ký...';
+
+            form.submit();
+        });
+
+        resendBtn.addEventListener('click', async function () {
+            if (resendBtn.disabled) return;
+
+            const emailInput = document.getElementById('EmailInput') || form.querySelector('input[type="email"]');
+            const fullNameInput = document.getElementById('FullNameInput') || form.querySelector('input[name="FullName"]');
+
+            const email = emailInput ? emailInput.value.trim() : '';
+            const fullName = fullNameInput ? fullNameInput.value.trim() : '';
+
+            resendBtn.disabled = true;
+            resendText.textContent = 'Đang gửi...';
+
+            try {
+                const response = await fetch('/Home/RequestRegisterOtp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, fullName: fullName, purpose: 'Register' })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    showModalError(data.message || 'Không thể gửi lại mã OTP.');
+                    resendBtn.disabled = false;
+                    resendText.textContent = 'Gửi lại ngay';
+                    return;
+                }
+
+                showModalSuccess('Mã OTP mới đã được gửi tới email của bạn!');
+                startCountdown();
+                startResendCooldown();
+            } catch (err) {
+                showModalError('Lỗi kết nối khi gửi lại mã OTP.');
+                resendBtn.disabled = false;
+                resendText.textContent = 'Gửi lại ngay';
+            }
+        });
+
+        function showModalError(msg) {
+            otpAlert.style.display = 'block';
+            otpAlert.style.background = '#fef2f2';
+            otpAlert.style.color = '#991b1b';
+            otpAlert.style.borderColor = '#fecaca';
+            otpAlert.textContent = msg;
+        }
+
+        function showModalSuccess(msg) {
+            otpAlert.style.display = 'block';
+            otpAlert.style.background = '#f0fdf4';
+            otpAlert.style.color = '#15803d';
+            otpAlert.style.borderColor = '#bbf7d0';
+            otpAlert.textContent = msg;
+        }
+
+        function startCountdown() {
+            clearInterval(countdownInterval);
+            countdownSeconds = 600;
+            updateCountdownDisplay();
+
+            countdownInterval = setInterval(function () {
+                countdownSeconds--;
+                if (countdownSeconds <= 0) {
+                    clearInterval(countdownInterval);
+                    otpCountdown.textContent = '00:00 (Hết hạn)';
+                    showModalError('Mã OTP đã hết hiệu lực. Vui lòng bấm "Gửi lại" để nhận mã mới.');
+                    return;
+                }
+                updateCountdownDisplay();
+            }, 1000);
+        }
+
+        function updateCountdownDisplay() {
+            const minutes = Math.floor(countdownSeconds / 60);
+            const seconds = countdownSeconds % 60;
+            otpCountdown.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function startResendCooldown() {
+            clearInterval(resendInterval);
+            resendCooldown = 60;
+            resendBtn.disabled = true;
+            resendText.textContent = `Gửi lại (${resendCooldown}s)`;
+
+            resendInterval = setInterval(function () {
+                resendCooldown--;
+                if (resendCooldown <= 0) {
+                    clearInterval(resendInterval);
+                    resendBtn.disabled = false;
+                    resendText.textContent = 'Gửi lại mã';
+                    return;
+                }
+                resendText.textContent = `Gửi lại (${resendCooldown}s)`;
+            }, 1000);
+        }
+    })();
+</script>
+}

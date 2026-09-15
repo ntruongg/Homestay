@@ -50,6 +50,31 @@ public sealed class HomestayApiClient(HttpClient http)
         return SendAuthAsync("auth/register/owner", input, cancellationToken);
     }
 
+    public async Task<(bool Success, string? Message, string? Error)> SendOtpAsync(
+        string email,
+        string? fullName,
+        string purpose = "Register",
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await http.PostAsJsonAsync("auth/send-otp", new { email, fullName, purpose }, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                var data = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>(cancellationToken: cancellationToken);
+                var message = data.TryGetProperty("message", out var m) ? m.GetString() : "Mã OTP đã được gửi.";
+                return (true, message, null);
+            }
+
+            var error = await response.Content.ReadAsStringAsync(cancellationToken);
+            return (false, null, error);
+        }
+        catch (Exception ex)
+        {
+            return (false, null, ex.Message);
+        }
+    }
+
     public async Task<(bool Success, Profile? Result, string? Error, int StatusCode)> GetProfileAsync(
         string token,
         CancellationToken cancellationToken = default)

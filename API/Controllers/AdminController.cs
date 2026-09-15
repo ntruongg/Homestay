@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.Data;
 using API.DTOs.Admin;
+using API.DTOs.Email;
 using API.DTOs.Properties;
 using API.Models;
 using API.Services;
@@ -236,20 +237,18 @@ public sealed class AdminController(HomestayDbContext db, IEmailService emailSer
         db.LichSuDuyets.Add(history);
         await db.SaveChangesAsync(cancellationToken);
 
-        // Notify owner via email
+        // Notify owner via email using Razor template
         var ownerEmail = property.ChuCoSoLuuTru.Email;
         var subject = $"[Stayly] Cơ sở lưu trú \"{property.TenCoSoLuuTru}\" của bạn đã được phê duyệt!";
-        var bodyHtml = $@"
-            <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-                <h2 style='color: #10b981;'>Chúc mừng! Cơ sở lưu trú đã được kích hoạt thành công</h2>
-                <p>Xin chào <strong>{property.ChuCoSoLuuTru.HoTen}</strong>,</p>
-                <p>Cơ sở lưu trú <strong>{property.TenCoSoLuuTru}</strong> của bạn đã được đội ngũ Quản trị viên Stayly xem xét và phê duyệt thành công.</p>
-                <p>Hiện tại, cơ sở lưu trú của bạn đã xuất hiện trên trang tìm kiếm và bạn có thể bắt đầu tạo phòng để đón những vị khách đầu tiên.</p>
-                <br/>
-                <p style='color: #6b7280; font-size: 13px;'>Trân trọng,<br/>Đội ngũ kiểm duyệt Stayly</p>
-            </div>";
+        var approvalModel = new PropertyApprovalEmailModel(
+            OwnerName: property.ChuCoSoLuuTru.HoTen,
+            PropertyName: property.TenCoSoLuuTru,
+            PropertyId: property.MaCoSoLuuTru,
+            DashboardUrl: "http://localhost:5173/owner/properties",
+            ApprovalDate: DateTime.UtcNow
+        );
 
-        await emailService.SendEmailAsync(ownerEmail, subject, bodyHtml, cancellationToken);
+        await emailService.SendTemplateEmailAsync(ownerEmail, subject, "PropertyApproved", approvalModel, cancellationToken);
 
         return Ok(new { message = $"Property #{id} has been approved and activated." });
     }
@@ -284,24 +283,18 @@ public sealed class AdminController(HomestayDbContext db, IEmailService emailSer
         db.LichSuDuyets.Add(history);
         await db.SaveChangesAsync(cancellationToken);
 
-        // Notify owner via email
+        // Notify owner via email using Razor template
         var ownerEmail = property.ChuCoSoLuuTru.Email;
         var subject = $"[Stayly] Thông báo từ chối duyệt cơ sở lưu trú \"{property.TenCoSoLuuTru}\"";
-        var bodyHtml = $@"
-            <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-                <h2 style='color: #ef4444;'>Thông báo kết quả duyệt cơ sở lưu trú</h2>
-                <p>Xin chào <strong>{property.ChuCoSoLuuTru.HoTen}</strong>,</p>
-                <p>Rất tiếc, hồ sơ đăng ký cơ sở lưu trú <strong>{property.TenCoSoLuuTru}</strong> của bạn chưa được phê duyệt.</p>
-                <div style='background: #fee2e2; border-left: 4px solid #ef4444; padding: 12px; margin: 16px 0;'>
-                    <strong>Lý do từ chối:</strong>
-                    <p style='margin: 6px 0 0 0;'>{rejectionReason}</p>
-                </div>
-                <p>Vui lòng kiểm tra lại thông tin giấy tờ hoặc liên hệ đội ngũ hỗ trợ để được hướng dẫn bổ sung.</p>
-                <br/>
-                <p style='color: #6b7280; font-size: 13px;'>Trân trọng,<br/>Đội ngũ kiểm duyệt Stayly</p>
-            </div>";
+        var rejectionModel = new PropertyRejectionEmailModel(
+            OwnerName: property.ChuCoSoLuuTru.HoTen,
+            PropertyName: property.TenCoSoLuuTru,
+            PropertyId: property.MaCoSoLuuTru,
+            RejectionReason: rejectionReason,
+            ReviewDate: DateTime.UtcNow
+        );
 
-        await emailService.SendEmailAsync(ownerEmail, subject, bodyHtml, cancellationToken);
+        await emailService.SendTemplateEmailAsync(ownerEmail, subject, "PropertyRejected", rejectionModel, cancellationToken);
 
         return Ok(new { message = $"Property #{id} has been rejected.", reason = rejectionReason });
     }
@@ -508,36 +501,23 @@ public sealed class AdminController(HomestayDbContext db, IEmailService emailSer
         var property = booking.ChiTietDons.FirstOrDefault()?.Phong?.CoSoLuuTru;
         var owner = property?.ChuCoSoLuuTru;
         var guest = booking.KhachHang;
-
         var notifiedEmails = new List<string>();
 
-        // 1. Email notification to Guest
+        // 1. Email notification to Guest using RazorLight template
         if (!string.IsNullOrWhiteSpace(guest?.Email))
         {
             var guestSubject = $"[Stayly] Thông báo hoàn tiền & Quyết định xử lý đơn đặt #{booking.MaDonDatPhong}";
-            var guestBody = $@"
-                <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-                    <h2 style='color: #2563eb;'>Thông báo xử lý hoàn tiền đơn đặt phòng</h2>
-                    <p>Xin chào <strong>{guest.HoTen}</strong>,</p>
-                    <p>Bộ phận Chăm sóc khách hàng & Quản trị hệ thống Stayly đã hoàn tất xử lý khiếu nại/vấn đề thanh toán cho đơn đặt phòng <strong>#{booking.MaDonDatPhong}</strong> của bạn.</p>
-                    
-                    <div style='background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 16px 0;'>
-                        <p style='margin: 4px 0;'><strong>Cơ sở lưu trú:</strong> {property?.TenCoSoLuuTru ?? "Homestay"}</p>
-                        <p style='margin: 4px 0;'><strong>Thời gian:</strong> {booking.NgayDen:dd/MM/yyyy} - {booking.NgayDi:dd/MM/yyyy}</p>
-                        <p style='margin: 4px 0;'><strong>Số tiền được hoàn:</strong> <span style='color: #10b981; font-size: 18px; font-weight: bold;'>{request.RefundAmount:N0} VNĐ</span></p>
-                    </div>
+            var guestModel = new RefundAcceptedEmailModel(
+                GuestName: guest.HoTen,
+                BookingId: booking.MaDonDatPhong,
+                PropertyName: property?.TenCoSoLuuTru ?? "Homestay",
+                RefundAmount: request.RefundAmount,
+                Reason: request.Reason,
+                DecisionNote: request.DecisionNote,
+                DecisionDate: DateTime.UtcNow
+            );
 
-                    <div style='border-left: 4px solid #2563eb; padding-left: 12px; margin: 16px 0;'>
-                        <p style='margin: 4px 0;'><strong>Lý do hoàn tiền:</strong> {request.Reason}</p>
-                        <p style='margin: 4px 0;'><strong>Quyết định xử lý từ Quản trị viên:</strong> {request.DecisionNote}</p>
-                    </div>
-
-                    <p style='color: #4b5563; font-size: 14px;'>Khoản tiền hoàn sẽ được chuyển lại vào tài khoản thanh toán của quý khách theo quy định hoàn phí (từ 1 - 3 ngày làm việc tùy theo ngân hàng).</p>
-                    <br/>
-                    <p style='color: #6b7280; font-size: 13px;'>Trân trọng,<br/>Đội ngũ Hỗ trợ khách hàng Stayly</p>
-                </div>";
-
-            await emailService.SendEmailAsync(guest.Email, guestSubject, guestBody, cancellationToken);
+            await emailService.SendTemplateEmailAsync(guest.Email, guestSubject, "RefundAccepted", guestModel, cancellationToken);
             notifiedEmails.Add(guest.Email);
         }
 
@@ -581,6 +561,45 @@ public sealed class AdminController(HomestayDbContext db, IEmailService emailSer
         );
 
         return Ok(response);
+    }
+
+    [HttpPost("bookings/{id:int}/refund/deny")]
+    public async Task<IActionResult> DenyRefund(
+        int id,
+        [FromBody] DenyRefundRequest request,
+        CancellationToken cancellationToken)
+    {
+        var booking = await db.DonDatPhongs
+            .Include(b => b.KhachHang)
+            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru)
+            .FirstOrDefaultAsync(b => b.MaDonDatPhong == id, cancellationToken);
+
+        if (booking is null)
+            return NotFound("Booking not found.");
+
+        var denialReason = string.IsNullOrWhiteSpace(request.Reason)
+            ? "Yêu cầu hoàn tiền không đáp ứng các điều kiện trong chính sách hủy phòng của cơ sở."
+            : request.Reason.Trim();
+
+        var property = booking.ChiTietDons.FirstOrDefault()?.Phong?.CoSoLuuTru;
+        var guest = booking.KhachHang;
+
+        if (!string.IsNullOrWhiteSpace(guest?.Email))
+        {
+            var subject = $"[Stayly] Quyết định xử lý khiếu nại/hoàn tiền đơn đặt #{booking.MaDonDatPhong}";
+            var model = new RefundDeniedEmailModel(
+                GuestName: guest.HoTen,
+                BookingId: booking.MaDonDatPhong,
+                PropertyName: property?.TenCoSoLuuTru ?? "Homestay",
+                DenialReason: denialReason,
+                DecisionNote: request.DecisionNote,
+                DecisionDate: DateTime.UtcNow
+            );
+
+            await emailService.SendTemplateEmailAsync(guest.Email, subject, "RefundDenied", model, cancellationToken);
+        }
+
+        return Ok(new { message = $"Refund request for booking #{id} has been denied.", reason = denialReason });
     }
     #endregion
 

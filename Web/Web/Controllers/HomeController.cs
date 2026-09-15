@@ -146,7 +146,21 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    [HttpGet]
+    [HttpPost]
+    public async Task<IActionResult> RequestRegisterOtp(
+        [FromBody] SendOtpRequestModel model,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(model.Email))
+            return BadRequest(new { message = "Email không được để trống." });
+
+        var (success, message, error) = await api.SendOtpAsync(model.Email.Trim(), model.FullName, model.Purpose ?? "Register", cancellationToken);
+        if (!success)
+            return BadRequest(new { message = error ?? "Không thể gửi mã OTP. Vui lòng thử lại sau." });
+
+        return Ok(new { message });
+    }
+
     [HttpGet]
     public async Task<IActionResult> Profile(
         string tab = "personal",

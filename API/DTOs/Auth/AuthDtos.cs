@@ -20,6 +20,9 @@ public sealed class RegisterGuestRequest
 
     [Required, StringLength(100, MinimumLength = 8)]
     public string Password { get; set; } = string.Empty;
+
+    [StringLength(6)]
+    public string? OtpCode { get; set; }
 }
 
 public sealed class RegisterOwnerRequest
@@ -46,6 +49,9 @@ public sealed class RegisterOwnerRequest
 
     [Required, StringLength(20)]
     public string CitizenId { get; set; } = string.Empty;
+
+    [StringLength(6)]
+    public string? OtpCode { get; set; }
 }
 
 public sealed class LoginRequest

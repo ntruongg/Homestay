@@ -1,4 +1,17 @@
-﻿CREATE TABLE TaiKhoan (
+CREATE TABLE VaiTro (
+    MaVaiTro INT IDENTITY PRIMARY KEY,
+    TenVaiTro NVARCHAR(30) NOT NULL,
+    MoTa NVARCHAR(200)
+);
+
+SET IDENTITY_INSERT VaiTro ON;
+INSERT INTO VaiTro (MaVaiTro, TenVaiTro, MoTa) VALUES
+(1, N'GUEST', N'Traveler / Guest'),
+(2, N'OWNER', N'Homestay Host / Owner'),
+(3, N'ADMIN', N'System Administrator');
+SET IDENTITY_INSERT VaiTro OFF;
+
+CREATE TABLE TaiKhoan (
     MaTaiKhoan INT IDENTITY PRIMARY KEY,
 	Email NVARCHAR(50) NOT NULL UNIQUE,
     HoTen NVARCHAR(100) NOT NULL,
@@ -6,7 +19,7 @@
     GioiTinh CHAR(1) CHECK (GioiTinh IN ('M', 'F')),
     DienThoai VARCHAR(20) NOT NULL UNIQUE,
     MatKhau NVARCHAR(100) NOT NULL,
-    VaiTro NVARCHAR(30) CHECK (VaiTro IN ('OWNER', 'GUEST', 'ADMIN')),
+    MaVaiTro INT NOT NULL DEFAULT 1 REFERENCES VaiTro(MaVaiTro),
     TrangThai BIT DEFAULT 1,
     NgayTao DATE DEFAULT GETDATE(),
 	--Nếu là khách thì NULL
@@ -23,14 +36,12 @@ CREATE TABLE CoSoLuuTru (
 	DiaChi NVARCHAR(200),
 	PhuongXa NVARCHAR(200),
     ThanhPho NVARCHAR(200),
-    TrangThaiDuyet NVARCHAR(20),
-    LyDoTuChoi NVARCHAR(200),
     GiayPhepKD_URL NVARCHAR(200),
     GiayToPCCC_URL NVARCHAR(200),
     GiayToANTT_URL NVARCHAR(200),
     LoaiHinh NVARCHAR(50) CHECK (LoaiHinh IN ('Homestay', 'Hotel')) DEFAULT 'Homestay',
 	ChinhSach NVARCHAR(200),
-	TrangThai BIT DEFAULT 1,
+	TrangThai BIT DEFAULT 0,
 );
 
 CREATE TABLE LoaiPhong (
@@ -55,6 +66,7 @@ CREATE TABLE GiamGia (
 	TenMa NVARCHAR(50),
 	PhanTram INT,
 	ToiDa DECIMAL (12,2),
+	NgayBatDau DATE,
 	NgayHetHan DATE
 );
 
@@ -65,8 +77,20 @@ CREATE TABLE DonDatPhong (
     NgayDat DATE DEFAULT GETDATE(),
     NgayDen DATE,
     NgayDi DATE,
+    SoNguoiLon INT DEFAULT 1 CHECK (SoNguoiLon > 0),
+    SoTreEm INT DEFAULT 0 CHECK (SoTreEm >= 0),
     SoNguoi INT CHECK (SoNguoi > 0),
     TrangThai NVARCHAR(30) CHECK (TrangThai IN ('Pending', 'Confirmed', 'CheckedIn', 'CheckedOut', 'Cancelled')),
+);
+
+CREATE TABLE PhuThu (
+    MaPhuThu INT IDENTITY PRIMARY KEY,
+    MaDonDatPhong INT NOT NULL REFERENCES DonDatPhong(MaDonDatPhong) ON DELETE CASCADE,
+    TenPhuThu NVARCHAR(100) NOT NULL,
+    SoLuong INT DEFAULT 1,
+    DonGia DECIMAL(12,2) NOT NULL,
+    ThanhTien DECIMAL(12,2) NOT NULL,
+    GhiChu NVARCHAR(200)
 );
 
 CREATE TABLE ChiTietDon (
@@ -103,6 +127,7 @@ CREATE TABLE CoSoLuuTru_TienNghi (
 CREATE TABLE Phong_TienNghi (
     MaPhong INT REFERENCES Phong(MaPhong),
     MaTienNghi INT REFERENCES TienNghi(MaTienNghi),
+    SoLuong INT DEFAULT 1,
     PRIMARY KEY (MaPhong, MaTienNghi)
 );
 
@@ -120,3 +145,12 @@ CREATE TABLE DanhGia (
     NoiDungDanhGia NVARCHAR(MAX),
     NgayDanhGia DATETIME DEFAULT GETDATE()
 );
+
+CREATE TABLE LichSuDuyet (
+    MaLichSu INT IDENTITY PRIMARY KEY,
+    MaCoSoLuuTru INT NOT NULL REFERENCES CoSoLuuTru(MaCoSoLuuTru) ON DELETE CASCADE,
+    MaNguoiDuyet INT REFERENCES TaiKhoan(MaTaiKhoan),
+    TrangThaiDuyet NVARCHAR(30) NOT NULL,
+    LyDoTuChoi NVARCHAR(500),
+    NgayDuyet DATETIME DEFAULT GETDATE()
+);

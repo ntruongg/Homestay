@@ -1,0 +1,87 @@
+@model API.DTOs.Email.RefundAcceptedEmailModel
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thông báo hoàn tiền đơn đặt phòng Stayly</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 32px 16px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" style="max-width: 580px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #10b981 0%, #047857 100%); padding: 32px 32px 28px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 26px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">STAYLY</h1>
+                            <p style="margin: 6px 0 0; color: #d1fae5; font-size: 14px; font-weight: 500;">Xử lý Hoàn tiền & Hỗ trợ Khách hàng</p>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 36px 32px 28px;">
+                            <div style="display: inline-block; background-color: #dcfce7; color: #15803d; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 700; margin-bottom: 16px; text-transform: uppercase;">
+                                ✓ Hoàn tiền được chấp thuận
+                            </div>
+                            <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 700; color: #0f172a;">Yêu cầu hoàn tiền đã được phê duyệt</h2>
+                            <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.6; color: #475569;">
+                                Xin chào <strong>@Model.GuestName</strong>,
+                            </p>
+                            <p style="margin: 0 0 20px; font-size: 15px; line-height: 1.6; color: #475569;">
+                                Bộ phận Chăm sóc khách hàng & Quản trị Stayly đã hoàn tất việc xem xét và chấp thuận yêu cầu hoàn tiền cho đơn đặt phòng <strong>#@Model.BookingId</strong> tại <strong>@Model.PropertyName</strong>.
+                            </p>
+
+                            <!-- Refund Amount Highlight Box -->
+                            <div style="background-color: #f0fdf4; border-radius: 12px; padding: 24px; text-align: center; border: 1px solid #bbf7d0; margin: 20px 0;">
+                                <span style="font-size: 13px; font-weight: 600; text-transform: uppercase; color: #15803d; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">Số tiền được hoàn trả</span>
+                                <div style="font-size: 32px; font-weight: 800; color: #15803d;">
+                                    @Model.RefundAmount.ToString("N0") VNĐ
+                                </div>
+                                <span style="font-size: 13px; color: #4b5563; display: block; margin-top: 6px;">Thời gian dự kiến nhận tiền: <strong>@Model.EstimatedDays</strong></span>
+                            </div>
+
+                            <!-- Details Card -->
+                            <div style="background-color: #f8fafc; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; margin: 20px 0;">
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="6">
+                                    <tr>
+                                        <td width="35%" style="color: #64748b; font-size: 14px; font-weight: 500;">Mã đơn đặt:</td>
+                                        <td width="65%" style="color: #0f172a; font-size: 14px; font-weight: 700;">#@Model.BookingId</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #64748b; font-size: 14px; font-weight: 500;">Cơ sở lưu trú:</td>
+                                        <td style="color: #0f172a; font-size: 14px;">@Model.PropertyName</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #64748b; font-size: 14px; font-weight: 500;">Lý do hoàn:</td>
+                                        <td style="color: #0f172a; font-size: 14px;">@Model.Reason</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #64748b; font-size: 14px; font-weight: 500;">Ghi chú quyết định:</td>
+                                        <td style="color: #0f172a; font-size: 14px;">@Model.DecisionNote</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <p style="margin: 24px 0 0; font-size: 14px; line-height: 1.6; color: #64748b;">
+                                Khoản tiền hoàn sẽ được tự động hoàn chuyển về tài khoản/phương thức thanh toán ban đầu của bạn. Nếu cần hỗ trợ thêm, vui lòng liên hệ đội ngũ Stayly.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8fafc; padding: 24px 32px; border-top: 1px solid #e2e8f0; text-align: center;">
+                            <p style="margin: 0; font-size: 12px; color: #94a3b8;">
+                                &copy; @DateTime.UtcNow.Year Stayly Customer Support.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

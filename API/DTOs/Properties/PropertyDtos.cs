@@ -51,3 +51,19 @@ public sealed record PropertyDetailsResponse(
 public sealed record RoomResponse(
     int Id, string RoomNumber, int Capacity, decimal OriginalPrice,
     string? RoomStatus, string? RoomType, IReadOnlyList<string> Images);
+
+public sealed record ApprovalHistoryDto(
+    int Id,
+    int PropertyId,
+    string Status,
+    string? RejectionReason,
+    int? ReviewerId,
+    string? ReviewerName,
+    DateTime ReviewedAt);
+
+public sealed class AdminReviewPropertyRequest
+{
+    [StringLength(500)]
+    public string? Reason { get; set; }
+}
+

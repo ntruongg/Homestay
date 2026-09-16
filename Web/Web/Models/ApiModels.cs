@@ -70,6 +70,7 @@ public class RegisterGuestInput
     public string Email { get; set; } = string.Empty;
     [Required, MinLength(8)]
     public string Password { get; set; } = string.Empty;
+    public string? OtpCode { get; set; }
 }
 
 public sealed class RegisterOwnerInput : RegisterGuestInput
@@ -160,6 +161,16 @@ public sealed record OwnerProperty(
     string? CoverImageUrl
 );
 
+public sealed record ApprovalHistoryItem(
+    int Id,
+    int PropertyId,
+    string Status,
+    string? RejectionReason,
+    int? ReviewerId,
+    string? ReviewerName,
+    DateTime ReviewedAt
+);
+
 public sealed record OwnerRoom(
     int Id,
     int PropertyId,
@@ -242,3 +253,11 @@ public sealed class CreateRoomInput
     public string Status { get; set; } = "Trống";
     public int? RoomTypeId { get; set; }
 }
+
+public sealed class SendOtpRequestModel
+{
+    public string Email { get; set; } = string.Empty;
+    public string? FullName { get; set; }
+    public string Purpose { get; set; } = "Register";
+}
+

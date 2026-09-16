@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace API.Models;
@@ -15,10 +15,13 @@ public class DonDatPhong
     public DateTime NgayDat { get; set; } = DateTime.UtcNow;
     public DateTime NgayDen { get; set; }
     public DateTime NgayDi { get; set; }
-    public int SoNguoi { get; set; }
+    public int SoNguoiLon { get; set; } = 1;
+    public int SoTreEm { get; set; } = 0;
+    public int SoNguoi { get; set; } = 1;
     [StringLength(30)]
     public string TrangThai { get; set; } = "Pending";
     public ICollection<ChiTietDon> ChiTietDons { get; set; } = [];
+    public ICollection<PhuThu> PhuThus { get; set; } = [];
     public ThanhToan? ThanhToan { get; set; }
     public DanhGia? DanhGia { get; set; }
 }
@@ -40,6 +43,7 @@ public class GiamGia
     public string TenMa { get; set; } = string.Empty;
     public int PhanTram { get; set; }
     public decimal? ToiDa { get; set; }
+    public DateTime? NgayBatDau { get; set; }
     public DateTime? NgayHetHan { get; set; }
     public ICollection<DonDatPhong> DonDatPhongs { get; set; } = [];
 }

@@ -1,8 +1,10 @@
 @model RegisterGuestInput
 
+<input type="hidden" asp-for="OtpCode" id="OtpCodeInput" />
+
 <label>
     Full name
-    <input asp-for="FullName" required>
+    <input asp-for="FullName" id="FullNameInput" required>
 </label>
 
 <div class="form-row">
@@ -27,7 +29,7 @@
 
 <label>
     Email
-    <input asp-for="Email" type="email" required>
+    <input asp-for="Email" id="EmailInput" type="email" required>
 </label>
 
 <label>

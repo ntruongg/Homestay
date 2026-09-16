@@ -1,0 +1,99 @@
+<Application x:Class="HomestaySystem.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:HomestaySystem"
+             xmlns:vm="clr-namespace:HomestaySystem.ViewModels"
+             xmlns:views="clr-namespace:HomestaySystem.Views"
+             xmlns:conv="clr-namespace:HomestaySystem.Converters"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <!-- Converters toàn cục (Hỗ trợ cả tên chuẩn và tên rút gọn) -->
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <conv:PhuDinhBooleanToVisibilityConverter x:Key="PhuDinhBoolToVisConverter"/>
+        <conv:ChuoiMauToBrushConverter x:Key="ChuoiMauToBrushConverter"/>
+        <conv:ChuoiMauToBrushConverter x:Key="ColorToBrush"/>
+        <conv:NullToVisibilityConverter x:Key="NullToVisConverter"/>
+        <conv:NullToVisibilityConverter x:Key="NullToVis"/>
+        <conv:ChuoiSoSanhToVisibilityConverter x:Key="ChuoiSoSanhToVisConverter"/>
+        <conv:ChuoiSoSanhToVisibilityConverter x:Key="StrCompareToVis"/>
+        <conv:BooleanToKhoaTextConverter x:Key="BoolToKhoaTextConverter"/>
+        <conv:BooleanToKhoaTextConverter x:Key="BoolToKhoaText"/>
+        <conv:BooleanToKhoaBrushConverter x:Key="BoolToKhoaBrushConverter"/>
+        <conv:BooleanToKhoaBrushConverter x:Key="BoolToKhoaBrush"/>
+        <conv:BooleanToTeraBadgeTextConverter x:Key="BoolToTeraBadgeTextConverter"/>
+        <conv:BooleanToTeraBadgeTextConverter x:Key="BoolToTeraText"/>
+        <conv:BooleanToTeraColorConverter x:Key="BoolToTeraColorConverter"/>
+        <conv:BooleanToTeraColorConverter x:Key="BoolToTeraColor"/>
+        <conv:BooleanToTeraBgConverter x:Key="BoolToTeraBgConverter"/>
+        <conv:BooleanToTeraBgConverter x:Key="BoolToTeraBg"/>
+        <conv:TrangThaiDonToColorConverter x:Key="TrangThaiDonToColorConverter"/>
+        <conv:TrangThaiDonToBgConverter x:Key="TrangThaiDonToBgConverter"/>
+
+        <!-- ================= BẢNG MÀU CHỦ ĐẠO HOMESTAYSYSTEM (DESIGN SYSTEM) ================= -->
+        <!-- Màu xanh trời đặc trưng HomestaySystem (Primary Sky Blue) -->
+        <SolidColorBrush x:Key="MauHomestayBlue" Color="#0194F3"/>
+        <SolidColorBrush x:Key="MauHomestayBlueNhat" Color="#E1F0FE"/>
+        <SolidColorBrush x:Key="MauHomestayDeepBlue" Color="#0064D2"/>
+        <SolidColorBrush x:Key="MauHomestayDarkBlue" Color="#004394"/>
+
+        <!-- Màu cam điểm nhấn HomestaySystem (Accent Orange cho Khuyến mãi, Chờ duyệt, CTA) -->
+        <SolidColorBrush x:Key="MauHomestayOrange" Color="#FF5E1F"/>
+        <SolidColorBrush x:Key="MauHomestayOrangeNhat" Color="#FFF0EB"/>
+
+        <!-- Màu xanh lá thành công & quyết toán (Green Success) -->
+        <SolidColorBrush x:Key="MauHomestayGreen" Color="#0E9F6E"/>
+        <SolidColorBrush x:Key="MauHomestayGreenNhat" Color="#E8F7EE"/>
+
+        <!-- Màu đỏ từ chối & cảnh báo (Red Danger) -->
+        <SolidColorBrush x:Key="MauHomestayRed" Color="#EF4444"/>
+        <SolidColorBrush x:Key="MauHomestayRedNhat" Color="#FEE2E2"/>
+
+        <!-- Màu thanh Sidebar HomestaySystem Navy -->
+        <SolidColorBrush x:Key="MauSidebarNen" Color="#0A1E3F"/>
+        <SolidColorBrush x:Key="MauSidebarHover" Color="#142E5C"/>
+        <SolidColorBrush x:Key="MauSidebarActive" Color="#0194F3"/>
+        <SolidColorBrush x:Key="MauSidebarFooter" Color="#07152D"/>
+
+        <!-- Màu nền và Thẻ (Surfaces & Backgrounds) -->
+        <SolidColorBrush x:Key="MauNenChinh" Color="#F7F9FA"/>
+        <SolidColorBrush x:Key="MauTheTrang" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="MauChuChinh" Color="#0F172A"/>
+        <SolidColorBrush x:Key="MauChuPhu" Color="#64748B"/>
+        <SolidColorBrush x:Key="MauVien" Color="#E5E7EB"/>
+
+        <!-- Cấu hình Font chữ mặc định -->
+        <Style TargetType="{x:Type Control}">
+            <Setter Property="FontFamily" Value="Segoe UI, Tahoma, Arial"/>
+        </Style>
+
+        <!-- Style Card Trắng HomestaySystem -->
+        <Style x:Key="HomestayCard" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="BorderBrush" Value="#E5E7EB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="18"/>
+        </Style>
+
+        <!-- ÁNH XẠ VIEWMODEL SANG VIEW (MVVM DATATEMPLATE MAPPING) -->
+        <DataTemplate DataType="{x:Type vm:KiemDuyetHomestayViewModel}">
+            <views:KiemDuyetHomestayView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:QuanLyTaiKhoanViewModel}">
+            <views:QuanLyTaiKhoanView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:QuyetToanTaiChinhViewModel}">
+            <views:QuyetToanTaiChinhView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:BaoCaoDoanhThuViewModel}">
+            <views:BaoCaoDoanhThuView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:QuanLyKhuyenMaiViewModel}">
+            <views:QuanLyKhuyenMaiView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:BaoTriHeThongViewModel}">
+            <views:BaoTriHeThongView/>
+        </DataTemplate>
+    </Application.Resources>
+</Application>

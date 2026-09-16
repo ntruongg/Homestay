@@ -1,0 +1,274 @@
+<UserControl x:Class="HomestaySystem.Views.BaoTriHeThongView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="780" d:DesignWidth="1100">
+    <Grid Background="{StaticResource MauNenChinh}">
+        <Grid Margin="22">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- 1. THANH TRẠNG THÁI INFRASTRUCTURE & HEALTH HOMESTAYSYSTEM -->
+            <Border Grid.Row="0" Background="White" CornerRadius="12" Padding="20,14" Margin="0,0,0,16" BorderBrush="#E2E8F0" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="10" Direction="270" ShadowDepth="2" Opacity="0.04" Color="#000000"/>
+                </Border.Effect>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Width="40" Height="40" CornerRadius="20" Background="#EFF6FF" Margin="0,0,12,0">
+                            <TextBlock Text="🛡️" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Trung Tâm Bảo Trì &amp; Khôi Phục Hệ Thống" FontWeight="Bold" FontSize="16" Foreground="#0F172A"/>
+                                <Border Background="#ECFDF5" BorderBrush="#059669" BorderThickness="1" CornerRadius="10" Padding="8,2" Margin="10,0,0,0">
+                                    <TextBlock Text="CSDL TRỰC TUYẾN" FontSize="10" FontWeight="Bold" Foreground="#059669"/>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="Quản lý bản ghi sao lưu định kỳ, bảo vệ an toàn toàn vẹn dữ liệu HomestaySystem" FontSize="12" Foreground="#64748B" Margin="0,3,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Chỉ số hệ thống -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="12,6" Margin="0,0,10,0">
+                            <StackPanel>
+                                <TextBlock Text="THƯ MỤC LƯU TRỮ" FontSize="9" FontWeight="Bold" Foreground="#94A3B8"/>
+                                <TextBlock Text="D:\...\Wpf\Backup" FontSize="11" FontWeight="SemiBold" Foreground="#334155"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#F0FDF4" BorderBrush="#BBF7D0" BorderThickness="1" CornerRadius="8" Padding="12,6">
+                            <StackPanel>
+                                <TextBlock Text="TRẠNG THÁI ENGINE" FontSize="9" FontWeight="Bold" Foreground="#15803D"/>
+                                <TextBlock Text="🟢 Ready to Backup" FontSize="11" FontWeight="Bold" Foreground="#15803D"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 2. KHỐI CÔNG CỤ SAO LƯU VÀ PHỤC HỒI (ENTERPRISE CARDS) -->
+            <Grid Grid.Row="1" Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="18"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- THẺ 1: SAO LƯU CSDL (BACKUP DATABASE) -->
+                <Border Grid.Column="0" Background="White" CornerRadius="12" Padding="22" BorderBrush="#BAE6FD" BorderThickness="1.5">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="10" Direction="270" ShadowDepth="2" Opacity="0.05" Color="#0194F3"/>
+                    </Border.Effect>
+                    <StackPanel>
+                        <Grid Margin="0,0,0,14">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Width="38" Height="38" CornerRadius="19" Background="#E0F2FE" VerticalAlignment="Center">
+                                    <TextBlock Text="💾" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="SAO LƯU CSDL (BACKUP)" FontSize="15" FontWeight="Bold" Foreground="#0064D2"/>
+                                    <TextBlock Text="Tạo tệp nén sao lưu đầy đủ định dạng .bak" FontSize="11" Foreground="#64748B"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <Border HorizontalAlignment="Right" Background="#EFF6FF" CornerRadius="6" Padding="8,3">
+                                <TextBlock Text="Full Backup" FontSize="10" FontWeight="Bold" Foreground="#0284C7"/>
+                            </Border>
+                        </Grid>
+
+                        <TextBlock Text="Đường dẫn thư mục lưu trữ tệp sao lưu:" FontWeight="SemiBold" FontSize="12" Foreground="#334155" Margin="0,4,0,6"/>
+                        <Grid Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" Text="{Binding DuongDanThuMucSaoLuu, UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="10,8" FontSize="12" BorderBrush="#CBD5E1" BorderThickness="1">
+                                <TextBox.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="8,0,0,8"/>
+                                    </Style>
+                                </TextBox.Resources>
+                            </TextBox>
+                            <Button Grid.Column="1" Content="Mặc định" Command="{Binding DatThuMucMacDinhCommand}"
+                                    Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,1,1,1" Foreground="#475569"
+                                    FontWeight="SemiBold" Padding="12,0" Cursor="Hand"/>
+                            <Button Grid.Column="2" Content="📁 Mở thư mục" Command="{Binding MoThuMucSaoLuuCommand}"
+                                    Background="#E2E8F0" BorderBrush="#CBD5E1" BorderThickness="0,1,1,1" Foreground="#1E293B"
+                                    FontWeight="Bold" Padding="14,0" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="0,8,8,0"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+                        </Grid>
+
+                        <Border Background="#F8FAFC" CornerRadius="8" Padding="12,8" Margin="0,0,0,18" BorderBrush="#E2E8F0" BorderThickness="1">
+                            <TextBlock Text="💡 Tệp sao lưu sẽ lưu trữ toàn bộ người dùng, dữ liệu homestay, giấy tờ pháp lý và dòng tiền quyết toán 85/15."
+                                       TextWrapping="Wrap" Foreground="#64748B" FontSize="11" LineHeight="16"/>
+                        </Border>
+
+                        <Button Content="⚡ Bắt đầu Sao lưu CSDL ngay" Command="{Binding SaoLuuCSDLCommand}"
+                                Background="{StaticResource MauHomestayBlue}" Foreground="White" FontWeight="Bold" FontSize="13" Padding="0,12"
+                                BorderThickness="0" Cursor="Hand">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="8"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <!-- THẺ 2: PHỤC HỒI CSDL (RESTORE DATABASE) -->
+                <Border Grid.Column="2" Background="White" CornerRadius="12" Padding="22" BorderBrush="#FECACA" BorderThickness="1.5">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="10" Direction="270" ShadowDepth="2" Opacity="0.05" Color="#EF4444"/>
+                    </Border.Effect>
+                    <StackPanel>
+                        <Grid Margin="0,0,0,14">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Width="38" Height="38" CornerRadius="19" Background="#FEE2E2" VerticalAlignment="Center">
+                                    <TextBlock Text="🔄" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="PHỤC HỒI CSDL (RESTORE)" FontSize="15" FontWeight="Bold" Foreground="#DC2626"/>
+                                    <TextBlock Text="Khôi phục trạng thái hệ thống từ bản sao lưu" FontSize="11" Foreground="#64748B"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <Border HorizontalAlignment="Right" Background="#FEF2F2" CornerRadius="6" Padding="8,3">
+                                <TextBlock Text="Ghi đè Dữ liệu" FontSize="10" FontWeight="Bold" Foreground="#DC2626"/>
+                            </Border>
+                        </Grid>
+
+                        <TextBlock Text="Đường dẫn tệp sao lưu (.bak) cần khôi phục:" FontWeight="SemiBold" FontSize="12" Foreground="#334155" Margin="0,4,0,6"/>
+                        <Grid Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" Text="{Binding DuongDanTepPhucHoi, UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="10,8" FontSize="12" BorderBrush="#CBD5E1" BorderThickness="1">
+                                <TextBox.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="8,0,0,8"/>
+                                    </Style>
+                                </TextBox.Resources>
+                            </TextBox>
+                            <Button Grid.Column="1" Content="Tệp mới nhất" Command="{Binding ChonTepPhucHoiCommand}"
+                                    Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,1,1,1" Foreground="#475569"
+                                    FontWeight="SemiBold" Padding="12,0" Cursor="Hand"/>
+                            <Button Grid.Column="2" Content="📂 Duyệt .bak" Command="{Binding DuyetTepPhucHoiCommand}"
+                                    Background="#E2E8F0" BorderBrush="#CBD5E1" BorderThickness="0,1,1,1" Foreground="#1E293B"
+                                    FontWeight="Bold" Padding="14,0" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="0,8,8,0"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+                        </Grid>
+
+                        <Border Background="#FEF2F2" CornerRadius="8" Padding="12,8" Margin="0,0,0,18" BorderBrush="#FECACA" BorderThickness="1">
+                            <TextBlock Text="⚠️ Cảnh báo: Quá trình phục hồi sẽ ghi đè toàn bộ dữ liệu hiện hành. Vui lòng kiểm tra kỹ tệp .bak trước khi bắt đầu."
+                                       TextWrapping="Wrap" Foreground="#DC2626" FontSize="11" LineHeight="16"/>
+                        </Border>
+
+                        <Button Content="⚠️ Bắt đầu Phục hồi CSDL" Command="{Binding PhucHoiCSDLCommand}"
+                                Background="{StaticResource MauHomestayRed}" Foreground="White" FontWeight="Bold" FontSize="13" Padding="0,12"
+                                BorderThickness="0" Cursor="Hand">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="8"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- 3. KHỐI NHẬT KÝ BẢO TRÌ HỆ THỐNG (HOMESTAYSYSTEM ENTERPRISE TERMINAL) -->
+            <Border Grid.Row="2" Background="White" CornerRadius="12" BorderBrush="#E2E8F0" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="8" Direction="270" ShadowDepth="2" Opacity="0.03" Color="#000000"/>
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Thanh header terminal -->
+                    <Border Grid.Row="0" Background="#F8FAFC" CornerRadius="12,12,0,0" Padding="18,12" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1">
+                        <Grid>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="📋 Lịch sử &amp; Nhật ký Hoạt động (System Maintenance Logs)" FontWeight="Bold" FontSize="13" Foreground="#0F172A"/>
+                                <TextBlock Text="{Binding ThongBaoTrangThai}" Foreground="#0064D2" FontSize="12" Margin="16,1,0,0" FontWeight="SemiBold"/>
+                            </StackPanel>
+                            <Button HorizontalAlignment="Right" Content="🔄 Làm mới log" Command="{Binding TaiNhatKyCommand}"
+                                    Background="White" BorderBrush="#CBD5E1" BorderThickness="1" Foreground="#475569" FontWeight="SemiBold"
+                                    Padding="12,5" Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="6"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- Màn hình Console Terminal HomestaySystem Enterprise -->
+                    <Border Grid.Row="1" Background="{StaticResource MauSidebarNen}" CornerRadius="0,0,12,12">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Thanh tiêu đề cửa sổ terminal -->
+                            <Border Grid.Row="0" Background="{StaticResource MauSidebarFooter}" Padding="14,8" BorderBrush="#142E5C" BorderThickness="0,0,0,1">
+                                <Grid>
+                                    <!-- 3 nút Mac/Terminal dots -->
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Ellipse Width="10" Height="10" Fill="#EF4444" Margin="0,0,6,0"/>
+                                        <Ellipse Width="10" Height="10" Fill="#F59E0B" Margin="0,0,6,0"/>
+                                        <Ellipse Width="10" Height="10" Fill="#10B981"/>
+                                    </StackPanel>
+                                    <TextBlock Text="homestaysystem_maintenance_console.log — bash" HorizontalAlignment="Center"
+                                               FontSize="11" Foreground="#64748B" FontFamily="Consolas, Courier New"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Nội dung log -->
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="16,12">
+                                <ItemsControl ItemsSource="{Binding DanhSachNhatKy}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Padding="2,4" BorderBrush="#142E5C" BorderThickness="0,0,0,0.5">
+                                                <TextBlock Text="{Binding}" Foreground="#38BDF8" FontFamily="Consolas, Courier New" FontSize="12"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

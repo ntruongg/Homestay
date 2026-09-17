@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Http;
 using Web.Models;
 
 namespace Web.Services;
@@ -217,13 +218,126 @@ public sealed class HomestayApiClient(HttpClient http)
         return (true, null);
     }
 
+    public async Task<IReadOnlyList<AmenityItem>> GetAmenitiesAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<List<AmenityItem>>("properties/amenities", cancellationToken) ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public async Task<IReadOnlyList<RoomTypeItem>> GetRoomTypesAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<List<RoomTypeItem>>("properties/room-types", cancellationToken) ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public async Task<(bool Success, string? Url, string? Error)> UploadDocumentAsync(
+        IFormFile file,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = CreateAuthorizedRequest(HttpMethod.Post, "upload/document", token);
+            using var content = new MultipartFormDataContent();
+            using var stream = file.OpenReadStream();
+            using var streamContent = new StreamContent(stream);
+            streamContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType ?? "image/jpeg");
+            content.Add(streamContent, "file", file.FileName);
+            request.Content = content;
+
+            using var response = await http.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                return (false, null, err);
+            }
+
+            var json = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>(cancellationToken: cancellationToken);
+            var url = json.TryGetProperty("secureUrl", out var prop) ? prop.GetString() : null;
+            return (true, url, null);
+        }
+        catch (Exception ex)
+        {
+            return (false, null, ex.Message);
+        }
+    }
+
+    public async Task<(bool Success, List<string> Urls, string? Error)> UploadImagesAsync(
+        List<IFormFile> files,
+        string folder,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = CreateAuthorizedRequest(HttpMethod.Post, $"upload/images?folder={Uri.EscapeDataString(folder)}", token);
+            using var content = new MultipartFormDataContent();
+            var streams = new List<Stream>();
+            foreach (var f in files)
+            {
+                var s = f.OpenReadStream();
+                streams.Add(s);
+                var sc = new StreamContent(s);
+                sc.Headers.ContentType = new MediaTypeHeaderValue(f.ContentType ?? "image/jpeg");
+                content.Add(sc, "files", f.FileName);
+            }
+            request.Content = content;
+
+            using var response = await http.SendAsync(request, cancellationToken);
+            foreach (var s in streams) s.Dispose();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                return (false, [], err);
+            }
+
+            var results = await response.Content.ReadFromJsonAsync<List<System.Text.Json.JsonElement>>(cancellationToken: cancellationToken);
+            var urls = results?.Select(x => x.TryGetProperty("secureUrl", out var p) ? p.GetString() : null)
+                .Where(u => !string.IsNullOrWhiteSpace(u)).Select(u => u!).ToList() ?? [];
+            return (true, urls, null);
+        }
+        catch (Exception ex)
+        {
+            return (false, [], ex.Message);
+        }
+    }
+
     public async Task<(bool Success, string? Error)> CreatePropertyAsync(
         CreatePropertyInput input,
         string token,
         CancellationToken cancellationToken = default)
     {
+        var body = new
+        {
+            input.Name,
+            input.Phone,
+            input.Email,
+            input.Address,
+            input.Ward,
+            input.City,
+            input.Type,
+            input.Policy,
+            input.BusinessLicenseUrl,
+            input.FireSafetyDocumentUrl,
+            input.SecurityDocumentUrl,
+            input.AmenityIds,
+            input.PhotoUrls
+        };
         using var request = CreateAuthorizedRequest(HttpMethod.Post, "properties", token);
-        request.Content = JsonContent.Create(input);
+        request.Content = JsonContent.Create(body);
 
         using var response = await http.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)
@@ -234,14 +348,71 @@ public sealed class HomestayApiClient(HttpClient http)
         return (true, null);
     }
 
+    public async Task<(bool Success, string? Error)> UpdatePropertyAsync(
+        UpdatePropertyInput input,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        var body = new
+        {
+            input.Name,
+            input.Phone,
+            input.Email,
+            input.Address,
+            input.Ward,
+            input.City,
+            input.Type,
+            input.Policy,
+            input.BusinessLicenseUrl,
+            input.FireSafetyDocumentUrl,
+            input.SecurityDocumentUrl,
+            input.AmenityIds
+        };
+        using var request = CreateAuthorizedRequest(HttpMethod.Put, $"properties/{input.Id}", token);
+        request.Content = JsonContent.Create(body);
+
+        using var response = await http.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var err = await response.Content.ReadAsStringAsync(cancellationToken);
+            return (false, string.IsNullOrWhiteSpace(err) ? "Could not update property." : err);
+        }
+        return (true, null);
+    }
+
+    public async Task<(bool Success, string? Error)> DeletePropertyAsync(
+        int propertyId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        using var request = CreateAuthorizedRequest(HttpMethod.Delete, $"properties/{propertyId}", token);
+        using var response = await http.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var err = await response.Content.ReadAsStringAsync(cancellationToken);
+            return (false, string.IsNullOrWhiteSpace(err) ? "Could not delete property." : err);
+        }
+        return (true, null);
+    }
+
     public async Task<(bool Success, string? Error)> CreateRoomAsync(
         int propertyId,
         CreateRoomInput input,
         string token,
         CancellationToken cancellationToken = default)
     {
+        var body = new
+        {
+            input.RoomNumber,
+            input.Capacity,
+            input.OriginalPrice,
+            input.Status,
+            input.RoomTypeId,
+            input.AmenityIds,
+            input.PhotoUrls
+        };
         using var request = CreateAuthorizedRequest(HttpMethod.Post, $"properties/{propertyId}/rooms", token);
-        request.Content = JsonContent.Create(input);
+        request.Content = JsonContent.Create(body);
 
         using var response = await http.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)
@@ -251,6 +422,65 @@ public sealed class HomestayApiClient(HttpClient http)
         }
         return (true, null);
     }
+
+    public async Task<(bool Success, string? Error)> UpdateRoomAsync(
+        UpdateRoomInput input,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        var body = new
+        {
+            input.RoomNumber,
+            input.Capacity,
+            input.OriginalPrice,
+            input.Status,
+            input.RoomTypeId,
+            input.AmenityIds
+        };
+        using var request = CreateAuthorizedRequest(HttpMethod.Put, $"properties/{input.PropertyId}/rooms/{input.RoomId}", token);
+        request.Content = JsonContent.Create(body);
+
+        using var response = await http.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var err = await response.Content.ReadAsStringAsync(cancellationToken);
+            return (false, string.IsNullOrWhiteSpace(err) ? "Could not update room." : err);
+        }
+        return (true, null);
+    }
+
+    public async Task<(bool Success, string? Error)> DeleteRoomAsync(
+        int propertyId,
+        int roomId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        using var request = CreateAuthorizedRequest(HttpMethod.Delete, $"properties/{propertyId}/rooms/{roomId}", token);
+        using var response = await http.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var err = await response.Content.ReadAsStringAsync(cancellationToken);
+            return (false, string.IsNullOrWhiteSpace(err) ? "Could not delete room." : err);
+        }
+        return (true, null);
+    }
+
+    public async Task<(bool Success, string? Error)> DeletePhotoAsync(
+        int propertyId,
+        int photoId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        using var request = CreateAuthorizedRequest(HttpMethod.Delete, $"properties/{propertyId}/photos/{photoId}", token);
+        using var response = await http.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var err = await response.Content.ReadAsStringAsync(cancellationToken);
+            return (false, string.IsNullOrWhiteSpace(err) ? "Could not delete photo." : err);
+        }
+        return (true, null);
+    }
+
 
     private async Task<(bool Success, AuthResult? Result, string? Error)> SendAuthAsync(
         string path,

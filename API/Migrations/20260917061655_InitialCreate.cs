@@ -169,22 +169,20 @@ namespace API.Migrations
                 columns: table => new
                 {
                     MaCoSoLuuTru = table.Column<int>(type: "int", nullable: false),
-                    MaTienNghi = table.Column<int>(type: "int", nullable: false),
-                    CoSoLuuTruMaCoSoLuuTru = table.Column<int>(type: "int", nullable: false),
-                    TienNghiMaTienNghi = table.Column<int>(type: "int", nullable: false)
+                    MaTienNghi = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_CoSoLuuTru_TienNghi", x => new { x.MaCoSoLuuTru, x.MaTienNghi });
                     table.ForeignKey(
-                        name: "FK_CoSoLuuTru_TienNghi_CoSoLuuTru_CoSoLuuTruMaCoSoLuuTru",
-                        column: x => x.CoSoLuuTruMaCoSoLuuTru,
+                        name: "FK_CoSoLuuTru_TienNghi_CoSoLuuTru_MaCoSoLuuTru",
+                        column: x => x.MaCoSoLuuTru,
                         principalTable: "CoSoLuuTru",
                         principalColumn: "MaCoSoLuuTru",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_CoSoLuuTru_TienNghi_TienNghi_TienNghiMaTienNghi",
-                        column: x => x.TienNghiMaTienNghi,
+                        name: "FK_CoSoLuuTru_TienNghi_TienNghi_MaTienNghi",
+                        column: x => x.MaTienNghi,
                         principalTable: "TienNghi",
                         principalColumn: "MaTienNghi",
                         onDelete: ReferentialAction.Cascade);
@@ -319,25 +317,23 @@ namespace API.Migrations
                 columns: table => new
                 {
                     MaDonDatPhong = table.Column<int>(type: "int", nullable: false),
-                    MaPhong = table.Column<int>(type: "int", nullable: false),
-                    DonDatPhongMaDonDatPhong = table.Column<int>(type: "int", nullable: false),
-                    PhongMaPhong = table.Column<int>(type: "int", nullable: false)
+                    MaPhong = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ChiTietDon", x => new { x.MaDonDatPhong, x.MaPhong });
                     table.ForeignKey(
-                        name: "FK_ChiTietDon_DonDatPhong_DonDatPhongMaDonDatPhong",
-                        column: x => x.DonDatPhongMaDonDatPhong,
+                        name: "FK_ChiTietDon_DonDatPhong_MaDonDatPhong",
+                        column: x => x.MaDonDatPhong,
                         principalTable: "DonDatPhong",
                         principalColumn: "MaDonDatPhong",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ChiTietDon_Phong_PhongMaPhong",
-                        column: x => x.PhongMaPhong,
+                        name: "FK_ChiTietDon_Phong_MaPhong",
+                        column: x => x.MaPhong,
                         principalTable: "Phong",
                         principalColumn: "MaPhong",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -347,22 +343,21 @@ namespace API.Migrations
                     MaHinhAnh = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     MaCoSoLuuTru = table.Column<int>(type: "int", nullable: true),
-                    CoSoLuuTruMaCoSoLuuTru = table.Column<int>(type: "int", nullable: true),
                     MaPhong = table.Column<int>(type: "int", nullable: true),
-                    PhongMaPhong = table.Column<int>(type: "int", nullable: true),
                     UrlHinhAnh = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_HinhAnh", x => x.MaHinhAnh);
                     table.ForeignKey(
-                        name: "FK_HinhAnh_CoSoLuuTru_CoSoLuuTruMaCoSoLuuTru",
-                        column: x => x.CoSoLuuTruMaCoSoLuuTru,
+                        name: "FK_HinhAnh_CoSoLuuTru_MaCoSoLuuTru",
+                        column: x => x.MaCoSoLuuTru,
                         principalTable: "CoSoLuuTru",
-                        principalColumn: "MaCoSoLuuTru");
+                        principalColumn: "MaCoSoLuuTru",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_HinhAnh_Phong_PhongMaPhong",
-                        column: x => x.PhongMaPhong,
+                        name: "FK_HinhAnh_Phong_MaPhong",
+                        column: x => x.MaPhong,
                         principalTable: "Phong",
                         principalColumn: "MaPhong");
                 });
@@ -374,7 +369,6 @@ namespace API.Migrations
                     MaLich = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     MaPhong = table.Column<int>(type: "int", nullable: false),
-                    PhongMaPhong = table.Column<int>(type: "int", nullable: false),
                     Ngay = table.Column<DateTime>(type: "date", nullable: false),
                     TrangThai = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false)
                 },
@@ -382,8 +376,8 @@ namespace API.Migrations
                 {
                     table.PrimaryKey("PK_LichLuuTru", x => x.MaLich);
                     table.ForeignKey(
-                        name: "FK_LichLuuTru_Phong_PhongMaPhong",
-                        column: x => x.PhongMaPhong,
+                        name: "FK_LichLuuTru_Phong_MaPhong",
+                        column: x => x.MaPhong,
                         principalTable: "Phong",
                         principalColumn: "MaPhong",
                         onDelete: ReferentialAction.Cascade);
@@ -395,22 +389,20 @@ namespace API.Migrations
                 {
                     MaPhong = table.Column<int>(type: "int", nullable: false),
                     MaTienNghi = table.Column<int>(type: "int", nullable: false),
-                    PhongMaPhong = table.Column<int>(type: "int", nullable: false),
-                    TienNghiMaTienNghi = table.Column<int>(type: "int", nullable: false),
                     SoLuong = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Phong_TienNghi", x => new { x.MaPhong, x.MaTienNghi });
                     table.ForeignKey(
-                        name: "FK_Phong_TienNghi_Phong_PhongMaPhong",
-                        column: x => x.PhongMaPhong,
+                        name: "FK_Phong_TienNghi_Phong_MaPhong",
+                        column: x => x.MaPhong,
                         principalTable: "Phong",
                         principalColumn: "MaPhong",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Phong_TienNghi_TienNghi_TienNghiMaTienNghi",
-                        column: x => x.TienNghiMaTienNghi,
+                        name: "FK_Phong_TienNghi_TienNghi_MaTienNghi",
+                        column: x => x.MaTienNghi,
                         principalTable: "TienNghi",
                         principalColumn: "MaTienNghi",
                         onDelete: ReferentialAction.Cascade);
@@ -427,14 +419,9 @@ namespace API.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ChiTietDon_DonDatPhongMaDonDatPhong",
+                name: "IX_ChiTietDon_MaPhong",
                 table: "ChiTietDon",
-                column: "DonDatPhongMaDonDatPhong");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ChiTietDon_PhongMaPhong",
-                table: "ChiTietDon",
-                column: "PhongMaPhong");
+                column: "MaPhong");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CoSoLuuTru_MaChuCoSoLuuTru",
@@ -442,14 +429,9 @@ namespace API.Migrations
                 column: "MaChuCoSoLuuTru");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CoSoLuuTru_TienNghi_CoSoLuuTruMaCoSoLuuTru",
+                name: "IX_CoSoLuuTru_TienNghi_MaTienNghi",
                 table: "CoSoLuuTru_TienNghi",
-                column: "CoSoLuuTruMaCoSoLuuTru");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CoSoLuuTru_TienNghi_TienNghiMaTienNghi",
-                table: "CoSoLuuTru_TienNghi",
-                column: "TienNghiMaTienNghi");
+                column: "MaTienNghi");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DanhGia_MaDonDatPhong",
@@ -468,25 +450,20 @@ namespace API.Migrations
                 column: "MaKhachHang");
 
             migrationBuilder.CreateIndex(
-                name: "IX_HinhAnh_CoSoLuuTruMaCoSoLuuTru",
+                name: "IX_HinhAnh_MaCoSoLuuTru",
                 table: "HinhAnh",
-                column: "CoSoLuuTruMaCoSoLuuTru");
+                column: "MaCoSoLuuTru");
 
             migrationBuilder.CreateIndex(
-                name: "IX_HinhAnh_PhongMaPhong",
+                name: "IX_HinhAnh_MaPhong",
                 table: "HinhAnh",
-                column: "PhongMaPhong");
+                column: "MaPhong");
 
             migrationBuilder.CreateIndex(
                 name: "IX_LichLuuTru_MaPhong_Ngay",
                 table: "LichLuuTru",
                 columns: new[] { "MaPhong", "Ngay" },
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_LichLuuTru_PhongMaPhong",
-                table: "LichLuuTru",
-                column: "PhongMaPhong");
 
             migrationBuilder.CreateIndex(
                 name: "IX_LichSuDuyet_MaCoSoLuuTru",
@@ -509,14 +486,9 @@ namespace API.Migrations
                 column: "MaLoaiPhong");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Phong_TienNghi_PhongMaPhong",
+                name: "IX_Phong_TienNghi_MaTienNghi",
                 table: "Phong_TienNghi",
-                column: "PhongMaPhong");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Phong_TienNghi_TienNghiMaTienNghi",
-                table: "Phong_TienNghi",
-                column: "TienNghiMaTienNghi");
+                column: "MaTienNghi");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PhuThu_MaDonDatPhong",

@@ -111,21 +111,21 @@
                         </RadioButton>
 
                         <!-- Nhãn nhóm 2 -->
-                        <TextBlock Text="TÀI CHÍNH &amp; DÒNG TIỀN 85/15" Foreground="#64748B" FontSize="10" FontWeight="Bold" Margin="12,18,0,8"/>
+                        <TextBlock Text="ĐẶT PHÒNG &amp; DÒNG TIỀN" Foreground="#64748B" FontSize="10" FontWeight="Bold" Margin="12,18,0,8"/>
 
-                        <!-- Menu 3: Quyết toán Tài chính 85/15 -->
-                        <RadioButton GroupName="SidebarMenu" Command="{Binding ChuyenManHinhQuyetToanCommand}">
+                        <!-- Menu 3: Quản lý Đơn đặt phòng & Hoàn tiền -->
+                        <RadioButton GroupName="SidebarMenu" Command="{Binding ChuyenManHinhDonDatCommand}">
                             <RadioButton.Template>
                                 <ControlTemplate TargetType="RadioButton">
                                     <Border x:Name="btnBorder" Background="Transparent" CornerRadius="8" Padding="14,11" Margin="0,3" Cursor="Hand">
                                         <Grid>
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="💳" FontSize="16" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                                <TextBlock Text="Quyết toán Dòng tiền (85/15)" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#94A3B8"/>
+                                                <TextBlock Text="📑" FontSize="16" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                                <TextBlock Text="Đơn đặt &amp; Hoàn tiền" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#94A3B8"/>
                                             </StackPanel>
-                                            <!-- Badge số đơn chưa quyết toán -->
+                                            <!-- Badge số đơn yêu cầu hoàn tiền nếu có -->
                                             <Border HorizontalAlignment="Right" Background="#EF4444" CornerRadius="10" Padding="7,2" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding QuyetToanTaiChinhVM.SoDonChuaQuyetToan}" Foreground="White" FontSize="11" FontWeight="Bold"/>
+                                                <TextBlock Text="{Binding QuanLyDonDatVM.SoDonYeuCauHoanTien}" Foreground="White" FontSize="11" FontWeight="Bold"/>
                                             </Border>
                                         </Grid>
                                     </Border>
@@ -170,7 +170,7 @@
                         </RadioButton>
 
                         <!-- Nhãn nhóm 3 -->
-                        <TextBlock Text="MARKETING &amp; HỆ THỐNG" Foreground="#64748B" FontSize="10" FontWeight="Bold" Margin="12,18,0,8"/>
+                        <TextBlock Text="MARKETING &amp; ƯU ĐÃI" Foreground="#64748B" FontSize="10" FontWeight="Bold" Margin="12,18,0,8"/>
 
                         <!-- Menu 5: Quản lý Khuyến mãi -->
                         <RadioButton GroupName="SidebarMenu" Command="{Binding ChuyenManHinhKhuyenMaiCommand}">
@@ -180,31 +180,6 @@
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="🎟️" FontSize="16" VerticalAlignment="Center" Margin="0,0,12,0"/>
                                             <TextBlock Text="Mã ưu đãi (Voucher giảm giá)" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#94A3B8"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="btnBorder" Property="Background" Value="#142E5C"/>
-                                            <Setter TargetName="txtTitle" Property="Foreground" Value="White"/>
-                                        </Trigger>
-                                        <Trigger Property="IsChecked" Value="True">
-                                            <Setter TargetName="btnBorder" Property="Background" Value="#0194F3"/>
-                                            <Setter TargetName="txtTitle" Property="Foreground" Value="White"/>
-                                            <Setter TargetName="txtTitle" Property="FontWeight" Value="Bold"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </RadioButton.Template>
-                        </RadioButton>
-
-                        <!-- Menu 6: Bảo trì Hệ thống -->
-                        <RadioButton GroupName="SidebarMenu" Command="{Binding ChuyenManHinhBaoTriCommand}">
-                            <RadioButton.Template>
-                                <ControlTemplate TargetType="RadioButton">
-                                    <Border x:Name="btnBorder" Background="Transparent" CornerRadius="8" Padding="14,11" Margin="0,3" Cursor="Hand">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="⚙️" FontSize="16" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                            <TextBlock Text="Sao lưu &amp; Phục hồi CSDL" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#94A3B8"/>
                                         </StackPanel>
                                     </Border>
                                     <ControlTemplate.Triggers>

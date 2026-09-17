@@ -26,6 +26,7 @@ namespace HomestaySystem.Models
         public int MaChuHome { get; set; }
         public string TenChuHome { get; set; } = string.Empty;
         public string SoDienThoaiChuHome { get; set; } = string.Empty;
+        public string EmailChuHome { get; set; } = string.Empty;
         public string? TenNganHangChuHome { get; set; }
         public string? SoTaiKhoanNganHangChuHome { get; set; }
         public string? ChuTaiKhoanNganHangChuHome { get; set; }
@@ -69,18 +70,36 @@ namespace HomestaySystem.Models
         {
             get => TrangThai switch
             {
-                "ChoXacNhan" => "Chờ xác nhận",
-                "DaXacNhan" => "Đã xác nhận",
-                "DangO" => "Đang lưu trú",
-                "HoanThanh" => "Đã Check-out",
-                "DaHuy" => "Đã hủy",
+                "Pending" or "ChoXacNhan" => "Chờ xác nhận",
+                "Confirmed" or "DaXacNhan" => "Đã xác nhận",
+                "CheckedIn" or "DangO" => "Đang lưu trú",
+                "CheckedOut" or "HoanThanh" => "Đã Check-out",
+                "RefundRequested" or "YeuCauHoanTien" => "Yêu cầu hoàn tiền",
+                "Refunded" or "DaHoanTien" => "Đã hoàn tiền",
+                "Cancelled" or "DaHuy" => "Đã hủy",
                 _ => TrangThai
             };
             set {}
         }
 
-        public string TenHienThiQuyetToan { get => TrangThaiQuyetToan == "DaQuyetToan" ? "Đã quyết toán (85%)" : "Chưa quyết toán"; set {} }
+        public string MauTrangThai
+        {
+            get => TrangThai switch
+            {
+                "Confirmed" or "DaXacNhan" or "CheckedIn" => "#0E9F6E",
+                "Pending" or "ChoXacNhan" => "#F59E0B",
+                "RefundRequested" or "YeuCauHoanTien" => "#FF5E1F",
+                "Refunded" or "DaHoanTien" => "#8B5CF6",
+                "Cancelled" or "DaHuy" => "#EF4444",
+                "CheckedOut" or "HoanThanh" => "#0194F3",
+                _ => "#64748B"
+            };
+            set {}
+        }
+
+        public string TenHienThiQuyetToan { get => TrangThaiQuyetToan == "DaQuyetToan" ? "Đã quyết toán" : "Chưa quyết toán"; set {} }
         public string MauQuyetToan { get => TrangThaiQuyetToan == "DaQuyetToan" ? "#10B981" : "#EF4444"; set {} }
-        public bool CoTheQuyetToan { get => TrangThai == "HoanThanh" && TrangThaiQuyetToan == "ChuaQuyetToan"; set {} }
+        public bool CoTheQuyetToan { get => (TrangThai == "HoanThanh" || TrangThai == "CheckedOut") && TrangThaiQuyetToan == "ChuaQuyetToan"; set {} }
+        public bool CoTheHoanTien { get => TrangThai == "RefundRequested" || TrangThai == "Confirmed" || TrangThai == "DaXacNhan"; set {} }
     }
 }

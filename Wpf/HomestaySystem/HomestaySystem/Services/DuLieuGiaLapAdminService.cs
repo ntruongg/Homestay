@@ -392,10 +392,27 @@ namespace HomestaySystem.Services
             return _danhSachCoSo.Where(c => c.TrangThai == "ChoDuyet").ToList();
         }
 
-        public async Task<List<CoSoLuuTru>> LayTatCaCoSoAsync()
+        public async Task<List<CoSoLuuTru>> LayTatCaCoSoAsync(string? trangThai = null, string? tuKhoa = null)
         {
             await Task.Delay(200);
-            return _danhSachCoSo.OrderByDescending(c => c.NgayGuiDuyet).ToList();
+            var query = _danhSachCoSo.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(trangThai) && trangThai != "TatCa")
+            {
+                query = query.Where(c => c.TrangThai == trangThai);
+            }
+            if (!string.IsNullOrWhiteSpace(tuKhoa))
+            {
+                query = query.Where(c => c.TenCoSo.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ||
+                                         c.DiaChi.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ||
+                                         c.TenChuHome.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase));
+            }
+            return query.OrderByDescending(c => c.NgayGuiDuyet).ToList();
+        }
+
+        public async Task<CoSoLuuTru?> LayChiTietCoSoAsync(int maCoSo)
+        {
+            await Task.Delay(100);
+            return _danhSachCoSo.FirstOrDefault(c => c.MaCoSo == maCoSo);
         }
 
         public async Task<bool> PheDuyetCoSoAsync(int maCoSo, string nguoiDuyet)
@@ -429,14 +446,33 @@ namespace HomestaySystem.Services
         #endregion
 
         #region 2. QUẢN LÝ TÀI KHOẢN & ĐỐI TÁC TERA
-        public async Task<List<TaiKhoan>> LayDanhSachTaiKhoanAsync(string? vaiTro = null)
+        public async Task<List<TaiKhoan>> LayDanhSachTaiKhoanAsync(string? vaiTro = null, string? tuKhoa = null)
         {
             await Task.Delay(200);
-            if (string.IsNullOrWhiteSpace(vaiTro) || vaiTro == "TatCa")
+            var query = _danhSachTaiKhoan.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(vaiTro) && vaiTro != "TatCa")
             {
-                return _danhSachTaiKhoan.OrderBy(t => t.MaTaiKhoan).ToList();
+                query = query.Where(t => t.VaiTro == vaiTro);
             }
-            return _danhSachTaiKhoan.Where(t => t.VaiTro == vaiTro).OrderBy(t => t.MaTaiKhoan).ToList();
+            if (!string.IsNullOrWhiteSpace(tuKhoa))
+            {
+                query = query.Where(t => t.HoTen.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ||
+                                         t.Email.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ||
+                                         (t.SoDienThoai != null && t.SoDienThoai.Contains(tuKhoa)));
+            }
+            return query.OrderBy(t => t.MaTaiKhoan).ToList();
+        }
+
+        public async Task<bool> DoiTrangThaiTaiKhoanAsync(int maTaiKhoan, bool kichHoat)
+        {
+            await Task.Delay(250);
+            var taiKhoan = _danhSachTaiKhoan.FirstOrDefault(t => t.MaTaiKhoan == maTaiKhoan);
+            if (taiKhoan != null)
+            {
+                taiKhoan.TrangThai = kichHoat ? "HoatDong" : "BiKhoa";
+                return true;
+            }
+            return false;
         }
 
         public async Task<bool> DoiTrangThaiTaiKhoanAsync(int maTaiKhoan, string trangThaiMoi)
@@ -465,11 +501,57 @@ namespace HomestaySystem.Services
         }
         #endregion
 
-        #region 3. QUYẾT TOÁN TÀI CHÍNH 85/15
+        #region 3. QUẢN LÝ ĐƠN ĐẶT PHÒNG & HOÀN TIỀN
+        public async Task<List<DonDatPhong>> LayDanhSachDonDatAsync(string? trangThai = null, string? tuKhoa = null)
+        {
+            await Task.Delay(200);
+            var query = _danhSachDon.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(trangThai) && trangThai != "TatCa")
+            {
+                query = query.Where(d => d.TrangThai == trangThai);
+            }
+            if (!string.IsNullOrWhiteSpace(tuKhoa))
+            {
+                query = query.Where(d => d.TenKhachHang.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ||
+                                         d.TenCoSo.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ||
+                                         d.MaDon.ToString().Contains(tuKhoa));
+            }
+            return query.OrderByDescending(d => d.ThoiGianTao).ToList();
+        }
+
+        public async Task<DonDatPhong?> LayChiTietDonDatAsync(int maDon)
+        {
+            await Task.Delay(100);
+            return _danhSachDon.FirstOrDefault(d => d.MaDon == maDon);
+        }
+
+        public async Task<bool> XuLyHoanTienAsync(int maDon, decimal soTienHoan, string lyDo, string ghiChu)
+        {
+            await Task.Delay(300);
+            var don = _danhSachDon.FirstOrDefault(d => d.MaDon == maDon);
+            if (don != null)
+            {
+                don.TrangThai = "DaHuy";
+                don.TrangThaiQuyetToan = "DaHoanTien";
+                return true;
+            }
+            return false;
+        }
+
+        public async Task<bool> TuChoiHoanTienAsync(int maDon, string lyDo, string? ghiChu)
+        {
+            await Task.Delay(300);
+            var don = _danhSachDon.FirstOrDefault(d => d.MaDon == maDon);
+            if (don != null)
+            {
+                return true;
+            }
+            return false;
+        }
+
         public async Task<List<DonDatPhong>> LayDanhSachQuyetToanAsync(string? trangThaiQuyetToan = null)
         {
             await Task.Delay(200);
-            // Chỉ lấy các đơn đã Hoàn thành Check-out
             var query = _danhSachDon.Where(d => d.TrangThai == "HoanThanh");
             if (!string.IsNullOrWhiteSpace(trangThaiQuyetToan) && trangThaiQuyetToan != "TatCa")
             {
@@ -560,6 +642,18 @@ namespace HomestaySystem.Services
                 existing.NgayKetThuc = khuyenMai.NgayKetThuc;
                 existing.SoLuongToiDa = khuyenMai.SoLuongToiDa;
                 existing.TrangThai = khuyenMai.TrangThai;
+                return true;
+            }
+            return false;
+        }
+
+        public async Task<bool> XoaKhuyenMaiAsync(int maKhuyenMai)
+        {
+            await Task.Delay(200);
+            var existing = _danhSachKhuyenMai.FirstOrDefault(k => k.MaKhuyenMai == maKhuyenMai);
+            if (existing != null)
+            {
+                _danhSachKhuyenMai.Remove(existing);
                 return true;
             }
             return false;

@@ -29,9 +29,11 @@ public class DonDatPhong
 public class ChiTietDon
 {
     public int MaDonDatPhong { get; set; }
+    [ForeignKey(nameof(MaDonDatPhong))]
     public DonDatPhong DonDatPhong { get; set; } = null!;
 
     public int MaPhong { get; set; }
+    [ForeignKey(nameof(MaPhong))]
     public Phong Phong { get; set; } = null!;
 }
 
@@ -63,6 +65,7 @@ public class LichLuuTru
     [Key]
     public int MaLich { get; set; }
     public int MaPhong { get; set; }
+    [ForeignKey(nameof(MaPhong))]
     public Phong Phong { get; set; } = null!;
     public DateTime Ngay { get; set; }
     [StringLength(30)]

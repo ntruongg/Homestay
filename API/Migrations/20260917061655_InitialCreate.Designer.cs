@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace API.Migrations
 {
     [DbContext(typeof(HomestayDbContext))]
-    [Migration("20260914113517_InitialCreate")]
+    [Migration("20260917061655_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -33,17 +33,9 @@ namespace API.Migrations
                     b.Property<int>("MaPhong")
                         .HasColumnType("int");
 
-                    b.Property<int>("DonDatPhongMaDonDatPhong")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PhongMaPhong")
-                        .HasColumnType("int");
-
                     b.HasKey("MaDonDatPhong", "MaPhong");
 
-                    b.HasIndex("DonDatPhongMaDonDatPhong");
-
-                    b.HasIndex("PhongMaPhong");
+                    b.HasIndex("MaPhong");
 
                     b.ToTable("ChiTietDon", (string)null);
                 });
@@ -126,17 +118,9 @@ namespace API.Migrations
                     b.Property<int>("MaTienNghi")
                         .HasColumnType("int");
 
-                    b.Property<int>("CoSoLuuTruMaCoSoLuuTru")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TienNghiMaTienNghi")
-                        .HasColumnType("int");
-
                     b.HasKey("MaCoSoLuuTru", "MaTienNghi");
 
-                    b.HasIndex("CoSoLuuTruMaCoSoLuuTru");
-
-                    b.HasIndex("TienNghiMaTienNghi");
+                    b.HasIndex("MaTienNghi");
 
                     b.ToTable("CoSoLuuTru_TienNghi", (string)null);
                 });
@@ -253,16 +237,10 @@ namespace API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaHinhAnh"));
 
-                    b.Property<int?>("CoSoLuuTruMaCoSoLuuTru")
-                        .HasColumnType("int");
-
                     b.Property<int?>("MaCoSoLuuTru")
                         .HasColumnType("int");
 
                     b.Property<int?>("MaPhong")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("PhongMaPhong")
                         .HasColumnType("int");
 
                     b.Property<string>("UrlHinhAnh")
@@ -271,9 +249,9 @@ namespace API.Migrations
 
                     b.HasKey("MaHinhAnh");
 
-                    b.HasIndex("CoSoLuuTruMaCoSoLuuTru");
+                    b.HasIndex("MaCoSoLuuTru");
 
-                    b.HasIndex("PhongMaPhong");
+                    b.HasIndex("MaPhong");
 
                     b.ToTable("HinhAnh", (string)null);
                 });
@@ -292,17 +270,12 @@ namespace API.Migrations
                     b.Property<DateTime>("Ngay")
                         .HasColumnType("date");
 
-                    b.Property<int>("PhongMaPhong")
-                        .HasColumnType("int");
-
                     b.Property<string>("TrangThai")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
                     b.HasKey("MaLich");
-
-                    b.HasIndex("PhongMaPhong");
 
                     b.HasIndex("MaPhong", "Ngay")
                         .IsUnique();
@@ -413,20 +386,12 @@ namespace API.Migrations
                     b.Property<int>("MaTienNghi")
                         .HasColumnType("int");
 
-                    b.Property<int>("PhongMaPhong")
-                        .HasColumnType("int");
-
                     b.Property<int>("SoLuong")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TienNghiMaTienNghi")
                         .HasColumnType("int");
 
                     b.HasKey("MaPhong", "MaTienNghi");
 
-                    b.HasIndex("PhongMaPhong");
-
-                    b.HasIndex("TienNghiMaTienNghi");
+                    b.HasIndex("MaTienNghi");
 
                     b.ToTable("Phong_TienNghi", (string)null);
                 });
@@ -617,14 +582,14 @@ namespace API.Migrations
                 {
                     b.HasOne("API.Models.DonDatPhong", "DonDatPhong")
                         .WithMany("ChiTietDons")
-                        .HasForeignKey("DonDatPhongMaDonDatPhong")
+                        .HasForeignKey("MaDonDatPhong")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("API.Models.Phong", "Phong")
                         .WithMany("ChiTietDons")
-                        .HasForeignKey("PhongMaPhong")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("MaPhong")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("DonDatPhong");
@@ -647,13 +612,13 @@ namespace API.Migrations
                 {
                     b.HasOne("API.Models.CoSoLuuTru", "CoSoLuuTru")
                         .WithMany("TienNghis")
-                        .HasForeignKey("CoSoLuuTruMaCoSoLuuTru")
+                        .HasForeignKey("MaCoSoLuuTru")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("API.Models.TienNghi", "TienNghi")
                         .WithMany()
-                        .HasForeignKey("TienNghiMaTienNghi")
+                        .HasForeignKey("MaTienNghi")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -695,11 +660,12 @@ namespace API.Migrations
                 {
                     b.HasOne("API.Models.CoSoLuuTru", "CoSoLuuTru")
                         .WithMany()
-                        .HasForeignKey("CoSoLuuTruMaCoSoLuuTru");
+                        .HasForeignKey("MaCoSoLuuTru")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("API.Models.Phong", "Phong")
                         .WithMany()
-                        .HasForeignKey("PhongMaPhong");
+                        .HasForeignKey("MaPhong");
 
                     b.Navigation("CoSoLuuTru");
 
@@ -710,7 +676,7 @@ namespace API.Migrations
                 {
                     b.HasOne("API.Models.Phong", "Phong")
                         .WithMany()
-                        .HasForeignKey("PhongMaPhong")
+                        .HasForeignKey("MaPhong")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -756,13 +722,13 @@ namespace API.Migrations
                 {
                     b.HasOne("API.Models.Phong", "Phong")
                         .WithMany("TienNghis")
-                        .HasForeignKey("PhongMaPhong")
+                        .HasForeignKey("MaPhong")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("API.Models.TienNghi", "TienNghi")
                         .WithMany()
-                        .HasForeignKey("TienNghiMaTienNghi")
+                        .HasForeignKey("MaTienNghi")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

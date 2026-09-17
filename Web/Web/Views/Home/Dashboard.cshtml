@@ -8,6 +8,69 @@
     var rejectedProps = Model.Properties.Where(p => (p.ApprovalStatus ?? "").Equals("Rejected", StringComparison.OrdinalIgnoreCase)).ToList();
 }
 
+<style>
+    /* Highlighting for unfulfilled input boxes on form submission */
+    .field-error-highlight {
+        border: 2px solid #ef4444 !important;
+        background-color: #fef2f2 !important;
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18) !important;
+        animation: shakeInput 0.4s ease-in-out !important;
+        outline: none !important;
+    }
+
+    .field-error-highlight:focus {
+        border-color: #dc2626 !important;
+        box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.25) !important;
+    }
+
+    .card-error-highlight {
+        border: 2px solid #ef4444 !important;
+        background-color: #fffaf0 !important;
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18) !important;
+        animation: shakeInput 0.4s ease-in-out !important;
+    }
+
+    .field-error-msg {
+        color: #dc2626;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-top: 5px;
+        display: none;
+        align-items: center;
+        gap: 4px;
+        line-height: 1.3;
+    }
+
+    .field-error-msg.visible {
+        display: flex !important;
+    }
+
+    .form-validation-banner {
+        display: none;
+        background: #fef2f2;
+        border: 1.5px solid #f87171;
+        border-radius: 10px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        color: #991b1b;
+        align-items: flex-start;
+        gap: 12px;
+        animation: shakeInput 0.4s ease-in-out;
+    }
+
+    .form-validation-banner.visible {
+        display: flex !important;
+    }
+
+    @@keyframes shakeInput {
+        0%, 100% { transform: translateX(0); }
+        20% { transform: translateX(-6px); }
+        40% { transform: translateX(6px); }
+        60% { transform: translateX(-4px); }
+        80% { transform: translateX(4px); }
+    }
+</style>
+
 <div class="app-shell">
     <!-- Top Hero Banner -->
     <div class="dashboard-hero">
@@ -135,129 +198,329 @@
         <!-- Right Column: Content Column -->
         <main class="column-tabs-content">
             <!-- Collapsible Add Property Form -->
-            <div id="createPropertyBox" class="collapsible-form-wrap" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <h3>Register New Homestay Property</h3>
-            <button type="button" class="action-btn-mini" onclick="toggleForm('createPropertyBox')">&times; Close</button>
-        </div>
-        <div class="admin-pending-alert" style="margin-top: 0; margin-bottom: 18px;">
-            <strong>Admin Approval Notice:</strong> Newly registered homestays are submitted to the Admin portal (WPF) for review and verification. Once approved by the administrator, your listing will automatically appear on the public website and unlock room setup.
-        </div>
-        <form asp-action="CreateProperty" method="post">
-            <div class="form-row">
-                <label>
-                    Homestay Name *
-                    <input asp-for="NewProperty.Name" required placeholder="e.g. Pine Hill Mountain Villa" />
-                </label>
-                <label>
-                    Property Type
-                    <select asp-for="NewProperty.Type">
-                        <option value="Homestay">Homestay</option>
-                        <option value="Hotel">Hotel</option>
-                        <option value="Villa">Villa</option>
-                        <option value="Resort">Resort</option>
-                    </select>
-                </label>
-            </div>
+            <div id="createPropertyBox" class="collapsible-form-wrap" style="display: none; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 28px; margin-bottom: 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.06);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 16px;">
+                    <div>
+                        <h2 style="margin: 0; font-size: 1.45rem; color: #1e293b; font-family: 'Playfair Display', serif; display: flex; align-items: center; gap: 10px;">
+                            <span>🏡</span> Đăng ký Cơ sở lưu trú mới
+                        </h2>
+                        <p style="margin: 4px 0 0; color: #64748b; font-size: 0.9rem;">
+                            Cung cấp đầy đủ thông tin, tiện ích và hồ sơ chứng nhận pháp lý để gửi Admin thẩm định phê duyệt.
+                        </p>
+                    </div>
+                    <button type="button" class="action-btn-mini" onclick="toggleForm('createPropertyBox')" style="font-size: 0.9rem; padding: 6px 14px;">&times; Đóng form</button>
+                </div>
 
-            <div class="form-row">
-                <label>
-                    Street Address *
-                    <input asp-for="NewProperty.Address" required placeholder="e.g. 123 Tran Phu" />
-                </label>
-                <label>
-                    Ward / Commune
-                    <input asp-for="NewProperty.Ward" placeholder="e.g. Ward 3" />
-                </label>
-                <label>
-                    City / Province *
-                    <input asp-for="NewProperty.City" required placeholder="e.g. Da Lat" />
-                </label>
-            </div>
+                <div class="admin-pending-alert" style="margin-top: 0; margin-bottom: 24px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 14px 18px; color: #1e40af;">
+                    <strong>🛡️ Quy trình kiểm duyệt pháp lý (WPF Admin):</strong>
+                    Hồ sơ sau khi gửi sẽ chuyển vào danh sách chờ duyệt của Quản trị viên. Khi Giấy phép kinh doanh, Giấy tờ PCCC và An ninh trật tự được thẩm định hợp lệ, cơ sở sẽ tự động xuất hiện trên website và mở khóa tạo phòng đón khách.
+                </div>
 
-            <div class="form-row">
-                <label>
-                    Contact Phone
-                    <input asp-for="NewProperty.Phone" placeholder="e.g. 0988776655" />
-                </label>
-                <label>
-                    Contact Email
-                    <input asp-for="NewProperty.Email" type="email" placeholder="e.g. stay@pinehill.com" />
-                </label>
-            </div>
+                <!-- Validation Summary Alert Banner -->
+                <div id="propertyFormValidationBanner" class="form-validation-banner">
+                    <div style="font-size: 1.4rem; line-height: 1;">⚠️</div>
+                    <div>
+                        <strong style="display: block; font-size: 0.95rem; margin-bottom: 3px;">Vui lòng hoàn thành các trường bắt buộc được đánh dấu đỏ:</strong>
+                        <span style="font-size: 0.85rem; color: #b91c1c;">Hệ thống phát hiện thông tin cơ bản hoặc hồ sơ thẩm định pháp lý chưa được điền đầy đủ. Vui lòng kiểm tra các ô bên dưới trước khi gửi yêu cầu.</span>
+                    </div>
+                </div>
 
-            <label>
-                House Rules &amp; Cancellation Policy
-                <textarea asp-for="NewProperty.Policy" rows="2" placeholder="e.g. Check-in after 14:00, no loud parties after 22:00"></textarea>
-            </label>
+                <form id="createPropertyForm" asp-action="CreateProperty" method="post" enctype="multipart/form-data" novalidate>
+                    <!-- SECTION 1: Thông tin cơ bản & Liên hệ -->
+                    <div style="margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
+                        <h4 style="margin: 0 0 14px; font-size: 1rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                            <span style="background: #e0f2fe; color: #0284c7; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold;">1</span>
+                            Thông tin chung &amp; Liên hệ
+                        </h4>
 
-            <div style="margin-top: 14px;">
-                <button type="submit" class="button">Submit for Admin Approval &rarr;</button>
-            </div>
-            @Html.AntiForgeryToken()
-        </form>
-    </div>
+                        <div class="form-row" style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
+                            <label style="display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 0.88rem; color: #334155;">
+                                Tên cơ sở lưu trú *
+                                <input asp-for="NewProperty.Name" id="propName" required placeholder="Ví dụ: Pine Hill Mountain Homestay Da Lat" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.92rem; transition: border-color 0.2s, box-shadow 0.2s;" />
+                                <div id="err_propName" class="field-error-msg">⚠️ Vui lòng nhập tên cơ sở lưu trú.</div>
+                            </label>
 
-    <!-- Collapsible Add Room Form -->
-    <div id="createRoomBox" class="collapsible-form-wrap" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <h3>Add New Room to Homestay</h3>
-            <button type="button" class="action-btn-mini" onclick="toggleForm('createRoomBox')">&times; Close</button>
-        </div>
+                            <label style="display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 0.88rem; color: #334155;">
+                                Loại hình lưu trú *
+                                <select asp-for="NewProperty.Type" id="propType" required style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.92rem; background: #fff; transition: border-color 0.2s, box-shadow 0.2s;">
+                                    <option value="Homestay">Homestay gia đình</option>
+                                    <option value="Hotel">Khách sạn (Hotel)</option>
+                                    <option value="Villa">Biệt thự nghỉ dưỡng (Villa)</option>
+                                    <option value="Resort">Khu nghỉ dưỡng (Resort)</option>
+                                </select>
+                                <div id="err_propType" class="field-error-msg">⚠️ Vui lòng chọn loại hình lưu trú.</div>
+                            </label>
+                        </div>
 
-        @if (!approvedProps.Any())
-        {
-            <div class="admin-pending-alert">
-                <strong>No approved homestays available:</strong> You cannot add rooms yet because your homestay listings are currently pending approval by the Admin via WPF. As soon as Admin approves a listing, it will be selectable here.
-            </div>
-        }
-        else
-        {
-            <form asp-action="CreateRoom" method="post">
-                <div class="form-row">
-                    <label>
-                        Select Approved Homestay Property *
-                        <select asp-for="NewRoom.PropertyId" id="roomPropertySelect" required>
-                            @foreach (var prop in approvedProps)
+                        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px;">
+                            <label style="display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 0.88rem; color: #334155;">
+                                Hotline / Số điện thoại đón khách *
+                                <input asp-for="NewProperty.Phone" id="propPhone" required placeholder="Ví dụ: 0988776655" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.92rem; transition: border-color 0.2s, box-shadow 0.2s;" />
+                                <div id="err_propPhone" class="field-error-msg">⚠️ Vui lòng nhập số điện thoại đón khách hợp lệ (tối thiểu 8 chữ số).</div>
+                            </label>
+
+                            <label style="display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 0.88rem; color: #334155;">
+                                Email liên hệ tiếp nhận đơn đặt
+                                <input asp-for="NewProperty.Email" id="propEmail" type="email" placeholder="Ví dụ: stay@pinehill.vn" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.92rem; transition: border-color 0.2s, box-shadow 0.2s;" />
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 2: Vị trí & Địa chỉ -->
+                    <div style="margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
+                        <h4 style="margin: 0 0 14px; font-size: 1rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                            <span style="background: #fef3c7; color: #b45309; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold;">2</span>
+                            Vị trí &amp; Địa chỉ chi tiết
+                        </h4>
+
+                        <div class="form-row" style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px;">
+                            <label style="display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 0.88rem; color: #334155;">
+                                Địa chỉ đường, số nhà *
+                                <input asp-for="NewProperty.Address" id="propAddress" required placeholder="Ví dụ: 123 Hoàng Hoa Thám" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.92rem; transition: border-color 0.2s, box-shadow 0.2s;" />
+                                <div id="err_propAddress" class="field-error-msg">⚠️ Vui lòng nhập địa chỉ cụ thể của cơ sở.</div>
+                            </label>
+
+                            <label style="display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 0.88rem; color: #334155;">
+                                Phường / Xã
+                                <input asp-for="NewProperty.Ward" id="propWard" placeholder="Ví dụ: Phường 10" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.92rem;" />
+                            </label>
+
+                            <label style="display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 0.88rem; color: #334155;">
+                                Tỉnh / Thành phố *
+                                <input asp-for="NewProperty.City" id="propCity" required placeholder="Ví dụ: Đà Lạt, Lâm Đồng" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.92rem; transition: border-color 0.2s, box-shadow 0.2s;" />
+                                <div id="err_propCity" class="field-error-msg">⚠️ Vui lòng nhập Tỉnh hoặc Thành phố.</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 3: Tiện nghi & Dịch vụ cơ sở lưu trú -->
+                    <div style="margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
+                        <h4 style="margin: 0 0 8px; font-size: 1rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                            <span style="background: #dcfce7; color: #166534; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold;">3</span>
+                            Tiện nghi &amp; Dịch vụ cơ sở
+                        </h4>
+                        <p style="margin: 0 0 14px; font-size: 0.85rem; color: #64748b;">
+                            Chọn các tiện ích nổi bật mà homestay của bạn cung cấp cho khách lưu trú:
+                        </p>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;">
+                            @if (Model.AvailableAmenities != null && Model.AvailableAmenities.Any())
                             {
-                                <option value="@prop.Id">@prop.Name (@(prop.City ?? "Local"))</option>
+                                @foreach (var amenity in Model.AvailableAmenities)
+                                {
+                                    <label style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#cbd5e1'">
+                                        <input type="checkbox" name="NewProperty.AmenityIds" value="@amenity.Id" style="width: 16px; height: 16px; accent-color: #10b981;" />
+                                        <span style="font-size: 0.88rem; color: #1e293b; font-weight: 500;">@amenity.Name</span>
+                                    </label>
+                                }
                             }
-                        </select>
-                    </label>
+                            else
+                            {
+                                <div style="color: #64748b; font-size: 0.85rem; font-style: italic;">Đang tải danh mục tiện nghi hệ thống...</div>
+                            }
+                        </div>
+                    </div>
 
-                    <label>
-                        Room Name or Number *
-                        <input asp-for="NewRoom.RoomNumber" required placeholder="e.g. Room 101 or Entire Villa" />
-                    </label>
+                    <!-- SECTION 4: Hồ sơ pháp lý thẩm định (Admin Verification Documents) -->
+                    <div style="margin-bottom: 24px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px; padding: 20px;">
+                        <h4 style="margin: 0 0 8px; font-size: 1rem; color: #92400e; display: flex; align-items: center; gap: 8px;">
+                            <span style="background: #fde68a; color: #b45309; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold;">4</span>
+                            Hồ sơ pháp lý thẩm định (Admin Verification Documents)
+                        </h4>
+                        <p style="margin: 0 0 16px; font-size: 0.85rem; color: #78350f;">
+                            Chủ cơ sở có thể tải lên ngay tài liệu scan/ảnh chụp hoặc bổ sung sau để Quản trị viên đối chiếu và kích hoạt đón khách:
+                        </p>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px;">
+                            <!-- 1. Giấy phép kinh doanh -->
+                            <div id="cardBizLicense" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; transition: all 0.2s;">
+                                <div style="font-weight: 600; font-size: 0.9rem; color: #1e293b; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                                    <span>📜</span> Giấy phép Kinh doanh (GPKD) <span style="font-size: 0.78rem; font-weight: normal; color: #64748b;">(Tùy chọn)</span>
+                                </div>
+                                <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">
+                                    Tải lên ảnh hoặc file PDF giấy phép hộ kinh doanh / doanh nghiệp:
+                                </div>
+                                <input asp-for="NewProperty.BusinessLicenseFile" id="propBizLicenseFile" type="file" accept="image/*,.pdf" style="width: 100%; font-size: 0.82rem; margin-bottom: 8px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+                                <input asp-for="NewProperty.BusinessLicenseUrl" id="propBizLicenseUrl" placeholder="Hoặc dán URL ảnh GPKD..." style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;" />
+                            </div>
+
+                            <!-- 2. Giấy chứng nhận PCCC -->
+                            <div id="cardFireSafety" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; transition: all 0.2s;">
+                                <div style="font-weight: 600; font-size: 0.9rem; color: #1e293b; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                                    <span>🧯</span> Giấy chứng nhận PCCC <span style="font-size: 0.78rem; font-weight: normal; color: #64748b;">(Tùy chọn)</span>
+                                </div>
+                                <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">
+                                    Biên bản / Giấy chứng nhận đủ điều kiện Phòng cháy chữa cháy:
+                                </div>
+                                <input asp-for="NewProperty.FireSafetyFile" id="propFireSafetyFile" type="file" accept="image/*,.pdf" style="width: 100%; font-size: 0.82rem; margin-bottom: 8px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+                                <input asp-for="NewProperty.FireSafetyDocumentUrl" id="propFireSafetyUrl" placeholder="Hoặc dán URL ảnh PCCC..." style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;" />
+                            </div>
+
+                            <!-- 3. Giấy tờ ANTT -->
+                            <div id="cardSecurity" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; transition: all 0.2s;">
+                                <div style="font-weight: 600; font-size: 0.9rem; color: #1e293b; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                                    <span>👮</span> Giấy xác nhận An ninh Trật tự (ANTT) <span style="font-size: 0.78rem; font-weight: normal; color: #64748b;">(Tùy chọn)</span>
+                                </div>
+                                <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">
+                                    Giấy chứng nhận đủ điều kiện về An ninh trật tự cơ sở lưu trú:
+                                </div>
+                                <input asp-for="NewProperty.SecurityFile" id="propSecurityFile" type="file" accept="image/*,.pdf" style="width: 100%; font-size: 0.82rem; margin-bottom: 8px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+                                <input asp-for="NewProperty.SecurityDocumentUrl" id="propSecurityUrl" placeholder="Hoặc dán URL ảnh ANTT..." style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 5: Hình ảnh khuôn viên & Mặt tiền Homestay -->
+                    <div style="margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
+                        <h4 style="margin: 0 0 8px; font-size: 1rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                            <span style="background: #ede9fe; color: #6d28d9; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold;">5</span>
+                            Bộ sưu tập ảnh Homestay (Showcase Gallery)
+                        </h4>
+                        <p style="margin: 0 0 12px; font-size: 0.85rem; color: #64748b;">
+                            Tải lên hình ảnh khuôn viên, mặt tiền, phòng khách, phong cảnh xung quanh để tạo ấn tượng cho du khách:
+                        </p>
+
+                        <div style="background: #ffffff; border: 2px dashed #cbd5e1; border-radius: 10px; padding: 20px; text-align: center;">
+                            <div style="font-size: 2rem; color: #94a3b8; margin-bottom: 8px;">📷</div>
+                            <input asp-for="NewProperty.PhotoFiles" type="file" multiple accept="image/*" style="font-size: 0.9rem; margin-bottom: 8px;" />
+                            <div style="font-size: 0.8rem; color: #64748b;">Hỗ trợ định dạng JPG, PNG, WEBP. Có thể chọn cùng lúc nhiều ảnh.</div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 6: Chính sách & Nội quy lưu trú -->
+                    <div style="margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
+                        <h4 style="margin: 0 0 8px; font-size: 1rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                            <span style="background: #f1f5f9; color: #475569; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold;">6</span>
+                            Chính sách &amp; Nội quy Homestay
+                        </h4>
+                        <label style="display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 0.88rem; color: #334155;">
+                            Quy định nhận/trả phòng, giữ yên tĩnh, thú cưng &amp; hủy đơn
+                            <textarea asp-for="NewProperty.Policy" rows="3" placeholder="Ví dụ: Nhận phòng sau 14:00, trả phòng trước 12:00. Không hút thuốc trong phòng kín. Giữ trật tự sau 22:00. Miễn phí hủy trước 48 giờ." style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.92rem;"></textarea>
+                        </label>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                        <button type="button" class="button outline" onclick="toggleForm('createPropertyBox')">Hủy bỏ</button>
+                        <button type="submit" id="btnSubmitProperty" class="button" style="background: #059669; border-color: #059669; padding: 12px 28px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                            🚀 Gửi hồ sơ đăng ký thẩm định &rarr;
+                        </button>
+                    </div>
+                    @Html.AntiForgeryToken()
+                </form>
+            </div>
+
+            <!-- Collapsible Add Room Form -->
+            <div id="createRoomBox" class="collapsible-form-wrap" style="display: none; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 28px; margin-bottom: 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.06);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 16px;">
+                    <div>
+                        <h2 style="margin: 0; font-size: 1.45rem; color: #1e293b; font-family: 'Playfair Display', serif; display: flex; align-items: center; gap: 10px;">
+                            <span>🛏️</span> Thêm Phòng mới vào Homestay
+                        </h2>
+                        <p style="margin: 4px 0 0; color: #64748b; font-size: 0.9rem;">
+                            Thiết lập tên phòng, loại phòng, sức chứa, giá niêm yết mỗi đêm và ảnh chụp chi tiết.
+                        </p>
+                    </div>
+                    <button type="button" class="action-btn-mini" onclick="toggleForm('createRoomBox')" style="font-size: 0.9rem; padding: 6px 14px;">&times; Đóng form</button>
                 </div>
 
-                <div class="form-row">
-                    <label>
-                        Capacity (Guests) *
-                        <input asp-for="NewRoom.Capacity" type="number" min="1" max="20" required value="2" />
-                    </label>
+                @if (!approvedProps.Any())
+                {
+                    <div class="admin-pending-alert" style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 8px; color: #92400e;">
+                        <strong>⚠️ Chưa có cơ sở lưu trú được phê duyệt:</strong>
+                        Tính năng tạo phòng chỉ khả dụng cho các homestay đã được Ban Quản trị (Admin WPF) duyệt kích hoạt. Các homestay đang chờ duyệt sẽ tự động xuất hiện tại đây ngay khi hoàn tất thẩm định.
+                    </div>
+                }
+                else
+                {
+                    <form asp-action="CreateRoom" method="post" enctype="multipart/form-data">
+                        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                            <label style="display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 0.88rem; color: #334155;">
+                                Chọn Cơ sở lưu trú đã phê duyệt *
+                                <select asp-for="NewRoom.PropertyId" id="roomPropertySelect" required style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.92rem; background: #fff;">
+                                    @foreach (var prop in approvedProps)
+                                    {
+                                        <option value="@prop.Id">@prop.Name (@(prop.City ?? "Khu vực địa phương"))</option>
+                                    }
+                                </select>
+                            </label>
 
-                    <label>
-                        Price per Night (VND) *
-                        <input asp-for="NewRoom.OriginalPrice" type="number" min="50000" step="10000" required value="500000" />
-                    </label>
+                            <label style="display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 0.88rem; color: #334155;">
+                                Tên phòng hoặc Số phòng *
+                                <input asp-for="NewRoom.RoomNumber" required placeholder="Ví dụ: Phòng 101, Phòng Deluxe View Rừng Thông" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.92rem;" />
+                            </label>
+                        </div>
 
-                    <label>
-                        Initial Status
-                        <select asp-for="NewRoom.Status">
-                            <option value="Trống">Available (Trống)</option>
-                            <option value="Bảo trì">Maintenance (Bảo trì)</option>
-                        </select>
-                    </label>
-                </div>
+                        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                            <label style="display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 0.88rem; color: #334155;">
+                                Loại phòng
+                                <select asp-for="NewRoom.RoomTypeId" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.92rem; background: #fff;">
+                                    <option value="">-- Mặc định tiêu chuẩn --</option>
+                                    @if (Model.AvailableRoomTypes != null)
+                                    {
+                                        @foreach (var rt in Model.AvailableRoomTypes)
+                                        {
+                                            <option value="@rt.Id">@rt.Name</option>
+                                        }
+                                    }
+                                </select>
+                            </label>
 
-                <div style="margin-top: 14px;">
-                    <button type="submit" class="button">Create Room</button>
-                </div>
-                @Html.AntiForgeryToken()
-            </form>
-        }
-    </div>
+                            <label style="display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 0.88rem; color: #334155;">
+                                Sức chứa tối đa (Khách) *
+                                <input asp-for="NewRoom.Capacity" type="number" min="1" max="50" required value="2" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.92rem;" />
+                            </label>
+
+                            <label style="display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 0.88rem; color: #334155;">
+                                Giá mỗi đêm (VNĐ) *
+                                <input asp-for="NewRoom.OriginalPrice" type="number" min="50000" step="10000" required value="500000" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.92rem;" />
+                            </label>
+
+                            <label style="display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 0.88rem; color: #334155;">
+                                Trạng thái ban đầu
+                                <select asp-for="NewRoom.Status" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.92rem; background: #fff;">
+                                    <option value="Trống">Sẵn sàng đón khách (Trống)</option>
+                                    <option value="Bảo trì">Đang bảo trì / Sửa chữa</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <!-- Room Amenities -->
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-weight: 500; font-size: 0.88rem; color: #334155; margin-bottom: 8px;">
+                                Tiện ích riêng trong phòng:
+                            </label>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">
+                                @if (Model.AvailableAmenities != null)
+                                {
+                                    @foreach (var a in Model.AvailableAmenities.Take(8))
+                                    {
+                                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">
+                                            <input type="checkbox" name="NewRoom.AmenityIds" value="@a.Id" />
+                                            <span>@a.Name</span>
+                                        </label>
+                                    }
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Room Photos -->
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-weight: 500; font-size: 0.88rem; color: #334155; margin-bottom: 6px;">
+                                Ảnh phòng:
+                            </label>
+                            <input asp-for="NewRoom.PhotoFiles" type="file" multiple accept="image/*" style="font-size: 0.88rem;" />
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+                            <button type="button" class="button outline" onclick="toggleForm('createRoomBox')">Hủy bỏ</button>
+                            <button type="submit" class="button" style="background: #2563eb; border-color: #2563eb; padding: 10px 24px; font-weight: 600;">
+                                ➕ Thêm phòng vào hệ thống
+                            </button>
+                        </div>
+                        @Html.AntiForgeryToken()
+                    </form>
+                }
+            </div>
 
     <!-- ==================== TAB 1: PROPERTIES ==================== -->
     <div id="tab-properties" class="tab-pane @(activeTab == "properties" ? "active" : "")">
@@ -465,6 +728,7 @@
                             <th>Capacity</th>
                             <th>Nightly Price</th>
                             <th>Status</th>
+                            <th>Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -486,6 +750,16 @@
                                 <td><b>@room.Price.ToString("N0") &#8363;</b> / night</td>
                                 <td>
                                     <span class="status-pill @statusClass">@room.Status</span>
+                                </td>
+                                <td>
+                                    <form asp-action="DeleteRoom" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phòng này khỏi hệ thống?');">
+                                        <input type="hidden" name="propertyId" value="@room.PropertyId" />
+                                        <input type="hidden" name="roomId" value="@room.Id" />
+                                        <button type="submit" class="action-btn-mini" style="background: #fee2e2; color: #991b1b; padding: 4px 10px; cursor: pointer;">
+                                            &#128465; Xóa
+                                        </button>
+                                        @Html.AntiForgeryToken()
+                                    </form>
                                 </td>
                             </tr>
                         }
@@ -666,6 +940,115 @@
 @section Scripts {
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            // Validation & Highlighting for Create Property Request Form
+            const propForm = document.getElementById("createPropertyForm");
+            const validationBanner = document.getElementById("propertyFormValidationBanner");
+
+            if (propForm) {
+                const requiredTextInputs = [
+                    { id: "propName", errId: "err_propName", validate: val => val.trim() !== "" },
+                    { id: "propType", errId: "err_propType", validate: val => val.trim() !== "" },
+                    { id: "propPhone", errId: "err_propPhone", validate: val => val.trim().length >= 8 },
+                    { id: "propAddress", errId: "err_propAddress", validate: val => val.trim() !== "" },
+                    { id: "propCity", errId: "err_propCity", validate: val => val.trim() !== "" }
+                ];
+
+                const legalDocCards = [
+                    {
+                        cardId: "cardBizLicense",
+                        fileId: "propBizLicenseFile",
+                        urlId: "propBizLicenseUrl",
+                        errId: "err_bizLicense"
+                    },
+                    {
+                        cardId: "cardFireSafety",
+                        fileId: "propFireSafetyFile",
+                        urlId: "propFireSafetyUrl",
+                        errId: "err_fireSafety"
+                    },
+                    {
+                        cardId: "cardSecurity",
+                        fileId: "propSecurityFile",
+                        urlId: "propSecurityUrl",
+                        errId: "err_security"
+                    }
+                ];
+
+                function updateValidationBannerState() {
+                    const hasInputErrors = propForm.querySelectorAll(".field-error-highlight").length > 0;
+                    if (!hasInputErrors && validationBanner) {
+                        validationBanner.classList.remove("visible");
+                    }
+                }
+
+                // Dynamic real-time clear when user types or changes input
+                requiredTextInputs.forEach(item => {
+                    const inputEl = document.getElementById(item.id);
+                    const errEl = document.getElementById(item.errId);
+                    if (inputEl) {
+                        ['input', 'change', 'blur'].forEach(evt => {
+                            inputEl.addEventListener(evt, function () {
+                                if (item.validate(inputEl.value)) {
+                                    inputEl.classList.remove("field-error-highlight");
+                                    if (errEl) errEl.classList.remove("visible");
+                                    updateValidationBannerState();
+                                }
+                            });
+                        });
+                    }
+                });
+
+                // On Confirm/Submit Create Property Request
+                propForm.addEventListener("submit", function (e) {
+                    let hasMissingFields = false;
+                    let firstMissingElement = null;
+
+                    // 1. Validate required text/select inputs
+                    requiredTextInputs.forEach(item => {
+                        const inputEl = document.getElementById(item.id);
+                        const errEl = document.getElementById(item.errId);
+                        if (inputEl) {
+                            if (!item.validate(inputEl.value)) {
+                                hasMissingFields = true;
+                                inputEl.classList.add("field-error-highlight");
+                                if (errEl) errEl.classList.add("visible");
+                                if (!firstMissingElement) firstMissingElement = inputEl;
+                            } else {
+                                inputEl.classList.remove("field-error-highlight");
+                                if (errEl) errEl.classList.remove("visible");
+                            }
+                        }
+                    });
+
+                    // If any required field is missing, block submission & highlight
+                    if (hasMissingFields) {
+                        e.preventDefault();
+                        if (validationBanner) {
+                            validationBanner.classList.add("visible");
+                        }
+
+                        if (firstMissingElement) {
+                            firstMissingElement.scrollIntoView({ behavior: "smooth", block: "center" });
+                            setTimeout(() => {
+                                if (typeof firstMissingElement.focus === "function") {
+                                    firstMissingElement.focus();
+                                }
+                            }, 350);
+                        }
+                        return false;
+                    }
+
+                    // Submission is valid - show sending state
+                    const submitBtn = document.getElementById("btnSubmitProperty");
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = "⏳ Đang tải tài liệu &amp; gửi hồ sơ...";
+                        submitBtn.style.opacity = "0.75";
+                        submitBtn.style.cursor = "not-allowed";
+                    }
+                });
+            }
+
             const navButtons = document.querySelectorAll("#dashboardTabsNav .tab-nav-btn");
             const panes = document.querySelectorAll(".tab-pane");
 

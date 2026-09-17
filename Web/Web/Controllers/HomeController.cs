@@ -305,10 +305,18 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         }
 
         var result = await api.GetOwnerDashboardAsync(token, cancellationToken);
+        var amenities = await api.GetAmenitiesAsync(cancellationToken);
+        var roomTypes = await api.GetRoomTypesAsync(cancellationToken);
+
         if (!result.Success || result.Result is null)
         {
             TempData["Error"] = result.Error ?? "Could not load owner dashboard.";
-            return View(new OwnerDashboardViewModel { ActiveTab = tab });
+            return View(new OwnerDashboardViewModel
+            {
+                ActiveTab = tab,
+                AvailableAmenities = amenities,
+                AvailableRoomTypes = roomTypes
+            });
         }
 
         var viewModel = new OwnerDashboardViewModel
@@ -318,6 +326,8 @@ public sealed class HomeController(HomestayApiClient api) : Controller
             Rooms = result.Result.Rooms,
             Bookings = result.Result.Bookings,
             Invoices = result.Result.Invoices,
+            AvailableAmenities = amenities,
+            AvailableRoomTypes = roomTypes,
             ActiveTab = tab
         };
 
@@ -347,24 +357,126 @@ public sealed class HomeController(HomestayApiClient api) : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateProperty(
-        CreatePropertyInput input,
+        [Bind(Prefix = "NewProperty")] CreatePropertyInput? newPropertyInput,
+        CreatePropertyInput? directInput,
+        CancellationToken cancellationToken)
+    {
+        var input = (newPropertyInput != null && !string.IsNullOrWhiteSpace(newPropertyInput.Name))
+            ? newPropertyInput
+            : (directInput ?? new CreatePropertyInput());
+
+        var token = HttpContext.Session.GetString("token");
+        if (token is null)
+            return RedirectToAction(nameof(Login));
+
+        // Sanitize nullable string fields to prevent false validation triggers
+        if (string.IsNullOrWhiteSpace(input.Email)) input.Email = null;
+        if (string.IsNullOrWhiteSpace(input.Ward)) input.Ward = null;
+        if (string.IsNullOrWhiteSpace(input.Policy)) input.Policy = null;
+        if (string.IsNullOrWhiteSpace(input.BusinessLicenseUrl)) input.BusinessLicenseUrl = null;
+        if (string.IsNullOrWhiteSpace(input.FireSafetyDocumentUrl)) input.FireSafetyDocumentUrl = null;
+        if (string.IsNullOrWhiteSpace(input.SecurityDocumentUrl)) input.SecurityDocumentUrl = null;
+
+        // Core required fields validation
+        if (string.IsNullOrWhiteSpace(input.Name))
+        {
+            TempData["Error"] = "Vui lòng nhập tên cơ sở lưu trú.";
+            return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
+        }
+
+        if (string.IsNullOrWhiteSpace(input.Address) || string.IsNullOrWhiteSpace(input.City))
+        {
+            TempData["Error"] = "Vui lòng nhập đầy đủ địa chỉ và Tỉnh/Thành phố của cơ sở lưu trú.";
+            return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
+        }
+
+        // Upload verification document files if provided
+        if (input.BusinessLicenseFile != null)
+        {
+            var (licOk, licUrl, _) = await api.UploadDocumentAsync(input.BusinessLicenseFile, token, cancellationToken);
+            if (licOk && !string.IsNullOrWhiteSpace(licUrl))
+                input.BusinessLicenseUrl = licUrl;
+        }
+
+        if (input.FireSafetyFile != null)
+        {
+            var (pcccOk, pcccUrl, _) = await api.UploadDocumentAsync(input.FireSafetyFile, token, cancellationToken);
+            if (pcccOk && !string.IsNullOrWhiteSpace(pcccUrl))
+                input.FireSafetyDocumentUrl = pcccUrl;
+        }
+
+        if (input.SecurityFile != null)
+        {
+            var (anttOk, anttUrl, _) = await api.UploadDocumentAsync(input.SecurityFile, token, cancellationToken);
+            if (anttOk && !string.IsNullOrWhiteSpace(anttUrl))
+                input.SecurityDocumentUrl = anttUrl;
+        }
+
+        // Upload property photos if provided
+        if (input.PhotoFiles != null && input.PhotoFiles.Count > 0)
+        {
+            var (photosOk, photoUrls, _) = await api.UploadImagesAsync(input.PhotoFiles, "stayly/properties", token, cancellationToken);
+            if (photosOk && photoUrls.Count > 0)
+                input.PhotoUrls.AddRange(photoUrls);
+        }
+
+        var result = await api.CreatePropertyAsync(input, token, cancellationToken);
+        if (!result.Success)
+            TempData["Error"] = result.Error ?? "Không thể tạo yêu cầu thẩm định cơ sở.";
+        else
+            TempData["Success"] = $"Homestay '{input.Name}' đã được gửi duyệt thành công! Admin sẽ thẩm định hồ sơ trước khi hiển thị công khai trên website.";
+
+        return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateProperty(
+        UpdatePropertyInput input,
         CancellationToken cancellationToken)
     {
         var token = HttpContext.Session.GetString("token");
         if (token is null)
             return RedirectToAction(nameof(Login));
 
-        if (!ModelState.IsValid)
+        if (input.BusinessLicenseFile != null)
         {
-            TempData["Error"] = "Please provide all required property details.";
-            return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
+            var (ok, url, _) = await api.UploadDocumentAsync(input.BusinessLicenseFile, token, cancellationToken);
+            if (ok && !string.IsNullOrWhiteSpace(url)) input.BusinessLicenseUrl = url;
+        }
+        if (input.FireSafetyFile != null)
+        {
+            var (ok, url, _) = await api.UploadDocumentAsync(input.FireSafetyFile, token, cancellationToken);
+            if (ok && !string.IsNullOrWhiteSpace(url)) input.FireSafetyDocumentUrl = url;
+        }
+        if (input.SecurityFile != null)
+        {
+            var (ok, url, _) = await api.UploadDocumentAsync(input.SecurityFile, token, cancellationToken);
+            if (ok && !string.IsNullOrWhiteSpace(url)) input.SecurityDocumentUrl = url;
         }
 
-        var result = await api.CreatePropertyAsync(input, token, cancellationToken);
+        var result = await api.UpdatePropertyAsync(input, token, cancellationToken);
         if (!result.Success)
-            TempData["Error"] = result.Error ?? "Could not create property.";
+            TempData["Error"] = result.Error ?? "Không thể cập nhật thông tin homestay.";
         else
-            TempData["Success"] = $"Homestay '{input.Name}' has been submitted for Admin verification via WPF. It will appear on the public website and be ready for room setup once approved by Admin.";
+            TempData["Success"] = "Cơ sở lưu trú đã được cập nhật thành công.";
+
+        return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteProperty(int id, CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (token is null)
+            return RedirectToAction(nameof(Login));
+
+        var result = await api.DeletePropertyAsync(id, token, cancellationToken);
+        if (!result.Success)
+            TempData["Error"] = result.Error ?? "Không thể xóa cơ sở lưu trú.";
+        else
+            TempData["Success"] = "Cơ sở lưu trú đã được xóa thành công.";
 
         return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
     }
@@ -379,24 +491,72 @@ public sealed class HomeController(HomestayApiClient api) : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateRoom(
-        CreateRoomInput input,
+        [Bind(Prefix = "NewRoom")] CreateRoomInput? newRoomInput,
+        CreateRoomInput? directInput,
+        CancellationToken cancellationToken)
+    {
+        var input = (newRoomInput != null && !string.IsNullOrWhiteSpace(newRoomInput.RoomNumber))
+            ? newRoomInput
+            : (directInput ?? new CreateRoomInput());
+
+        var token = HttpContext.Session.GetString("token");
+        if (token is null)
+            return RedirectToAction(nameof(Login));
+
+        if (input.PropertyId <= 0 || string.IsNullOrWhiteSpace(input.RoomNumber) || input.OriginalPrice <= 0)
+        {
+            TempData["Error"] = "Vui lòng nhập đầy đủ thông tin phòng hợp lệ (Cơ sở, Tên/Số phòng, Giá mỗi đêm).";
+            return RedirectToAction(nameof(Dashboard), new { tab = "rooms" });
+        }
+
+        if (input.PhotoFiles != null && input.PhotoFiles.Count > 0)
+        {
+            var (photosOk, photoUrls, _) = await api.UploadImagesAsync(input.PhotoFiles, $"stayly/rooms/{input.PropertyId}", token, cancellationToken);
+            if (photosOk && photoUrls.Count > 0)
+                input.PhotoUrls.AddRange(photoUrls);
+        }
+
+        var result = await api.CreateRoomAsync(input.PropertyId, input, token, cancellationToken);
+        if (!result.Success)
+            TempData["Error"] = result.Error ?? "Không thể tạo phòng.";
+        else
+            TempData["Success"] = $"Phòng '{input.RoomNumber}' đã được tạo thành công.";
+
+        return RedirectToAction(nameof(Dashboard), new { tab = "rooms" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateRoom(
+        UpdateRoomInput input,
         CancellationToken cancellationToken)
     {
         var token = HttpContext.Session.GetString("token");
         if (token is null)
             return RedirectToAction(nameof(Login));
 
-        if (!ModelState.IsValid)
-        {
-            TempData["Error"] = "Please fill in all room fields.";
-            return RedirectToAction(nameof(Dashboard), new { tab = "rooms" });
-        }
-
-        var result = await api.CreateRoomAsync(input.PropertyId, input, token, cancellationToken);
+        var result = await api.UpdateRoomAsync(input, token, cancellationToken);
         if (!result.Success)
-            TempData["Error"] = result.Error ?? "Could not add room.";
+            TempData["Error"] = result.Error ?? "Không thể cập nhật phòng.";
         else
-            TempData["Success"] = $"Room '{input.RoomNumber}' has been added successfully.";
+            TempData["Success"] = $"Phòng '{input.RoomNumber}' đã được cập nhật thành công.";
+
+        return RedirectToAction(nameof(Dashboard), new { tab = "rooms" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteRoom(int propertyId, int roomId, CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (token is null)
+            return RedirectToAction(nameof(Login));
+
+        var result = await api.DeleteRoomAsync(propertyId, roomId, token, cancellationToken);
+        if (!result.Success)
+            TempData["Error"] = result.Error ?? "Không thể xóa phòng.";
+        else
+            TempData["Success"] = "Phòng đã được xóa thành công.";
 
         return RedirectToAction(nameof(Dashboard), new { tab = "rooms" });
     }

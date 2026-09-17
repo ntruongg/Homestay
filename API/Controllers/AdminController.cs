@@ -759,6 +759,174 @@ public sealed class AdminController(HomestayDbContext db, IEmailService emailSer
     }
     #endregion
 
+    #region 5. Quản lý tài khoản (User Management)
+    [HttpGet("users")]
+    public async Task<ActionResult<IReadOnlyList<AdminUserResponse>>> GetUsers(
+        [FromQuery] string? role,
+        [FromQuery] string? search,
+        CancellationToken cancellationToken)
+    {
+        var query = db.TaiKhoans.AsNoTracking()
+            .Include(t => t.VaiTro)
+            .Include(t => t.CoSoLuuTrus)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(role) && !role.Equals("All", StringComparison.OrdinalIgnoreCase) && !role.Equals("TatCa", StringComparison.OrdinalIgnoreCase))
+        {
+            if (role.Equals("Owner", StringComparison.OrdinalIgnoreCase) || role.Equals("ChuHome", StringComparison.OrdinalIgnoreCase))
+                query = query.Where(t => t.MaVaiTro == VaiTro.OWNER);
+            else if (role.Equals("Guest", StringComparison.OrdinalIgnoreCase) || role.Equals("KhachHang", StringComparison.OrdinalIgnoreCase))
+                query = query.Where(t => t.MaVaiTro == VaiTro.GUEST);
+            else if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase) || role.Equals("QuanTriVien", StringComparison.OrdinalIgnoreCase))
+                query = query.Where(t => t.MaVaiTro == VaiTro.ADMIN);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLower();
+            query = query.Where(t =>
+                t.HoTen.ToLower().Contains(term) ||
+                t.Email.ToLower().Contains(term) ||
+                t.DienThoai.Contains(term) ||
+                (t.CCCD != null && t.CCCD.Contains(term)));
+        }
+
+        var users = await query.OrderByDescending(t => t.MaTaiKhoan).ToListAsync(cancellationToken);
+        var userIds = users.Select(u => u.MaTaiKhoan).ToList();
+
+        var bookingCounts = await db.DonDatPhongs.AsNoTracking()
+            .Where(b => userIds.Contains(b.MaKhachHang))
+            .GroupBy(b => b.MaKhachHang)
+            .Select(g => new { UserId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.UserId, g => g.Count, cancellationToken);
+
+        var result = users.Select(u => new AdminUserResponse(
+            u.MaTaiKhoan,
+            u.Email,
+            u.HoTen,
+            u.DienThoai,
+            u.VaiTro?.TenVaiTro ?? (u.MaVaiTro == VaiTro.OWNER ? "OWNER" : (u.MaVaiTro == VaiTro.ADMIN ? "ADMIN" : "GUEST")),
+            u.MaVaiTro,
+            u.TrangThai,
+            u.NgayTao,
+            u.CCCD,
+            u.ThongTinNganHang,
+            u.CoSoLuuTrus.Count,
+            bookingCounts.GetValueOrDefault(u.MaTaiKhoan, 0)
+        )).ToList();
+
+        return Ok(result);
+    }
+
+    [HttpPut("users/{id:int}/status")]
+    public async Task<IActionResult> UpdateUserStatus(
+        int id,
+        [FromBody] UpdateUserStatusRequest request,
+        CancellationToken cancellationToken)
+    {
+        var user = await db.TaiKhoans.FindAsync([id], cancellationToken);
+        if (user is null)
+            return NotFound("User not found.");
+
+        user.TrangThai = request.IsActive;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { message = $"User #{id} status updated to {(request.IsActive ? "Active" : "Locked")}.", isActive = user.TrangThai });
+    }
+    #endregion
+
+    #region 6. Báo cáo doanh thu & Dòng tiền (Revenue & Platform Reporting)
+    [HttpGet("reports/revenue")]
+    public async Task<ActionResult<RevenueReportResponse>> GetRevenueReport(
+        [FromQuery] DateTime? fromDate,
+        [FromQuery] DateTime? toDate,
+        [FromQuery] int? ownerId,
+        CancellationToken cancellationToken)
+    {
+        var query = db.DonDatPhongs.AsNoTracking()
+            .Include(b => b.KhachHang)
+            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru).ThenInclude(c => c.ChuCoSoLuuTru)
+            .Include(b => b.PhuThus)
+            .Include(b => b.ThanhToan)
+            .AsQueryable();
+
+        if (fromDate.HasValue)
+        {
+            var from = fromDate.Value.Date;
+            query = query.Where(b => b.NgayDat >= from);
+        }
+
+        if (toDate.HasValue)
+        {
+            var to = toDate.Value.Date.AddDays(1).AddTicks(-1);
+            query = query.Where(b => b.NgayDat <= to);
+        }
+
+        if (ownerId.HasValue && ownerId.Value > 0)
+        {
+            query = query.Where(b => b.ChiTietDons.Any(d => d.Phong.CoSoLuuTru.MaChuCoSoLuuTru == ownerId.Value));
+        }
+
+        var bookings = await query.OrderByDescending(b => b.NgayDat).ToListAsync(cancellationToken);
+
+        var bookingItems = bookings.Select(b =>
+        {
+            var firstRoom = b.ChiTietDons.FirstOrDefault()?.Phong;
+            var property = firstRoom?.CoSoLuuTru;
+            var owner = property?.ChuCoSoLuuTru;
+
+            var nights = Math.Max(1, (b.NgayDi.Date - b.NgayDen.Date).Days);
+            var roomTotal = b.ChiTietDons.Sum(d => d.Phong?.GiaGoc ?? 0) * nights;
+            var extraTotal = b.PhuThus.Sum(f => f.ThanhTien);
+            var total = b.ThanhToan?.TongTien ?? (roomTotal + extraTotal);
+
+            var commission = Math.Round(total * 0.15m, 2);
+            var hostPayout = total - commission;
+
+            var paymentStatus = b.ThanhToan != null ? "Paid" : (b.TrangThai == "Cancelled" ? "Cancelled" : (b.TrangThai == "Refunded" ? "Refunded" : "Unpaid"));
+
+            return new RevenueBookingItemResponse(
+                b.MaDonDatPhong,
+                property?.TenCoSoLuuTru ?? "Homestay",
+                owner?.MaTaiKhoan ?? 0,
+                owner?.HoTen ?? "N/A",
+                b.KhachHang?.HoTen ?? "N/A",
+                b.NgayDen,
+                b.NgayDi,
+                total,
+                commission,
+                hostPayout,
+                b.TrangThai ?? "Pending",
+                paymentStatus,
+                b.NgayDat
+            );
+        }).ToList();
+
+        var qualifyingBookings = bookingItems
+            .Where(b => b.PaymentStatus == "Paid" || b.Status == "Confirmed" || b.Status == "CheckedIn" || b.Status == "CheckedOut")
+            .ToList();
+
+        var totalPaid = qualifyingBookings.Sum(b => b.TotalAmount);
+        var totalCommission = qualifyingBookings.Sum(b => b.Commission);
+        var totalPayout = qualifyingBookings.Sum(b => b.HostPayout);
+
+        var totalProperties = await db.CoSoLuuTrus.CountAsync(cancellationToken);
+        var totalUsers = await db.TaiKhoans.CountAsync(cancellationToken);
+
+        var report = new RevenueReportResponse(
+            totalPaid,
+            totalCommission,
+            totalPayout,
+            bookingItems.Count,
+            totalProperties,
+            totalUsers,
+            bookingItems
+        );
+
+        return Ok(report);
+    }
+    #endregion
+
     private int GetAccountId()
     {
         var claim = User.FindFirstValue(JwtRegisteredClaimNames.Sub)

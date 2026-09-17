@@ -83,6 +83,9 @@
         <DataTemplate DataType="{x:Type vm:QuanLyTaiKhoanViewModel}">
             <views:QuanLyTaiKhoanView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:QuanLyDonDatViewModel}">
+            <views:QuanLyDonDatView/>
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:QuyetToanTaiChinhViewModel}">
             <views:QuyetToanTaiChinhView/>
         </DataTemplate>

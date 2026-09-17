@@ -34,7 +34,40 @@ namespace HomestaySystem.ViewModels
         public CoSoLuuTru? CoSoDangChon
         {
             get => _coSoDangChon;
-            set => SetProperty(ref _coSoDangChon, value);
+            set
+            {
+                if (SetProperty(ref _coSoDangChon, value) && value != null)
+                {
+                    _ = TaiChiTietCoSoAsync(value.MaCoSo);
+                }
+            }
+        }
+
+        private async Task TaiChiTietCoSoAsync(int maCoSo)
+        {
+            try
+            {
+                var chiTiet = await _adminService.LayChiTietCoSoAsync(maCoSo);
+                if (chiTiet != null && CoSoDangChon?.MaCoSo == maCoSo)
+                {
+                    CoSoDangChon.HinhAnhGiayPhepKinhDoanh = chiTiet.HinhAnhGiayPhepKinhDoanh;
+                    CoSoDangChon.HinhAnhPCCC = chiTiet.HinhAnhPCCC;
+                    CoSoDangChon.HinhAnhANTT = chiTiet.HinhAnhANTT;
+                    CoSoDangChon.MoTa = chiTiet.MoTa;
+                    CoSoDangChon.TongSoPhong = chiTiet.TongSoPhong;
+                    CoSoDangChon.GiaThapNhat = chiTiet.GiaThapNhat;
+                    CoSoDangChon.GiaCaoNhat = chiTiet.GiaCaoNhat;
+                    if (!string.IsNullOrEmpty(chiTiet.HinhAnhDaiDien))
+                    {
+                        CoSoDangChon.HinhAnhDaiDien = chiTiet.HinhAnhDaiDien;
+                    }
+                    OnPropertyChanged(nameof(CoSoDangChon));
+                }
+            }
+            catch
+            {
+                // Bỏ qua lỗi phụ khi tải chi tiết
+            }
         }
 
         public string LyDoTuChoi

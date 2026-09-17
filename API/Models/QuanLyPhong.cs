@@ -85,17 +85,24 @@ public class TienNghi
 public class CoSoLuuTru_TienNghi
 {
     public int MaCoSoLuuTru { get; set; }
+    [ForeignKey(nameof(MaCoSoLuuTru))]
     public CoSoLuuTru CoSoLuuTru { get; set; } = null!;
+
     public int MaTienNghi { get; set; }
+    [ForeignKey(nameof(MaTienNghi))]
     public TienNghi TienNghi { get; set; } = null!;
 }
 
 public class Phong_TienNghi
 {
     public int MaPhong { get; set; }
+    [ForeignKey(nameof(MaPhong))]
     public Phong Phong { get; set; } = null!;
+
     public int MaTienNghi { get; set; }
+    [ForeignKey(nameof(MaTienNghi))]
     public TienNghi TienNghi { get; set; } = null!;
+
     public int SoLuong { get; set; } = 1;
 }
 
@@ -103,10 +110,16 @@ public class HinhAnh
 {
     [Key]
     public int MaHinhAnh { get; set; }
+
     public int? MaCoSoLuuTru { get; set; }
+    [ForeignKey(nameof(MaCoSoLuuTru))]
     public CoSoLuuTru? CoSoLuuTru { get; set; }
+
     public int? MaPhong { get; set; }
+    [ForeignKey(nameof(MaPhong))]
     public Phong? Phong { get; set; }
+
     [Required]
     public string UrlHinhAnh { get; set; } = string.Empty;
 }
+

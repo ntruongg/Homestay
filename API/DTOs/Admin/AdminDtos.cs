@@ -220,3 +220,54 @@ public sealed class UpdatePromotionRequest
     public DateTime? ExpiryDate { get; set; }
 }
 #endregion
+
+#region User Management DTOs
+public sealed record AdminUserResponse(
+    int Id,
+    string Email,
+    string FullName,
+    string Phone,
+    string Role,
+    int RoleId,
+    bool IsActive,
+    DateTime CreatedAt,
+    string? CitizenId,
+    string? BankInformation,
+    int PropertyCount,
+    int BookingCount
+);
+
+public sealed class UpdateUserStatusRequest
+{
+    public bool IsActive { get; set; }
+}
+#endregion
+
+#region Revenue Report DTOs
+public sealed record RevenueReportResponse(
+    decimal TotalCustomerPaid,
+    decimal PlatformCommission,
+    decimal HostPayout,
+    int TotalBookings,
+    int TotalProperties,
+    int TotalUsers,
+    IReadOnlyList<RevenueBookingItemResponse> Bookings
+);
+
+public sealed record RevenueBookingItemResponse(
+    int BookingId,
+    string PropertyName,
+    int OwnerId,
+    string OwnerName,
+    string GuestName,
+    DateTime CheckIn,
+    DateTime CheckOut,
+    decimal TotalAmount,
+    decimal Commission,
+    decimal HostPayout,
+    string Status,
+    string PaymentStatus,
+    DateTime BookingDate
+);
+#endregion
+

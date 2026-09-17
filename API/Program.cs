@@ -87,6 +87,7 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<HomestayDbContext>();
         context.Database.Migrate();
+        DbInitializer.Seed(context);
     }
     catch (Exception)
     {

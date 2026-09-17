@@ -16,18 +16,17 @@ namespace HomestaySystem.ViewModels
         private ViewModelBase _manHinhHienTai;
         private string _tieuDeTrang = "Kiểm duyệt Homestay";
         private string _menuDangChon = "KiemDuyet";
-        private string _tenQuanTriVien = "Nguyễn Quang Huy";
-        private string _vaiTroQuanTriVien = "Tổng Quản Trị Viên (Admin)";
+        private string _tenQuanTriVien = "Admin Stayly";
+        private string _vaiTroQuanTriVien = "Quản Trị Hệ Thống (API Online)";
         private string _thoiGianHeThong = string.Empty;
         private readonly DispatcherTimer _dongHoTimer;
 
         // Các ViewModels con (Cached instances)
         public KiemDuyetHomestayViewModel KiemDuyetVM { get; set; }
         public QuanLyTaiKhoanViewModel QuanLyTaiKhoanVM { get; set; }
-        public QuyetToanTaiChinhViewModel QuyetToanTaiChinhVM { get; set; }
+        public QuanLyDonDatViewModel QuanLyDonDatVM { get; set; }
         public BaoCaoDoanhThuViewModel BaoCaoDoanhThuVM { get; set; }
         public QuanLyKhuyenMaiViewModel QuanLyKhuyenMaiVM { get; set; }
-        public BaoTriHeThongViewModel BaoTriHeThongVM { get; set; }
 
         public ViewModelBase ManHinhHienTai
         {
@@ -68,23 +67,22 @@ namespace HomestaySystem.ViewModels
         // Commands điều hướng
         public ICommand ChuyenManHinhKiemDuyetCommand { get; }
         public ICommand ChuyenManHinhTaiKhoanCommand { get; }
-        public ICommand ChuyenManHinhQuyetToanCommand { get; }
+        public ICommand ChuyenManHinhDonDatCommand { get; }
+        public ICommand ChuyenManHinhQuyetToanCommand => ChuyenManHinhDonDatCommand; // Tương thích ngược
         public ICommand ChuyenManHinhBaoCaoCommand { get; }
         public ICommand ChuyenManHinhKhuyenMaiCommand { get; }
-        public ICommand ChuyenManHinhBaoTriCommand { get; }
         public ICommand DangXuatCommand { get; }
 
         public ManHinhChinhViewModel(IAdminService? adminService = null)
         {
-            _adminService = adminService ?? new DuLieuGiaLapAdminService();
+            _adminService = adminService ?? new HttpAdminService();
 
             // Khởi tạo các ViewModel con
             KiemDuyetVM = new KiemDuyetHomestayViewModel(_adminService);
             QuanLyTaiKhoanVM = new QuanLyTaiKhoanViewModel(_adminService);
-            QuyetToanTaiChinhVM = new QuyetToanTaiChinhViewModel(_adminService);
+            QuanLyDonDatVM = new QuanLyDonDatViewModel(_adminService);
             BaoCaoDoanhThuVM = new BaoCaoDoanhThuViewModel(_adminService);
             QuanLyKhuyenMaiVM = new QuanLyKhuyenMaiViewModel(_adminService);
-            BaoTriHeThongVM = new BaoTriHeThongViewModel(_adminService);
 
             // Màn hình khởi đầu: Kiểm duyệt Homestay
             _manHinhHienTai = KiemDuyetVM;
@@ -100,36 +98,29 @@ namespace HomestaySystem.ViewModels
             ChuyenManHinhTaiKhoanCommand = new RelayCommand(() =>
             {
                 ManHinhHienTai = QuanLyTaiKhoanVM;
-                TieuDeTrang = "Quản lý Tài khoản & Đối tác TERA";
+                TieuDeTrang = "Quản lý Tài khoản & Phân quyền";
                 MenuDangChon = "TaiKhoan";
             });
 
-            ChuyenManHinhQuyetToanCommand = new RelayCommand(() =>
+            ChuyenManHinhDonDatCommand = new RelayCommand(() =>
             {
-                ManHinhHienTai = QuyetToanTaiChinhVM;
-                TieuDeTrang = "Quyết toán Tài chính Dòng tiền 85/15";
-                MenuDangChon = "QuyetToan";
+                ManHinhHienTai = QuanLyDonDatVM;
+                TieuDeTrang = "Quản lý Đơn đặt phòng & Xử lý Hoàn tiền";
+                MenuDangChon = "DonDat";
             });
 
             ChuyenManHinhBaoCaoCommand = new RelayCommand(() =>
             {
                 ManHinhHienTai = BaoCaoDoanhThuVM;
-                TieuDeTrang = "Báo cáo Doanh thu & Dòng tiền Sàn";
+                TieuDeTrang = "Báo cáo Doanh thu & Dòng tiền Sàn (100% / 15% / 85%)";
                 MenuDangChon = "BaoCao";
             });
 
             ChuyenManHinhKhuyenMaiCommand = new RelayCommand(() =>
             {
                 ManHinhHienTai = QuanLyKhuyenMaiVM;
-                TieuDeTrang = "Quản lý Mã giảm giá (Voucher)";
+                TieuDeTrang = "Quản lý Mã ưu đãi (Voucher giảm giá)";
                 MenuDangChon = "KhuyenMai";
-            });
-
-            ChuyenManHinhBaoTriCommand = new RelayCommand(() =>
-            {
-                ManHinhHienTai = BaoTriHeThongVM;
-                TieuDeTrang = "Bảo trì Hệ thống (Backup & Restore SQL Server)";
-                MenuDangChon = "BaoTri";
             });
 
             DangXuatCommand = new RelayCommand(ThucHienDangXuat);

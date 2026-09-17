@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace Web.Models;
 
@@ -217,6 +218,10 @@ public sealed record OwnerDashboardResponse(
     IReadOnlyList<OwnerInvoice> Invoices
 );
 
+public sealed record AmenityItem(int Id, string Name);
+
+public sealed record RoomTypeItem(int Id, string Name, string? Description);
+
 public sealed class OwnerDashboardViewModel
 {
     public OwnerSummary Summary { get; set; } = new(0, 0, 0, 0, 0, 0, 0);
@@ -224,6 +229,8 @@ public sealed class OwnerDashboardViewModel
     public IReadOnlyList<OwnerRoom> Rooms { get; set; } = [];
     public IReadOnlyList<OwnerBooking> Bookings { get; set; } = [];
     public IReadOnlyList<OwnerInvoice> Invoices { get; set; } = [];
+    public IReadOnlyList<AmenityItem> AvailableAmenities { get; set; } = [];
+    public IReadOnlyList<RoomTypeItem> AvailableRoomTypes { get; set; } = [];
     public string ActiveTab { get; set; } = "properties";
     public CreatePropertyInput NewProperty { get; set; } = new();
     public CreateRoomInput NewRoom { get; set; } = new();
@@ -231,27 +238,108 @@ public sealed class OwnerDashboardViewModel
 
 public sealed class CreatePropertyInput
 {
-    [Required]
+    [Required(ErrorMessage = "Vui lòng nhập tên cơ sở lưu trú.")]
     public string Name { get; set; } = string.Empty;
+
     public string? Phone { get; set; }
+
+    [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
     public string? Email { get; set; }
+
+    [Required(ErrorMessage = "Vui lòng nhập địa chỉ cụ thể.")]
     public string? Address { get; set; }
+
     public string? Ward { get; set; }
+
+    [Required(ErrorMessage = "Vui lòng chọn hoặc nhập Tỉnh/Thành phố.")]
     public string? City { get; set; }
+
     public string Type { get; set; } = "Homestay";
+
     public string? Policy { get; set; }
+
+    // Legal verification document URLs
+    public string? BusinessLicenseUrl { get; set; }
+    public string? FireSafetyDocumentUrl { get; set; }
+    public string? SecurityDocumentUrl { get; set; }
+
+    // Direct document file uploads
+    public IFormFile? BusinessLicenseFile { get; set; }
+    public IFormFile? FireSafetyFile { get; set; }
+    public IFormFile? SecurityFile { get; set; }
+
+    // Amenities
+    public List<int> AmenityIds { get; set; } = [];
+
+    // Property showcase photos
+    public List<IFormFile>? PhotoFiles { get; set; }
+    public List<string> PhotoUrls { get; set; } = [];
+}
+
+public sealed class UpdatePropertyInput
+{
+    [Required]
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "Vui lòng nhập tên cơ sở lưu trú.")]
+    public string Name { get; set; } = string.Empty;
+
+    public string? Phone { get; set; }
+
+    [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
+    public string? Email { get; set; }
+
+    [Required(ErrorMessage = "Vui lòng nhập địa chỉ cụ thể.")]
+    public string? Address { get; set; }
+
+    public string? Ward { get; set; }
+
+    [Required(ErrorMessage = "Vui lòng chọn hoặc nhập Tỉnh/Thành phố.")]
+    public string? City { get; set; }
+
+    public string Type { get; set; } = "Homestay";
+
+    public string? Policy { get; set; }
+
+    public string? BusinessLicenseUrl { get; set; }
+    public string? FireSafetyDocumentUrl { get; set; }
+    public string? SecurityDocumentUrl { get; set; }
+
+    public IFormFile? BusinessLicenseFile { get; set; }
+    public IFormFile? FireSafetyFile { get; set; }
+    public IFormFile? SecurityFile { get; set; }
+
+    public List<int> AmenityIds { get; set; } = [];
 }
 
 public sealed class CreateRoomInput
 {
     [Required]
     public int PropertyId { get; set; }
-    [Required]
+    [Required(ErrorMessage = "Vui lòng nhập số phòng hoặc tên phòng.")]
     public string RoomNumber { get; set; } = string.Empty;
     public int Capacity { get; set; } = 2;
     public decimal OriginalPrice { get; set; } = 500000;
     public string Status { get; set; } = "Trống";
     public int? RoomTypeId { get; set; }
+    public List<int> AmenityIds { get; set; } = [];
+    public List<IFormFile>? PhotoFiles { get; set; }
+    public List<string> PhotoUrls { get; set; } = [];
+}
+
+public sealed class UpdateRoomInput
+{
+    [Required]
+    public int PropertyId { get; set; }
+    [Required]
+    public int RoomId { get; set; }
+    [Required(ErrorMessage = "Vui lòng nhập số phòng hoặc tên phòng.")]
+    public string RoomNumber { get; set; } = string.Empty;
+    public int Capacity { get; set; } = 2;
+    public decimal OriginalPrice { get; set; } = 500000;
+    public string Status { get; set; } = "Trống";
+    public int? RoomTypeId { get; set; }
+    public List<int> AmenityIds { get; set; } = [];
 }
 
 public sealed class SendOtpRequestModel

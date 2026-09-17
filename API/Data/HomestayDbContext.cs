@@ -79,6 +79,14 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
         {
             entity.ToTable("ChiTietDon");
             entity.HasKey(x => new { x.MaDonDatPhong, x.MaPhong });
+            entity.HasOne(x => x.DonDatPhong)
+                .WithMany(x => x.ChiTietDons)
+                .HasForeignKey(x => x.MaDonDatPhong)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.Phong)
+                .WithMany(x => x.ChiTietDons)
+                .HasForeignKey(x => x.MaPhong)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<ThanhToan>(entity =>
@@ -95,6 +103,10 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
             entity.ToTable("LichLuuTru");
             entity.Property(x => x.Ngay).HasColumnType("date");
             entity.HasIndex(x => new { x.MaPhong, x.Ngay }).IsUnique();
+            entity.HasOne(x => x.Phong)
+                .WithMany()
+                .HasForeignKey(x => x.MaPhong)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<TienNghi>().ToTable("TienNghi");
@@ -102,14 +114,41 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
         {
             entity.ToTable("CoSoLuuTru_TienNghi");
             entity.HasKey(x => new { x.MaCoSoLuuTru, x.MaTienNghi });
+            entity.HasOne(x => x.CoSoLuuTru)
+                .WithMany(x => x.TienNghis)
+                .HasForeignKey(x => x.MaCoSoLuuTru)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.TienNghi)
+                .WithMany()
+                .HasForeignKey(x => x.MaTienNghi)
+                .OnDelete(DeleteBehavior.Cascade);
         });
         modelBuilder.Entity<Phong_TienNghi>(entity =>
         {
             entity.ToTable("Phong_TienNghi");
             entity.HasKey(x => new { x.MaPhong, x.MaTienNghi });
+            entity.HasOne(x => x.Phong)
+                .WithMany(x => x.TienNghis)
+                .HasForeignKey(x => x.MaPhong)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.TienNghi)
+                .WithMany()
+                .HasForeignKey(x => x.MaTienNghi)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<HinhAnh>(entity => entity.ToTable("HinhAnh"));
+        modelBuilder.Entity<HinhAnh>(entity =>
+        {
+            entity.ToTable("HinhAnh");
+            entity.HasOne(x => x.CoSoLuuTru)
+                .WithMany()
+                .HasForeignKey(x => x.MaCoSoLuuTru)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.Phong)
+                .WithMany()
+                .HasForeignKey(x => x.MaPhong)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
         modelBuilder.Entity<DanhGia>(entity =>
         {
             entity.ToTable("DanhGia");

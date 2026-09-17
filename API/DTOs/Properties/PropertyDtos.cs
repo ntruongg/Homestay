@@ -8,24 +8,65 @@ public sealed class CreatePropertyRequest
     public string Name { get; set; } = string.Empty;
     [StringLength(20)]
     public string? Phone { get; set; }
+    private string? _email;
     [EmailAddress, StringLength(100)]
-    public string? Email { get; set; }
+    public string? Email
+    {
+        get => _email;
+        set => _email = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
     [StringLength(200)]
     public string? Address { get; set; }
     [StringLength(200)]
     public string? Ward { get; set; }
     [StringLength(200)]
     public string? City { get; set; }
-    [RegularExpression("Homestay|Hotel")]
+    [RegularExpression("^(Homestay|Hotel|Villa|Resort)$", ErrorMessage = "Loại hình phải là Homestay, Hotel, Villa hoặc Resort.")]
     public string Type { get; set; } = "Homestay";
-    [StringLength(200)]
+    [StringLength(500)]
     public string? Policy { get; set; }
-    [StringLength(200)]
+    [StringLength(500)]
     public string? BusinessLicenseUrl { get; set; }
-    [StringLength(200)]
+    [StringLength(500)]
     public string? FireSafetyDocumentUrl { get; set; }
-    [StringLength(200)]
+    [StringLength(500)]
     public string? SecurityDocumentUrl { get; set; }
+
+    public List<int>? AmenityIds { get; set; }
+    public List<string>? PhotoUrls { get; set; }
+}
+
+public sealed class UpdatePropertyRequest
+{
+    [Required, StringLength(100)]
+    public string Name { get; set; } = string.Empty;
+    [StringLength(20)]
+    public string? Phone { get; set; }
+    private string? _updateEmail;
+    [EmailAddress, StringLength(100)]
+    public string? Email
+    {
+        get => _updateEmail;
+        set => _updateEmail = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+    [StringLength(200)]
+    public string? Address { get; set; }
+    [StringLength(200)]
+    public string? Ward { get; set; }
+    [StringLength(200)]
+    public string? City { get; set; }
+    [RegularExpression("^(Homestay|Hotel|Villa|Resort)$", ErrorMessage = "Loại hình phải là Homestay, Hotel, Villa hoặc Resort.")]
+    public string Type { get; set; } = "Homestay";
+    [StringLength(500)]
+    public string? Policy { get; set; }
+    [StringLength(500)]
+    public string? BusinessLicenseUrl { get; set; }
+    [StringLength(500)]
+    public string? FireSafetyDocumentUrl { get; set; }
+    [StringLength(500)]
+    public string? SecurityDocumentUrl { get; set; }
+
+    public List<int>? AmenityIds { get; set; }
 }
 
 public sealed class CreateRoomRequest
@@ -36,10 +77,32 @@ public sealed class CreateRoomRequest
     public int Capacity { get; set; }
     public int? RoomTypeId { get; set; }
     [StringLength(30)]
-    public string Status { get; set; } = "Tr?ng";
+    public string Status { get; set; } = "Trống";
     [Range(0, double.MaxValue)]
     public decimal OriginalPrice { get; set; }
+
+    public List<int>? AmenityIds { get; set; }
+    public List<string>? PhotoUrls { get; set; }
 }
+
+public sealed class UpdateRoomRequest
+{
+    [Required, StringLength(50)]
+    public string RoomNumber { get; set; } = string.Empty;
+    [Range(1, int.MaxValue)]
+    public int Capacity { get; set; }
+    public int? RoomTypeId { get; set; }
+    [StringLength(30)]
+    public string Status { get; set; } = "Trống";
+    [Range(0, double.MaxValue)]
+    public decimal OriginalPrice { get; set; }
+
+    public List<int>? AmenityIds { get; set; }
+}
+
+public sealed record AmenityDto(int Id, string Name);
+
+public sealed record RoomTypeDto(int Id, string Name, string? Description);
 
 public sealed record PropertySummaryResponse(
     int Id, string Name, string? Address, string? Type, decimal MinimumPrice, string? CoverImageUrl);
@@ -51,6 +114,28 @@ public sealed record PropertyDetailsResponse(
 public sealed record RoomResponse(
     int Id, string RoomNumber, int Capacity, decimal OriginalPrice,
     string? RoomStatus, string? RoomType, IReadOnlyList<string> Images);
+
+public sealed record OwnerPropertyDetailsResponse(
+    int Id,
+    string Name,
+    string? Phone,
+    string? Email,
+    string? Address,
+    string? Ward,
+    string? City,
+    string? Type,
+    string? Policy,
+    bool IsActive,
+    string ApprovalStatus,
+    string? RejectionReason,
+    string? BusinessLicenseUrl,
+    string? FireSafetyDocumentUrl,
+    string? SecurityDocumentUrl,
+    IReadOnlyList<string> Photos,
+    IReadOnlyList<AmenityDto> Amenities,
+    IReadOnlyList<RoomResponse> Rooms,
+    IReadOnlyList<ApprovalHistoryDto> ApprovalHistory
+);
 
 public sealed record ApprovalHistoryDto(
     int Id,
@@ -66,4 +151,5 @@ public sealed class AdminReviewPropertyRequest
     [StringLength(500)]
     public string? Reason { get; set; }
 }
+
 

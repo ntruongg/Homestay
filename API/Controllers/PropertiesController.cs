@@ -168,6 +168,14 @@ public sealed class PropertiesController(
     public async Task<ActionResult> Create(CreatePropertyRequest request, CancellationToken cancellationToken)
     {
         var ownerId = GetAccountId();
+        var normalizedType = string.Equals(request.Type, "Hotel", StringComparison.OrdinalIgnoreCase) ? "Hotel" : "Homestay";
+        static string? ClampUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return null;
+            var trimmed = url.Trim();
+            return trimmed.Length > 200 ? trimmed.Substring(0, 200) : trimmed;
+        }
+
         var property = new CoSoLuuTru
         {
             MaChuCoSoLuuTru = ownerId,
@@ -177,11 +185,11 @@ public sealed class PropertiesController(
             DiaChi = string.IsNullOrWhiteSpace(request.Address) ? null : request.Address.Trim(),
             PhuongXa = string.IsNullOrWhiteSpace(request.Ward) ? null : request.Ward.Trim(),
             ThanhPho = string.IsNullOrWhiteSpace(request.City) ? null : request.City.Trim(),
-            LoaiHinh = string.IsNullOrWhiteSpace(request.Type) ? "Homestay" : request.Type,
+            LoaiHinh = normalizedType,
             ChinhSach = string.IsNullOrWhiteSpace(request.Policy) ? null : (request.Policy.Trim().Length > 200 ? request.Policy.Trim().Substring(0, 200) : request.Policy.Trim()),
-            GiayPhepKinhDoanhUrl = string.IsNullOrWhiteSpace(request.BusinessLicenseUrl) ? null : request.BusinessLicenseUrl.Trim(),
-            GiayToPcccUrl = string.IsNullOrWhiteSpace(request.FireSafetyDocumentUrl) ? null : request.FireSafetyDocumentUrl.Trim(),
-            GiayToAnttUrl = string.IsNullOrWhiteSpace(request.SecurityDocumentUrl) ? null : request.SecurityDocumentUrl.Trim(),
+            GiayPhepKinhDoanhUrl = ClampUrl(request.BusinessLicenseUrl),
+            GiayToPcccUrl = ClampUrl(request.FireSafetyDocumentUrl),
+            GiayToAnttUrl = ClampUrl(request.SecurityDocumentUrl),
             TrangThai = false
         };
 
@@ -196,7 +204,55 @@ public sealed class PropertiesController(
         };
         db.LichSuDuyets.Add(initialHistory);
 
-        // Associate Amenities if provided
+        // Room Setup based on Property Type (Homestay vs Hotel)
+        Phong? homestayRoom = null;
+        if (normalizedType == "Homestay")
+        {
+            // Homestay automatically creates exactly 1 row representing the full-house booking
+            var defaultRoomType = request.HomestayRoomTypeId.HasValue
+                ? await db.LoaiPhongs.FindAsync([request.HomestayRoomTypeId.Value], cancellationToken)
+                : await db.LoaiPhongs.FirstOrDefaultAsync(l => l.TenLoaiPhong.Contains("Villa") || l.TenLoaiPhong.Contains("Nguyên căn"), cancellationToken)
+                  ?? await db.LoaiPhongs.FirstOrDefaultAsync(cancellationToken);
+
+            homestayRoom = new Phong
+            {
+                CoSoLuuTru = property,
+                SoPhong = "Nguyên căn",
+                SucChua = request.HomestayCapacity.GetValueOrDefault(4) > 0 ? request.HomestayCapacity.GetValueOrDefault(4) : 4,
+                GiaGoc = request.HomestayPrice.GetValueOrDefault(1000000) >= 0 ? request.HomestayPrice.GetValueOrDefault(1000000) : 1000000,
+                MaLoaiPhong = defaultRoomType?.MaLoaiPhong ?? 1,
+                TinhTrang = "Chờ duyệt"
+            };
+            db.Phongs.Add(homestayRoom);
+        }
+        else if (normalizedType == "Hotel" && request.InitialRooms != null && request.InitialRooms.Count > 0)
+        {
+            // Hotel batch creates initial rooms submitted with the property request
+            var defaultRoomType = await db.LoaiPhongs.FirstOrDefaultAsync(cancellationToken);
+            var validRoomTypeIds = await db.LoaiPhongs.Select(l => l.MaLoaiPhong).ToListAsync(cancellationToken);
+
+            foreach (var rItem in request.InitialRooms)
+            {
+                if (string.IsNullOrWhiteSpace(rItem.RoomNumber)) continue;
+
+                var roomTypeId = (rItem.RoomTypeId > 0 && validRoomTypeIds.Contains(rItem.RoomTypeId))
+                    ? rItem.RoomTypeId
+                    : (defaultRoomType?.MaLoaiPhong ?? 1);
+
+                var hotelRoom = new Phong
+                {
+                    CoSoLuuTru = property,
+                    SoPhong = rItem.RoomNumber.Trim(),
+                    SucChua = rItem.Capacity > 0 ? rItem.Capacity : 2,
+                    GiaGoc = rItem.Price >= 0 ? rItem.Price : 500000,
+                    MaLoaiPhong = roomTypeId,
+                    TinhTrang = "Chờ duyệt"
+                };
+                db.Phongs.Add(hotelRoom);
+            }
+        }
+
+        // Associate Amenities if provided (synced to Homestay room as well)
         if (request.AmenityIds != null && request.AmenityIds.Count > 0)
         {
             var distinctIds = request.AmenityIds.Distinct().ToList();
@@ -212,10 +268,21 @@ public sealed class PropertiesController(
                     TienNghi = amenity,
                     MaTienNghi = amenity.MaTienNghi
                 });
+
+                if (homestayRoom != null)
+                {
+                    homestayRoom.TienNghis.Add(new Phong_TienNghi
+                    {
+                        Phong = homestayRoom,
+                        TienNghi = amenity,
+                        MaTienNghi = amenity.MaTienNghi,
+                        SoLuong = 1
+                    });
+                }
             }
         }
 
-        // Add Initial Photos if provided
+        // Add Initial Photos if provided (synced to Homestay room as well)
         if (request.PhotoUrls != null && request.PhotoUrls.Count > 0)
         {
             foreach (var photoUrl in request.PhotoUrls.Where(u => !string.IsNullOrWhiteSpace(u)))
@@ -223,6 +290,7 @@ public sealed class PropertiesController(
                 db.HinhAnhs.Add(new HinhAnh
                 {
                     CoSoLuuTru = property,
+                    Phong = homestayRoom,
                     UrlHinhAnh = photoUrl.Trim()
                 });
             }
@@ -263,7 +331,7 @@ public sealed class PropertiesController(
             // Logging or non-fatal email failure
         }
 
-        return CreatedAtAction(nameof(GetProperty), new { id = property.MaCoSoLuuTru }, new { property.MaCoSoLuuTru });
+        return CreatedAtAction(nameof(GetOwnerProperty), new { id = property.MaCoSoLuuTru }, new { id = property.MaCoSoLuuTru, property.MaCoSoLuuTru });
     }
 
     [Authorize(Roles = "OWNER")]
@@ -273,10 +341,19 @@ public sealed class PropertiesController(
         var ownerId = GetAccountId();
         var property = await db.CoSoLuuTrus
             .Include(p => p.TienNghis)
+            .Include(p => p.Phongs).ThenInclude(r => r.TienNghis)
+            .Include(p => p.LichSuDuyets)
             .FirstOrDefaultAsync(p => p.MaCoSoLuuTru == id && p.MaChuCoSoLuuTru == ownerId, cancellationToken);
 
         if (property is null)
             return NotFound("Property not found or you do not have permission.");
+
+        static string? ClampUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return null;
+            var trimmed = url.Trim();
+            return trimmed.Length > 200 ? trimmed.Substring(0, 200) : trimmed;
+        }
 
         property.TenCoSoLuuTru = request.Name.Trim();
         property.DienThoai = request.Phone?.Trim();
@@ -284,14 +361,29 @@ public sealed class PropertiesController(
         property.DiaChi = request.Address?.Trim();
         property.PhuongXa = request.Ward?.Trim();
         property.ThanhPho = request.City?.Trim();
-        property.LoaiHinh = request.Type;
-        property.ChinhSach = request.Policy?.Trim();
+        property.LoaiHinh = string.Equals(request.Type, "Hotel", StringComparison.OrdinalIgnoreCase) ? "Hotel" : "Homestay";
+        property.ChinhSach = string.IsNullOrWhiteSpace(request.Policy) ? null : (request.Policy.Trim().Length > 200 ? request.Policy.Trim().Substring(0, 200) : request.Policy.Trim());
         if (!string.IsNullOrWhiteSpace(request.BusinessLicenseUrl))
-            property.GiayPhepKinhDoanhUrl = request.BusinessLicenseUrl.Trim();
+            property.GiayPhepKinhDoanhUrl = ClampUrl(request.BusinessLicenseUrl);
         if (!string.IsNullOrWhiteSpace(request.FireSafetyDocumentUrl))
-            property.GiayToPcccUrl = request.FireSafetyDocumentUrl.Trim();
+            property.GiayToPcccUrl = ClampUrl(request.FireSafetyDocumentUrl);
         if (!string.IsNullOrWhiteSpace(request.SecurityDocumentUrl))
-            property.GiayToAnttUrl = request.SecurityDocumentUrl.Trim();
+            property.GiayToAnttUrl = ClampUrl(request.SecurityDocumentUrl);
+
+        // Update Homestay room pricing/capacity if applicable
+        var homestayRoom = property.Phongs.FirstOrDefault();
+        if (property.LoaiHinh == "Homestay" && homestayRoom != null)
+        {
+            if (request.HomestayCapacity.HasValue && request.HomestayCapacity.Value > 0)
+                homestayRoom.SucChua = request.HomestayCapacity.Value;
+            if (request.HomestayPrice.HasValue && request.HomestayPrice.Value >= 0)
+                homestayRoom.GiaGoc = request.HomestayPrice.Value;
+            if (request.HomestayRoomTypeId.HasValue && request.HomestayRoomTypeId.Value > 0)
+            {
+                var validRoomType = await db.LoaiPhongs.AnyAsync(l => l.MaLoaiPhong == request.HomestayRoomTypeId.Value, cancellationToken);
+                if (validRoomType) homestayRoom.MaLoaiPhong = request.HomestayRoomTypeId.Value;
+            }
+        }
 
         // Update Amenities
         if (request.AmenityIds != null)
@@ -303,6 +395,15 @@ public sealed class PropertiesController(
             foreach (var item in toRemove)
             {
                 db.CoSoLuuTru_TienNghis.Remove(item);
+            }
+
+            if (homestayRoom != null)
+            {
+                var roomToRemove = homestayRoom.TienNghis.Where(t => !targetAmenityIds.Contains(t.MaTienNghi)).ToList();
+                foreach (var item in roomToRemove)
+                {
+                    db.Phong_TienNghis.Remove(item);
+                }
             }
 
             var toAdd = targetAmenityIds.Where(aid => !currentAmenityIds.Contains(aid)).ToList();
@@ -321,12 +422,74 @@ public sealed class PropertiesController(
                         MaCoSoLuuTru = id,
                         MaTienNghi = amenity.MaTienNghi
                     });
+
+                    if (homestayRoom != null && !homestayRoom.TienNghis.Any(t => t.MaTienNghi == amenity.MaTienNghi))
+                    {
+                        homestayRoom.TienNghis.Add(new Phong_TienNghi
+                        {
+                            Phong = homestayRoom,
+                            TienNghi = amenity,
+                            MaPhong = homestayRoom.MaPhong,
+                            MaTienNghi = amenity.MaTienNghi,
+                            SoLuong = 1
+                        });
+                    }
                 }
             }
         }
 
+        // Resubmission handling: if resubmit flag or property is rejected, move back to Pending
+        var latestHistory = property.LichSuDuyets.OrderByDescending(h => h.NgayDuyet).FirstOrDefault();
+        if (request.Resubmit || (!property.TrangThai && latestHistory?.TrangThaiDuyet == "Rejected"))
+        {
+            var resubmitHistory = new LichSuDuyet
+            {
+                CoSoLuuTru = property,
+                MaCoSoLuuTru = id,
+                TrangThaiDuyet = "Pending",
+                LyDoTuChoi = null,
+                NgayDuyet = DateTime.UtcNow
+            };
+            db.LichSuDuyets.Add(resubmitHistory);
+
+            // Re-send submission email
+            try
+            {
+                var owner = await db.TaiKhoans.FindAsync([ownerId], cancellationToken);
+                var recipientEmail = property.Email ?? owner?.Email;
+                if (!string.IsNullOrWhiteSpace(recipientEmail))
+                {
+                    var addressParts = new[] { property.DiaChi, property.PhuongXa, property.ThanhPho }
+                        .Where(s => !string.IsNullOrWhiteSpace(s));
+
+                    var emailModel = new PropertySubmissionEmailModel(
+                        OwnerName: owner?.HoTen ?? "Đối tác",
+                        PropertyName: property.TenCoSoLuuTru,
+                        PropertyAddress: string.Join(", ", addressParts),
+                        PropertyType: property.LoaiHinh,
+                        SubmissionDate: DateTime.UtcNow,
+                        ReferenceId: property.MaCoSoLuuTru
+                    );
+
+                    await emailService.SendTemplateEmailAsync(
+                        recipientEmail,
+                        $"[Stayly] Đã tiếp nhận lại hồ sơ đăng ký cơ sở: {property.TenCoSoLuuTru}",
+                        "PropertySubmissionReceived",
+                        emailModel,
+                        cancellationToken);
+                }
+            }
+            catch
+            {
+                // Non-fatal email error
+            }
+        }
+
         await db.SaveChangesAsync(cancellationToken);
-        return Ok(new { message = "Property updated successfully.", id = property.MaCoSoLuuTru });
+        var message = request.Resubmit
+            ? $"Cơ sở lưu trú '{property.TenCoSoLuuTru}' đã được cập nhật và gửi duyệt lại thành công!"
+            : "Cập nhật cơ sở lưu trú thành công.";
+        return Ok(new { message, id = property.MaCoSoLuuTru });
     }
 
     [Authorize(Roles = "OWNER")]
@@ -485,6 +648,9 @@ public sealed class PropertiesController(
         if (property is null)
             return NotFound("Property was not found.");
 
+        if (property.LoaiHinh == "Homestay")
+            return BadRequest("Cơ sở lưu trú loại Homestay (thuê trọn gói nguyên căn) không thể tạo thêm phòng riêng lẻ.");
+
         if (!property.TrangThai)
             return BadRequest("Cannot add rooms to a property that is pending admin approval.");
 
@@ -615,6 +781,9 @@ public sealed class PropertiesController(
 
         if (room is null)
             return NotFound("Room not found or you do not have permission.");
+
+        if (room.CoSoLuuTru.LoaiHinh == "Homestay")
+            return BadRequest("Không thể xóa phòng của cơ sở Homestay (thuê trọn gói nguyên căn).");
 
         var hasActiveBookings = room.ChiTietDons.Any(
             d => d.DonDatPhong.TrangThai is "Pending" or "Confirmed" or "CheckedIn");

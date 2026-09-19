@@ -334,7 +334,17 @@ public sealed class HomestayApiClient(HttpClient http)
             input.FireSafetyDocumentUrl,
             input.SecurityDocumentUrl,
             input.AmenityIds,
-            input.PhotoUrls
+            input.PhotoUrls,
+            input.HomestayPrice,
+            input.HomestayCapacity,
+            input.HomestayRoomTypeId,
+            InitialRooms = input.InitialRooms?.Select(r => new
+            {
+                r.RoomNumber,
+                r.RoomTypeId,
+                r.Capacity,
+                r.Price
+            }).ToList()
         };
         using var request = CreateAuthorizedRequest(HttpMethod.Post, "properties", token);
         request.Content = JsonContent.Create(body);
@@ -346,6 +356,29 @@ public sealed class HomestayApiClient(HttpClient http)
             return (false, string.IsNullOrWhiteSpace(err) ? "Could not create property." : err);
         }
         return (true, null);
+    }
+
+    public async Task<(bool Success, OwnerPropertyDetailsResponse? Result, string? Error)> GetOwnerPropertyAsync(
+        int propertyId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = CreateAuthorizedRequest(HttpMethod.Get, $"properties/owner/{propertyId}", token);
+            using var response = await http.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                return (false, null, string.IsNullOrWhiteSpace(err) ? "Could not load property details." : err);
+            }
+            var data = await response.Content.ReadFromJsonAsync<OwnerPropertyDetailsResponse>(cancellationToken: cancellationToken);
+            return (true, data, null);
+        }
+        catch (Exception ex)
+        {
+            return (false, null, ex.Message);
+        }
     }
 
     public async Task<(bool Success, string? Error)> UpdatePropertyAsync(
@@ -366,7 +399,11 @@ public sealed class HomestayApiClient(HttpClient http)
             input.BusinessLicenseUrl,
             input.FireSafetyDocumentUrl,
             input.SecurityDocumentUrl,
-            input.AmenityIds
+            input.AmenityIds,
+            input.HomestayPrice,
+            input.HomestayCapacity,
+            input.HomestayRoomTypeId,
+            input.Resubmit
         };
         using var request = CreateAuthorizedRequest(HttpMethod.Put, $"properties/{input.Id}", token);
         request.Content = JsonContent.Create(body);

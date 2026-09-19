@@ -25,11 +25,6 @@
             <div class="nav-user">
                 @if (Context.Session.GetString("userName") is string name)
                 {
-                    <span>Hi, @name</span>
-                    @if (Context.Session.GetString("role") == "OWNER")
-                    {
-                        <a class="button outline owner-btn-nav" asp-controller="Home" asp-action="Dashboard">Dashboard</a>
-                    }
                     <a asp-controller="Home" asp-action="Profile">My profile</a>
 
                     <form asp-controller="Home" asp-action="Logout" method="post">

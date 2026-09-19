@@ -292,6 +292,9 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         string tab = "properties",
         CancellationToken cancellationToken = default)
     {
+        if (string.Equals(tab, "rooms", StringComparison.OrdinalIgnoreCase))
+            tab = "properties";
+
         var token = HttpContext.Session.GetString("token");
         var role = HttpContext.Session.GetString("role");
 
@@ -357,14 +360,9 @@ public sealed class HomeController(HomestayApiClient api) : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateProperty(
-        [Bind(Prefix = "NewProperty")] CreatePropertyInput? newPropertyInput,
-        CreatePropertyInput? directInput,
+        [Bind(Prefix = "NewProperty")] CreatePropertyInput input,
         CancellationToken cancellationToken)
     {
-        var input = (newPropertyInput != null && !string.IsNullOrWhiteSpace(newPropertyInput.Name))
-            ? newPropertyInput
-            : (directInput ?? new CreatePropertyInput());
-
         var token = HttpContext.Session.GetString("token");
         if (token is null)
             return RedirectToAction(nameof(Login));
@@ -393,40 +391,76 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         // Upload verification document files if provided
         if (input.BusinessLicenseFile != null)
         {
-            var (licOk, licUrl, _) = await api.UploadDocumentAsync(input.BusinessLicenseFile, token, cancellationToken);
-            if (licOk && !string.IsNullOrWhiteSpace(licUrl))
+            var (licOk, licUrl, licErr) = await api.UploadDocumentAsync(input.BusinessLicenseFile, token, cancellationToken);
+            if (!licOk)
+            {
+                TempData["Error"] = $"Tải hồ sơ Giấy phép kinh doanh thất bại: {licErr ?? "Lỗi máy chủ tải tệp."}";
+                return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
+            }
+            if (!string.IsNullOrWhiteSpace(licUrl))
                 input.BusinessLicenseUrl = licUrl;
         }
 
         if (input.FireSafetyFile != null)
         {
-            var (pcccOk, pcccUrl, _) = await api.UploadDocumentAsync(input.FireSafetyFile, token, cancellationToken);
-            if (pcccOk && !string.IsNullOrWhiteSpace(pcccUrl))
+            var (pcccOk, pcccUrl, pcccErr) = await api.UploadDocumentAsync(input.FireSafetyFile, token, cancellationToken);
+            if (!pcccOk)
+            {
+                TempData["Error"] = $"Tải Giấy chứng nhận PCCC thất bại: {pcccErr ?? "Lỗi máy chủ tải tệp."}";
+                return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
+            }
+            if (!string.IsNullOrWhiteSpace(pcccUrl))
                 input.FireSafetyDocumentUrl = pcccUrl;
         }
 
         if (input.SecurityFile != null)
         {
-            var (anttOk, anttUrl, _) = await api.UploadDocumentAsync(input.SecurityFile, token, cancellationToken);
-            if (anttOk && !string.IsNullOrWhiteSpace(anttUrl))
+            var (anttOk, anttUrl, anttErr) = await api.UploadDocumentAsync(input.SecurityFile, token, cancellationToken);
+            if (!anttOk)
+            {
+                TempData["Error"] = $"Tải Giấy tờ An ninh trật tự thất bại: {anttErr ?? "Lỗi máy chủ tải tệp."}";
+                return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
+            }
+            if (!string.IsNullOrWhiteSpace(anttUrl))
                 input.SecurityDocumentUrl = anttUrl;
         }
 
         // Upload property photos if provided
         if (input.PhotoFiles != null && input.PhotoFiles.Count > 0)
         {
-            var (photosOk, photoUrls, _) = await api.UploadImagesAsync(input.PhotoFiles, "stayly/properties", token, cancellationToken);
-            if (photosOk && photoUrls.Count > 0)
+            var (photosOk, photoUrls, photosErr) = await api.UploadImagesAsync(input.PhotoFiles, "stayly/properties", token, cancellationToken);
+            if (!photosOk)
+            {
+                TempData["Error"] = $"Tải ảnh khuôn viên thất bại: {photosErr ?? "Lỗi máy chủ tải tệp."}";
+                return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
+            }
+            if (photoUrls.Count > 0)
                 input.PhotoUrls.AddRange(photoUrls);
         }
+
+        input.Type = string.Equals(input.Type, "Hotel", StringComparison.OrdinalIgnoreCase) ? "Hotel" : "Homestay";
 
         var result = await api.CreatePropertyAsync(input, token, cancellationToken);
         if (!result.Success)
             TempData["Error"] = result.Error ?? "Không thể tạo yêu cầu thẩm định cơ sở.";
         else
-            TempData["Success"] = $"Homestay '{input.Name}' đã được gửi duyệt thành công! Admin sẽ thẩm định hồ sơ trước khi hiển thị công khai trên website.";
+            TempData["Success"] = $"Cơ sở lưu trú '{input.Name}' ({input.Type}) đã được gửi duyệt thành công! Admin sẽ thẩm định hồ sơ trước khi kích hoạt.";
 
         return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetPropertyDetailsJson(int id, CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (token is null)
+            return Unauthorized(new { message = "Vui lòng đăng nhập lại." });
+
+        var (success, details, error) = await api.GetOwnerPropertyAsync(id, token, cancellationToken);
+        if (!success || details is null)
+            return BadRequest(new { message = error ?? "Không thể tải chi tiết cơ sở lưu trú." });
+
+        return Ok(details);
     }
 
     [HttpPost]
@@ -441,25 +475,42 @@ public sealed class HomeController(HomestayApiClient api) : Controller
 
         if (input.BusinessLicenseFile != null)
         {
-            var (ok, url, _) = await api.UploadDocumentAsync(input.BusinessLicenseFile, token, cancellationToken);
-            if (ok && !string.IsNullOrWhiteSpace(url)) input.BusinessLicenseUrl = url;
+            var (ok, url, err) = await api.UploadDocumentAsync(input.BusinessLicenseFile, token, cancellationToken);
+            if (!ok)
+            {
+                TempData["Error"] = $"Tải Giấy phép kinh doanh thất bại: {err ?? "Lỗi máy chủ"}";
+                return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
+            }
+            if (!string.IsNullOrWhiteSpace(url)) input.BusinessLicenseUrl = url;
         }
         if (input.FireSafetyFile != null)
         {
-            var (ok, url, _) = await api.UploadDocumentAsync(input.FireSafetyFile, token, cancellationToken);
-            if (ok && !string.IsNullOrWhiteSpace(url)) input.FireSafetyDocumentUrl = url;
+            var (ok, url, err) = await api.UploadDocumentAsync(input.FireSafetyFile, token, cancellationToken);
+            if (!ok)
+            {
+                TempData["Error"] = $"Tải Giấy chứng nhận PCCC thất bại: {err ?? "Lỗi máy chủ"}";
+                return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
+            }
+            if (!string.IsNullOrWhiteSpace(url)) input.FireSafetyDocumentUrl = url;
         }
         if (input.SecurityFile != null)
         {
-            var (ok, url, _) = await api.UploadDocumentAsync(input.SecurityFile, token, cancellationToken);
-            if (ok && !string.IsNullOrWhiteSpace(url)) input.SecurityDocumentUrl = url;
+            var (ok, url, err) = await api.UploadDocumentAsync(input.SecurityFile, token, cancellationToken);
+            if (!ok)
+            {
+                TempData["Error"] = $"Tải Giấy xác nhận ANTT thất bại: {err ?? "Lỗi máy chủ"}";
+                return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
+            }
+            if (!string.IsNullOrWhiteSpace(url)) input.SecurityDocumentUrl = url;
         }
 
         var result = await api.UpdatePropertyAsync(input, token, cancellationToken);
         if (!result.Success)
-            TempData["Error"] = result.Error ?? "Không thể cập nhật thông tin homestay.";
+            TempData["Error"] = result.Error ?? "Không thể cập nhật thông tin cơ sở lưu trú.";
         else
-            TempData["Success"] = "Cơ sở lưu trú đã được cập nhật thành công.";
+            TempData["Success"] = input.Resubmit
+                ? $"Hồ sơ cơ sở '{input.Name}' đã được cập nhật và gửi duyệt lại thành công! Admin sẽ thẩm định lại hồ sơ."
+                : $"Cơ sở lưu trú '{input.Name}' đã được cập nhật thành công.";
 
         return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
     }
@@ -522,7 +573,7 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         else
             TempData["Success"] = $"Phòng '{input.RoomNumber}' đã được tạo thành công.";
 
-        return RedirectToAction(nameof(Dashboard), new { tab = "rooms" });
+        return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
     }
 
     [HttpPost]
@@ -541,7 +592,7 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         else
             TempData["Success"] = $"Phòng '{input.RoomNumber}' đã được cập nhật thành công.";
 
-        return RedirectToAction(nameof(Dashboard), new { tab = "rooms" });
+        return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
     }
 
     [HttpPost]
@@ -558,7 +609,7 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         else
             TempData["Success"] = "Phòng đã được xóa thành công.";
 
-        return RedirectToAction(nameof(Dashboard), new { tab = "rooms" });
+        return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
     }
 
     [HttpPost]

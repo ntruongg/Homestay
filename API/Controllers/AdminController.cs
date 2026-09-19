@@ -219,12 +219,40 @@ public sealed class AdminController(HomestayDbContext db, IEmailService emailSer
         var adminId = GetAccountId();
         var property = await db.CoSoLuuTrus
             .Include(p => p.ChuCoSoLuuTru)
+            .Include(p => p.Phongs)
             .FirstOrDefaultAsync(p => p.MaCoSoLuuTru == id, cancellationToken);
 
         if (property is null)
             return NotFound("Property not found.");
 
         property.TrangThai = true;
+
+        // Activate all rooms that were pending review
+        foreach (var room in property.Phongs)
+        {
+            if (room.TinhTrang == "Chờ duyệt")
+            {
+                room.TinhTrang = "Trống";
+            }
+        }
+
+        // For Homestay: if no room exists yet, ensure the single whole-unit booking row is created
+        if (property.LoaiHinh == "Homestay" && !property.Phongs.Any())
+        {
+            var defaultRoomType = await db.LoaiPhongs.FirstOrDefaultAsync(l => l.TenLoaiPhong.Contains("Villa") || l.TenLoaiPhong.Contains("Nguyên căn"), cancellationToken)
+                ?? await db.LoaiPhongs.FirstOrDefaultAsync(cancellationToken);
+
+            var wholeUnitRoom = new Phong
+            {
+                CoSoLuuTru = property,
+                SoPhong = "Nguyên căn",
+                SucChua = 4,
+                GiaGoc = 1000000,
+                MaLoaiPhong = defaultRoomType?.MaLoaiPhong ?? 1,
+                TinhTrang = "Trống"
+            };
+            db.Phongs.Add(wholeUnitRoom);
+        }
 
         var history = new LichSuDuyet
         {

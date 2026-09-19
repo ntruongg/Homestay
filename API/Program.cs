@@ -86,11 +86,14 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<HomestayDbContext>();
+        var configuration = services.GetRequiredService<IConfiguration>();
         context.Database.Migrate();
-        DbInitializer.Seed(context);
+        DbInitializer.Seed(context, configuration);
     }
-    catch (Exception)
+    catch (Exception ex)
     {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred during database migration and seeding.");
     }
 }
 // Configure the HTTP request pipeline.

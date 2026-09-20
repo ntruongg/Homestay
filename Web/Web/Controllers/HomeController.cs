@@ -28,8 +28,40 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         int id,
         CancellationToken cancellationToken)
     {
-        var property = await api.GetPropertyAsync(id, cancellationToken);
-        return property is null ? NotFound() : View(property);
+        try
+        {
+            var property = await api.GetPropertyAsync(id, cancellationToken);
+            if (property is null)
+            {
+                TempData["Error"] = $"Không tìm thấy cơ sở lưu trú #{id}.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                ViewBag.Reviews = await api.GetPropertyReviewsAsync(id, cancellationToken);
+            }
+            catch
+            {
+                ViewBag.Reviews = Array.Empty<ReviewItem>();
+            }
+
+            try
+            {
+                ViewBag.Amenities = await api.GetAmenitiesAsync(cancellationToken);
+            }
+            catch
+            {
+                ViewBag.Amenities = Array.Empty<AmenityItem>();
+            }
+
+            return View(property);
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = $"Lỗi khi tải thông tin: {ex.Message}";
+            return RedirectToAction(nameof(Index));
+        }
     }   
 
     [HttpGet]
@@ -155,157 +187,12 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         try
         {
             var properties = await api.GetPropertiesAsync(location, cancellationToken);
-            if (properties != null && properties.Count > 0)
-            {
-                return Ok(properties);
-            }
+            return Ok(properties ?? Array.Empty<PropertySummary>());
         }
-        catch
+        catch (Exception ex)
         {
-            // Fallback gracefully if API service is offline
+            return StatusCode(500, new { message = ex.Message });
         }
-
-        return Ok(GetCuratedHomestays(location));
-    }
-
-    private static List<object> GetCuratedHomestays(string? location = null)
-    {
-        var list = new List<object>
-        {
-            new
-            {
-                id = 1,
-                name = "The Pine Hill Villa & Retreat",
-                type = "Villa",
-                address = "Đường Mai Anh Đào, Phường 8, TP. Đà Lạt",
-                city = "Đà Lạt",
-                price = 1250000,
-                rating = 4.95,
-                reviewsCount = 142,
-                description = "Biệt thự biệt lập ẩn mình giữa đồi thông thơ mộng với ban công ngắm bình minh và sương mờ Đà Lạt tuyệt đẹp.",
-                amenities = new[] { "Wifi miễn phí", "Ban công view đồi", "Bếp gia đình", "Lò sưởi ấm", "Chỗ đỗ xe" },
-                images = new[]
-                {
-                    "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80"
-                }
-            },
-            new
-            {
-                id = 2,
-                name = "Stayly Ocean Breeze Bungalow",
-                type = "Bungalow",
-                address = "Trần Phú, Bãi Trước, TP. Vũng Tàu",
-                city = "Vũng Tàu",
-                price = 950000,
-                rating = 4.88,
-                reviewsCount = 98,
-                description = "Bungalow sát biển với âm thanh sóng vỗ êm đềm, thiết kế mở đón gió đại dương mát lành và hoàng hôn rực rỡ.",
-                amenities = new[] { "View biển trực diện", "Hồ bơi vô cực", "Điều hòa", "Bữa sáng miễn phí", "Wifi tốc độ cao" },
-                images = new[]
-                {
-                    "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80"
-                }
-            },
-            new
-            {
-                id = 3,
-                name = "An Nam Vintage Homestay",
-                type = "Homestay",
-                address = "Nguyễn Thái Học, Phố Cổ Hội An, Quảng Nam",
-                city = "Hội An",
-                price = 480000,
-                rating = 4.92,
-                reviewsCount = 215,
-                description = "Không gian kiến trúc gỗ truyền thống mộc mạc, khu vườn hoa giấy thơ mộng và xe đạp miễn phí dạo quanh phố cổ.",
-                amenities = new[] { "Xe đạp miễn phí", "Wifi miễn phí", "Điều hòa", "Bếp chung ấm cúng", "Sân vườn hoa" },
-                images = new[]
-                {
-                    "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80"
-                }
-            },
-            new
-            {
-                id = 4,
-                name = "Skyline Luxury Apartment & Studio",
-                type = "Căn hộ",
-                address = "Võ Nguyên Giáp, Mỹ Khê, TP. Đà Nẵng",
-                city = "Đà Nẵng",
-                price = 820000,
-                rating = 4.85,
-                reviewsCount = 76,
-                description = "Căn hộ dịch vụ cao cấp tầng cao nhìn thẳng ra bãi biển Mỹ Khê xinh đẹp, trang bị đầy đủ tiện nghi chuẩn 5 sao.",
-                amenities = new[] { "Bể bơi tầng thượng", "Máy giặt riêng", "Bếp từ hiện đại", "Gym & Spa", "Thang máy" },
-                images = new[]
-                {
-                    "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80"
-                }
-            },
-            new
-            {
-                id = 5,
-                name = "Misty Mountain Wooden Cabin",
-                type = "Homestay",
-                address = "Bản Tả Van, Thị xã Sa Pa, Lào Cai",
-                city = "Sa Pa",
-                price = 650000,
-                rating = 4.96,
-                reviewsCount = 184,
-                description = "Cabin gỗ thông mộc mạc bên sườn đồi nhìn ra thung lũng Mường Hoa bồng bềnh mây trắng và ruộng bậc thang kỳ vĩ.",
-                amenities = new[] { "View thung lũng mây", "Bếp sưởi củi", "Wifi", "Bồn tắm gỗ pơ mu", "Trà thảo mộc bản địa" },
-                images = new[]
-                {
-                    "https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?auto=format&fit=crop&w=800&q=80"
-                }
-            },
-            new
-            {
-                id = 6,
-                name = "Sunset Bay Eco Villa Phu Quoc",
-                type = "Villa",
-                address = "Bãi Trường, Dương Tơ, TP. Phú Quốc",
-                city = "Phú Quốc",
-                price = 2100000,
-                rating = 4.98,
-                reviewsCount = 110,
-                description = "Villa sinh thái phong cách Địa Trung Hải với bể bơi riêng, đường dạo bộ ra bãi cát vàng và hoàng hôn tím biếc.",
-                amenities = new[] { "Hồ bơi riêng", "Bãi tắm riêng", "Đưa đón sân bay", "Bếp nướng BBQ", "Bữa sáng nhiệt đới" },
-                images = new[]
-                {
-                    "https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80"
-                }
-            }
-        };
-
-        if (!string.IsNullOrWhiteSpace(location))
-        {
-            var loc = location.Trim().ToLowerInvariant();
-            var filtered = list.Where(item =>
-            {
-                var dict = (dynamic)item;
-                string addr = dict.address;
-                string name = dict.name;
-                string city = dict.city;
-                return addr.ToLowerInvariant().Contains(loc) ||
-                       name.ToLowerInvariant().Contains(loc) ||
-                       city.ToLowerInvariant().Contains(loc);
-            }).ToList();
-
-            if (filtered.Count > 0) return filtered;
-        }
-
-        return list;
     }
 
     [HttpGet]
@@ -537,264 +424,56 @@ public sealed class HomeController(HomestayApiClient api) : Controller
             tab = "properties";
 
         var token = HttpContext.Session.GetString("token");
-        var role = HttpContext.Session.GetString("role");
-
-        // If logged in as OWNER with a valid token, attempt to fetch live data from API
-        if (!string.IsNullOrWhiteSpace(token) && role == "OWNER")
+        if (string.IsNullOrWhiteSpace(token))
         {
-            try
-            {
-                var result = await api.GetOwnerDashboardAsync(token, cancellationToken);
-                var amenities = await api.GetAmenitiesAsync(cancellationToken);
-                var roomTypes = await api.GetRoomTypesAsync(cancellationToken);
-                var reviews = await api.GetOwnerReviewsAsync(token, cancellationToken);
-
-                if (result.Success && result.Result is not null)
-                {
-                    var viewModel = new OwnerDashboardViewModel
-                    {
-                        Summary = result.Result.Summary,
-                        Properties = result.Result.Properties.Count > 0 ? result.Result.Properties : GetSampleOwnerDashboardViewModel(tab).Properties,
-                        Rooms = result.Result.Rooms,
-                        Bookings = result.Result.Bookings.Count > 0 ? result.Result.Bookings : GetSampleOwnerDashboardViewModel(tab).Bookings,
-                        Invoices = result.Result.Invoices,
-                        Reviews = reviews.Count > 0 ? reviews : GetSampleReviews(),
-                        AvailableAmenities = amenities,
-                        AvailableRoomTypes = roomTypes,
-                        ActiveTab = tab
-                    };
-
-                    return View(viewModel);
-                }
-            }
-            catch
-            {
-                // Fallback gracefully below
-            }
+            return RedirectToAction(nameof(Login), new { returnUrl = Url.Action(nameof(Dashboard), new { tab }) });
         }
 
-        // Default or preview/demo mode: return rich, realistic sample data for instant viewing & testing
-        return View(GetSampleOwnerDashboardViewModel(tab));
-    }
-
-    private static OwnerDashboardViewModel GetSampleOwnerDashboardViewModel(string tab = "properties")
-    {
-        var properties = new List<OwnerProperty>
+        try
         {
-            new(
-                1,
-                "The Pine Hill Villa & Retreat",
-                "Đường Mai Anh Đào, Phường 8, TP. Đà Lạt",
-                "Phường 8",
-                "Đà Lạt",
-                "0912345678",
-                "pinehill@stayly.vn",
-                "Villa",
-                "Approved",
-                "Nhận phòng từ 14:00, trả phòng trước 12:00. Không hút thuốc trong phòng.",
-                null,
-                6,
-                "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80"
-            ),
-            new(
-                2,
-                "Stayly Ocean Breeze Bungalow",
-                "Trần Phú, Bãi Trước, TP. Vũng Tàu",
-                "Phường 1",
-                "Vũng Tàu",
-                "0987654321",
-                "oceanbreeze@stayly.vn",
-                "Bungalow",
-                "Approved",
-                "Miễn phí bữa sáng. Được mang thú cưng nhỏ dưới 5kg.",
-                null,
-                4,
-                "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80"
-            ),
-            new(
-                3,
-                "Misty Mountain Wooden Cabin",
-                "Bản Tả Van, Thị xã Sa Pa, Lào Cai",
-                "Tả Van",
-                "Sa Pa",
-                "0909123456",
-                "mistymountain@stayly.vn",
-                "Homestay",
-                "Pending",
-                "Không gian yên tĩnh, tắt nhạc sau 22:00 để giữ sự tĩnh lặng của thung lũng.",
-                null,
-                3,
-                "https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=800&q=80"
-            ),
-            new(
-                4,
-                "Lotus Riverside Eco Lodge",
-                "Cù Lao Chàm, Hội An, Quảng Nam",
-                "Tân Hiệp",
-                "Hội An",
-                "0933456789",
-                "lotuslodge@stayly.vn",
-                "Homestay",
-                "Rejected",
-                "Khu bảo tồn sinh thái, không sử dụng đồ nhựa một lần.",
-                "Hồ sơ Giấy phép phòng cháy chữa cháy (PCCC) chưa rõ mộc dấu đỏ. Vui lòng bổ sung bản quét PDF rõ nét.",
-                2,
-                "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
-            )
-        };
+            var result = await api.GetOwnerDashboardAsync(token, cancellationToken);
+            var amenities = await api.GetAmenitiesAsync(cancellationToken);
+            var roomTypes = await api.GetRoomTypesAsync(cancellationToken);
+            var reviews = await api.GetOwnerReviewsAsync(token, cancellationToken);
 
-        var bookings = new List<OwnerBooking>
+            var summary = result.Result?.Summary ?? new OwnerSummary(0, 0, 0, 0, 0, 0, 0);
+            var properties = result.Result?.Properties ?? (IReadOnlyList<OwnerProperty>)Array.Empty<OwnerProperty>();
+            var rooms = result.Result?.Rooms ?? (IReadOnlyList<OwnerRoom>)Array.Empty<OwnerRoom>();
+            var bookings = result.Result?.Bookings ?? (IReadOnlyList<OwnerBooking>)Array.Empty<OwnerBooking>();
+            var invoices = result.Result?.Invoices ?? (IReadOnlyList<OwnerInvoice>)Array.Empty<OwnerInvoice>();
+
+            var viewModel = new OwnerDashboardViewModel
+            {
+                Summary = summary,
+                Properties = properties,
+                Rooms = rooms,
+                Bookings = bookings,
+                Invoices = invoices,
+                Reviews = reviews ?? Array.Empty<ReviewItem>(),
+                AvailableAmenities = amenities ?? Array.Empty<AmenityItem>(),
+                AvailableRoomTypes = roomTypes ?? Array.Empty<RoomTypeItem>(),
+                ActiveTab = tab
+            };
+
+            return View(viewModel);
+        }
+        catch (Exception ex)
         {
-            new(
-                8021,
-                "The Pine Hill Villa & Retreat",
-                new[] { "P.101 - Suite Đồi Thông" },
-                101,
-                "Nguyễn Hoàng Nam",
-                "0903112233",
-                "nam.nguyen@gmail.com",
-                DateTime.Now.AddDays(2),
-                DateTime.Now.AddDays(5),
-                2,
-                "Confirmed",
-                3750000,
-                DateTime.Now.AddDays(-1)
-            ),
-            new(
-                8022,
-                "Stayly Ocean Breeze Bungalow",
-                new[] { "BG.02 - View Biển Hoàng Hôn" },
-                102,
-                "Trần Thị Mai Anh",
-                "0918776655",
-                "maianh.tran@gmail.com",
-                DateTime.Now.AddDays(1),
-                DateTime.Now.AddDays(3),
-                2,
-                "Pending",
-                1900000,
-                DateTime.Now.AddHours(-4)
-            ),
-            new(
-                8023,
-                "The Pine Hill Villa & Retreat",
-                new[] { "P.202 - Deluxe Ban Công" },
-                103,
-                "Lê Tuấn Kiệt",
-                "0977889900",
-                "tuankiet.le@gmail.com",
-                DateTime.Now.AddDays(-3),
-                DateTime.Now.AddDays(-1),
-                3,
-                "Completed",
-                2500000,
-                DateTime.Now.AddDays(-5)
-            ),
-            new(
-                8024,
-                "Stayly Ocean Breeze Bungalow",
-                new[] { "BG.01 - Sát Biển" },
-                104,
-                "Phạm Minh Đăng",
-                "0944556677",
-                "minhdang@gmail.com",
-                DateTime.Now.AddDays(7),
-                DateTime.Now.AddDays(10),
-                4,
-                "Cancelled",
-                2850000,
-                DateTime.Now.AddDays(-2)
-            ),
-            new(
-                8025,
-                "The Pine Hill Villa & Retreat",
-                new[] { "P.301 - Penthouse Đỉnh Đồi" },
-                105,
-                "Đặng Thu Trang",
-                "0966223344",
-                "thutrang.dang@gmail.com",
-                DateTime.Now.AddDays(4),
-                DateTime.Now.AddDays(8),
-                4,
-                "Confirmed",
-                6200000,
-                DateTime.Now.AddDays(-1)
-            )
-        };
-
-        var approvedCount = properties.Count(p => (p.ApprovalStatus ?? "").Equals("Approved", StringComparison.OrdinalIgnoreCase));
-        var pendingCount = properties.Count(p => (p.ApprovalStatus ?? "").Equals("Pending", StringComparison.OrdinalIgnoreCase));
-        var totalRev = bookings.Where(b => b.Status == "Confirmed" || b.Status == "Completed").Sum(b => b.TotalAmount);
-
-        return new OwnerDashboardViewModel
-        {
-            Summary = new OwnerSummary(
-                properties.Count,
-                approvedCount,
-                pendingCount,
-                properties.Sum(p => p.RoomsCount),
-                bookings.Count,
-                bookings.Count(b => b.Status == "Pending"),
-                totalRev
-            ),
-            Properties = properties,
-            Rooms = Array.Empty<OwnerRoom>(),
-            Bookings = bookings,
-            Invoices = Array.Empty<OwnerInvoice>(),
-            Reviews = GetSampleReviews(),
-            ActiveTab = tab
-        };
-    }
-
-    private static List<ReviewItem> GetSampleReviews()
-    {
-        return new List<ReviewItem>
-        {
-            new(
-                1,
-                101,
-                1,
-                "The Pine Hill Villa & Retreat",
-                12,
-                "Nguyễn Thu Thảo",
-                5,
-                "Không gian homestay vô cùng yên bình, view đồi thông săn mây buổi sáng đẹp ngỡ ngàng. Phòng ốc cực kỳ sạch sẽ, chăn đệm ấm áp và thơm tho. Chủ nhà siêu nhiệt tình hỗ trợ thuê xe máy và chỉ chỗ ăn ngon ở Đà Lạt. Nhất định sẽ quay lại!",
-                new DateTime(2026, 9, 18, 14, 30, 0)
-            ),
-            new(
-                2,
-                102,
-                2,
-                "Stayly Ocean Breeze Bungalow",
-                15,
-                "Trần Quốc Bảo",
-                5,
-                "Vị trí ngay sát biển Bãi Trước, tối mở cửa sổ nghe sóng vỗ rất thư giãn. Homestay đầy đủ tiện nghi, bếp nướng BBQ ngoài trời tiện lợi cho gia đình. Hải sản tươi ngon mua ở chợ gần đó về nấu ăn tuyệt vời!",
-                new DateTime(2026, 9, 15, 10, 15, 0)
-            ),
-            new(
-                3,
-                103,
-                1,
-                "The Pine Hill Villa & Retreat",
-                18,
-                "Lê Hoàng Nam",
-                4,
-                "Chỗ nghỉ ấm cúng, thiết kế phong cách vintage gỗ mộc rất ăn ảnh. Buổi tối đốt lửa sưởi ấm rất chill. Chỉ có đường vào hơi dốc một chút cho xe lớn, nhưng chủ nhà chỉ dẫn nhiệt tình nên không sao.",
-                new DateTime(2026, 9, 12, 19, 45, 0)
-            ),
-            new(
-                4,
-                104,
-                3,
-                "Misty Mountain Wooden Cabin",
-                20,
-                "Phạm Minh Anh",
-                5,
-                "Cabin trên đồi Sa Pa nhìn thẳng ra thung lũng Mường Hoa. Trải nghiệm tắm lá thuốc người Dao đỏ ngay tại homestay rất đáng thử sau ngày dài trekking. Cảm ơn Stayly và chủ nhà!",
-                new DateTime(2026, 9, 8, 8, 20, 0)
-            )
-        };
+            TempData["Error"] = $"Không thể tải bảng điều khiển: {ex.Message}";
+            var viewModel = new OwnerDashboardViewModel
+            {
+                Summary = new OwnerSummary(0, 0, 0, 0, 0, 0, 0),
+                Properties = Array.Empty<OwnerProperty>(),
+                Rooms = Array.Empty<OwnerRoom>(),
+                Bookings = Array.Empty<OwnerBooking>(),
+                Invoices = Array.Empty<OwnerInvoice>(),
+                Reviews = Array.Empty<ReviewItem>(),
+                AvailableAmenities = Array.Empty<AmenityItem>(),
+                AvailableRoomTypes = Array.Empty<RoomTypeItem>(),
+                ActiveTab = tab
+            };
+            return View(viewModel);
+        }
     }
 
     [HttpPost]
@@ -820,17 +499,26 @@ public sealed class HomeController(HomestayApiClient api) : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateProperty(
-        [Bind(Prefix = "NewProperty")] CreatePropertyInput input,
+        [Bind(Prefix = "NewProperty")] CreatePropertyInput? prefixedInput,
+        CreatePropertyInput? directInput,
         CancellationToken cancellationToken)
     {
+        var input = (prefixedInput != null && !string.IsNullOrWhiteSpace(prefixedInput.Name))
+            ? prefixedInput
+            : (directInput ?? new CreatePropertyInput());
+
         var token = HttpContext.Session.GetString("token");
         if (token is null)
             return RedirectToAction(nameof(Login));
 
-        // Sanitize nullable string fields to prevent false validation triggers
-        if (string.IsNullOrWhiteSpace(input.Email)) input.Email = null;
-        if (string.IsNullOrWhiteSpace(input.Ward)) input.Ward = null;
-        if (string.IsNullOrWhiteSpace(input.Policy)) input.Policy = null;
+        // Trim and sanitize string fields
+        input.Name = input.Name?.Trim() ?? string.Empty;
+        input.Phone = input.Phone?.Trim();
+        input.Address = input.Address?.Trim() ?? string.Empty;
+        input.City = input.City?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(input.Email)) input.Email = null; else input.Email = input.Email.Trim();
+        if (string.IsNullOrWhiteSpace(input.Ward)) input.Ward = null; else input.Ward = input.Ward.Trim();
+        if (string.IsNullOrWhiteSpace(input.Policy)) input.Policy = null; else input.Policy = input.Policy.Trim();
         if (string.IsNullOrWhiteSpace(input.BusinessLicenseUrl)) input.BusinessLicenseUrl = null;
         if (string.IsNullOrWhiteSpace(input.FireSafetyDocumentUrl)) input.FireSafetyDocumentUrl = null;
         if (string.IsNullOrWhiteSpace(input.SecurityDocumentUrl)) input.SecurityDocumentUrl = null;
@@ -839,12 +527,14 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         if (string.IsNullOrWhiteSpace(input.Name))
         {
             TempData["Error"] = "Vui lòng nhập tên cơ sở lưu trú.";
+            TempData["OpenModal"] = "createPropertyModal";
             return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
         }
 
         if (string.IsNullOrWhiteSpace(input.Address) || string.IsNullOrWhiteSpace(input.City))
         {
             TempData["Error"] = "Vui lòng nhập đầy đủ địa chỉ và Tỉnh/Thành phố của cơ sở lưu trú.";
+            TempData["OpenModal"] = "createPropertyModal";
             return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
         }
 

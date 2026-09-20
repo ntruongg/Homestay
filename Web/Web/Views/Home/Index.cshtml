@@ -274,47 +274,40 @@
                     const data = await response.json();
                     allRoomsData = normalizeRoomsData(data);
                 } else {
-                    allRoomsData = getFallbackRoomsData();
+                    allRoomsData = [];
                 }
             } catch (e) {
-                allRoomsData = getFallbackRoomsData();
+                allRoomsData = [];
             }
             applyFiltersAndRender();
         }
 
-        // Normalize data format whether from API or fallback
+        // Normalize data format from API
         function normalizeRoomsData(items) {
             if (!Array.isArray(items) || items.length === 0) {
-                return getFallbackRoomsData();
+                return [];
             }
 
             return items.map((item, index) => {
                 const id = item.id || item.Id || (index + 1);
-                const name = item.name || item.Name || 'Homestay ấm cúng';
-                const address = item.address || item.Address || 'Địa điểm du lịch hấp dẫn';
+                const name = item.name || item.Name || 'Homestay';
+                const address = item.address || item.Address || 'Việt Nam';
                 const type = item.type || item.Type || 'Homestay';
-                const price = Number(item.price || item.minimumPrice || item.MinimumPrice || 650000);
-                const rating = item.rating || 4.9;
-                const reviewsCount = item.reviewsCount || Math.floor(Math.random() * 80 + 40);
-                const description = item.description || 'Không gian nghỉ dưỡng thanh bình, phòng ốc thoáng mát, tiện nghi đầy đủ và gần các điểm tham quan nổi tiếng.';
-                const amenities = item.amenities || ['Wifi miễn phí', 'Điều hòa', 'Bếp', 'Chỗ đỗ xe'];
+                const price = Number(item.price || item.minimumPrice || item.MinimumPrice || 0);
+                const rating = 4.9;
+                const reviewsCount = 12;
+                const description = item.description || `Không gian lưu trú ${type.toLowerCase()} thanh bình, trang bị đầy đủ tiện nghi tại ${address}.`;
+                const amenities = ['Wifi miễn phí', 'Điều hòa', 'Chỗ đỗ xe'];
 
-                // Prepare carousel images (always at least 3 high quality photos)
                 let images = [];
                 if (item.images && Array.isArray(item.images) && item.images.length > 0) {
                     images = item.images;
                 } else if (item.coverImageUrl || item.CoverImageUrl) {
-                    const cover = item.coverImageUrl || item.CoverImageUrl;
-                    images = [
-                        cover,
-                        'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80'
-                    ];
+                    images = [item.coverImageUrl || item.CoverImageUrl];
                 } else {
                     images = [
                         'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80'
+                        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80'
                     ];
                 }
 
@@ -331,108 +324,6 @@
                     images
                 };
             });
-        }
-
-        // Fallback curated homestays
-        function getFallbackRoomsData() {
-            return [
-                {
-                    id: 1,
-                    name: 'The Pine Hill Villa & Retreat',
-                    type: 'Villa',
-                    address: 'Đường Mai Anh Đào, Phường 8, TP. Đà Lạt',
-                    price: 1250000,
-                    rating: 4.95,
-                    reviewsCount: 142,
-                    description: 'Biệt thự biệt lập ẩn mình giữa rừng thông thơ mộng với ban công ngắm bình minh và sương mờ Đà Lạt tuyệt đẹp.',
-                    amenities: ['Wifi miễn phí', 'Ban công view đồi', 'Bếp gia đình', 'Chỗ đỗ xe'],
-                    images: [
-                        'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80'
-                    ]
-                },
-                {
-                    id: 2,
-                    name: 'Stayly Ocean Breeze Bungalow',
-                    type: 'Bungalow',
-                    address: 'Trần Phú, Bãi Trước, TP. Vũng Tàu',
-                    price: 950000,
-                    rating: 4.88,
-                    reviewsCount: 98,
-                    description: 'Bungalow sát biển với âm thanh sóng vỗ êm đềm, thiết kế mở đón gió đại dương mát lành và hoàng hôn rực rỡ.',
-                    amenities: ['Hồ bơi vô cực', 'Điều hòa', 'Wifi miễn phí', 'Chỗ đỗ xe'],
-                    images: [
-                        'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80'
-                    ]
-                },
-                {
-                    id: 3,
-                    name: 'An Nam Vintage Homestay',
-                    type: 'Homestay',
-                    address: 'Nguyễn Thái Học, Phố Cổ Hội An, Quảng Nam',
-                    price: 480000,
-                    rating: 4.92,
-                    reviewsCount: 215,
-                    description: 'Không gian kiến trúc gỗ truyền thống mộc mạc, giàn hoa giấy rực rỡ và xe đạp miễn phí dạo quanh phố cổ.',
-                    amenities: ['Wifi miễn phí', 'Điều hòa', 'Bếp', 'Ban công view đẹp'],
-                    images: [
-                        'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80'
-                    ]
-                },
-                {
-                    id: 4,
-                    name: 'Skyline Luxury Apartment & Studio',
-                    type: 'Căn hộ',
-                    address: 'Võ Nguyên Giáp, Mỹ Khê, TP. Đà Nẵng',
-                    price: 820000,
-                    rating: 4.85,
-                    reviewsCount: 76,
-                    description: 'Căn hộ dịch vụ cao cấp tầng cao nhìn thẳng ra biển Mỹ Khê xinh đẹp, trang bị đầy đủ tiện nghi chuẩn 5 sao.',
-                    amenities: ['Hồ bơi', 'Điều hòa', 'Bếp', 'Wifi miễn phí'],
-                    images: [
-                        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80'
-                    ]
-                },
-                {
-                    id: 5,
-                    name: 'Misty Mountain Wooden Cabin',
-                    type: 'Homestay',
-                    address: 'Bản Tả Van, Thị xã Sa Pa, Lào Cai',
-                    price: 650000,
-                    rating: 4.96,
-                    reviewsCount: 184,
-                    description: 'Cabin gỗ thông mộc mạc bên sườn đồi nhìn ra thung lũng Mường Hoa bồng bềnh mây trắng và ruộng bậc thang kỳ vĩ.',
-                    amenities: ['Ban công view đồi', 'Bếp', 'Wifi miễn phí', 'Chỗ đỗ xe'],
-                    images: [
-                        'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?auto=format&fit=crop&w=800&q=80'
-                    ]
-                },
-                {
-                    id: 6,
-                    name: 'Sunset Bay Eco Villa Phu Quoc',
-                    type: 'Villa',
-                    address: 'Bãi Trường, Dương Tơ, TP. Phú Quốc',
-                    price: 2100000,
-                    rating: 4.98,
-                    reviewsCount: 110,
-                    description: 'Villa sinh thái phong cách Địa Trung Hải với bể bơi riêng, đường dạo bộ ra bãi cát vàng và hoàng hôn tím biếc.',
-                    amenities: ['Hồ bơi riêng', 'Điều hòa', 'Bếp', 'Chỗ đỗ xe'],
-                    images: [
-                        'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80'
-                    ]
-                }
-            ];
         }
 
         /* ==========================================================================

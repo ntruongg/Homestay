@@ -47,19 +47,19 @@
             <!-- 3 Tabs dạng menu dọc -->
             <nav class="dashboard-nav-tabs">
                 <!-- Tab 1: Quản lý cơ sở (Mặc định active) -->
-                <button type="button" class="dashboard-tab-link active" data-tab-target="tabProperties" id="tabBtnProperties" onclick="switchDashboardTab('tabProperties', this)">
+                <button type="button" class="dashboard-tab-link @(Model.ActiveTab == "properties" ? "active" : "")" data-tab-target="tabProperties" id="tabBtnProperties" onclick="switchDashboardTab('tabProperties', this)">
                     <i class="bi bi-houses-fill"></i>
                     <span>Quản lý cơ sở</span>
                 </button>
 
                 <!-- Tab 2: Quản lý đơn đặt phòng -->
-                <button type="button" class="dashboard-tab-link" data-tab-target="tabBookings" id="tabBtnBookings" onclick="switchDashboardTab('tabBookings', this)">
+                <button type="button" class="dashboard-tab-link @(Model.ActiveTab == "bookings" ? "active" : "")" data-tab-target="tabBookings" id="tabBtnBookings" onclick="switchDashboardTab('tabBookings', this)">
                     <i class="bi bi-calendar2-check-fill"></i>
                     <span>Quản lý đơn đặt phòng</span>
                 </button>
 
                 <!-- Tab 3: Quản lý đánh giá -->
-                <button type="button" class="dashboard-tab-link" data-tab-target="tabReviews" id="tabBtnReviews" onclick="switchDashboardTab('tabReviews', this)">
+                <button type="button" class="dashboard-tab-link @(Model.ActiveTab == "reviews" ? "active" : "")" data-tab-target="tabReviews" id="tabBtnReviews" onclick="switchDashboardTab('tabReviews', this)">
                     <i class="bi bi-chat-square-quote-fill"></i>
                     <span>Quản lý đánh giá</span>
                 </button>
@@ -104,10 +104,26 @@
             </div>
         </div>
 
+        <!-- Thông báo từ TempData -->
+        @if (TempData["Success"] is string successMsg)
+        {
+            <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> @successMsg
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["Error"] is string errorMsg)
+        {
+            <div class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> @errorMsg
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
         <!-- ==========================================================================
-             TAB 1: QUẢN LÝ CƠ SỞ (Property Management - Mặc định active)
+             TAB 1: QUẢN LÝ CƠ SỞ (Property Management)
              ========================================================================== -->
-        <section class="dashboard-tab-view active" id="tabProperties">
+        <section class="dashboard-tab-view @(Model.ActiveTab == "properties" ? "active" : "")" id="tabProperties">
             <!-- Top row (Thống kê): 3 khối hình chữ nhật bo tròn 16px, nền #caf0f8, chữ & số to màu #0077b6 -->
             <div class="row g-4 mb-4">
                 <!-- Khối 1: Cơ sở đang hoạt động -->
@@ -135,20 +151,30 @@
                 </div>
             </div>
 
-            <!-- Header Danh sách cơ sở -->
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <h3 class="fs-5 fw-bold mb-0 text-navy">Danh sách cơ sở của bạn</h3>
-                <span class="text-muted small">Tổng số: <strong>@Model.Properties.Count</strong> cơ sở</span>
+            <!-- Header Danh sách cơ sở & Nút Tạo cơ sở mới -->
+            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                <div>
+                    <h3 class="fs-5 fw-bold mb-0 text-navy">Danh sách cơ sở của bạn</h3>
+                    <span class="text-muted small">Tổng số: <strong>@Model.Properties.Count</strong> cơ sở</span>
+                </div>
+                <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#createPropertyModal">
+                    <i class="bi bi-plus-lg me-1"></i> Tạo cơ sở mới
+                </button>
             </div>
 
-            <!-- Bottom row (Danh sách cơ sở): List thẻ nằm ngang (ảnh thumbnail bo góc trái + thông tin phải) -->
+            <!-- Danh sách cơ sở: List thẻ nằm ngang (ảnh thumbnail bo góc trái + thông tin phải) -->
             <div class="properties-list-container" id="propertiesListWrapper">
                 @if (Model.Properties.Count == 0)
                 {
                     <div class="card p-5 text-center border-0" style="border-radius: 16px; box-shadow: var(--stayly-shadow);">
                         <i class="bi bi-house-add text-primary display-4 mb-3"></i>
                         <h4 class="fw-bold text-navy">Bạn chưa đăng ký cơ sở lưu trú nào</h4>
-                        <p class="text-muted small">Hãy tạo cơ sở đầu tiên để bắt đầu đón những vị khách tuyệt vời.</p>
+                        <p class="text-muted small mb-3">Hãy tạo cơ sở đầu tiên để Ban Quản trị phê duyệt và bắt đầu đón khách.</p>
+                        <div>
+                            <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#createPropertyModal">
+                                <i class="bi bi-plus-lg me-1"></i> Đăng ký cơ sở ngay
+                            </button>
+                        </div>
                     </div>
                 }
                 else
@@ -158,6 +184,7 @@
                         var status = prop.ApprovalStatus ?? "Approved";
                         var isApproved = status.Equals("Approved", StringComparison.OrdinalIgnoreCase);
                         var isPending = status.Equals("Pending", StringComparison.OrdinalIgnoreCase);
+                        var isRejected = status.Equals("Rejected", StringComparison.OrdinalIgnoreCase);
                         var thumbUrl = !string.IsNullOrWhiteSpace(prop.CoverImageUrl)
                             ? prop.CoverImageUrl
                             : "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80";
@@ -207,17 +234,25 @@
 
                                             <div class="d-flex align-items-center gap-3 text-muted small">
                                                 <span><i class="bi bi-door-open me-1 text-primary"></i> @prop.RoomsCount phòng</span>
-                                                <span><i class="bi bi-telephone me-1 text-primary"></i> @(prop.Phone ?? "0912345678")</span>
+                                                <span><i class="bi bi-telephone me-1 text-primary"></i> @(prop.Phone ?? "Chưa có SĐT")</span>
                                             </div>
                                         </div>
 
-                                        <!-- Action: Nút Xem chi tiết ở cạnh dưới cùng bo tròn 50px -->
-                                        <div class="d-flex align-items-center justify-content-between pt-3 mt-3 border-top">
+                                        <!-- Action: Nút Xem chi tiết & Sửa lại -->
+                                        <div class="d-flex align-items-center justify-content-between pt-3 mt-3 border-top flex-wrap gap-2">
                                             <span class="text-muted small">Mã cơ sở: <strong>#CS-@prop.Id</strong></span>
-                                            <a href="/Home/Details/@prop.Id" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-sm">
-                                                <span>Xem chi tiết</span>
-                                                <i class="bi bi-arrow-right-short fs-6"></i>
-                                            </a>
+                                            <div class="d-flex align-items-center gap-2">
+                                                @if (isRejected)
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-warning rounded-pill px-3 fw-bold shadow-sm text-dark" onclick="openResubmitModal(@prop.Id)">
+                                                        <i class="bi bi-pencil-square me-1"></i> Sửa &amp; Gửi lại
+                                                    </button>
+                                                }
+                                                <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="openOwnerPropertyDetails(@prop.Id)">
+                                                    <span>Xem chi tiết</span>
+                                                    <i class="bi bi-arrow-right-short fs-6"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -231,7 +266,7 @@
         <!-- ==========================================================================
              TAB 2: QUẢN LÝ ĐƠN ĐẶT PHÒNG (Booking Management)
              ========================================================================== -->
-        <section class="dashboard-tab-view" id="tabBookings">
+        <section class="dashboard-tab-view @(Model.ActiveTab == "bookings" ? "active" : "")" id="tabBookings">
             <!-- Top row (Bộ lọc): Thanh ngang trắng, shadow mượt, bo góc 50px, 2 Dropdown -->
             <div class="filter-bar-pill-card">
                 <!-- Dropdown 1: Lọc theo Cơ sở -->
@@ -259,102 +294,163 @@
                         <option value="all">Tất cả trạng thái</option>
                         <option value="Pending">Chờ duyệt (Pending)</option>
                         <option value="Confirmed">Đã xác nhận (Confirmed)</option>
-                        <option value="Completed">Hoàn thành (Completed)</option>
+                        <option value="CheckedIn">Đang lưu trú (CheckedIn)</option>
+                        <option value="Completed">Đã hoàn thành (Completed)</option>
                         <option value="Cancelled">Đã hủy (Cancelled)</option>
                     </select>
                 </div>
-
-                <div class="ms-auto text-muted small" id="bookingCountIndicator">
-                    Hiển thị: <strong>@Model.Bookings.Count</strong> đơn
-                </div>
             </div>
 
-            <!-- Bottom row (Danh sách đơn): List card nối tiếp nhau -->
-            <div class="booking-cards-wrapper" id="bookingCardsContainer">
+            <!-- Indicator số lượng đơn -->
+            <div class="d-flex align-items-center justify-content-between mb-3 px-2">
+                <span class="text-muted small" id="bookingCountIndicator">
+                    Hiển thị: <strong>@Model.Bookings.Count</strong> đơn đặt phòng
+                </span>
+            </div>
+
+            <!-- Bottom row (Danh sách đơn): Thẻ nằm ngang (Card bo tròn 16px) -->
+            <div class="bookings-list-container" id="bookingCardsContainer">
                 @if (Model.Bookings.Count == 0)
                 {
                     <div class="card p-5 text-center border-0" style="border-radius: 16px; box-shadow: var(--stayly-shadow);">
-                        <i class="bi bi-inbox text-muted display-4 mb-3"></i>
+                        <i class="bi bi-calendar2-x text-primary display-4 mb-3"></i>
                         <h4 class="fw-bold text-navy">Chưa có đơn đặt phòng nào</h4>
-                        <p class="text-muted small">Các đơn đặt phòng mới từ khách hàng sẽ xuất hiện tại đây.</p>
+                        <p class="text-muted small">Các đơn đặt phòng từ khách du lịch sẽ hiển thị tại đây khi khách gửi yêu cầu.</p>
                     </div>
                 }
                 else
                 {
-                    @foreach (var bk in Model.Bookings)
+                    @foreach (var b in Model.Bookings)
                     {
-                        var statusClass = bk.Status switch
+                        var statusClass = b.Status switch
                         {
-                            "Confirmed" => "status-approved",
                             "Pending" => "status-pending",
-                            "Completed" => "status-approved",
-                            _ => "status-rejected"
+                            "Confirmed" => "status-confirmed",
+                            "CheckedIn" => "status-checkedin",
+                            "Completed" => "status-completed",
+                            "Cancelled" => "status-cancelled",
+                            _ => "status-pending"
                         };
-                        var statusText = bk.Status switch
+
+                        var statusText = b.Status switch
                         {
-                            "Confirmed" => "Đã xác nhận",
                             "Pending" => "Chờ duyệt",
-                            "Completed" => "Hoàn thành",
+                            "Confirmed" => "Đã xác nhận",
+                            "CheckedIn" => "Đang lưu trú",
+                            "Completed" => "Đã hoàn thành",
                             "Cancelled" => "Đã hủy",
-                            _ => bk.Status
+                            _ => b.Status
                         };
-                        var roomsText = bk.RoomNumbers != null && bk.RoomNumbers.Count > 0
-                            ? string.Join(", ", bk.RoomNumbers)
-                            : "Phòng tiêu chuẩn";
 
-                        <div class="booking-item-card" 
-                             data-property="@bk.PropertyName" 
-                             data-status="@bk.Status"
-                             data-id="@bk.Id"
-                             data-guest="@bk.GuestName"
-                             data-checkin="@bk.CheckIn.ToString("dd/MM/yyyy")"
-                             data-checkout="@bk.CheckOut.ToString("dd/MM/yyyy")"
-                             data-amount="@bk.TotalAmount.ToString("N0") ₫"
-                             data-phone="@bk.GuestPhone"
-                             data-email="@bk.GuestEmail"
-                             data-guests="@bk.GuestCount"
-                             data-rooms="@roomsText">
-                            <!-- Cột 1: Mã đơn & Tên khách -->
-                            <div style="min-width: 200px;">
-                                <span class="booking-id-tag">#BK-@bk.Id</span>
-                                <h4 class="fs-6 fw-bold text-navy mb-1">
-                                    <i class="bi bi-person-fill text-primary me-1"></i> @bk.GuestName
-                                </h4>
-                                <div class="text-muted small">
-                                    <i class="bi bi-telephone text-muted me-1"></i> @bk.GuestPhone
+                        <article class="booking-item-card"
+                                 data-id="@b.Id"
+                                 data-property="@b.PropertyName"
+                                 data-status="@b.Status"
+                                 data-guest="@b.GuestName"
+                                 data-phone="@b.GuestPhone"
+                                 data-email="@b.GuestEmail"
+                                 data-rooms="@string.Join(", ", b.RoomNumbers)"
+                                 data-guests="@b.GuestCount"
+                                 data-checkin="@b.CheckIn.ToString("dd/MM/yyyy")"
+                                 data-checkout="@b.CheckOut.ToString("dd/MM/yyyy")"
+                                 data-amount="@b.TotalAmount.ToString("N0") ₫">
+                            <div class="row align-items-center g-3">
+                                <!-- Info 1: Mã đơn & Tên khách hàng -->
+                                <div class="col-md-3">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="booking-code-pill">#@b.Id</span>
+                                        <strong class="text-navy">@b.GuestName</strong>
+                                    </div>
+                                    <div class="text-muted small">
+                                        <i class="bi bi-telephone me-1 text-primary"></i> @b.GuestPhone
+                                    </div>
+                                </div>
+
+                                <!-- Info 2: Tên cơ sở & Phòng -->
+                                <div class="col-md-3">
+                                    <div class="fw-bold text-dark small mb-1">@b.PropertyName</div>
+                                    <div class="text-muted small">
+                                        <i class="bi bi-door-open me-1 text-primary"></i>
+                                        Phòng: <strong>@(b.RoomNumbers.Count > 0 ? string.Join(", ", b.RoomNumbers) : "Nguyên căn")</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Info 3: Thời gian check-in / check-out -->
+                                <div class="col-md-3">
+                                    <div class="booking-date-range small">
+                                        <i class="bi bi-calendar-event text-primary me-1"></i>
+                                        <span>@b.CheckIn.ToString("dd/MM")</span>
+                                        <i class="bi bi-arrow-right mx-1 text-muted"></i>
+                                        <span>@b.CheckOut.ToString("dd/MM/yyyy")</span>
+                                    </div>
+                                    <div class="text-muted small mt-1">
+                                        Số khách: <strong>@b.GuestCount người</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Info 4: Tổng tiền & Badge trạng thái -->
+                                <div class="col-md-3 text-md-end">
+                                    <div class="booking-price-text mb-1">
+                                        @b.TotalAmount.ToString("N0") <span class="fs-6">₫</span>
+                                    </div>
+                                    <span class="booking-status-tag @statusClass mb-2">
+                                        @statusText
+                                    </span>
                                 </div>
                             </div>
 
-                            <!-- Cột 2: Cơ sở & Ngày đến / đi -->
-                            <div style="min-width: 220px;">
-                                <div class="fw-bold text-dark small mb-1">
-                                    <i class="bi bi-house-door text-primary me-1"></i> @bk.PropertyName
-                                </div>
-                                <div class="text-muted small">
-                                    <span>Phòng: @roomsText</span>
-                                </div>
-                                <div class="text-muted small mt-1">
-                                    <i class="bi bi-calendar-event me-1"></i> @bk.CheckIn.ToString("dd/MM/yyyy") &rarr; @bk.CheckOut.ToString("dd/MM/yyyy")
-                                </div>
-                            </div>
-
-                            <!-- Cột 3: Trạng thái & Tổng tiền (in đậm nổi bật) -->
-                            <div class="text-end" style="min-width: 160px;">
-                                <div class="mb-1">
-                                    <span class="property-status-pill @statusClass">@statusText</span>
-                                </div>
-                                <div class="booking-price-highlight">
-                                    @bk.TotalAmount.ToString("N0") ₫
-                                </div>
-                            </div>
-
-                            <!-- Cột 4: Nút Xem chi tiết (để xem phụ thu/giảm giá) -->
-                            <div>
-                                <button type="button" class="btn btn-outline-primary rounded-pill px-4 fw-bold btn-sm shadow-sm" onclick="openBookingDetailModal(this)">
-                                    Xem chi tiết
+                            <!-- Actions Row: Xem chi tiết & Duyệt đơn -->
+                            <div class="d-flex align-items-center justify-content-between pt-3 mt-3 border-top flex-wrap gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openBookingDetailModal(this)">
+                                    <i class="bi bi-receipt me-1"></i> Xem chi tiết thanh toán
                                 </button>
+
+                                <div class="d-flex align-items-center gap-2">
+                                    @if (b.Status == "Pending")
+                                    {
+                                        <form asp-action="UpdateBookingStatus" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="bookingId" value="@b.Id">
+                                            <input type="hidden" name="status" value="Confirmed">
+                                            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
+                                                <i class="bi bi-check2-circle me-1"></i> Xác nhận đơn
+                                            </button>
+                                        </form>
+
+                                        <form asp-action="UpdateBookingStatus" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn đặt phòng này?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="bookingId" value="@b.Id">
+                                            <input type="hidden" name="status" value="Cancelled">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                                Từ chối
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (b.Status == "Confirmed")
+                                    {
+                                        <form asp-action="UpdateBookingStatus" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="bookingId" value="@b.Id">
+                                            <input type="hidden" name="status" value="CheckedIn">
+                                            <button type="submit" class="btn btn-sm btn-info text-white rounded-pill px-3">
+                                                Nhận phòng (Check-in)
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (b.Status == "CheckedIn")
+                                    {
+                                        <form asp-action="UpdateBookingStatus" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="bookingId" value="@b.Id">
+                                            <input type="hidden" name="status" value="Completed">
+                                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3">
+                                                Trả phòng (Check-out)
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
                             </div>
-                        </div>
+                        </article>
                     }
                 }
             </div>
@@ -363,10 +459,10 @@
         <!-- ==========================================================================
              TAB 3: QUẢN LÝ ĐÁNH GIÁ (Review Management)
              ========================================================================== -->
-        <section class="dashboard-tab-view" id="tabReviews">
-            <!-- Top row (Bộ lọc): Thanh lọc gồm Dropdown "Chọn cơ sở" và Input Date picker -->
+        <section class="dashboard-tab-view @(Model.ActiveTab == "reviews" ? "active" : "")" id="tabReviews">
+            <!-- Top row (Bộ lọc): Lọc theo cơ sở & ngày tháng -->
             <div class="filter-bar-pill-card">
-                <!-- Dropdown Chọn cơ sở -->
+                <!-- Dropdown lọc theo Cơ sở -->
                 <div class="d-flex align-items-center gap-2">
                     <label for="filterReviewProperty">
                         <i class="bi bi-building"></i>
@@ -381,84 +477,650 @@
                     </select>
                 </div>
 
-                <!-- Input Date picker Lọc theo ngày đánh giá -->
+                <!-- Input lọc theo Ngày -->
                 <div class="d-flex align-items-center gap-2">
                     <label for="filterReviewDate">
                         <i class="bi bi-calendar3"></i>
                         <span>Ngày đánh giá:</span>
                     </label>
-                    <input type="date" id="filterReviewDate" class="filter-date-round" onchange="filterReviewsList()">
-                    <button type="button" class="btn btn-sm btn-link text-primary p-0 text-decoration-none" onclick="clearReviewDateFilter()">
-                        Xóa ngày
-                    </button>
-                </div>
-
-                <div class="ms-auto text-muted small" id="reviewCountIndicator">
-                    Hiển thị: <strong id="reviewTotalCount">@(Model.Reviews?.Count ?? 0)</strong> đánh giá
+                    <input type="date" id="filterReviewDate" class="filter-select-round" onchange="filterReviewsList()">
+                    <button type="button" class="btn btn-sm btn-link text-muted p-0" onclick="clearReviewDateFilter()">Xóa lọc ngày</button>
                 </div>
             </div>
 
-            <!-- Bottom row (Danh sách review): Các thẻ review nối tiếp nhau -->
-            <div class="review-cards-wrapper" id="reviewCardsContainer">
-                @if (Model.Reviews == null || Model.Reviews.Count == 0)
+            <!-- Indicator số lượng đánh giá -->
+            <div class="d-flex align-items-center justify-content-between mb-3 px-2">
+                <span class="text-muted small">
+                    Tổng số: <strong id="reviewTotalCount">@Model.Reviews.Count</strong> đánh giá từ khách lưu trú
+                </span>
+            </div>
+
+            <!-- Danh sách Review Cards -->
+            <div class="reviews-list-container" id="reviewCardsContainer">
+                @if (Model.Reviews.Count == 0)
                 {
-                    <div class="text-center py-5 bg-white rounded-4 shadow-sm">
-                        <i class="bi bi-chat-square-quote text-muted fs-1 mb-3 d-block"></i>
-                        <h5 class="text-navy fw-bold mb-1">Chưa có đánh giá nào</h5>
-                        <p class="text-muted small">Các đánh giá từ khách hàng sau khi lưu trú sẽ hiển thị tại đây.</p>
+                    <div class="card p-5 text-center border-0" style="border-radius: 16px; box-shadow: var(--stayly-shadow);">
+                        <i class="bi bi-chat-heart text-primary display-4 mb-3"></i>
+                        <h4 class="fw-bold text-navy">Chưa có đánh giá nào</h4>
+                        <p class="text-muted small">Sau khi khách hàng hoàn tất chuyến lưu trú, đánh giá và nhận xét sẽ hiển thị tại đây.</p>
                     </div>
                 }
                 else
                 {
-                    @foreach (var r in Model.Reviews)
+                    @foreach (var rev in Model.Reviews)
                     {
-                        var initial = !string.IsNullOrWhiteSpace(r.GuestName) ? r.GuestName.Trim()[0].ToString().ToUpper() : "K";
-                        var dateStr = r.ReviewDate.ToString("yyyy-MM-dd");
-                        var displayDate = r.ReviewDate.ToString("dd/MM/yyyy");
-
-                        <div class="review-item-card" data-property="@r.PropertyName" data-date="@dateStr" id="review-card-@r.Id">
+                        <article class="review-item-card"
+                                 data-property="@rev.PropertyName"
+                                 data-date="@rev.ReviewDate.ToString("yyyy-MM-dd")"
+                                 data-id="@rev.Id">
                             <div class="d-flex align-items-start justify-content-between mb-2">
                                 <div class="d-flex align-items-center gap-3">
-                                    <div class="review-avatar-circle">@initial</div>
+                                    <div class="user-avatar-circle">
+                                        @(string.IsNullOrWhiteSpace(rev.GuestName) ? "K" : rev.GuestName.Substring(0, 1).ToUpper())
+                                    </div>
                                     <div>
-                                        <h4 class="fs-6 fw-bold text-navy mb-0">@r.GuestName</h4>
-                                        <div class="review-stars-row mt-1">
-                                            @for (int s = 1; s <= 5; s++)
-                                            {
-                                                if (s <= r.Rating)
-                                                {
-                                                    <i class="bi bi-star-fill"></i>
-                                                }
-                                                else
-                                                {
-                                                    <i class="bi bi-star"></i>
-                                                }
-                                            }
+                                        <div class="fw-bold text-navy">@rev.GuestName</div>
+                                        <div class="text-muted small">
+                                            Đã lưu trú tại: <strong class="text-primary">@rev.PropertyName</strong> • Ngày: @rev.ReviewDate.ToString("dd/MM/yyyy")
                                         </div>
                                     </div>
                                 </div>
-                                <div class="text-end">
-                                    <span class="review-prop-badge mb-1">@r.PropertyName</span>
-                                    <div class="text-muted small">@displayDate</div>
+                                <div class="review-rating-stars">
+                                    @for (var s = 0; s < rev.Rating; s++)
+                                    {
+                                        <i class="bi bi-star-fill text-warning"></i>
+                                    }
                                 </div>
                             </div>
-                            <p class="text-dark small mb-3 lh-base">
-                                "@r.Comment"
-                            </p>
-                            <div class="d-flex align-items-center justify-content-between pt-2 border-top">
-                                <span class="text-muted small"><i class="bi bi-patch-check-fill text-success me-1"></i> Đã đặt qua Stayly (Đơn #@r.BookingId)</span>
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openReplyModal(@r.Id, '@Html.Raw(Html.Encode(r.GuestName))', '@Html.Raw(Html.Encode(r.PropertyName))')">
-                                    <i class="bi bi-reply-fill me-1"></i> Trả lời đánh giá
+
+                            <p class="review-content-text mb-3">@rev.Comment</p>
+
+                            <div class="d-flex justify-content-end pt-2 border-top">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openReplyReviewModal(@rev.Id, '@rev.GuestName', '@rev.PropertyName')">
+                                    <i class="bi bi-reply-fill me-1"></i> Phản hồi đánh giá
                                 </button>
                             </div>
-                        </div>
+                        </article>
                     }
                 }
             </div>
         </section>
     </main>
 
-    <!-- Modal Chi tiết Đơn Đặt Phòng (Booking Details Modal) -->
+    <!-- ==========================================================================
+         3. MODALS HỆ THỐNG
+         ========================================================================== -->
+
+    <!-- Modal 1: Đăng ký cơ sở lưu trú mới (Create Property Modal) -->
+    <div class="modal fade" id="createPropertyModal" tabindex="-1" aria-labelledby="createPropModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content stayly-modal">
+                <div class="modal-header-accent"></div>
+                <div class="modal-body stayly-modal-body p-4 position-relative">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="brand-icon" style="width: 36px; height: 36px; font-size: 1.1rem;"><i class="bi bi-house-add-fill"></i></span>
+                        <h4 class="fs-5 fw-bold text-navy mb-0" id="createPropModalLabel">Đăng ký cơ sở lưu trú mới</h4>
+                    </div>
+                    <p class="text-muted small mb-4">Điền đầy đủ thông tin và tải lên hồ sơ pháp lý để Quản trị viên (Admin WPF) thẩm định kích hoạt.</p>
+
+                    <form asp-action="CreateProperty" method="post" enctype="multipart/form-data" id="createPropertyForm" novalidate>
+                        @Html.AntiForgeryToken()
+
+                        <!-- 1. Thông tin cơ bản -->
+                        <div class="p-3 bg-light rounded-4 mb-3">
+                            <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-info-circle-fill text-primary me-1"></i> 1. Thông tin chung &amp; Liên hệ</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Tên cơ sở lưu trú *</label>
+                                    <input name="Name" id="createPropName" class="form-control rounded-pill" placeholder="Ví dụ: Stayly Pine Hill Villa" required />
+                                    <div class="invalid-feedback">Vui lòng nhập tên cơ sở lưu trú.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Loại hình lưu trú *</label>
+                                    <select name="Type" id="createPropTypeSelect" class="form-select rounded-pill" onchange="toggleCreatePropertyType(this.value)">
+                                        <option value="Homestay">Homestay (Thuê nguyên căn)</option>
+                                        <option value="Hotel">Hotel (Khách sạn nhiều phòng)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Số điện thoại đón khách *</label>
+                                    <input name="Phone" id="createPropPhone" class="form-control rounded-pill" placeholder="Ví dụ: 0901234567" required />
+                                    <div class="invalid-feedback">Vui lòng nhập số điện thoại hợp lệ (9 - 11 chữ số).</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Email liên hệ *</label>
+                                    <input name="Email" id="createPropEmail" type="email" class="form-control rounded-pill" placeholder="contact@homestay.com" required />
+                                    <div class="invalid-feedback">Vui lòng nhập địa chỉ email hợp lệ.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Vị trí & Địa chỉ -->
+                        <div class="p-3 bg-light rounded-4 mb-3">
+                            <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-geo-alt-fill text-primary me-1"></i> 2. Vị trí &amp; Địa chỉ</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Địa chỉ số nhà, tên đường *</label>
+                                    <input name="Address" id="createPropAddress" class="form-control rounded-pill" placeholder="Ví dụ: 14/2 Khởi Nghĩa Bắc Sơn" required />
+                                    <div class="invalid-feedback">Vui lòng nhập địa chỉ cụ thể (số nhà, tên đường).</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold">Phường / Xã</label>
+                                    <input name="Ward" id="createPropWard" class="form-control rounded-pill" placeholder="Phường 10" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold">Tỉnh / Thành phố *</label>
+                                    <input name="City" id="createPropCity" class="form-control rounded-pill" placeholder="Đà Lạt" required />
+                                    <div class="invalid-feedback">Vui lòng nhập hoặc chọn Tỉnh / Thành phố.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Cấu hình phòng Homestay / Hotel -->
+                        <div class="p-3 bg-light rounded-4 mb-3">
+                            <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-door-open-fill text-primary me-1"></i> 3. Cấu hình đặt phòng</h6>
+
+                            <!-- Panel Homestay -->
+                            <div id="createHomestayConfigPanel">
+                                <div class="alert alert-info py-2 px-3 small rounded-3 mb-3">
+                                    <i class="bi bi-info-circle me-1"></i> <strong>Quy chuẩn Homestay nguyên căn:</strong> Khách sẽ đặt trọn gói toàn bộ homestay. Khi được Admin duyệt, hệ thống sẽ tự động tạo một phòng "Nguyên căn" theo giá và sức chứa bạn nhập bên dưới.
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Giá thuê trọn gói / đêm (₫) *</label>
+                                        <input name="HomestayPrice" id="createPropHomestayPrice" type="number" step="10000" min="50000" value="650000" class="form-control rounded-pill" />
+                                        <div class="invalid-feedback">Giá thuê tối thiểu từ 50.000 ₫/đêm.</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Sức chứa tối đa (người) *</label>
+                                        <input name="HomestayCapacity" id="createPropHomestayCapacity" type="number" min="1" max="50" value="4" class="form-control rounded-pill" />
+                                        <div class="invalid-feedback">Sức chứa tối thiểu 1 người.</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Phân loại không gian</label>
+                                        <select name="HomestayRoomTypeId" id="createPropHomestayRoomTypeId" class="form-select rounded-pill">
+                                            @foreach (var rt in Model.AvailableRoomTypes)
+                                            {
+                                                <option value="@rt.Id">@rt.Name</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Panel Hotel -->
+                            <div id="createHotelConfigPanel" class="d-none">
+                                <div class="alert alert-primary py-2 px-3 small rounded-3 mb-0">
+                                    <i class="bi bi-building me-1"></i> <strong>Quy chuẩn Khách sạn (Hotel):</strong> Khách sạn quản lý nhiều phòng độc lập. Sau khi hồ sơ khách sạn được Admin duyệt thành công, bạn có thể tạo thêm không giới hạn các phòng đón khách qua nút <strong>"+ Thêm phòng mới"</strong> trong chi tiết cơ sở.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Hồ sơ pháp lý thẩm định (WPF Admin) -->
+                        <div class="p-3 bg-light rounded-4 mb-3">
+                            <h6 class="fw-bold text-navy small mb-2"><i class="bi bi-shield-check text-primary me-1"></i> 4. Hồ sơ pháp lý thẩm định (WPF Admin kiểm duyệt)</h6>
+                            <p class="text-muted small mb-3">Tải lên tệp ảnh hoặc PDF rõ nét để Admin xác thực pháp lý cơ sở.</p>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Giấy phép kinh doanh</label>
+                                    <input name="BusinessLicenseFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Chứng nhận an toàn PCCC</label>
+                                    <input name="FireSafetyDocumentFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Giấy tờ An ninh trật tự</label>
+                                    <input name="SecurityDocumentFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. Tiện ích & Quy định & Ảnh -->
+                        <div class="p-3 bg-light rounded-4 mb-3">
+                            <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-card-checklist text-primary me-1"></i> 5. Tiện ích &amp; Hình ảnh khuôn viên</h6>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold d-block mb-2">Tiện ích có sẵn</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var a in Model.AvailableAmenities)
+                                    {
+                                        <div class="form-check form-check-inline amenity-chip m-0">
+                                            <input class="form-check-input" type="checkbox" name="AmenityIds" value="@a.Id" id="createAmenity_@a.Id">
+                                            <label class="form-check-label small" for="createAmenity_@a.Id">@a.Name</label>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Chính sách &amp; Quy định nhận/trả phòng</label>
+                                <textarea name="Policy" class="form-control rounded-4 p-3" rows="2" placeholder="Ví dụ: Nhận phòng từ 14:00, trả phòng trước 12:00. Không mang giày dép vào nhà."></textarea>
+                            </div>
+                            <div>
+                                <label class="form-label small fw-bold">Hình ảnh khuôn viên cơ sở</label>
+                                <input name="PhotoFiles" type="file" class="form-control rounded-pill" multiple accept="image/*" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-2">
+                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                                <i class="bi bi-send-fill me-1"></i> Gửi hồ sơ duyệt
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Chi tiết cơ sở lưu trú của Chủ nhà (Owner Property Details Modal) -->
+    <div class="modal fade" id="ownerPropertyDetailsModal" tabindex="-1" aria-labelledby="ownerPropertyDetailsTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content stayly-modal">
+                <div class="modal-header-accent"></div>
+                <div class="modal-body stayly-modal-body p-4 position-relative">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                    <!-- Header modal chi tiết -->
+                    <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                        <h4 class="fs-4 fw-bold text-navy mb-0" id="opdTitle">Chi tiết Cơ sở</h4>
+                        <span class="badge rounded-pill px-3 py-1 fw-bold text-uppercase small" id="opdTypeBadge">Homestay</span>
+                        <span class="property-status-pill" id="opdStatusBadge">Đang hoạt động</span>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold ms-auto me-4 d-none" id="opdEditToggleBtn" onclick="toggleOwnerPropertyEditMode()">
+                            <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa thông tin
+                        </button>
+                    </div>
+                    <p class="text-muted small mb-3" id="opdAddress"><i class="bi bi-geo-alt-fill text-primary me-1"></i> Đang tải địa chỉ...</p>
+
+                    <!-- Dynamic Body Container (View Mode) -->
+                    <div id="opdDynamicBody" class="py-2">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary mb-2" role="status"></div>
+                            <div class="text-muted small">Đang tải thông tin chi tiết cơ sở...</div>
+                        </div>
+                    </div>
+
+                    <!-- Edit Form Container (Edit Mode) -->
+                    <div id="opdEditContainer" class="py-2 d-none">
+                        <form asp-action="UpdateProperty" method="post" enctype="multipart/form-data" id="opdEditForm">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="Id" id="opdEditPropId" value="" />
+                            <input type="hidden" name="Resubmit" value="false" />
+
+                            <div class="alert alert-info py-2 px-3 small rounded-3 mb-3">
+                                <i class="bi bi-info-circle me-1"></i> <strong>Chế độ chỉnh sửa thông tin:</strong> Cập nhật thông tin liên hệ, địa chỉ, tiện ích và chính sách hoạt động của cơ sở.
+                            </div>
+
+                            <!-- 1. Thông tin chung & Liên hệ -->
+                            <div class="p-3 bg-light rounded-4 mb-3">
+                                <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-info-circle-fill text-primary me-1"></i> 1. Thông tin chung &amp; Liên hệ</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Tên cơ sở lưu trú *</label>
+                                        <input name="Name" id="opdEditName" class="form-control rounded-pill" required />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Loại hình</label>
+                                        <input name="Type" id="opdEditType" class="form-control rounded-pill" readonly style="background-color: #e9ecef;" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Số điện thoại *</label>
+                                        <input name="Phone" id="opdEditPhone" class="form-control rounded-pill" required />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Email *</label>
+                                        <input name="Email" id="opdEditEmail" type="email" class="form-control rounded-pill" required />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2. Vị trí & Địa chỉ -->
+                            <div class="p-3 bg-light rounded-4 mb-3">
+                                <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-geo-alt-fill text-primary me-1"></i> 2. Vị trí &amp; Địa chỉ</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Địa chỉ cụ thể *</label>
+                                        <input name="Address" id="opdEditAddress" class="form-control rounded-pill" required />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-bold">Phường / Xã</label>
+                                        <input name="Ward" id="opdEditWard" class="form-control rounded-pill" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-bold">Tỉnh / Thành phố *</label>
+                                        <input name="City" id="opdEditCity" class="form-control rounded-pill" required />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 3. Cấu hình Homestay (nếu là homestay) -->
+                            <div class="p-3 bg-light rounded-4 mb-3" id="opdEditHomestayPanel">
+                                <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-door-open-fill text-primary me-1"></i> 3. Cấu hình Homestay nguyên căn</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Giá thuê / đêm (₫)</label>
+                                        <input name="HomestayPrice" id="opdEditHomestayPrice" type="number" step="10000" min="50000" class="form-control rounded-pill" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Sức chứa tối đa (người)</label>
+                                        <input name="HomestayCapacity" id="opdEditHomestayCapacity" type="number" min="1" max="50" class="form-control rounded-pill" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Phân loại không gian</label>
+                                        <select name="HomestayRoomTypeId" id="opdEditHomestayRoomTypeId" class="form-select rounded-pill">
+                                            @foreach (var rt in Model.AvailableRoomTypes)
+                                            {
+                                                <option value="@rt.Id">@rt.Name</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 4. Tiện ích & Quy định -->
+                            <div class="p-3 bg-light rounded-4 mb-3">
+                                <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-stars text-primary me-1"></i> 4. Tiện ích &amp; Quy định</h6>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold d-block mb-2">Tiện ích cơ sở</label>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        @foreach (var a in Model.AvailableAmenities)
+                                        {
+                                            <div class="form-check form-check-inline amenity-chip m-0">
+                                                <input class="form-check-input opd-edit-amenity-cb" type="checkbox" name="AmenityIds" value="@a.Id" id="opdAmenity_@a.Id">
+                                                <label class="form-check-label small" for="opdAmenity_@a.Id">@a.Name</label>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="mb-0">
+                                    <label class="form-label small fw-bold">Chính sách &amp; Quy định nhận/trả phòng</label>
+                                    <textarea name="Policy" id="opdEditPolicy" class="form-control rounded-4 p-3" rows="2"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- 5. Cập nhật hồ sơ pháp lý nếu cần thay thế -->
+                            <div class="p-3 bg-light rounded-4 mb-3">
+                                <h6 class="fw-bold text-navy small mb-2"><i class="bi bi-shield-check text-primary me-1"></i> 5. Cập nhật hồ sơ pháp lý (Tùy chọn tải file mới thay thế)</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Giấy phép KD mới</label>
+                                        <div class="small text-muted mb-1" id="opdEditOldBusinessLicense"></div>
+                                        <input name="BusinessLicenseFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Chứng nhận PCCC mới</label>
+                                        <div class="small text-muted mb-1" id="opdEditOldFireSafety"></div>
+                                        <input name="FireSafetyDocumentFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Giấy tờ ANTT mới</label>
+                                        <div class="small text-muted mb-1" id="opdEditOldSecurity"></div>
+                                        <input name="SecurityDocumentFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 pt-2">
+                                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" onclick="toggleOwnerPropertyEditMode(false)">Hủy chỉnh sửa</button>
+                                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                                    <i class="bi bi-check2-circle me-1"></i> Lưu thay đổi
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 pt-3 border-top mt-3" id="opdFooterActions">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Sửa & Gửi lại cơ sở bị từ chối (Resubmit Rejected Property Modal) -->
+    <div class="modal fade" id="resubmitPropertyModal" tabindex="-1" aria-labelledby="resubmitModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content stayly-modal">
+                <div class="modal-header-accent"></div>
+                <div class="modal-body stayly-modal-body p-4 position-relative">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="brand-icon text-warning" style="width: 36px; height: 36px; font-size: 1.1rem;"><i class="bi bi-pencil-square"></i></span>
+                        <h4 class="fs-5 fw-bold text-navy mb-0" id="resubmitModalLabel">Chỉnh sửa &amp; Gửi lại hồ sơ cơ sở bị từ chối</h4>
+                    </div>
+
+                    <!-- Banner lý do từ chối -->
+                    <div class="alert alert-danger rounded-4 py-2 px-3 small mb-3" id="resubmitRejectionBanner">
+                        <i class="bi bi-exclamation-octagon-fill me-1"></i>
+                        <strong>Lý do Ban Quản trị từ chối:</strong>
+                        <span id="resubmitRejectionReasonText">Đang tải lý do...</span>
+                    </div>
+
+                    <form asp-action="UpdateProperty" method="post" enctype="multipart/form-data" id="resubmitPropertyForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="Id" id="resubmitPropId" value="" />
+                        <input type="hidden" name="Resubmit" value="true" />
+
+                        <!-- 1. Thông tin chung -->
+                        <div class="p-3 bg-light rounded-4 mb-3">
+                            <h6 class="fw-bold text-navy small mb-3">1. Thông tin chung &amp; Liên hệ</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Tên cơ sở lưu trú *</label>
+                                    <input name="Name" id="resubmitName" class="form-control rounded-pill" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Loại hình</label>
+                                    <input name="Type" id="resubmitType" class="form-control rounded-pill" readonly style="background-color: #e9ecef;" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Số điện thoại *</label>
+                                    <input name="Phone" id="resubmitPhone" class="form-control rounded-pill" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Email *</label>
+                                    <input name="Email" id="resubmitEmail" type="email" class="form-control rounded-pill" required />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Địa chỉ -->
+                        <div class="p-3 bg-light rounded-4 mb-3">
+                            <h6 class="fw-bold text-navy small mb-3">2. Vị trí &amp; Địa chỉ</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Địa chỉ *</label>
+                                    <input name="Address" id="resubmitAddress" class="form-control rounded-pill" required />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold">Phường / Xã</label>
+                                    <input name="Ward" id="resubmitWard" class="form-control rounded-pill" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold">Tỉnh / Thành phố *</label>
+                                    <input name="City" id="resubmitCity" class="form-control rounded-pill" required />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Cấu hình Homestay nếu là homestay -->
+                        <div class="p-3 bg-light rounded-4 mb-3" id="resubmitHomestayPanel">
+                            <h6 class="fw-bold text-navy small mb-3">3. Cấu hình Homestay nguyên căn</h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Giá trọn gói / đêm (₫)</label>
+                                    <input name="HomestayPrice" id="resubmitHomestayPrice" type="number" class="form-control rounded-pill" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Sức chứa tối đa (người)</label>
+                                    <input name="HomestayCapacity" id="resubmitHomestayCapacity" type="number" class="form-control rounded-pill" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Phân loại không gian</label>
+                                    <select name="HomestayRoomTypeId" id="resubmitHomestayRoomTypeId" class="form-select rounded-pill">
+                                        @foreach (var rt in Model.AvailableRoomTypes)
+                                        {
+                                            <option value="@rt.Id">@rt.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Hồ sơ pháp lý thay thế -->
+                        <div class="p-3 bg-light rounded-4 mb-3">
+                            <h6 class="fw-bold text-navy small mb-2">4. Cập nhật hồ sơ pháp lý (Tải tệp mới thay thế)</h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Giấy phép KD mới</label>
+                                    <div class="small text-muted mb-1" id="resubmitOldBusinessLicenseLink"></div>
+                                    <input name="BusinessLicenseFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Chứng nhận PCCC mới</label>
+                                    <div class="small text-muted mb-1" id="resubmitOldFireSafetyLink"></div>
+                                    <input name="FireSafetyDocumentFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Giấy tờ ANTT mới</label>
+                                    <div class="small text-muted mb-1" id="resubmitOldSecurityLink"></div>
+                                    <input name="SecurityDocumentFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. Chính sách & Tiện ích -->
+                        <div class="p-3 bg-light rounded-4 mb-3">
+                            <h6 class="fw-bold text-navy small mb-3">5. Tiện ích &amp; Chính sách</h6>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold d-block mb-2">Tiện ích</label>
+                                <div class="d-flex flex-wrap gap-2" id="resubmitAmenitiesBox">
+                                    @foreach (var a in Model.AvailableAmenities)
+                                    {
+                                        <div class="form-check form-check-inline amenity-chip m-0">
+                                            <input class="form-check-input resubmit-amenity-cb" type="checkbox" name="AmenityIds" value="@a.Id" id="resubmitAmenity_@a.Id">
+                                            <label class="form-check-label small" for="resubmitAmenity_@a.Id">@a.Name</label>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label small fw-bold">Chính sách &amp; Quy định</label>
+                                <textarea name="Policy" id="resubmitPolicy" class="form-control rounded-4 p-3" rows="2"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-2">
+                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                                <i class="bi bi-send-check-fill me-1"></i> Cập nhật &amp; Gửi lại thẩm định ngay
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 4: Thêm phòng mới cho Khách sạn (Add Room Modal) -->
+    <div class="modal fade" id="addRoomModal" tabindex="-1" aria-labelledby="addRoomModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content stayly-modal">
+                <div class="modal-header-accent"></div>
+                <div class="modal-body stayly-modal-body p-4 position-relative">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="brand-icon" style="width: 32px; height: 32px; font-size: 1rem;"><i class="bi bi-door-open-fill"></i></span>
+                        <h4 class="fs-5 fw-bold text-navy mb-0" id="addRoomModalLabel">Thêm phòng mới</h4>
+                    </div>
+                    <p class="text-muted small mb-3">Cơ sở: <strong class="text-primary" id="addRoomPropertyName">--</strong></p>
+
+                    <form asp-action="CreateRoom" method="post" enctype="multipart/form-data" id="addRoomForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="PropertyId" id="addRoomPropertyId" value="0" />
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Tên hoặc Số phòng *</label>
+                            <input name="RoomNumber" class="form-control rounded-pill" placeholder="Ví dụ: Phòng 101, Suite 202..." required />
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Loại phòng</label>
+                                <select name="RoomTypeId" class="form-select rounded-pill">
+                                    @foreach (var rt in Model.AvailableRoomTypes)
+                                    {
+                                        <option value="@rt.Id">@rt.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Sức chứa tối đa (người) *</label>
+                                <input name="Capacity" type="number" min="1" max="20" value="2" class="form-control rounded-pill" required />
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Giá mỗi đêm (₫) *</label>
+                                <input name="OriginalPrice" type="number" step="10000" min="50000" value="500000" class="form-control rounded-pill" required />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Tình trạng</label>
+                                <select name="Status" class="form-select rounded-pill">
+                                    <option value="Trống">Trống</option>
+                                    <option value="Đang bảo trì">Đang bảo trì</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Hình ảnh phòng</label>
+                            <input name="PhotoFiles" type="file" class="form-control rounded-pill" multiple accept="image/*" />
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-2">
+                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                                <i class="bi bi-plus-circle-fill me-1"></i> Tạo phòng ngay
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 5: Lịch sử thẩm định (Approval History Modal) -->
+    <div class="modal fade" id="approvalHistoryModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content stayly-modal">
+                <div class="modal-header-accent"></div>
+                <div class="modal-body stayly-modal-body p-4 position-relative">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="brand-icon" style="width: 32px; height: 32px; font-size: 1rem;"><i class="bi bi-clock-history"></i></span>
+                        <h4 class="fs-5 fw-bold text-navy mb-0" id="historyModalLabel">Lịch sử thẩm định cơ sở</h4>
+                    </div>
+
+                    <div id="approvalHistoryTimeline" class="py-2">
+                        <div class="text-center py-4 text-muted small">Đang tải lịch sử...</div>
+                    </div>
+
+                    <div class="d-flex justify-content-end pt-2">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 6: Chi tiết đơn đặt phòng (Booking Detail Modal) -->
     <div class="modal fade" id="bookingDetailModal" tabindex="-1" aria-labelledby="bookingDetailTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 520px;">
             <div class="modal-content stayly-modal">
@@ -471,32 +1133,27 @@
                         <h4 class="fs-5 fw-bold text-navy mb-0" id="modalBookingId">Chi tiết đơn đặt phòng</h4>
                     </div>
 
-                    <!-- Khách hàng & Cơ sở -->
                     <div class="bg-light p-3 rounded-4 mb-3">
-                        <div class="d-flex justify-content-between mb-1">
+                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
                             <span class="text-muted small">Khách hàng:</span>
-                            <strong class="text-dark small" id="modalGuestName">--</strong>
+                            <strong class="text-navy small" id="modalGuestName">--</strong>
                         </div>
-                        <div class="d-flex justify-content-between mb-1">
+                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
                             <span class="text-muted small">Số điện thoại:</span>
                             <span class="text-dark small" id="modalGuestPhone">--</span>
                         </div>
-                        <div class="d-flex justify-content-between mb-1">
+                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
                             <span class="text-muted small">Email:</span>
                             <span class="text-dark small" id="modalGuestEmail">--</span>
                         </div>
-                        <div class="d-flex justify-content-between mb-1">
+                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
                             <span class="text-muted small">Cơ sở lưu trú:</span>
-                            <span class="text-primary fw-bold small" id="modalPropertyName">--</span>
+                            <strong class="text-primary small" id="modalPropertyName">--</strong>
                         </div>
-                        <div class="d-flex justify-content-between">
-                            <span class="text-muted small">Số khách lưu trú:</span>
+                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                            <span class="text-muted small">Số lượng khách:</span>
                             <span class="text-dark small" id="modalGuestCount">--</span>
                         </div>
-                    </div>
-
-                    <!-- Thời gian & Chi tiết phòng -->
-                    <div class="p-3 border rounded-4 mb-3">
                         <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
                             <span class="text-muted small">Thời gian lưu trú:</span>
                             <strong class="text-dark small" id="modalStayDates">--</strong>
@@ -533,7 +1190,7 @@
         </div>
     </div>
 
-    <!-- Modal Phản Hồi Đánh Giá (Reply Review Modal) -->
+    <!-- Modal 7: Phản Hồi Đánh Giá (Reply Review Modal) -->
     <div class="modal fade" id="replyReviewModal" tabindex="-1" aria-labelledby="replyReviewTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
             <div class="modal-content stayly-modal">
@@ -579,24 +1236,185 @@
          Client-side Vanilla JS Logic
          ========================================================================== -->
     <script>
-        // Vanilla JS Tab Switching Function
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            if (tabParam === 'bookings') {
+                const btn = document.getElementById('tabBtnBookings');
+                if (btn) switchDashboardTab('tabBookings', btn);
+            } else if (tabParam === 'reviews') {
+                const btn = document.getElementById('tabBtnReviews');
+                if (btn) switchDashboardTab('tabReviews', btn);
+            }
+
+            @if (TempData["OpenModal"] as string == "createPropertyModal")
+            {
+                <text>
+                const createModalEl = document.getElementById('createPropertyModal');
+                if (createModalEl) {
+                    const createModal = new bootstrap.Modal(createModalEl);
+                    createModal.show();
+                }
+                </text>
+            }
+
+            // Kích hoạt bộ kiểm tra hợp lệ và highlight đỏ khi thiếu thông tin
+            setupCreatePropertyValidation();
+        });
+
+        // ==================== VALIDATION & HIGHLIGHT FORM TẠO CƠ SỞ ====================
+        function setupCreatePropertyValidation() {
+            const form = document.getElementById('createPropertyForm');
+            if (!form) return;
+
+            function markInvalid(inputEl, message) {
+                if (!inputEl) return;
+                inputEl.classList.add('is-invalid');
+                let feedback = inputEl.parentNode.querySelector('.invalid-feedback');
+                if (!feedback) {
+                    feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback';
+                    inputEl.parentNode.appendChild(feedback);
+                }
+                if (message) feedback.textContent = message;
+            }
+
+            function markValid(inputEl) {
+                if (!inputEl) return;
+                inputEl.classList.remove('is-invalid');
+            }
+
+            // Tự động xóa highlight đỏ ngay khi người dùng nhập liệu vào ô bị lỗi
+            form.querySelectorAll('input, select, textarea').forEach(field => {
+                field.addEventListener('input', () => {
+                    if (field.value.trim() !== '') {
+                        markValid(field);
+                    }
+                });
+                field.addEventListener('change', () => {
+                    if (field.value.trim() !== '') {
+                        markValid(field);
+                    }
+                });
+            });
+
+            form.addEventListener('submit', function(e) {
+                let hasError = false;
+                let firstInvalid = null;
+
+                // 1. Tên cơ sở lưu trú
+                const nameInput = document.getElementById('createPropName');
+                if (!nameInput || !nameInput.value.trim()) {
+                    markInvalid(nameInput, 'Vui lòng nhập tên cơ sở lưu trú.');
+                    hasError = true;
+                    if (!firstInvalid) firstInvalid = nameInput;
+                } else {
+                    markValid(nameInput);
+                }
+
+                // 2. Số điện thoại đón khách
+                const phoneInput = document.getElementById('createPropPhone');
+                const cleanPhone = phoneInput ? phoneInput.value.trim().replace(/[\s\.-]/g, '') : '';
+                if (!phoneInput || !phoneInput.value.trim()) {
+                    markInvalid(phoneInput, 'Vui lòng nhập số điện thoại đón khách.');
+                    hasError = true;
+                    if (!firstInvalid) firstInvalid = phoneInput;
+                } else if (cleanPhone.length < 9 || cleanPhone.length > 11 || isNaN(cleanPhone)) {
+                    markInvalid(phoneInput, 'Số điện thoại không hợp lệ (từ 9 đến 11 chữ số).');
+                    hasError = true;
+                    if (!firstInvalid) firstInvalid = phoneInput;
+                } else {
+                    markValid(phoneInput);
+                }
+
+                // 3. Email liên hệ
+                const emailInput = document.getElementById('createPropEmail');
+                const emailVal = emailInput ? emailInput.value.trim() : '';
+                const atIdx = emailVal.indexOf('@@');
+                const dotIdx = emailVal.lastIndexOf('.');
+                const isValidEmail = atIdx > 0 && dotIdx > atIdx + 1 && dotIdx < emailVal.length - 1;
+                if (!emailInput || !emailVal) {
+                    markInvalid(emailInput, 'Vui lòng nhập email liên hệ.');
+                    hasError = true;
+                    if (!firstInvalid) firstInvalid = emailInput;
+                } else if (!isValidEmail) {
+                    markInvalid(emailInput, 'Địa chỉ email không đúng định dạng.');
+                    hasError = true;
+                    if (!firstInvalid) firstInvalid = emailInput;
+                } else {
+                    markValid(emailInput);
+                }
+
+                // 4. Địa chỉ cụ thể
+                const addressInput = document.getElementById('createPropAddress');
+                if (!addressInput || !addressInput.value.trim()) {
+                    markInvalid(addressInput, 'Vui lòng nhập địa chỉ cụ thể (số nhà, tên đường).');
+                    hasError = true;
+                    if (!firstInvalid) firstInvalid = addressInput;
+                } else {
+                    markValid(addressInput);
+                }
+
+                // 5. Tỉnh / Thành phố
+                const cityInput = document.getElementById('createPropCity');
+                if (!cityInput || !cityInput.value.trim()) {
+                    markInvalid(cityInput, 'Vui lòng nhập hoặc chọn Tỉnh / Thành phố.');
+                    hasError = true;
+                    if (!firstInvalid) firstInvalid = cityInput;
+                } else {
+                    markValid(cityInput);
+                }
+
+                // 6. Cấu hình Homestay nếu loại hình là Homestay
+                const typeSelect = document.getElementById('createPropTypeSelect');
+                const isHomestay = !typeSelect || typeSelect.value === 'Homestay';
+                if (isHomestay) {
+                    const priceInput = document.getElementById('createPropHomestayPrice');
+                    if (priceInput && (!priceInput.value || Number(priceInput.value) < 50000)) {
+                        markInvalid(priceInput, 'Giá thuê trọn gói tối thiểu từ 50.000 ₫/đêm.');
+                        hasError = true;
+                        if (!firstInvalid) firstInvalid = priceInput;
+                    } else if (priceInput) {
+                        markValid(priceInput);
+                    }
+
+                    const capInput = document.getElementById('createPropHomestayCapacity');
+                    if (capInput && (!capInput.value || Number(capInput.value) < 1)) {
+                        markInvalid(capInput, 'Sức chứa tối thiểu 1 người.');
+                        hasError = true;
+                        if (!firstInvalid) firstInvalid = capInput;
+                    } else if (capInput) {
+                        markValid(capInput);
+                    }
+                }
+
+                if (hasError) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (firstInvalid) {
+                        firstInvalid.focus();
+                        firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    return false;
+                }
+
+                // Form hợp lệ -> chuyển nút submit sang trạng thái loading
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Đang gửi hồ sơ...';
+                }
+            });
+        }
+
+        // Tab Switching
         function switchDashboardTab(tabId, element) {
-            document.querySelectorAll('.dashboard-tab-link').forEach(btn => {
-                btn.classList.remove('active');
-            });
+            document.querySelectorAll('.dashboard-tab-link').forEach(btn => btn.classList.remove('active'));
+            if (element) element.classList.add('active');
 
-            if (element) {
-                element.classList.add('active');
-            }
-
-            document.querySelectorAll('.dashboard-tab-view').forEach(pane => {
-                pane.classList.remove('active');
-            });
-
+            document.querySelectorAll('.dashboard-tab-view').forEach(pane => pane.classList.remove('active'));
             const targetPane = document.getElementById(tabId);
-            if (targetPane) {
-                targetPane.classList.add('active');
-            }
+            if (targetPane) targetPane.classList.add('active');
 
             const titleEl = document.getElementById('currentTabHeading');
             const subEl = document.getElementById('currentTabSubheading');
@@ -613,7 +1431,416 @@
             }
         }
 
-        // Filter bookings by Property and Status
+        // Toggle Create Property Type (Homestay vs Hotel)
+        function toggleCreatePropertyType(val) {
+            const homestayPanel = document.getElementById('createHomestayConfigPanel');
+            const hotelPanel = document.getElementById('createHotelConfigPanel');
+            if (val === 'Hotel') {
+                if (homestayPanel) homestayPanel.classList.add('d-none');
+                if (hotelPanel) hotelPanel.classList.remove('d-none');
+            } else {
+                if (homestayPanel) homestayPanel.classList.remove('d-none');
+                if (hotelPanel) hotelPanel.classList.add('d-none');
+            }
+        }
+
+        // ==================== OWNER PROPERTY DETAILS LOGIC ====================
+        let currentOpdData = null;
+
+        function toggleOwnerPropertyEditMode(forceEdit) {
+            const viewEl = document.getElementById('opdDynamicBody');
+            const editEl = document.getElementById('opdEditContainer');
+            const toggleBtn = document.getElementById('opdEditToggleBtn');
+            const footerActions = document.getElementById('opdFooterActions');
+
+            if (!viewEl || !editEl) return;
+
+            const shouldShowEdit = forceEdit !== undefined ? forceEdit : editEl.classList.contains('d-none');
+
+            if (shouldShowEdit) {
+                if (!currentOpdData) return;
+                populateOpdEditForm(currentOpdData);
+                viewEl.classList.add('d-none');
+                editEl.classList.remove('d-none');
+                if (footerActions) footerActions.classList.add('d-none');
+                if (toggleBtn) {
+                    toggleBtn.innerHTML = '<i class="bi bi-eye me-1"></i> Quay lại xem chi tiết';
+                    toggleBtn.className = 'btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold ms-auto me-4';
+                }
+            } else {
+                viewEl.classList.remove('d-none');
+                editEl.classList.add('d-none');
+                if (footerActions) footerActions.classList.remove('d-none');
+                if (toggleBtn) {
+                    toggleBtn.innerHTML = '<i class="bi bi-pencil-square me-1"></i> Chỉnh sửa thông tin';
+                    toggleBtn.className = 'btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold ms-auto me-4';
+                }
+            }
+        }
+
+        function populateOpdEditForm(data) {
+            document.getElementById('opdEditPropId').value = data.id;
+            document.getElementById('opdEditName').value = data.name || '';
+            document.getElementById('opdEditType').value = data.type || 'Homestay';
+            document.getElementById('opdEditPhone').value = data.phone || '';
+            document.getElementById('opdEditEmail').value = data.email || '';
+            document.getElementById('opdEditAddress').value = data.address || '';
+            document.getElementById('opdEditWard').value = data.ward || '';
+            document.getElementById('opdEditCity').value = data.city || '';
+            document.getElementById('opdEditPolicy').value = data.policy || '';
+
+            const isHotel = (data.type || '').toLowerCase() === 'hotel' || (data.type || '').toLowerCase() === 'khách sạn';
+            const isHomestay = !isHotel;
+            const homestayPanel = document.getElementById('opdEditHomestayPanel');
+            if (isHomestay) {
+                if (homestayPanel) homestayPanel.classList.remove('d-none');
+                if (data.homestayPrice) document.getElementById('opdEditHomestayPrice').value = data.homestayPrice;
+                if (data.homestayCapacity) document.getElementById('opdEditHomestayCapacity').value = data.homestayCapacity;
+                if (data.homestayRoomTypeId) document.getElementById('opdEditHomestayRoomTypeId').value = data.homestayRoomTypeId;
+            } else {
+                if (homestayPanel) homestayPanel.classList.add('d-none');
+            }
+
+            const docBL = document.getElementById('opdEditOldBusinessLicense');
+            if (docBL) docBL.innerHTML = data.businessLicenseUrl ? `<a href="${data.businessLicenseUrl}" target="_blank" class="text-primary text-decoration-underline"><i class="bi bi-file-earmark-check me-1"></i>Tệp hiện tại</a>` : 'Chưa có tệp';
+
+            const docFS = document.getElementById('opdEditOldFireSafety');
+            if (docFS) docFS.innerHTML = data.fireSafetyDocumentUrl ? `<a href="${data.fireSafetyDocumentUrl}" target="_blank" class="text-primary text-decoration-underline"><i class="bi bi-file-earmark-check me-1"></i>Tệp hiện tại</a>` : 'Chưa có tệp';
+
+            const docSEC = document.getElementById('opdEditOldSecurity');
+            if (docSEC) docSEC.innerHTML = data.securityDocumentUrl ? `<a href="${data.securityDocumentUrl}" target="_blank" class="text-primary text-decoration-underline"><i class="bi bi-file-earmark-check me-1"></i>Tệp hiện tại</a>` : 'Chưa có tệp';
+
+            const activeIds = (data.amenities || []).map(a => a.id);
+            document.querySelectorAll('.opd-edit-amenity-cb').forEach(cb => {
+                cb.checked = activeIds.includes(Number(cb.value));
+            });
+        }
+
+        async function openOwnerPropertyDetails(propId) {
+            try {
+                const res = await fetch(`/Home/GetPropertyDetailsJson?id=${propId}`);
+                if (!res.ok) throw new Error('Không thể tải dữ liệu chi tiết cơ sở.');
+                const data = await res.json();
+                currentOpdData = data;
+
+                const status = (data.approvalStatus || 'Approved').toLowerCase();
+
+                // NẾU BỊ TỪ CHỐI -> Mở form tạo/sửa cơ sở cùng với các thông tin cũ đã nhập từ request trước
+                if (status === 'rejected') {
+                    populateAndOpenResubmitModal(data);
+                    return;
+                }
+
+                // Reset về View Mode trước
+                toggleOwnerPropertyEditMode(false);
+
+                // Cập nhật tiêu đề và modal info
+                document.getElementById('opdTitle').textContent = data.name || 'Chi tiết Cơ sở';
+                document.getElementById('opdAddress').innerHTML = `<i class="bi bi-geo-alt-fill text-primary me-1"></i> ${data.address || ''}${data.ward ? ', ' + data.ward : ''}${data.city ? ', ' + data.city : ''}`;
+
+                const isHotel = (data.type || '').toLowerCase() === 'hotel' || (data.type || '').toLowerCase() === 'khách sạn';
+                const isHomestay = !isHotel;
+                const typeBadge = document.getElementById('opdTypeBadge');
+                typeBadge.textContent = isHotel ? 'Khách sạn (Hotel)' : 'Homestay nguyên căn';
+                typeBadge.className = `badge rounded-pill px-3 py-1 fw-bold text-uppercase small ${isHomestay ? 'bg-info bg-opacity-25 text-primary' : 'bg-primary text-white'}`;
+
+                const statusBadge = document.getElementById('opdStatusBadge');
+                const toggleEditBtn = document.getElementById('opdEditToggleBtn');
+
+                if (status === 'pending') {
+                    statusBadge.className = 'property-status-pill status-pending';
+                    statusBadge.innerHTML = '<i class="bi bi-clock-fill"></i> Đang chờ duyệt (WPF Admin)';
+                    if (toggleEditBtn) toggleEditBtn.classList.add('d-none');
+                } else {
+                    statusBadge.className = 'property-status-pill status-approved';
+                    statusBadge.innerHTML = '<i class="bi bi-check-circle-fill"></i> Đang hoạt động';
+                    if (toggleEditBtn) toggleEditBtn.classList.remove('d-none');
+                }
+
+                let html = '';
+
+                // TRƯỜNG HỢP 1: CHỜ DUYỆT (PENDING)
+                if (status === 'pending') {
+                    html += `
+                        <div class="alert alert-warning rounded-4 p-3 mb-3">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="bi bi-shield-exclamation fs-5 text-warning"></i>
+                                <strong class="text-dark">Hồ sơ đang chờ Ban Quản trị (Admin WPF) thẩm định:</strong>
+                            </div>
+                            <p class="small text-muted mb-0">
+                                Cơ sở của bạn đã gửi thành công và đang được xét duyệt hồ sơ pháp lý. Khi được Admin duyệt, cơ sở sẽ tự động xuất hiện trên website và sẵn sàng đón khách.
+                            </p>
+                        </div>
+                    `;
+                }
+
+                // KHỐI 1: THÔNG TIN CƠ BẢN & LIÊN HỆ
+                html += `
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-4 h-100">
+                                <h6 class="fw-bold text-navy small mb-2"><i class="bi bi-telephone-fill text-primary me-1"></i> Thông tin liên hệ</h6>
+                                <div class="small text-muted mb-1">Số điện thoại: <strong class="text-dark">${data.phone || 'Chưa có'}</strong></div>
+                                <div class="small text-muted mb-1">Email: <strong class="text-dark">${data.email || 'Chưa có'}</strong></div>
+                                <div class="small text-muted">Địa chỉ: <strong class="text-dark">${data.address || ''}, ${data.ward || ''}, ${data.city || ''}</strong></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-4 h-100">
+                                <h6 class="fw-bold text-navy small mb-2"><i class="bi bi-file-earmark-text-fill text-primary me-1"></i> Hồ sơ pháp lý đã nộp</h6>
+                                <div class="small text-muted mb-1">
+                                    Giấy phép KD: ${data.businessLicenseUrl ? `<a href="${data.businessLicenseUrl}" target="_blank" class="text-primary fw-bold text-decoration-underline"><i class="bi bi-box-arrow-up-right me-1"></i>Xem tệp</a>` : '<span class="text-muted">Chưa nộp</span>'}
+                                </div>
+                                <div class="small text-muted mb-1">
+                                    Chứng nhận PCCC: ${data.fireSafetyDocumentUrl ? `<a href="${data.fireSafetyDocumentUrl}" target="_blank" class="text-primary fw-bold text-decoration-underline"><i class="bi bi-box-arrow-up-right me-1"></i>Xem tệp</a>` : '<span class="text-muted">Chưa nộp</span>'}
+                                </div>
+                                <div class="small text-muted">
+                                    An ninh trật tự: ${data.securityDocumentUrl ? `<a href="${data.securityDocumentUrl}" target="_blank" class="text-primary fw-bold text-decoration-underline"><i class="bi bi-box-arrow-up-right me-1"></i>Xem tệp</a>` : '<span class="text-muted">Chưa nộp</span>'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // KHỐI 2: CHÍNH SÁCH & TIỆN ÍCH
+                if (data.policy) {
+                    html += `
+                        <div class="p-3 bg-light rounded-4 mb-3">
+                            <h6 class="fw-bold text-navy small mb-1"><i class="bi bi-info-circle-fill text-primary me-1"></i> Chính sách &amp; Quy định</h6>
+                            <p class="small text-muted mb-0">${data.policy}</p>
+                        </div>
+                    `;
+                }
+
+                if (data.amenities && data.amenities.length > 0) {
+                    html += `
+                        <div class="mb-3">
+                            <h6 class="fw-bold text-navy small mb-2"><i class="bi bi-stars text-primary me-1"></i> Tiện ích có sẵn (${data.amenities.length}):</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                ${data.amenities.map(a => `<span class="badge bg-light text-navy rounded-pill px-3 py-2 border">${a.name}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (data.photos && data.photos.length > 0) {
+                    html += `
+                        <div class="mb-3">
+                            <h6 class="fw-bold text-navy small mb-2"><i class="bi bi-images text-primary me-1"></i> Hình ảnh khuôn viên (${data.photos.length}):</h6>
+                            <div class="d-flex gap-2 overflow-auto pb-2">
+                                ${data.photos.map(p => `<img src="${p}" style="width: 130px; height: 90px; object-fit: cover; border-radius: 12px; flex-shrink: 0;" />`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // KHỐI 3: QUẢN LÝ PHÒNG (ROOMS)
+                const rooms = data.rooms || [];
+                html += `
+                    <div class="p-3 bg-white border rounded-4 mt-3">
+                        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                            <div>
+                                <h5 class="fw-bold text-navy mb-0 fs-6">
+                                    <i class="bi bi-door-open-fill text-primary me-1"></i> Danh sách phòng thuộc cơ sở (${rooms.length})
+                                </h5>
+                                <small class="text-muted">
+                                    ${isHomestay ? 'Homestay dạng thuê nguyên căn trọn gói.' : 'Khách sạn nhiều phòng có thể thêm và quản lý từng phòng độc lập.'}
+                                </small>
+                            </div>
+                            ${(isHotel && status === 'approved') ? `
+                                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" onclick="openAddRoomModal(${data.id}, '${escapeJs(data.name)}')">
+                                    <i class="bi bi-plus-lg me-1"></i> Thêm phòng mới
+                                </button>
+                            ` : ''}
+                        </div>
+                `;
+
+                if (rooms.length === 0) {
+                    html += `
+                        <div class="p-4 text-center text-muted small bg-light rounded-4">
+                            ${isHomestay && status !== 'approved'
+                                ? '⏳ Phòng "Nguyên căn" sẽ tự động được hệ thống tạo và kích hoạt ngay sau khi Admin phê duyệt cơ sở.'
+                                : 'Chưa có phòng nào được tạo cho cơ sở này.'}
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Tên / Số phòng</th>
+                                        <th>Loại phòng</th>
+                                        <th>Sức chứa</th>
+                                        <th>Giá / đêm</th>
+                                        <th>Trạng thái</th>
+                                        ${(isHotel && status === 'approved') ? '<th class="text-end">Thao tác</th>' : ''}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rooms.map(r => `
+                                        <tr>
+                                            <td><strong>${r.roomNumber}</strong></td>
+                                            <td><span class="badge bg-light text-primary border rounded-pill px-2 py-1">${r.roomType || 'Tiêu chuẩn'}</span></td>
+                                            <td>${r.capacity} khách</td>
+                                            <td><strong class="text-primary">${Number(r.originalPrice).toLocaleString('vi-VN')} ₫</strong></td>
+                                            <td><span class="badge ${r.roomStatus === 'Trống' ? 'bg-success' : 'bg-secondary'} rounded-pill px-2 py-1">${r.roomStatus || 'Trống'}</span></td>
+                                            ${(isHotel && status === 'approved') ? `
+                                                <td class="text-end">
+                                                    <form action="/Home/DeleteRoom" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phòng này?');">
+                                                        <input type="hidden" name="propertyId" value="${data.id}" />
+                                                        <input type="hidden" name="roomId" value="${r.id}" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" title="Xóa phòng">
+                                                            <i class="bi bi-trash-fill"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            ` : ''}
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+                html += `</div>`;
+
+                // Footer actions trong View: Nút xem lịch sử thẩm định & Nút chuyển sang sửa thông tin
+                html += `
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 flex-wrap gap-2">
+                        <button type="button" class="btn btn-sm btn-link text-muted p-0" onclick="viewApprovalHistory(${data.id}, '${escapeJs(data.name)}')">
+                            <i class="bi bi-clock-history me-1"></i> Xem lịch sử thẩm định của cơ sở này
+                        </button>
+                        ${status === 'approved' ? `
+                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="toggleOwnerPropertyEditMode(true)">
+                                <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa thông tin cơ sở này
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+
+                document.getElementById('opdDynamicBody').innerHTML = html;
+
+                const modal = new bootstrap.Modal(document.getElementById('ownerPropertyDetailsModal'));
+                modal.show();
+            } catch (err) {
+                alert('Lỗi tải thông tin chi tiết: ' + err.message);
+            }
+        }
+
+        // ==================== RESUBMIT REJECTED MODAL OPENER ====================
+        async function openResubmitModal(propId) {
+            try {
+                const res = await fetch(`/Home/GetPropertyDetailsJson?id=${propId}`);
+                if (!res.ok) throw new Error('Không thể tải dữ liệu cơ sở.');
+                const data = await res.json();
+                populateAndOpenResubmitModal(data);
+            } catch (err) {
+                alert('Lỗi: ' + err.message);
+            }
+        }
+
+        function populateAndOpenResubmitModal(data) {
+            document.getElementById('resubmitPropId').value = data.id;
+            document.getElementById('resubmitRejectionReasonText').textContent = data.rejectionReason || 'Vui lòng bổ sung đầy đủ thông tin hoặc hồ sơ pháp lý hợp lệ.';
+            document.getElementById('resubmitName').value = data.name || '';
+            document.getElementById('resubmitType').value = data.type || 'Homestay';
+            document.getElementById('resubmitPhone').value = data.phone || '';
+            document.getElementById('resubmitEmail').value = data.email || '';
+            document.getElementById('resubmitAddress').value = data.address || '';
+            document.getElementById('resubmitWard').value = data.ward || '';
+            document.getElementById('resubmitCity').value = data.city || '';
+            document.getElementById('resubmitPolicy').value = data.policy || '';
+
+            const isHomestay = (data.type || '').toLowerCase() === 'homestay';
+            const homestayPanel = document.getElementById('resubmitHomestayPanel');
+            if (isHomestay) {
+                if (homestayPanel) homestayPanel.classList.remove('d-none');
+                if (data.homestayPrice) document.getElementById('resubmitHomestayPrice').value = data.homestayPrice;
+                if (data.homestayCapacity) document.getElementById('resubmitHomestayCapacity').value = data.homestayCapacity;
+                if (data.homestayRoomTypeId) document.getElementById('resubmitHomestayRoomTypeId').value = data.homestayRoomTypeId;
+            } else {
+                if (homestayPanel) homestayPanel.classList.add('d-none');
+            }
+
+            // Old document links
+            const docBL = document.getElementById('resubmitOldBusinessLicenseLink');
+            if (docBL) docBL.innerHTML = data.businessLicenseUrl ? `<a href="${data.businessLicenseUrl}" target="_blank" class="text-primary text-decoration-underline"><i class="bi bi-file-earmark-check me-1"></i>Tệp đã nộp</a>` : 'Chưa có tệp';
+
+            const docFS = document.getElementById('resubmitOldFireSafetyLink');
+            if (docFS) docFS.innerHTML = data.fireSafetyDocumentUrl ? `<a href="${data.fireSafetyDocumentUrl}" target="_blank" class="text-primary text-decoration-underline"><i class="bi bi-file-earmark-check me-1"></i>Tệp đã nộp</a>` : 'Chưa có tệp';
+
+            const docSEC = document.getElementById('resubmitOldSecurityLink');
+            if (docSEC) docSEC.innerHTML = data.securityDocumentUrl ? `<a href="${data.securityDocumentUrl}" target="_blank" class="text-primary text-decoration-underline"><i class="bi bi-file-earmark-check me-1"></i>Tệp đã nộp</a>` : 'Chưa có tệp';
+
+            // Checkboxes amenities
+            const activeIds = (data.amenities || []).map(a => a.id);
+            document.querySelectorAll('.resubmit-amenity-cb').forEach(cb => {
+                cb.checked = activeIds.includes(Number(cb.value));
+            });
+
+            // Close details modal if open
+            const opdModalEl = document.getElementById('ownerPropertyDetailsModal');
+            const opdModal = bootstrap.Modal.getInstance(opdModalEl);
+            if (opdModal) opdModal.hide();
+
+            const resubmitModal = new bootstrap.Modal(document.getElementById('resubmitPropertyModal'));
+            resubmitModal.show();
+        }
+
+        // ==================== ADD ROOM MODAL ====================
+        function openAddRoomModal(propertyId, propertyName) {
+            document.getElementById('addRoomPropertyId').value = propertyId;
+            document.getElementById('addRoomPropertyName').textContent = propertyName;
+
+            const modal = new bootstrap.Modal(document.getElementById('addRoomModal'));
+            modal.show();
+        }
+
+        // ==================== APPROVAL HISTORY TIMELINE ====================
+        async function viewApprovalHistory(propId, propName) {
+            const modalEl = document.getElementById('approvalHistoryModal');
+            const timelineEl = document.getElementById('approvalHistoryTimeline');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+
+            timelineEl.innerHTML = '<div class="text-center py-4 text-muted small">Đang tải lịch sử...</div>';
+
+            try {
+                const res = await fetch(`/Home/PropertyApprovalHistory?id=${propId}`);
+                if (!res.ok) throw new Error('Không thể tải lịch sử.');
+                const history = await res.json();
+
+                if (!Array.isArray(history) || history.length === 0) {
+                    timelineEl.innerHTML = '<div class="text-center py-4 text-muted small">Chưa có bản ghi lịch sử xét duyệt nào.</div>';
+                    return;
+                }
+
+                let html = '<div class="d-flex flex-column gap-3">';
+                history.forEach(item => {
+                    const isApproved = item.action === 'Approved' || item.status === 'Approved';
+                    const isRejected = item.action === 'Rejected' || item.status === 'Rejected';
+                    const badgeClass = isApproved ? 'bg-success' : isRejected ? 'bg-danger' : 'bg-warning text-dark';
+
+                    html += `
+                        <div class="p-3 bg-light rounded-4 border-start border-4 ${isApproved ? 'border-success' : isRejected ? 'border-danger' : 'border-warning'}">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="badge ${badgeClass} rounded-pill px-3 py-1">${item.action || item.status || 'Xét duyệt'}</span>
+                                <small class="text-muted">${item.reviewDate ? new Date(item.reviewDate).toLocaleString('vi-VN') : ''}</small>
+                            </div>
+                            <div class="small text-muted mt-1">Người thẩm định: <strong>${item.reviewerName || 'Ban Quản trị Stayly'}</strong></div>
+                            ${item.reason ? `<div class="small text-dark mt-2 p-2 bg-white rounded-3">Ghi chú: "${item.reason}"</div>` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                timelineEl.innerHTML = html;
+            } catch (err) {
+                timelineEl.innerHTML = `<div class="text-danger text-center small py-3">${err.message}</div>`;
+            }
+        }
+
+        // ==================== FILTER BOOKINGS ====================
         function filterBookingsList() {
             const propFilter = document.getElementById('filterBookingProperty').value;
             const statusFilter = document.getElementById('filterBookingStatus').value;
@@ -628,7 +1855,7 @@
                 const matchStatus = (statusFilter === 'all' || cardStatus.toLowerCase() === statusFilter.toLowerCase());
 
                 if (matchProp && matchStatus) {
-                    card.style.display = 'flex';
+                    card.style.display = 'block';
                     visibleCount++;
                 } else {
                     card.style.display = 'none';
@@ -637,11 +1864,11 @@
 
             const countIndicator = document.getElementById('bookingCountIndicator');
             if (countIndicator) {
-                countIndicator.innerHTML = `Hiển thị: <strong>${visibleCount}</strong> đơn`;
+                countIndicator.innerHTML = `Hiển thị: <strong>${visibleCount}</strong> đơn đặt phòng`;
             }
         }
 
-        // Filter reviews by Property and Date
+        // ==================== FILTER REVIEWS ====================
         function filterReviewsList() {
             const propFilter = document.getElementById('filterReviewProperty').value;
             const dateFilter = document.getElementById('filterReviewDate').value;
@@ -664,9 +1891,7 @@
             });
 
             const countEl = document.getElementById('reviewTotalCount');
-            if (countEl) {
-                countEl.textContent = visibleCount;
-            }
+            if (countEl) countEl.textContent = visibleCount;
         }
 
         function clearReviewDateFilter() {
@@ -677,14 +1902,13 @@
             }
         }
 
-        // Booking Detail Modal Opener with live API call
+        // ==================== BOOKING DETAIL MODAL ====================
         async function openBookingDetailModal(button) {
             const card = button.closest('.booking-item-card');
             if (!card) return;
 
             const bookingId = card.getAttribute('data-id');
 
-            // Set preliminary data from card
             document.getElementById('modalBookingId').textContent = `Chi tiết đơn #${bookingId}`;
             document.getElementById('modalGuestName').textContent = card.getAttribute('data-guest') || '';
             document.getElementById('modalGuestPhone').textContent = card.getAttribute('data-phone') || '';
@@ -695,11 +1919,9 @@
             document.getElementById('modalBaseAmount').textContent = card.getAttribute('data-amount') || '';
             document.getElementById('modalTotalAmount').textContent = card.getAttribute('data-amount') || '';
 
-            // Open modal
             const modal = new bootstrap.Modal(document.getElementById('bookingDetailModal'));
             modal.show();
 
-            // Fetch live API details for surcharges, discounts, and itemized calculations
             try {
                 const res = await fetch(`/Home/GetBookingDetailJson?id=${bookingId}`);
                 if (res.ok) {
@@ -709,73 +1931,22 @@
                         document.getElementById('modalGuestName').textContent = d.guestName || card.getAttribute('data-guest');
                         if (d.guestPhone) document.getElementById('modalGuestPhone').textContent = d.guestPhone;
                         if (d.guestEmail) document.getElementById('modalGuestEmail').textContent = d.guestEmail;
-                        if (d.propertyName) {
-                            const rooms = d.roomNumbers && d.roomNumbers.length > 0 ? d.roomNumbers.join(', ') : 'Phòng tiêu chuẩn';
-                            document.getElementById('modalPropertyName').textContent = `${d.propertyName} (${rooms})`;
-                        }
-                        if (d.guestCount) document.getElementById('modalGuestCount').textContent = `${d.guestCount} người`;
-
-                        if (d.basePrice != null) {
-                            document.getElementById('modalBaseAmount').textContent = Number(d.basePrice).toLocaleString('vi-VN') + ' ₫';
-                        }
-                        if (d.totalAmount != null) {
-                            document.getElementById('modalTotalAmount').textContent = Number(d.totalAmount).toLocaleString('vi-VN') + ' ₫';
-                        }
-
-                        // Extra fees list
-                        const feesSec = document.getElementById('modalExtraFeesSection');
-                        if (d.extraFees && d.extraFees.length > 0) {
-                            let feesHtml = '';
-                            d.extraFees.forEach(f => {
-                                feesHtml += `
-                                    <div class="d-flex justify-content-between mb-1">
-                                        <span class="text-muted small">${f.name} (x${f.quantity}):</span>
-                                        <span class="text-danger small fw-semibold">+ ${Number(f.total).toLocaleString('vi-VN')} ₫</span>
-                                    </div>`;
-                            });
-                            feesSec.innerHTML = feesHtml;
-                        } else {
-                            feesSec.innerHTML = `
-                                <div class="d-flex justify-content-between">
-                                    <span class="text-muted small">Phí dịch vụ &amp; Phụ thu:</span>
-                                    <span class="text-success small">+ 0 ₫ (Không có phụ thu)</span>
-                                </div>`;
-                        }
-
-                        // Discounts
-                        const discSec = document.getElementById('modalDiscountSection');
-                        if (d.discountAmount && d.discountAmount > 0) {
-                            const codeTxt = d.promotionCode ? `Mã [${d.promotionCode}]` : 'Ưu đãi';
-                            const pctTxt = d.discountPercentage ? ` - ${d.discountPercentage}%` : '';
-                            discSec.innerHTML = `
-                                <div class="d-flex justify-content-between">
-                                    <span class="text-muted small">${codeTxt}${pctTxt}:</span>
-                                    <span class="text-success fw-bold small">- ${Number(d.discountAmount).toLocaleString('vi-VN')} ₫</span>
-                                </div>`;
-                        } else {
-                            discSec.innerHTML = `
-                                <div class="d-flex justify-content-between">
-                                    <span class="text-muted small">Mã giảm giá ưu đãi:</span>
-                                    <span class="text-muted small">0 ₫ (Không áp dụng)</span>
-                                </div>`;
-                        }
+                        if (d.basePrice != null) document.getElementById('modalBaseAmount').textContent = Number(d.basePrice).toLocaleString('vi-VN') + ' ₫';
+                        if (d.totalAmount != null) document.getElementById('modalTotalAmount').textContent = Number(d.totalAmount).toLocaleString('vi-VN') + ' ₫';
                     }
                 }
-            } catch (err) {
-                console.warn('Could not fetch extra booking details:', err);
+            } catch (e) {
+                // ignore
             }
         }
 
-        // Reply to Review Modal logic
-        function openReplyModal(reviewId, guestName, propertyName) {
+        // ==================== REPLY REVIEW ====================
+        function openReplyReviewModal(reviewId, guestName, propName) {
             document.getElementById('replyReviewId').value = reviewId;
             document.getElementById('replyGuestName').textContent = guestName;
-            document.getElementById('replyPropertyName').textContent = propertyName;
+            document.getElementById('replyPropertyName').textContent = propName;
             document.getElementById('replyReviewMessage').value = '';
-            
-            const alertBox = document.getElementById('replyAlertBox');
-            alertBox.className = 'alert d-none small rounded-pill py-2 text-center mb-3';
-            alertBox.textContent = '';
+            document.getElementById('replyAlertBox').classList.add('d-none');
 
             const modal = new bootstrap.Modal(document.getElementById('replyReviewModal'));
             modal.show();
@@ -785,7 +1956,7 @@
             const reviewId = document.getElementById('replyReviewId').value;
             const message = document.getElementById('replyReviewMessage').value.trim();
             const alertBox = document.getElementById('replyAlertBox');
-            const submitBtn = document.getElementById('btnSubmitReply');
+            const btn = document.getElementById('btnSubmitReply');
 
             if (!message) {
                 alertBox.className = 'alert alert-danger small rounded-pill py-2 text-center mb-3';
@@ -794,45 +1965,45 @@
                 return;
             }
 
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Đang gửi...';
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang gửi...';
 
             try {
-                const res = await fetch('/Home/ReplyReviewAjax', {
+                const response = await fetch('/Home/ReplyReview', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reviewId: parseInt(reviewId), message: message })
+                    body: JSON.stringify({ reviewId: Number(reviewId), message })
                 });
 
-                const data = await res.json();
-                if (res.ok && data.success) {
+                const data = await response.json();
+                if (response.ok && data.success) {
                     alertBox.className = 'alert alert-success small rounded-pill py-2 text-center mb-3';
-                    alertBox.textContent = data.message || 'Phản hồi thành công!';
+                    alertBox.textContent = data.message || 'Phản hồi đánh giá thành công!';
                     alertBox.classList.remove('d-none');
-                    setTimeout(() => {
-                        const modalEl = document.getElementById('replyReviewModal');
-                        const modal = bootstrap.Modal.getInstance(modalEl);
-                        if (modal) modal.hide();
-                    }, 1200);
+                    setTimeout(() => window.location.reload(), 900);
                 } else {
                     alertBox.className = 'alert alert-danger small rounded-pill py-2 text-center mb-3';
                     alertBox.textContent = data.message || 'Không thể gửi phản hồi.';
                     alertBox.classList.remove('d-none');
                 }
-            } catch (ex) {
+            } catch (err) {
                 alertBox.className = 'alert alert-danger small rounded-pill py-2 text-center mb-3';
-                alertBox.textContent = 'Lỗi kết nối máy chủ. Vui lòng thử lại sau.';
+                alertBox.textContent = 'Lỗi kết nối máy chủ: ' + err.message;
                 alertBox.classList.remove('d-none');
             } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="bi bi-send-fill me-1"></i> Gửi phản hồi';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-send-fill me-1"></i> Gửi phản hồi';
             }
         }
 
-        // Handle Logout
         function handleDashboardLogout() {
             localStorage.removeItem('guestUser');
             localStorage.removeItem('guestToken');
+        }
+
+        function escapeJs(str) {
+            if (!str) return '';
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
         }
     </script>
 </body>

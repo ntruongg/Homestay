@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http;
 
 namespace Web.Models;
@@ -25,10 +26,14 @@ public sealed record Room(
     int Id,
     string RoomNumber,
     int Capacity,
-    decimal CurrentPrice,
+    [property: JsonPropertyName("originalPrice")] decimal CurrentPrice,
     string? RoomStatus,
     string? RoomType,
-    IReadOnlyList<string> Images);
+    IReadOnlyList<string> Images)
+{
+    [JsonIgnore]
+    public decimal OriginalPrice => CurrentPrice;
+}
 
 public sealed record Booking(
     int Id,

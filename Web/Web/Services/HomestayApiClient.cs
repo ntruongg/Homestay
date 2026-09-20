@@ -21,13 +21,24 @@ public sealed class HomestayApiClient(HttpClient http)
             cancellationToken) ?? [];
     }
 
-    public Task<PropertyDetails?> GetPropertyAsync(
+    public async Task<PropertyDetails?> GetPropertyAsync(
         int id,
         CancellationToken cancellationToken = default)
     {
-        return http.GetFromJsonAsync<PropertyDetails>(
-            $"properties/{id}",
-            cancellationToken);
+        try
+        {
+            return await http.GetFromJsonAsync<PropertyDetails>(
+                $"properties/{id}",
+                cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     public Task<(bool Success, AuthResult? Result, string? Error)> LoginAsync(

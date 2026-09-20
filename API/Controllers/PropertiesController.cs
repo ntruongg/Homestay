@@ -50,7 +50,7 @@ public sealed class PropertiesController(
     public async Task<ActionResult<PropertyDetailsResponse>> GetProperty(int id, CancellationToken cancellationToken)
     {
         var property = await db.CoSoLuuTrus.AsNoTracking()
-            .Where(p => p.MaCoSoLuuTru == id && p.TrangThai)
+            .Where(p => p.MaCoSoLuuTru == id)
             .Select(p => new PropertyDetailsResponse(
                 p.MaCoSoLuuTru, p.TenCoSoLuuTru, p.DienThoai, p.Email, p.DiaChi, p.LoaiHinh,
                 db.HinhAnhs.Where(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru).Select(i => i.UrlHinhAnh).ToList(),

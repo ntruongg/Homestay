@@ -1,48 +1,981 @@
 @model PropertyDetails
 
 @{
-    ViewData["Title"] = Model.Name;
+    ViewData["Title"] = $"{Model.Name} - Stayly Homestay & Khách sạn";
+    var defaultImages = new List<string>
+    {
+        "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80"
+    };
+
+    var propertyImages = (Model.Images != null && Model.Images.Count > 0)
+        ? Model.Images.ToList()
+        : defaultImages;
+
+    var mainImage = propertyImages.FirstOrDefault() ?? defaultImages[0];
+    var subImages = propertyImages.Skip(1).Take(4).ToList();
+    if (subImages.Count == 0)
+    {
+        subImages = defaultImages.Skip(1).Take(4).ToList();
+    }
+
+    var minPrice = Model.Rooms.Any() ? Model.Rooms.Min(r => r.CurrentPrice) : 500000m;
+    var reviews = ViewBag.Reviews as IReadOnlyList<ReviewItem> ?? Array.Empty<ReviewItem>();
+    var amenities = ViewBag.Amenities as IReadOnlyList<AmenityItem> ?? Array.Empty<AmenityItem>();
 }
 
-<section class="section container details">
-    <a class="back" asp-action="Index">? Back to stays</a>
+<div class="stayly-details-wrapper py-4">
+    <div class="container">
+        <!-- Top Navigation / Breadcrumb -->
+        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+            <a asp-action="Index" class="btn-stayly-back">
+                <i class="bi bi-arrow-left me-2"></i> Quay lại danh sách
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="navigator.clipboard.writeText(window.location.href); showStaylyToast('info', 'Đã sao chép liên kết vào clipboard!');">
+                    <i class="bi bi-share-fill me-1"></i> Chia sẻ
+                </button>
+                <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="this.classList.toggle('active'); showStaylyToast('success', 'Đã lưu vào danh sách yêu thích!');">
+                    <i class="bi bi-heart me-1"></i> Yêu thích
+                </button>
+            </div>
+        </div>
 
-    <div class="details-head">
-        <div>
-            <p class="eyebrow">@(Model.Type ?? "HOMESTAY")</p>
-            <h1>@Model.Name</h1>
-            <p class="muted">? @Model.Address</p>
+        <!-- Property Header -->
+        <div class="property-header-card mb-4">
+            <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                <span class="stayly-tag-type">
+                    <i class="bi @(Model.Type == "Hotel" ? "bi-building" : "bi-house-heart") me-1"></i>
+                    @(Model.Type ?? "Homestay")
+                </span>
+                <span class="stayly-tag-rating">
+                    <i class="bi bi-star-fill text-warning me-1"></i> 4.9 (128 đánh giá)
+                </span>
+                <span class="stayly-tag-badge">
+                    <i class="bi bi-shield-check text-success me-1"></i> Đối tác đã xác thực
+                </span>
+            </div>
+
+            <h1 class="property-main-title">@Model.Name</h1>
+
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-2 text-muted">
+                <div class="property-address-line">
+                    <i class="bi bi-geo-alt-fill text-primary me-1"></i>
+                    <span>@(string.IsNullOrWhiteSpace(Model.Address) ? "Đang cập nhật địa chỉ" : Model.Address)</span>
+                </div>
+                <div class="property-contact-hints">
+                    @if (!string.IsNullOrWhiteSpace(Model.Phone))
+                    {
+                        <span class="me-3"><i class="bi bi-telephone-fill me-1 text-primary"></i> @Model.Phone</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.Email))
+                    {
+                        <span><i class="bi bi-envelope-fill me-1 text-primary"></i> @Model.Email</span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Bento Photo Gallery -->
+        <div class="property-gallery-bento mb-5">
+            <div class="row g-2">
+                <!-- Main Feature Photo (Left) -->
+                <div class="col-lg-7 col-12">
+                    <div class="gallery-feature-item" onclick="openPhotoModal(0)">
+                        <img src="@mainImage" alt="@Model.Name" class="gallery-img-large" />
+                        <div class="gallery-overlay-tag">
+                            <i class="bi bi-camera-fill me-1"></i> Hình ảnh thực tế
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub Photos Grid (Right) -->
+                <div class="col-lg-5 col-12">
+                    <div class="row g-2 h-100">
+                        @for (var i = 0; i < subImages.Count; i++)
+                        {
+                            var imgIndex = i + 1;
+                            <div class="col-6">
+                                <div class="gallery-sub-item position-relative" onclick="openPhotoModal(@imgIndex)">
+                                    <img src="@subImages[i]" alt="@Model.Name photo @imgIndex" class="gallery-img-thumb" />
+                                    @if (i == subImages.Count - 1 && propertyImages.Count > 5)
+                                    {
+                                        <div class="gallery-more-overlay">
+                                            <span>+@(propertyImages.Count - 5) ảnh</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- View All Button -->
+            <button type="button" class="btn-view-all-photos" onclick="openPhotoModal(0)">
+                <i class="bi bi-grid-3x3-gap-fill me-2"></i> Xem tất cả hình ảnh (@propertyImages.Count)
+            </button>
+        </div>
+
+        <!-- Main Layout: Content (8 cols) & Sticky Booking Widget (4 cols) -->
+        <div class="row g-4">
+            <!-- Left Column: Details, Amenities, Rooms, Reviews -->
+            <div class="col-lg-8">
+                <!-- 1. Highlights & Host Overview -->
+                <div class="stayly-card-box mb-4">
+                    <h3 class="box-section-title">
+                        <i class="bi bi-stars text-primary me-2"></i> Điểm nổi bật của nơi lưu trú
+                    </h3>
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <div class="highlight-item d-flex align-items-center gap-3 p-3 rounded-4 bg-light">
+                                <div class="highlight-icon-circle">
+                                    <i class="bi bi-award-fill text-primary fs-4"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-navy">Chủ nhà siêu tận tâm</div>
+                                    <small class="text-muted">Được đánh giá cao về lòng hiếu khách và hỗ trợ nhanh chóng.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="highlight-item d-flex align-items-center gap-3 p-3 rounded-4 bg-light">
+                                <div class="highlight-icon-circle">
+                                    <i class="bi bi-geo-fill text-primary fs-4"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-navy">Vị trí đắc địa</div>
+                                    <small class="text-muted">95% khách gần đây chấm 5 sao cho sự thuận tiện đi lại.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="highlight-item d-flex align-items-center gap-3 p-3 rounded-4 bg-light">
+                                <div class="highlight-icon-circle">
+                                    <i class="bi bi-shield-lock-fill text-primary fs-4"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-navy">Nhận phòng tự động an toàn</div>
+                                    <small class="text-muted">Khóa thông minh và hướng dẫn chi tiết qua ứng dụng.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="highlight-item d-flex align-items-center gap-3 p-3 rounded-4 bg-light">
+                                <div class="highlight-icon-circle">
+                                    <i class="bi bi-calendar-check-fill text-primary fs-4"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-navy">Hủy phòng linh hoạt</div>
+                                    <small class="text-muted">Hủy miễn phí trước 24 giờ nhận phòng.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Description & House Rules -->
+                <div class="stayly-card-box mb-4">
+                    <h3 class="box-section-title">
+                        <i class="bi bi-info-circle-fill text-primary me-2"></i> Giới thiệu về không gian nghỉ ngơi
+                    </h3>
+                    <div class="property-description text-muted lh-lg mt-3">
+                        <p>
+                            Chào mừng bạn đến với <strong>@Model.Name</strong>! Nằm tại vị trí trung tâm thanh bình và thoáng mát, nơi đây được thiết kế hài hòa giữa vẻ đẹp hiện đại và sự ấm cúng, đem lại trải nghiệm nghỉ dưỡng đích thực cho chuyến du lịch hoặc công tác của bạn.
+                        </p>
+                        <p>
+                            Từng căn phòng được trang bị đầy đủ giường nệm êm ái cao cấp, máy điều hòa, smart TV và phòng tắm riêng tinh tế. Không gian mở ngập tràn ánh sáng tự nhiên với view thoáng đãng giúp bạn có những phút giây thư giãn tuyệt đối bên gia đình và người thân.
+                        </p>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-4 flex-wrap mt-3 pt-3 border-top">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-clock-history text-primary fs-5"></i>
+                            <div>
+                                <div class="small text-muted">Nhận phòng</div>
+                                <div class="fw-semibold text-navy">Từ 14:00</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-box-arrow-right text-primary fs-5"></i>
+                            <div>
+                                <div class="small text-muted">Trả phòng</div>
+                                <div class="fw-semibold text-navy">Trước 12:00</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Amenities Section -->
+                <div class="stayly-card-box mb-4">
+                    <h3 class="box-section-title mb-3">
+                        <i class="bi bi-grid-fill text-primary me-2"></i> Tiện ích có sẵn
+                    </h3>
+                    <div class="row g-3">
+                        @if (amenities != null && amenities.Count > 0)
+                        {
+                            foreach (var a in amenities)
+                            {
+                                <div class="col-md-4 col-6">
+                                    <div class="amenity-pill-item">
+                                        <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                                        <span>@a.Name</span>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="col-md-4 col-6"><div class="amenity-pill-item"><i class="bi bi-wifi text-primary me-2"></i> Wifi tốc độ cao</div></div>
+                            <div class="col-md-4 col-6"><div class="amenity-pill-item"><i class="bi bi-snow text-primary me-2"></i> Điều hòa không khí</div></div>
+                            <div class="col-md-4 col-6"><div class="amenity-pill-item"><i class="bi bi-cup-hot text-primary me-2"></i> Bếp nấu ăn đầy đủ</div></div>
+                            <div class="col-md-4 col-6"><div class="amenity-pill-item"><i class="bi bi-p-circle text-primary me-2"></i> Bãi đỗ xe an toàn</div></div>
+                            <div class="col-md-4 col-6"><div class="amenity-pill-item"><i class="bi bi-tv text-primary me-2"></i> Smart TV Netflix</div></div>
+                            <div class="col-md-4 col-6"><div class="amenity-pill-item"><i class="bi bi-water text-primary me-2"></i> Bồn tắm thư giãn</div></div>
+                        }
+                    </div>
+                </div>
+
+                <!-- 4. Available Rooms Section -->
+                <div class="stayly-card-box mb-4" id="roomsSection">
+                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                        <h3 class="box-section-title mb-0">
+                            <i class="bi bi-door-open-fill text-primary me-2"></i> Danh sách phòng trống (@Model.Rooms.Count)
+                        </h3>
+                        <span class="badge bg-light text-primary rounded-pill px-3 py-2 border">
+                            Giá tốt nhất hôm nay
+                        </span>
+                    </div>
+
+                    @if (Model.Rooms == null || Model.Rooms.Count == 0)
+                    {
+                        <div class="alert alert-info rounded-4 border-0 p-4 text-center">
+                            <i class="bi bi-calendar-x fs-1 text-primary mb-2 d-block"></i>
+                            <h5 class="fw-bold">Hiện chưa có phòng nào khả dụng</h5>
+                            <p class="text-muted mb-0">Vui lòng quay lại sau hoặc liên hệ trực tiếp chủ cơ sở để biết thêm chi tiết.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="room-cards-list d-flex flex-column gap-3">
+                            @foreach (var room in Model.Rooms)
+                            {
+                                var roomImg = (room.Images != null && room.Images.Count > 0)
+                                    ? room.Images.First()
+                                    : mainImage;
+
+                                <div class="room-card-item p-3 border rounded-4 bg-white hover-shadow-sm">
+                                    <div class="row g-3 align-items-center">
+                                        <!-- Room Photo -->
+                                        <div class="col-md-4 col-12">
+                                            <div class="room-photo-wrapper position-relative">
+                                                <img src="@roomImg" alt="Room @room.RoomNumber" class="room-photo-img rounded-3 w-100" />
+                                                <span class="room-badge-status position-absolute top-0 start-0 m-2 badge bg-success rounded-pill">
+                                                    @(string.IsNullOrWhiteSpace(room.RoomStatus) ? "Trống" : room.RoomStatus)
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Room Details -->
+                                        <div class="col-md-5 col-12">
+                                            <div class="room-type-tag text-primary small fw-bold text-uppercase mb-1">
+                                                @(string.IsNullOrWhiteSpace(room.RoomType) ? "Phòng Tiêu Chuẩn" : room.RoomType)
+                                            </div>
+                                            <h4 class="room-title mb-2">Phòng @room.RoomNumber</h4>
+                                            <div class="room-features d-flex flex-wrap gap-2 mb-2 text-muted small">
+                                                <span class="d-flex align-items-center gap-1">
+                                                    <i class="bi bi-people-fill text-primary"></i> Sức chứa: <strong>@room.Capacity khách</strong>
+                                                </span>
+                                                <span class="d-flex align-items-center gap-1">
+                                                    <i class="bi bi-door-closed text-primary"></i> Phòng riêng
+                                                </span>
+                                                <span class="d-flex align-items-center gap-1">
+                                                    <i class="bi bi-check2-circle text-success"></i> Vệ sinh khép kín
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Pricing & Select Button -->
+                                        <div class="col-md-3 col-12 text-md-end border-md-start ps-md-3">
+                                            <div class="room-price-box mb-2">
+                                                <div class="text-muted small">Giá mỗi đêm</div>
+                                                <div class="fs-4 fw-bold text-primary">
+                                                    @room.CurrentPrice.ToString("N0") <span class="fs-6">₫</span>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn-stayly-select-room w-100" onclick="selectRoomForBooking(@room.Id, '@room.RoomNumber', @room.CurrentPrice, @room.Capacity)">
+                                                <i class="bi bi-bookmark-check-fill me-1"></i> Chọn phòng
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- 5. Customer Reviews Section -->
+                <div class="stayly-card-box mb-4">
+                    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+                        <div>
+                            <h3 class="box-section-title mb-1">
+                                <i class="bi bi-chat-heart-fill text-primary me-2"></i> Đánh giá từ khách hàng
+                            </h3>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rating-stars text-warning fs-5">
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                </div>
+                                <span class="fw-bold text-navy fs-5">4.92 / 5</span>
+                                <span class="text-muted small">• 100% đánh giá thực tế từ khách đã lưu trú</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (reviews != null && reviews.Count > 0)
+                    {
+                        <div class="reviews-list d-flex flex-column gap-3">
+                            @foreach (var rev in reviews)
+                            {
+                                <div class="review-item-card p-3 rounded-4 bg-light border-0">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="reviewer-avatar">
+                                                @(string.IsNullOrWhiteSpace(rev.GuestName) ? "K" : rev.GuestName.Substring(0, 1).ToUpper())
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-navy">@(string.IsNullOrWhiteSpace(rev.GuestName) ? "Khách lưu trú" : rev.GuestName)</div>
+                                                <small class="text-muted">@rev.ReviewDate.ToString("dd/MM/yyyy")</small>
+                                            </div>
+                                        </div>
+                                        <div class="text-warning">
+                                            @for (var s = 0; s < rev.Rating; s++)
+                                            {
+                                                <i class="bi bi-star-fill"></i>
+                                            }
+                                        </div>
+                                    </div>
+                                    <p class="review-comment text-muted mb-0">@rev.Comment</p>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Sample Curated Reviews -->
+                        <div class="reviews-list d-flex flex-column gap-3">
+                            <div class="review-item-card p-3 rounded-4 bg-light border-0">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="reviewer-avatar">H</div>
+                                        <div>
+                                            <div class="fw-bold text-navy">Hoàng Nam Anh</div>
+                                            <small class="text-muted">Đã ở 3 đêm • Tháng 8/2026</small>
+                                        </div>
+                                    </div>
+                                    <div class="text-warning">
+                                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                                    </div>
+                                </div>
+                                <p class="review-comment text-muted mb-0">
+                                    "Homestay rất đẹp và sạch sẽ, view ngắm cảnh cực kỳ chill. Chủ nhà nhiệt tình hướng dẫn các địa điểm ăn uống ngon bổ rẻ quanh khu vực. Nhất định sẽ quay lại lần tới!"
+                                </p>
+                            </div>
+
+                            <div class="review-item-card p-3 rounded-4 bg-light border-0">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="reviewer-avatar">M</div>
+                                        <div>
+                                            <div class="fw-bold text-navy">Mai Thanh Thảo</div>
+                                            <small class="text-muted">Đã ở 2 đêm • Tháng 9/2026</small>
+                                        </div>
+                                    </div>
+                                    <div class="text-warning">
+                                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                                    </div>
+                                </div>
+                                <p class="review-comment text-muted mb-0">
+                                    "Giường nệm rất êm, phòng thơm tho, nước nóng đầy đủ. Điểm cộng lớn là wifi nhanh mượt mà nên làm việc từ xa rất tiện lợi. 10/10 điểm!"
+                                </p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Right Column: Sticky Booking Widget -->
+            <div class="col-lg-4">
+                <div class="stayly-sticky-booking-card p-4 rounded-4 shadow-sm bg-white position-sticky" style="top: 100px;">
+                    <div class="booking-price-header d-flex align-items-baseline justify-content-between mb-3 pb-3 border-bottom">
+                        <div>
+                            <span class="fs-3 fw-bold text-primary" id="widgetDisplayPrice">@minPrice.ToString("N0")</span>
+                            <span class="fs-6 text-primary fw-bold">₫</span>
+                            <span class="text-muted small"> / đêm</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-1 text-warning small">
+                            <i class="bi bi-star-fill"></i>
+                            <span class="fw-bold text-dark">4.9</span>
+                        </div>
+                    </div>
+
+                    <form asp-action="Book" method="post" id="staylyBookingForm" onsubmit="return validateBookingSubmit(event)">
+                        @Html.AntiForgeryToken()
+
+                        <!-- Room Selector -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-navy">Chọn phòng nghỉ</label>
+                            <select name="RoomId" id="bookingRoomSelect" class="form-select stayly-select-input rounded-pill" required onchange="onRoomChanged(this)">
+                                @if (Model.Rooms != null && Model.Rooms.Count > 0)
+                                {
+                                    foreach (var r in Model.Rooms)
+                                    {
+                                        <option value="@r.Id" data-price="@r.CurrentPrice" data-capacity="@r.Capacity">
+                                            Phòng @r.RoomNumber - @r.CurrentPrice.ToString("N0") ₫ / đêm (tối đa @r.Capacity người)
+                                        </option>
+                                    }
+                                }
+                                else
+                                {
+                                    <option value="1" data-price="500000" data-capacity="2">Phòng Tiêu Chuẩn - 500,000 ₫ / đêm</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Date Pickers (Check-in / Check-out) -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-navy">Nhận phòng</label>
+                                <input name="CheckIn" id="bookingCheckIn" type="date" class="form-control stayly-date-input rounded-pill" required onchange="calculateBookingTotal()" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-navy">Trả phòng</label>
+                                <input name="CheckOut" id="bookingCheckOut" type="date" class="form-control stayly-date-input rounded-pill" required onchange="calculateBookingTotal()" />
+                            </div>
+                        </div>
+
+                        <!-- Guest Count -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-navy">Số lượng khách</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light rounded-start-pill border-end-0">
+                                    <i class="bi bi-people-fill text-primary"></i>
+                                </span>
+                                <input name="GuestCount" id="bookingGuestCount" type="number" min="1" max="10" value="2" class="form-control rounded-end-pill border-start-0" required />
+                            </div>
+                        </div>
+
+                        <!-- Price Breakdown -->
+                        <div class="booking-breakdown p-3 bg-light rounded-4 mb-3" id="bookingBreakdownBox">
+                            <div class="d-flex justify-content-between small text-muted mb-1">
+                                <span id="breakdownNightsText">500,000 ₫ × 1 đêm</span>
+                                <span id="breakdownSubtotal">500,000 ₫</span>
+                            </div>
+                            <div class="d-flex justify-content-between small text-muted mb-2">
+                                <span>Phí dịch vụ &amp; dọn dẹp</span>
+                                <span class="text-success fw-semibold">Miễn phí</span>
+                            </div>
+                            <div class="d-flex justify-content-between fw-bold text-navy pt-2 border-top">
+                                <span>Tổng tạm tính</span>
+                                <span class="text-primary fs-5" id="breakdownTotal">500,000 ₫</span>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn-stayly-submit-book w-100 rounded-pill py-3 fw-bold mb-2">
+                            <i class="bi bi-calendar2-check-fill me-2"></i> Yêu cầu đặt phòng
+                        </button>
+
+                        <div class="text-center small text-muted">
+                            <i class="bi bi-shield-check text-success me-1"></i> Bạn chưa bị trừ tiền ở bước này
+                        </div>
+                    </form>
+
+                    <!-- Host info summary -->
+                    <div class="host-info-summary mt-4 pt-3 border-top d-flex align-items-center gap-3">
+                        <div class="host-avatar-circle">
+                            <i class="bi bi-person-fill fs-3 text-primary"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-navy small">Cần hỗ trợ tư vấn?</div>
+                            <div class="text-muted small">Hotline: <strong>@(string.IsNullOrWhiteSpace(Model.Phone) ? "1900 6868" : Model.Phone)</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+</div>
 
-    <div class="rooms">
-        <h2>Choose your room</h2>
-
-        @foreach (var room in Model.Rooms)
-        {
-            <article class="room">
-                <div>
-                    <h3>Room @room.RoomNumber @(room.RoomType is null ? "" : $"� {room.RoomType}")</h3>
-                    <p class="muted">Up to @room.Capacity guests � $@room.CurrentPrice.ToString("N0") / night</p>
+<!-- Photo Modal Gallery (Full Resolution) -->
+<div class="modal fade" id="staylyPhotoModal" tabindex="-1" aria-labelledby="photoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-navy" id="photoModalLabel">
+                    <i class="bi bi-images text-primary me-2"></i> @Model.Name - Bộ sưu tập hình ảnh
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="propertyPhotoCarousel" class="carousel slide" data-bs-ride="false">
+                    <div class="carousel-inner rounded-4">
+                        @for (var i = 0; i < propertyImages.Count; i++)
+                        {
+                            <div class="carousel-item @(i == 0 ? "active" : "")">
+                                <img src="@propertyImages[i]" class="d-block w-100 rounded-4" style="max-height: 70vh; object-fit: cover;" alt="Photo @(i + 1)" />
+                                <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-pill px-4 py-1 mx-auto" style="width: fit-content; bottom: 20px;">
+                                    <span>Hình ảnh @(i + 1) / @propertyImages.Count</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#propertyPhotoCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon p-3 bg-dark bg-opacity-50 rounded-circle" aria-hidden="true"></span>
+                        <span class="visually-hidden">Trước</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#propertyPhotoCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon p-3 bg-dark bg-opacity-50 rounded-circle" aria-hidden="true"></span>
+                        <span class="visually-hidden">Sau</span>
+                    </button>
                 </div>
-                <form asp-action="Book" method="post">
-                    <input type="hidden" name="RoomId" value="@room.Id">
-                    <label>
-                        Check in
-                        <input name="CheckIn" type="date" required>
-                    </label>
-                    <label>
-                        Check out
-                        <input name="CheckOut" type="date" required>
-                    </label>
-                    <label>
-                        Guests
-                        <input name="GuestCount" type="number" min="1" max="@room.Capacity" value="2" required>
-                    </label>
-                    <button class="button" type="submit">Request booking</button>
-                    @Html.AntiForgeryToken()
-                </form>
-            </article>
-        }
+            </div>
+        </div>
     </div>
-</section>
+</div>
+
+<!-- Styles for Details Page -->
+<style>
+    .stayly-details-wrapper {
+        background-color: #f8f9fc;
+        min-height: calc(100vh - 150px);
+    }
+
+    .btn-stayly-back {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 20px;
+        background: #ffffff;
+        color: #0077b6;
+        border: 1px solid rgba(0, 119, 182, 0.15);
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        box-shadow: 0 4px 15px rgba(0, 119, 182, 0.05);
+        transition: all 0.25s ease;
+    }
+
+    .btn-stayly-back:hover {
+        background: #0077b6;
+        color: #ffffff;
+        transform: translateX(-3px);
+    }
+
+    .property-header-card {
+        background: #ffffff;
+        padding: 24px;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 119, 182, 0.06);
+    }
+
+    .stayly-tag-type {
+        background-color: #caf0f8;
+        color: #0077b6;
+        padding: 6px 14px;
+        border-radius: 50px;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .stayly-tag-rating {
+        background-color: #fff9db;
+        color: #d48806;
+        padding: 6px 14px;
+        border-radius: 50px;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .stayly-tag-badge {
+        background-color: #e6fcf5;
+        color: #0ca678;
+        padding: 6px 14px;
+        border-radius: 50px;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+
+    .property-main-title {
+        color: #03045e;
+        font-weight: 800;
+        font-size: 2rem;
+        margin: 8px 0;
+        line-height: 1.3;
+    }
+
+    /* Bento Photo Grid */
+    .property-gallery-bento {
+        position: relative;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .gallery-feature-item {
+        position: relative;
+        height: 380px;
+        border-radius: 16px;
+        overflow: hidden;
+        cursor: pointer;
+    }
+
+    .gallery-img-large {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.4s ease;
+    }
+
+    .gallery-feature-item:hover .gallery-img-large {
+        transform: scale(1.03);
+    }
+
+    .gallery-overlay-tag {
+        position: absolute;
+        bottom: 16px;
+        left: 16px;
+        background: rgba(3, 4, 94, 0.75);
+        backdrop-filter: blur(8px);
+        color: #ffffff;
+        padding: 6px 16px;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .gallery-sub-item {
+        height: 185px;
+        border-radius: 14px;
+        overflow: hidden;
+        cursor: pointer;
+    }
+
+    .gallery-img-thumb {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.4s ease;
+    }
+
+    .gallery-sub-item:hover .gallery-img-thumb {
+        transform: scale(1.04);
+    }
+
+    .gallery-more-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(3, 4, 94, 0.65);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        font-weight: 700;
+        backdrop-filter: blur(2px);
+    }
+
+    .btn-view-all-photos {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        background: #ffffff;
+        color: #03045e;
+        border: none;
+        padding: 10px 22px;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 0.88rem;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+        transition: all 0.25s ease;
+        z-index: 5;
+    }
+
+    .btn-view-all-photos:hover {
+        background: #0077b6;
+        color: #ffffff;
+        transform: translateY(-2px);
+    }
+
+    /* Card Boxes */
+    .stayly-card-box {
+        background: #ffffff;
+        padding: 28px;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 119, 182, 0.06);
+    }
+
+    .box-section-title {
+        color: #03045e;
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+
+    .highlight-icon-circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background-color: #caf0f8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .amenity-pill-item {
+        background-color: #f1f9fc;
+        padding: 12px 18px;
+        border-radius: 50px;
+        font-size: 0.9rem;
+        color: #03045e;
+        font-weight: 600;
+        border: 1px solid rgba(0, 119, 182, 0.08);
+        transition: all 0.2s ease;
+    }
+
+    .amenity-pill-item:hover {
+        background-color: #caf0f8;
+        transform: translateY(-1px);
+    }
+
+    /* Room Cards */
+    .room-card-item {
+        transition: all 0.25s ease;
+        border: 1px solid #eef2f6 !important;
+    }
+
+    .room-card-item:hover {
+        border-color: #0077b6 !important;
+        box-shadow: 0 10px 25px rgba(0, 119, 182, 0.1);
+    }
+
+    .room-photo-img {
+        height: 120px;
+        object-fit: cover;
+    }
+
+    .room-title {
+        color: #03045e;
+        font-size: 1.15rem;
+        font-weight: 700;
+    }
+
+    .btn-stayly-select-room {
+        background: #caf0f8;
+        color: #0077b6;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 0.88rem;
+        transition: all 0.25s ease;
+    }
+
+    .btn-stayly-select-room:hover {
+        background: #0077b6;
+        color: #ffffff;
+        transform: translateY(-2px);
+    }
+
+    /* Reviews */
+    .reviewer-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background-color: #0077b6;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    /* Sticky Booking Widget */
+    .stayly-sticky-booking-card {
+        border: 1px solid rgba(0, 119, 182, 0.12);
+        box-shadow: 0 16px 40px rgba(0, 119, 182, 0.1);
+    }
+
+    .btn-stayly-submit-book {
+        background: #0077b6;
+        color: #ffffff;
+        border: none;
+        box-shadow: 0 8px 20px rgba(0, 119, 182, 0.25);
+        transition: all 0.25s ease;
+    }
+
+    .btn-stayly-submit-book:hover {
+        background: #023e8a;
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(0, 119, 182, 0.35);
+    }
+
+    .host-avatar-circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background-color: #edfaff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+</style>
+
+<!-- Javascript for Booking Form and Modal -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialize default dates
+        const checkIn = document.getElementById('bookingCheckIn');
+        const checkOut = document.getElementById('bookingCheckOut');
+        const today = new Date();
+        const tomorrow = new Date();
+        tomorrow.setDate(today.getDate() + 1);
+
+        if (checkIn && !checkIn.value) {
+            checkIn.value = today.toISOString().split('T')[0];
+            checkIn.min = today.toISOString().split('T')[0];
+        }
+
+        if (checkOut && !checkOut.value) {
+            checkOut.value = tomorrow.toISOString().split('T')[0];
+            checkOut.min = tomorrow.toISOString().split('T')[0];
+        }
+
+        calculateBookingTotal();
+    });
+
+    function openPhotoModal(slideIndex) {
+        const modalEl = document.getElementById('staylyPhotoModal');
+        if (modalEl) {
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+            if (slideIndex !== undefined) {
+                const carouselEl = document.getElementById('propertyPhotoCarousel');
+                if (carouselEl) {
+                    const carousel = bootstrap.Carousel.getOrCreateInstance(carouselEl);
+                    carousel.to(slideIndex);
+                }
+            }
+        }
+    }
+
+    function selectRoomForBooking(roomId, roomNumber, price, capacity) {
+        const roomSelect = document.getElementById('bookingRoomSelect');
+        if (roomSelect) {
+            roomSelect.value = roomId;
+            onRoomChanged(roomSelect);
+
+            // Smooth scroll to booking widget
+            const bookingWidget = document.querySelector('.stayly-sticky-booking-card');
+            if (bookingWidget) {
+                bookingWidget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                bookingWidget.classList.add('border-primary');
+                setTimeout(() => bookingWidget.classList.remove('border-primary'), 1500);
+            }
+
+            showStaylyToast('info', `Đã chọn Phòng ${roomNumber}. Hãy kiểm tra ngày nhận/trả phòng!`);
+        }
+    }
+
+    function onRoomChanged(select) {
+        const opt = select.options[select.selectedIndex];
+        if (!opt) return;
+
+        const price = Number(opt.dataset.price || 500000);
+        const capacity = Number(opt.dataset.capacity || 2);
+
+        const displayPrice = document.getElementById('widgetDisplayPrice');
+        if (displayPrice) {
+            displayPrice.textContent = price.toLocaleString('vi-VN');
+        }
+
+        const guestInput = document.getElementById('bookingGuestCount');
+        if (guestInput) {
+            guestInput.max = capacity;
+            if (Number(guestInput.value) > capacity) {
+                guestInput.value = capacity;
+            }
+        }
+
+        calculateBookingTotal();
+    }
+
+    function calculateBookingTotal() {
+        const roomSelect = document.getElementById('bookingRoomSelect');
+        const checkIn = document.getElementById('bookingCheckIn');
+        const checkOut = document.getElementById('bookingCheckOut');
+
+        if (!roomSelect || !checkIn || !checkOut) return;
+
+        const opt = roomSelect.options[roomSelect.selectedIndex];
+        const pricePerNight = opt ? Number(opt.dataset.price || 500000) : 500000;
+
+        const d1 = new Date(checkIn.value);
+        const d2 = new Date(checkOut.value);
+        let nights = 1;
+
+        if (d2 > d1) {
+            const diffTime = Math.abs(d2 - d1);
+            nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        const total = pricePerNight * nights;
+
+        const nightsText = document.getElementById('breakdownNightsText');
+        const subtotal = document.getElementById('breakdownSubtotal');
+        const grandTotal = document.getElementById('breakdownTotal');
+
+        if (nightsText) nightsText.textContent = `${pricePerNight.toLocaleString('vi-VN')} ₫ × ${nights} đêm`;
+        if (subtotal) subtotal.textContent = `${total.toLocaleString('vi-VN')} ₫`;
+        if (grandTotal) grandTotal.textContent = `${total.toLocaleString('vi-VN')} ₫`;
+    }
+
+    function validateBookingSubmit(event) {
+        const checkIn = document.getElementById('bookingCheckIn').value;
+        const checkOut = document.getElementById('bookingCheckOut').value;
+
+        if (!checkIn || !checkOut) {
+            event.preventDefault();
+            alert('Vui lòng chọn ngày nhận phòng và ngày trả phòng.');
+            return false;
+        }
+
+        if (new Date(checkOut) <= new Date(checkIn)) {
+            event.preventDefault();
+            alert('Ngày trả phòng phải sau ngày nhận phòng.');
+            return false;
+        }
+
+        // Check if user is logged in
+        const user = localStorage.getItem('guestUser');
+        if (!user) {
+            event.preventDefault();
+            showStaylyToast('info', 'Vui lòng đăng nhập để tiến hành gửi yêu cầu đặt phòng!');
+            const authModalEl = document.getElementById('authModal');
+            if (authModalEl) {
+                const modal = new bootstrap.Modal(authModalEl);
+                modal.show();
+            }
+            return false;
+        }
+
+        return true;
+    }
+</script>

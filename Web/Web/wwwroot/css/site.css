@@ -1853,4 +1853,51 @@ a.button:hover {
     font-size: 0.95rem;
 }
 
+/* ==========================================================================
+   Form Validation & Highlight Styles
+   ========================================================================== */
+.form-control.is-invalid, 
+.form-select.is-invalid,
+textarea.form-control.is-invalid {
+    border-color: #e63946 !important;
+    background-color: #fff8f8 !important;
+    box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.18) !important;
+    color: #212529 !important;
+}
+
+.form-control.is-invalid:focus, 
+.form-select.is-invalid:focus,
+textarea.form-control.is-invalid:focus {
+    border-color: #d90429 !important;
+    box-shadow: 0 0 0 5px rgba(217, 4, 41, 0.25) !important;
+}
+
+.invalid-feedback {
+    display: none;
+    width: 100%;
+    margin-top: 0.35rem;
+    padding-left: 0.85rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #d90429;
+}
+
+.is-invalid ~ .invalid-feedback,
+.was-validated :invalid ~ .invalid-feedback {
+    display: block !important;
+    animation: fadeInDown 0.2s ease;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
 

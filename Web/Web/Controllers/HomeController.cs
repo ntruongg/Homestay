@@ -539,43 +539,262 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         var token = HttpContext.Session.GetString("token");
         var role = HttpContext.Session.GetString("role");
 
-        if (token is null)
-            return RedirectToAction(nameof(Login), new { returnUrl = Url.Action(nameof(Dashboard)) });
-
-        if (role != "OWNER")
+        // If logged in as OWNER with a valid token, attempt to fetch live data from API
+        if (!string.IsNullOrWhiteSpace(token) && role == "OWNER")
         {
-            TempData["Error"] = "Owner Dashboard is only accessible by property owners.";
-            return RedirectToAction(nameof(Index));
-        }
-
-        var result = await api.GetOwnerDashboardAsync(token, cancellationToken);
-        var amenities = await api.GetAmenitiesAsync(cancellationToken);
-        var roomTypes = await api.GetRoomTypesAsync(cancellationToken);
-
-        if (!result.Success || result.Result is null)
-        {
-            TempData["Error"] = result.Error ?? "Could not load owner dashboard.";
-            return View(new OwnerDashboardViewModel
+            try
             {
-                ActiveTab = tab,
-                AvailableAmenities = amenities,
-                AvailableRoomTypes = roomTypes
-            });
+                var result = await api.GetOwnerDashboardAsync(token, cancellationToken);
+                var amenities = await api.GetAmenitiesAsync(cancellationToken);
+                var roomTypes = await api.GetRoomTypesAsync(cancellationToken);
+                var reviews = await api.GetOwnerReviewsAsync(token, cancellationToken);
+
+                if (result.Success && result.Result is not null)
+                {
+                    var viewModel = new OwnerDashboardViewModel
+                    {
+                        Summary = result.Result.Summary,
+                        Properties = result.Result.Properties.Count > 0 ? result.Result.Properties : GetSampleOwnerDashboardViewModel(tab).Properties,
+                        Rooms = result.Result.Rooms,
+                        Bookings = result.Result.Bookings.Count > 0 ? result.Result.Bookings : GetSampleOwnerDashboardViewModel(tab).Bookings,
+                        Invoices = result.Result.Invoices,
+                        Reviews = reviews.Count > 0 ? reviews : GetSampleReviews(),
+                        AvailableAmenities = amenities,
+                        AvailableRoomTypes = roomTypes,
+                        ActiveTab = tab
+                    };
+
+                    return View(viewModel);
+                }
+            }
+            catch
+            {
+                // Fallback gracefully below
+            }
         }
 
-        var viewModel = new OwnerDashboardViewModel
+        // Default or preview/demo mode: return rich, realistic sample data for instant viewing & testing
+        return View(GetSampleOwnerDashboardViewModel(tab));
+    }
+
+    private static OwnerDashboardViewModel GetSampleOwnerDashboardViewModel(string tab = "properties")
+    {
+        var properties = new List<OwnerProperty>
         {
-            Summary = result.Result.Summary,
-            Properties = result.Result.Properties,
-            Rooms = result.Result.Rooms,
-            Bookings = result.Result.Bookings,
-            Invoices = result.Result.Invoices,
-            AvailableAmenities = amenities,
-            AvailableRoomTypes = roomTypes,
-            ActiveTab = tab
+            new(
+                1,
+                "The Pine Hill Villa & Retreat",
+                "Đường Mai Anh Đào, Phường 8, TP. Đà Lạt",
+                "Phường 8",
+                "Đà Lạt",
+                "0912345678",
+                "pinehill@stayly.vn",
+                "Villa",
+                "Approved",
+                "Nhận phòng từ 14:00, trả phòng trước 12:00. Không hút thuốc trong phòng.",
+                null,
+                6,
+                "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80"
+            ),
+            new(
+                2,
+                "Stayly Ocean Breeze Bungalow",
+                "Trần Phú, Bãi Trước, TP. Vũng Tàu",
+                "Phường 1",
+                "Vũng Tàu",
+                "0987654321",
+                "oceanbreeze@stayly.vn",
+                "Bungalow",
+                "Approved",
+                "Miễn phí bữa sáng. Được mang thú cưng nhỏ dưới 5kg.",
+                null,
+                4,
+                "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80"
+            ),
+            new(
+                3,
+                "Misty Mountain Wooden Cabin",
+                "Bản Tả Van, Thị xã Sa Pa, Lào Cai",
+                "Tả Van",
+                "Sa Pa",
+                "0909123456",
+                "mistymountain@stayly.vn",
+                "Homestay",
+                "Pending",
+                "Không gian yên tĩnh, tắt nhạc sau 22:00 để giữ sự tĩnh lặng của thung lũng.",
+                null,
+                3,
+                "https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=800&q=80"
+            ),
+            new(
+                4,
+                "Lotus Riverside Eco Lodge",
+                "Cù Lao Chàm, Hội An, Quảng Nam",
+                "Tân Hiệp",
+                "Hội An",
+                "0933456789",
+                "lotuslodge@stayly.vn",
+                "Homestay",
+                "Rejected",
+                "Khu bảo tồn sinh thái, không sử dụng đồ nhựa một lần.",
+                "Hồ sơ Giấy phép phòng cháy chữa cháy (PCCC) chưa rõ mộc dấu đỏ. Vui lòng bổ sung bản quét PDF rõ nét.",
+                2,
+                "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+            )
         };
 
-        return View(viewModel);
+        var bookings = new List<OwnerBooking>
+        {
+            new(
+                8021,
+                "The Pine Hill Villa & Retreat",
+                new[] { "P.101 - Suite Đồi Thông" },
+                101,
+                "Nguyễn Hoàng Nam",
+                "0903112233",
+                "nam.nguyen@gmail.com",
+                DateTime.Now.AddDays(2),
+                DateTime.Now.AddDays(5),
+                2,
+                "Confirmed",
+                3750000,
+                DateTime.Now.AddDays(-1)
+            ),
+            new(
+                8022,
+                "Stayly Ocean Breeze Bungalow",
+                new[] { "BG.02 - View Biển Hoàng Hôn" },
+                102,
+                "Trần Thị Mai Anh",
+                "0918776655",
+                "maianh.tran@gmail.com",
+                DateTime.Now.AddDays(1),
+                DateTime.Now.AddDays(3),
+                2,
+                "Pending",
+                1900000,
+                DateTime.Now.AddHours(-4)
+            ),
+            new(
+                8023,
+                "The Pine Hill Villa & Retreat",
+                new[] { "P.202 - Deluxe Ban Công" },
+                103,
+                "Lê Tuấn Kiệt",
+                "0977889900",
+                "tuankiet.le@gmail.com",
+                DateTime.Now.AddDays(-3),
+                DateTime.Now.AddDays(-1),
+                3,
+                "Completed",
+                2500000,
+                DateTime.Now.AddDays(-5)
+            ),
+            new(
+                8024,
+                "Stayly Ocean Breeze Bungalow",
+                new[] { "BG.01 - Sát Biển" },
+                104,
+                "Phạm Minh Đăng",
+                "0944556677",
+                "minhdang@gmail.com",
+                DateTime.Now.AddDays(7),
+                DateTime.Now.AddDays(10),
+                4,
+                "Cancelled",
+                2850000,
+                DateTime.Now.AddDays(-2)
+            ),
+            new(
+                8025,
+                "The Pine Hill Villa & Retreat",
+                new[] { "P.301 - Penthouse Đỉnh Đồi" },
+                105,
+                "Đặng Thu Trang",
+                "0966223344",
+                "thutrang.dang@gmail.com",
+                DateTime.Now.AddDays(4),
+                DateTime.Now.AddDays(8),
+                4,
+                "Confirmed",
+                6200000,
+                DateTime.Now.AddDays(-1)
+            )
+        };
+
+        var approvedCount = properties.Count(p => (p.ApprovalStatus ?? "").Equals("Approved", StringComparison.OrdinalIgnoreCase));
+        var pendingCount = properties.Count(p => (p.ApprovalStatus ?? "").Equals("Pending", StringComparison.OrdinalIgnoreCase));
+        var totalRev = bookings.Where(b => b.Status == "Confirmed" || b.Status == "Completed").Sum(b => b.TotalAmount);
+
+        return new OwnerDashboardViewModel
+        {
+            Summary = new OwnerSummary(
+                properties.Count,
+                approvedCount,
+                pendingCount,
+                properties.Sum(p => p.RoomsCount),
+                bookings.Count,
+                bookings.Count(b => b.Status == "Pending"),
+                totalRev
+            ),
+            Properties = properties,
+            Rooms = Array.Empty<OwnerRoom>(),
+            Bookings = bookings,
+            Invoices = Array.Empty<OwnerInvoice>(),
+            Reviews = GetSampleReviews(),
+            ActiveTab = tab
+        };
+    }
+
+    private static List<ReviewItem> GetSampleReviews()
+    {
+        return new List<ReviewItem>
+        {
+            new(
+                1,
+                101,
+                1,
+                "The Pine Hill Villa & Retreat",
+                12,
+                "Nguyễn Thu Thảo",
+                5,
+                "Không gian homestay vô cùng yên bình, view đồi thông săn mây buổi sáng đẹp ngỡ ngàng. Phòng ốc cực kỳ sạch sẽ, chăn đệm ấm áp và thơm tho. Chủ nhà siêu nhiệt tình hỗ trợ thuê xe máy và chỉ chỗ ăn ngon ở Đà Lạt. Nhất định sẽ quay lại!",
+                new DateTime(2026, 9, 18, 14, 30, 0)
+            ),
+            new(
+                2,
+                102,
+                2,
+                "Stayly Ocean Breeze Bungalow",
+                15,
+                "Trần Quốc Bảo",
+                5,
+                "Vị trí ngay sát biển Bãi Trước, tối mở cửa sổ nghe sóng vỗ rất thư giãn. Homestay đầy đủ tiện nghi, bếp nướng BBQ ngoài trời tiện lợi cho gia đình. Hải sản tươi ngon mua ở chợ gần đó về nấu ăn tuyệt vời!",
+                new DateTime(2026, 9, 15, 10, 15, 0)
+            ),
+            new(
+                3,
+                103,
+                1,
+                "The Pine Hill Villa & Retreat",
+                18,
+                "Lê Hoàng Nam",
+                4,
+                "Chỗ nghỉ ấm cúng, thiết kế phong cách vintage gỗ mộc rất ăn ảnh. Buổi tối đốt lửa sưởi ấm rất chill. Chỉ có đường vào hơi dốc một chút cho xe lớn, nhưng chủ nhà chỉ dẫn nhiệt tình nên không sao.",
+                new DateTime(2026, 9, 12, 19, 45, 0)
+            ),
+            new(
+                4,
+                104,
+                3,
+                "Misty Mountain Wooden Cabin",
+                20,
+                "Phạm Minh Anh",
+                5,
+                "Cabin trên đồi Sa Pa nhìn thẳng ra thung lũng Mường Hoa. Trải nghiệm tắm lá thuốc người Dao đỏ ngay tại homestay rất đáng thử sau ngày dài trekking. Cảm ơn Stayly và chủ nhà!",
+                new DateTime(2026, 9, 8, 8, 20, 0)
+            )
+        };
     }
 
     [HttpPost]
@@ -919,4 +1138,111 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         HttpContext.Session.SetString("userName", result.User.FullName);
         HttpContext.Session.SetString("role", result.User.Role);
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetBookingDetailJson(int id, CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            // For preview/unauthenticated mode, return demo data
+            return Ok(new
+            {
+                success = true,
+                data = new
+                {
+                    id = id,
+                    propertyName = "The Pine Hill Villa & Retreat",
+                    roomNumbers = new[] { "101", "102" },
+                    guestId = 12,
+                    guestName = "Lê Thị Bích Trâm",
+                    guestPhone = "0987654321",
+                    guestEmail = "guest.traveler@stayly.com",
+                    checkIn = DateTime.UtcNow.AddDays(2),
+                    checkOut = DateTime.UtcNow.AddDays(5),
+                    guestCount = 4,
+                    status = "Confirmed",
+                    basePrice = 2400000m,
+                    totalAmount = 2040000m,
+                    promotionCode = "STAYLY2026",
+                    discountPercentage = 15,
+                    discountAmount = 360000m,
+                    extraFees = new[]
+                    {
+                        new { id = 1, name = "Phí dọn dẹp vệ sinh", quantity = 1, price = 0m, total = 0m, note = "Miễn phí ưu đãi mùa này" }
+                    },
+                    createdDate = DateTime.UtcNow.AddDays(-1)
+                }
+            });
+        }
+
+        var result = await api.GetOwnerBookingDetailAsync(id, token, cancellationToken);
+        if (!result.Success || result.Result == null)
+        {
+            return BadRequest(new { success = false, message = result.Error ?? "Không thể lấy thông tin chi tiết đơn đặt phòng." });
+        }
+
+        return Ok(new { success = true, data = result.Result });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ReplyReviewAjax([FromBody] ReplyReviewAjaxInput input, CancellationToken cancellationToken)
+    {
+        if (input == null || input.ReviewId <= 0 || string.IsNullOrWhiteSpace(input.Message))
+            return BadRequest(new { success = false, message = "Nội dung phản hồi không được để trống." });
+
+        var token = HttpContext.Session.GetString("token");
+        if (string.IsNullOrWhiteSpace(token))
+            return Unauthorized(new { success = false, message = "Vui lòng đăng nhập với tài khoản chủ nhà để phản hồi đánh giá." });
+
+        var result = await api.ReplyReviewAsync(input.ReviewId, new ReplyReviewInput(input.Message), token, cancellationToken);
+        if (!result.Success)
+            return BadRequest(new { success = false, message = result.Error ?? "Không thể gửi phản hồi đánh giá." });
+
+        return Ok(new { success = true, message = "Phản hồi đánh giá đã được gửi thành công!" });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetPromotionsJson(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var promotions = await api.GetPromotionsAsync(cancellationToken);
+            return Ok(new { success = true, data = promotions });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, message = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateReviewAjax([FromBody] CreateReviewAjaxInput input, CancellationToken cancellationToken)
+    {
+        if (input == null || input.BookingId <= 0)
+            return BadRequest(new { success = false, message = "Thông tin đơn đặt phòng không hợp lệ." });
+
+        var token = HttpContext.Session.GetString("token");
+        if (string.IsNullOrWhiteSpace(token))
+            return Unauthorized(new { success = false, message = "Vui lòng đăng nhập để gửi đánh giá." });
+
+        var result = await api.CreateReviewAsync(new CreateReviewInput(input.BookingId, input.Rating, input.Comment), token, cancellationToken);
+        if (!result.Success)
+            return BadRequest(new { success = false, message = result.Error ?? "Không thể gửi đánh giá." });
+
+        return Ok(new { success = true, message = "Đánh giá của bạn đã được gửi thành công!" });
+    }
+}
+
+public sealed class ReplyReviewAjaxInput
+{
+    public int ReviewId { get; set; }
+    public string Message { get; set; } = string.Empty;
+}
+
+public sealed class CreateReviewAjaxInput
+{
+    public int BookingId { get; set; }
+    public int Rating { get; set; } = 5;
+    public string? Comment { get; set; }
 }

@@ -229,6 +229,7 @@ public sealed class OwnerDashboardViewModel
     public IReadOnlyList<OwnerRoom> Rooms { get; set; } = [];
     public IReadOnlyList<OwnerBooking> Bookings { get; set; } = [];
     public IReadOnlyList<OwnerInvoice> Invoices { get; set; } = [];
+    public IReadOnlyList<ReviewItem> Reviews { get; set; } = [];
     public IReadOnlyList<AmenityItem> AvailableAmenities { get; set; } = [];
     public IReadOnlyList<RoomTypeItem> AvailableRoomTypes { get; set; } = [];
     public string ActiveTab { get; set; } = "properties";
@@ -403,4 +404,66 @@ public sealed class SendOtpRequestModel
     public string? FullName { get; set; }
     public string Purpose { get; set; } = "Register";
 }
+
+public sealed record ReviewItem(
+    int Id,
+    int BookingId,
+    int PropertyId,
+    string PropertyName,
+    int GuestId,
+    string GuestName,
+    int Rating,
+    string? Comment,
+    DateTime ReviewDate
+);
+
+public sealed record CreateReviewInput(
+    int BookingId,
+    int Rating,
+    string? Comment
+);
+
+public sealed record ReplyReviewInput(
+    string ReplyMessage
+);
+
+public sealed record PromotionItem(
+    int Id,
+    string Code,
+    int Percentage,
+    decimal? MaxAmount,
+    DateTime? StartDate,
+    DateTime? EndDate
+);
+
+public sealed record BookingDetailResponse(
+    int Id,
+    string PropertyName,
+    IReadOnlyList<string> RoomNumbers,
+    int GuestId,
+    string GuestName,
+    string GuestPhone,
+    string GuestEmail,
+    DateTime CheckIn,
+    DateTime CheckOut,
+    int GuestCount,
+    string Status,
+    decimal BasePrice,
+    decimal TotalAmount,
+    string? PromotionCode,
+    int? DiscountPercentage,
+    decimal? DiscountAmount,
+    IReadOnlyList<ExtraFeeItem> ExtraFees,
+    DateTime CreatedDate
+);
+
+public sealed record ExtraFeeItem(
+    int Id,
+    string Name,
+    int Quantity,
+    decimal Price,
+    decimal Total,
+    string? Note
+);
+
 

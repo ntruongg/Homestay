@@ -3,6 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using API.Data;
 using API.DTOs.Email;
 using API.DTOs.Properties;
+using API.DTOs.Reviews;
 using API.Models;
 using API.Services;
 using API.Services.Cloudinary;
@@ -82,6 +83,26 @@ public sealed class PropertiesController(
             .ToListAsync(cancellationToken);
 
         return Ok(roomTypes);
+    }
+
+    [HttpGet("promotions")]
+    public async Task<ActionResult<IReadOnlyList<PromotionDto>>> GetPromotions(CancellationToken cancellationToken)
+    {
+        var now = DateTime.UtcNow;
+        var promotions = await db.GiamGias.AsNoTracking()
+            .Where(g => g.NgayHetHan == null || g.NgayHetHan >= now.Date)
+            .OrderByDescending(g => g.PhanTram)
+            .Select(g => new PromotionDto(
+                g.MaGiamGia,
+                g.TenMa,
+                g.PhanTram,
+                g.ToiDa,
+                g.NgayBatDau,
+                g.NgayHetHan
+            ))
+            .ToListAsync(cancellationToken);
+
+        return Ok(promotions);
     }
 
     [Authorize(Roles = "OWNER")]

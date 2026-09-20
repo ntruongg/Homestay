@@ -38,14 +38,13 @@
                         </a>
                     </li>
                     <li>
-                        <a href="javascript:void(0)" class="nav-link-item" onclick="showFeatureNotice('Khuyến mãi & Ưu đãi')">
+                        <a href="javascript:void(0)" class="nav-link-item" onclick="openPromotionsModal()">
                             Khuyến mãi &amp; Ưu đãi
                         </a>
                     </li>
                     <li>
                         <a asp-controller="Home" asp-action="Register" asp-route-partner="true" class="nav-link-item partner-link">
                             <span>Dành cho đối tác</span>
-                            <span class="partner-badge">Chủ nhà</span>
                         </a>
                     </li>
                 </ul>
@@ -326,11 +325,119 @@
         </div>
     </div>
 
+    <!-- Modal Khuyến mãi & Ưu đãi đặc biệt (Promotions Modal) -->
+    <div class="modal fade" id="promotionsModal" tabindex="-1" aria-labelledby="promotionsModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 580px;">
+            <div class="modal-content stayly-modal">
+                <div class="modal-header-accent"></div>
+                <div class="modal-body stayly-modal-body p-4 position-relative">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                    <div class="modal-brand-header text-start mb-4">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="brand-icon"><i class="bi bi-tag-fill"></i></span>
+                            <h4 id="promotionsModalTitle" class="mb-0">Khuyến mãi &amp; Ưu đãi Stayly</h4>
+                        </div>
+                        <p class="text-muted small mb-0">Nhận ngay mã giảm giá độc quyền cho kỳ nghỉ dưỡng của bạn!</p>
+                    </div>
+
+                    <div id="promotionsLoadingState" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="text-muted small mt-2">Đang kiểm tra các ưu đãi mới nhất...</p>
+                    </div>
+
+                    <div id="promotionsListContainer" class="d-none">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-4 pt-2 border-top">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                            Đóng
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap 5.3 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
     <!-- Global Client-side Authentication & Feature Notice Scripts -->
     <script>
+        // Promotions Modal Opener with live API call
+        async function openPromotionsModal() {
+            const modalEl = document.getElementById('promotionsModal');
+            if (!modalEl) return;
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+
+            const loadingEl = document.getElementById('promotionsLoadingState');
+            const listEl = document.getElementById('promotionsListContainer');
+            loadingEl.classList.remove('d-none');
+            listEl.classList.add('d-none');
+
+            try {
+                const res = await fetch('/Home/GetPromotionsJson');
+                const result = await res.json();
+                if (res.ok && result.success && result.data && result.data.length > 0) {
+                    let html = '';
+                    result.data.forEach(p => {
+                        const maxTxt = p.maxAmount ? ` (Tối đa ${Number(p.maxAmount).toLocaleString('vi-VN')} ₫)` : '';
+                        const dateTxt = p.endDate ? `HSD: ${new Date(p.endDate).toLocaleDateString('vi-VN')}` : 'Không giới hạn thời gian';
+                        html += `
+                            <div class="promo-voucher-card">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="promo-discount-badge">
+                                            <i class="bi bi-percent"></i> GIẢM ${p.percentage}%
+                                        </span>
+                                        <span class="text-muted small">${maxTxt}</span>
+                                    </div>
+                                    <div class="fw-bold text-navy small mb-1">Áp dụng cho mọi homestay toàn quốc</div>
+                                    <div class="text-muted small"><i class="bi bi-clock me-1"></i>${dateTxt}</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="promo-code-box mb-2">${p.code}</div>
+                                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" onclick="copyPromoCode('${p.code}', this)">
+                                        <i class="bi bi-clipboard me-1"></i> Sao chép
+                                    </button>
+                                </div>
+                            </div>`;
+                    });
+                    listEl.innerHTML = html;
+                } else {
+                    listEl.innerHTML = `
+                        <div class="text-center py-4 text-muted small">
+                            <i class="bi bi-emoji-smile fs-3 d-block mb-2"></i>
+                            Hiện tại chưa có ưu đãi mới. Hãy quay lại sau nhé!
+                        </div>`;
+                }
+            } catch (err) {
+                listEl.innerHTML = `
+                    <div class="alert alert-warning small rounded-pill text-center">
+                        Không thể tải danh sách ưu đãi. Vui lòng thử lại sau.
+                    </div>`;
+            } finally {
+                loadingEl.classList.add('d-none');
+                listEl.classList.remove('d-none');
+            }
+        }
+
+        function copyPromoCode(code, btn) {
+            navigator.clipboard.writeText(code).then(() => {
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Đã chép!';
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-success');
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-primary');
+                }, 1500);
+            });
+        }
+
         // Feature notice popup function
         function showFeatureNotice(featureName) {
             const titleEl = document.getElementById('featureNoticeTitle');

@@ -589,6 +589,120 @@ public sealed class HomestayApiClient(HttpClient http)
             cancellationToken) ?? [];
     }
 
+    public async Task<IReadOnlyList<ReviewItem>> GetOwnerReviewsAsync(
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = CreateAuthorizedRequest(HttpMethod.Get, "reviews/owner", token);
+            using var response = await http.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode) return [];
+            return await response.Content.ReadFromJsonAsync<List<ReviewItem>>(cancellationToken: cancellationToken) ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public async Task<IReadOnlyList<ReviewItem>> GetPropertyReviewsAsync(
+        int propertyId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<List<ReviewItem>>($"reviews/property/{propertyId}", cancellationToken) ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public async Task<(bool Success, string? Error)> CreateReviewAsync(
+        CreateReviewInput input,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = CreateAuthorizedRequest(HttpMethod.Post, "reviews", token);
+            request.Content = JsonContent.Create(input);
+            using var response = await http.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                return (false, string.IsNullOrWhiteSpace(err) ? "Không thể gửi đánh giá." : err);
+            }
+            return (true, null);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
+    }
+
+    public async Task<(bool Success, string? Error)> ReplyReviewAsync(
+        int reviewId,
+        ReplyReviewInput input,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = CreateAuthorizedRequest(HttpMethod.Post, $"reviews/{reviewId}/reply", token);
+            request.Content = JsonContent.Create(input);
+            using var response = await http.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                return (false, string.IsNullOrWhiteSpace(err) ? "Không thể phản hồi đánh giá." : err);
+            }
+            return (true, null);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
+    }
+
+    public async Task<(bool Success, BookingDetailResponse? Result, string? Error)> GetOwnerBookingDetailAsync(
+        int bookingId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = CreateAuthorizedRequest(HttpMethod.Get, $"owner/bookings/{bookingId}", token);
+            using var response = await http.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                return (false, null, string.IsNullOrWhiteSpace(err) ? "Không thể tải chi tiết đơn." : err);
+            }
+            var data = await response.Content.ReadFromJsonAsync<BookingDetailResponse>(cancellationToken: cancellationToken);
+            return (true, data, null);
+        }
+        catch (Exception ex)
+        {
+            return (false, null, ex.Message);
+        }
+    }
+
+    public async Task<IReadOnlyList<PromotionItem>> GetPromotionsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<List<PromotionItem>>("properties/promotions", cancellationToken) ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
     private static HttpRequestMessage CreateAuthorizedRequest(
         HttpMethod method,
         string path,

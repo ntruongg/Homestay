@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.Data;
 using API.DTOs.Owner;
+using API.DTOs.Reviews;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -171,6 +172,75 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
         await db.SaveChangesAsync(cancellationToken);
 
         return NoContent();
+    }
+
+    [HttpGet("bookings/{id:int}")]
+    public async Task<ActionResult<BookingDetailDto>> GetBookingDetail(int id, CancellationToken cancellationToken)
+    {
+        var ownerId = GetAccountId();
+
+        var booking = await db.DonDatPhongs.AsNoTracking()
+            .Where(b => b.MaDonDatPhong == id)
+            .Include(b => b.KhachHang)
+            .Include(b => b.GiamGia)
+            .Include(b => b.PhuThus)
+            .Include(b => b.ThanhToan)
+            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(r => r.CoSoLuuTru)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (booking is null)
+            return NotFound("Không tìm thấy thông tin đơn đặt phòng.");
+
+        var isOwner = booking.ChiTietDons.Any(d => d.Phong?.CoSoLuuTru?.MaChuCoSoLuuTru == ownerId);
+        if (!isOwner)
+            return Forbid();
+
+        var propName = booking.ChiTietDons.FirstOrDefault()?.Phong?.CoSoLuuTru?.TenCoSoLuuTru ?? "Homestay";
+        var roomNos = booking.ChiTietDons.Select(d => d.Phong?.SoPhong ?? d.MaPhong.ToString()).ToList();
+        var nights = Math.Max(1, (booking.NgayDi.Date - booking.NgayDen.Date).Days);
+        var basePrice = booking.ChiTietDons.Sum(d => d.Phong?.GiaGoc ?? 0) * nights;
+
+        var extraFees = booking.PhuThus.Select(p => new ExtraFeeItemDto(
+            p.MaPhuThu,
+            p.TenPhuThu,
+            p.SoLuong,
+            p.DonGia,
+            p.ThanhTien,
+            p.GhiChu
+        )).ToList();
+
+        string? promoCode = booking.GiamGia?.TenMa;
+        int? discountPct = booking.GiamGia?.PhanTram;
+        decimal? discountAmount = null;
+
+        if (booking.GiamGia is not null)
+        {
+            var rawDiscount = (basePrice * booking.GiamGia.PhanTram) / 100m;
+            discountAmount = booking.GiamGia.ToiDa.HasValue ? Math.Min(rawDiscount, booking.GiamGia.ToiDa.Value) : rawDiscount;
+        }
+
+        var totalAmount = booking.ThanhToan?.TongTien ?? Math.Max(0, (basePrice - (discountAmount ?? 0) + extraFees.Sum(e => e.Total)));
+
+        return Ok(new BookingDetailDto(
+            booking.MaDonDatPhong,
+            propName,
+            roomNos,
+            booking.KhachHang?.MaTaiKhoan ?? 0,
+            booking.KhachHang?.HoTen ?? "Khách vãng lai",
+            booking.KhachHang?.DienThoai ?? "",
+            booking.KhachHang?.Email ?? "",
+            booking.NgayDen,
+            booking.NgayDi,
+            booking.SoNguoi,
+            booking.TrangThai ?? "Pending",
+            basePrice,
+            totalAmount,
+            promoCode,
+            discountPct,
+            discountAmount,
+            extraFees,
+            booking.NgayDat
+        ));
     }
 
     private int GetAccountId()

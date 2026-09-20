@@ -44,6 +44,21 @@
                         <span class="nav-icon">📊</span> Kênh Chủ Nhà (Host Portal)
                     </a>
                 }
+<<<<<<< HEAD
+=======
+                <a asp-controller="Home" asp-action="Trips">My trips</a>
+            </div>
+            <div class="nav-user">
+                @if (Context.Session.GetString("userName") is string name)
+                {
+                    <a asp-controller="Home" asp-action="Profile">My profile</a>
+
+                    <form asp-controller="Home" asp-action="Logout" method="post">
+                        <button class="button outline">Log out</button>
+                        @Html.AntiForgeryToken()
+                    </form>
+                }
+>>>>>>> main
                 else
                 {
                     <a class="nav-item host-portal-link" asp-controller="Home" asp-action="Register" asp-route-partner="true">

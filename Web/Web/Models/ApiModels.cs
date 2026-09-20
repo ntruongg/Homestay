@@ -278,6 +278,23 @@ public sealed class CreatePropertyInput
     // Property showcase photos
     public List<IFormFile>? PhotoFiles { get; set; }
     public List<string> PhotoUrls { get; set; } = [];
+
+    // Homestay Whole-unit Configuration
+    public decimal? HomestayPrice { get; set; }
+    public int? HomestayCapacity { get; set; }
+    public int? HomestayRoomTypeId { get; set; }
+
+    // Hotel Multi-room Configuration
+    public int? InitialRoomCount { get; set; }
+    public List<InitialRoomInput> InitialRooms { get; set; } = [];
+}
+
+public sealed class InitialRoomInput
+{
+    public string RoomNumber { get; set; } = string.Empty;
+    public int RoomTypeId { get; set; }
+    public int Capacity { get; set; } = 2;
+    public decimal Price { get; set; }
 }
 
 public sealed class UpdatePropertyInput
@@ -314,7 +331,45 @@ public sealed class UpdatePropertyInput
     public IFormFile? SecurityFile { get; set; }
 
     public List<int> AmenityIds { get; set; } = [];
+
+    // Homestay whole-unit setup (for updating price/capacity on resubmit)
+    public decimal? HomestayPrice { get; set; }
+    public int? HomestayCapacity { get; set; }
+    public int? HomestayRoomTypeId { get; set; }
+    public bool Resubmit { get; set; } = false;
 }
+
+public sealed record OwnerPropertyDetailsResponse(
+    int Id,
+    string Name,
+    string? Phone,
+    string? Email,
+    string? Address,
+    string? Ward,
+    string? City,
+    string? Type,
+    string? Policy,
+    bool IsActive,
+    string ApprovalStatus,
+    string? RejectionReason,
+    string? BusinessLicenseUrl,
+    string? FireSafetyDocumentUrl,
+    string? SecurityDocumentUrl,
+    IReadOnlyList<string> Photos,
+    IReadOnlyList<AmenityItem> Amenities,
+    IReadOnlyList<RoomDetailItem> Rooms,
+    IReadOnlyList<ApprovalHistoryItem> ApprovalHistory
+);
+
+public sealed record RoomDetailItem(
+    int Id,
+    string RoomNumber,
+    int Capacity,
+    decimal OriginalPrice,
+    string? RoomStatus,
+    string? RoomType,
+    IReadOnlyList<string> Images
+);
 
 public sealed class CreateRoomInput
 {

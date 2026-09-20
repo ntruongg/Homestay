@@ -21,7 +21,7 @@ public sealed class CreatePropertyRequest
     public string? Ward { get; set; }
     [StringLength(200)]
     public string? City { get; set; }
-    [RegularExpression("^(Homestay|Hotel|Villa|Resort)$", ErrorMessage = "Loại hình phải là Homestay, Hotel, Villa hoặc Resort.")]
+    [RegularExpression("^(Homestay|Hotel)$", ErrorMessage = "Loại hình lưu trú chỉ bao gồm Homestay hoặc Hotel.")]
     public string Type { get; set; } = "Homestay";
     [StringLength(500)]
     public string? Policy { get; set; }
@@ -34,6 +34,25 @@ public sealed class CreatePropertyRequest
 
     public List<int>? AmenityIds { get; set; }
     public List<string>? PhotoUrls { get; set; }
+
+    // Homestay whole-unit setup
+    public decimal? HomestayPrice { get; set; }
+    public int? HomestayCapacity { get; set; }
+    public int? HomestayRoomTypeId { get; set; }
+
+    // Hotel initial rooms batch setup
+    public List<InitialRoomItemDto>? InitialRooms { get; set; }
+}
+
+public sealed class InitialRoomItemDto
+{
+    [Required, StringLength(50)]
+    public string RoomNumber { get; set; } = string.Empty;
+    public int RoomTypeId { get; set; }
+    [Range(1, 100)]
+    public int Capacity { get; set; } = 2;
+    [Range(0, 1000000000)]
+    public decimal Price { get; set; }
 }
 
 public sealed class UpdatePropertyRequest
@@ -55,7 +74,7 @@ public sealed class UpdatePropertyRequest
     public string? Ward { get; set; }
     [StringLength(200)]
     public string? City { get; set; }
-    [RegularExpression("^(Homestay|Hotel|Villa|Resort)$", ErrorMessage = "Loại hình phải là Homestay, Hotel, Villa hoặc Resort.")]
+    [RegularExpression("^(Homestay|Hotel)$", ErrorMessage = "Loại hình lưu trú chỉ bao gồm Homestay hoặc Hotel.")]
     public string Type { get; set; } = "Homestay";
     [StringLength(500)]
     public string? Policy { get; set; }
@@ -67,6 +86,12 @@ public sealed class UpdatePropertyRequest
     public string? SecurityDocumentUrl { get; set; }
 
     public List<int>? AmenityIds { get; set; }
+
+    // Homestay whole-unit setup (for updating price/capacity on resubmit)
+    public decimal? HomestayPrice { get; set; }
+    public int? HomestayCapacity { get; set; }
+    public int? HomestayRoomTypeId { get; set; }
+    public bool Resubmit { get; set; } = false;
 }
 
 public sealed class CreateRoomRequest

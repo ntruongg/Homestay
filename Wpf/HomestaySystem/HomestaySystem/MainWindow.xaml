@@ -196,6 +196,34 @@
                                 </ControlTemplate>
                             </RadioButton.Template>
                         </RadioButton>
+
+                        <!-- Nhãn nhóm 4: HỆ THỐNG & AN TOÀN DỮ LIỆU -->
+                        <TextBlock Text="HỆ THỐNG &amp; AN TOÀN DỮ LIỆU" Foreground="#64748B" FontSize="10" FontWeight="Bold" Margin="12,18,0,8"/>
+
+                        <!-- Menu 6: Bảo trì & Sao lưu CSDL -->
+                        <RadioButton GroupName="SidebarMenu" Command="{Binding ChuyenManHinhBaoTriCommand}">
+                            <RadioButton.Template>
+                                <ControlTemplate TargetType="RadioButton">
+                                    <Border x:Name="btnBorder" Background="Transparent" CornerRadius="8" Padding="14,11" Margin="0,3" Cursor="Hand">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="💾" FontSize="16" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                            <TextBlock Text="Bảo trì &amp; Sao lưu CSDL" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#94A3B8"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="btnBorder" Property="Background" Value="#142E5C"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="White"/>
+                                        </Trigger>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="btnBorder" Property="Background" Value="#0194F3"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="White"/>
+                                            <Setter TargetName="txtTitle" Property="FontWeight" Value="Bold"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </RadioButton.Template>
+                        </RadioButton>
                     </StackPanel>
                 </ScrollViewer>
 

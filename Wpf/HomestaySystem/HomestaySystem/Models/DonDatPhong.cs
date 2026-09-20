@@ -21,6 +21,12 @@ namespace HomestaySystem.Models
         public string TenPhong { get; set; } = string.Empty;
         public int MaCoSo { get; set; }
         public string TenCoSo { get; set; } = string.Empty;
+        public string LoaiHinh { get; set; } = "Homestay";
+        public string HomestayVaPhong => string.IsNullOrWhiteSpace(TenPhong) || TenPhong == "N/A" ? TenCoSo : $"{TenCoSo} ({TenPhong})";
+        public DateTime NgayGiaoDich => ThoiGianTao;
+        public decimal TienGoc => TongTien;
+        public decimal PhiSan => HoaHongSan;
+        public decimal ThucNhanHost => TienChuHomeNhan;
 
         // Thông tin chủ nhà & tài khoản nhận tiền quyết toán
         public int MaChuHome { get; set; }

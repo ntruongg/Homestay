@@ -22,6 +22,8 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
     public DbSet<LichSuDuyet> LichSuDuyets => Set<LichSuDuyet>();
     public DbSet<VaiTro> VaiTros => Set<VaiTro>();
     public DbSet<PhuThu> PhuThus => Set<PhuThu>();
+    public DbSet<HoanTien> HoanTiens => Set<HoanTien>();
+    public DbSet<NhatKyHeThong> NhatKyHeThongs => Set<NhatKyHeThong>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -61,14 +63,16 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
             entity.Property(x => x.ToiDa).HasColumnType("decimal(12,2)");
             entity.Property(x => x.NgayBatDau).HasColumnType("date");
             entity.Property(x => x.NgayHetHan).HasColumnType("date");
+            entity.Ignore(x => x.GiamToiDa);
         });
 
         modelBuilder.Entity<DonDatPhong>(entity =>
         {
             entity.ToTable("DonDatPhong");
-            entity.Property(x => x.NgayDat).HasColumnType("date");
+            entity.Property(x => x.NgayDat).HasColumnType("datetime");
             entity.Property(x => x.NgayDen).HasColumnType("date");
             entity.Property(x => x.NgayDi).HasColumnType("date");
+            entity.Property(x => x.TongTien).HasColumnType("decimal(12,2)");
             entity.HasOne(x => x.KhachHang).WithMany()
                 .HasForeignKey(x => x.MaKhachHang).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.GiamGia).WithMany(x => x.DonDatPhongs)
@@ -79,6 +83,7 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
         {
             entity.ToTable("ChiTietDon");
             entity.HasKey(x => new { x.MaDonDatPhong, x.MaPhong });
+            entity.Property(x => x.DonGia).HasColumnType("decimal(12,2)");
             entity.HasOne(x => x.DonDatPhong)
                 .WithMany(x => x.ChiTietDons)
                 .HasForeignKey(x => x.MaDonDatPhong)
@@ -92,10 +97,36 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
         modelBuilder.Entity<ThanhToan>(entity =>
         {
             entity.ToTable("ThanhToan");
-            entity.HasOne(x => x.DonDatPhong).WithOne(x => x.ThanhToan)
-                .HasForeignKey<ThanhToan>(x => x.MaHoaDon).OnDelete(DeleteBehavior.Restrict);
-            entity.Property(x => x.TongTien).HasColumnType("decimal(12,2)");
+            entity.HasKey(x => x.MaHoaDon);
             entity.Property(x => x.TienGoc).HasColumnType("decimal(12,2)");
+            entity.Property(x => x.PhiDichVu).HasColumnType("decimal(12,2)");
+            entity.Property(x => x.TongTien).HasColumnType("decimal(12,2)");
+            entity.Property(x => x.PTTT).HasMaxLength(50);
+            entity.Property(x => x.TrangThai).HasMaxLength(30);
+            entity.HasOne(x => x.DonDatPhong).WithOne(x => x.ThanhToan)
+                .HasForeignKey<ThanhToan>(x => x.MaDonDatPhong).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<HoanTien>(entity =>
+        {
+            entity.ToTable("HoanTien");
+            entity.HasKey(x => x.MaHoanTien);
+            entity.Property(x => x.SoTienHoan).HasColumnType("decimal(12,2)");
+            entity.Property(x => x.LyDoHoan).HasMaxLength(255);
+            entity.Property(x => x.NguoiDuyet).HasMaxLength(100);
+            entity.Property(x => x.TrangThai).HasMaxLength(30);
+            entity.HasOne(x => x.DonDatPhong).WithMany(x => x.HoanTiens)
+                .HasForeignKey(x => x.MaDonDatPhong).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<NhatKyHeThong>(entity =>
+        {
+            entity.ToTable("NhatKyHeThong");
+            entity.HasKey(x => x.MaNhatKy);
+            entity.Property(x => x.HanhDong).HasMaxLength(100);
+            entity.Property(x => x.NguoiThucHien).HasMaxLength(100);
+            entity.Property(x => x.DoiTuongAnhHuong).HasMaxLength(100);
+            entity.Property(x => x.LyDo).HasMaxLength(255);
         });
 
         modelBuilder.Entity<LichLuuTru>(entity =>

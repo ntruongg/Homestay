@@ -9,12 +9,28 @@ public sealed class HomestayApiClient(HttpClient http)
 {
     public async Task<IReadOnlyList<PropertySummary>> GetPropertiesAsync(
         string? location = null,
+        string? loaiHinh = null,
+        DateTime? checkIn = null,
+        DateTime? checkOut = null,
+        int? guestCount = null,
         CancellationToken cancellationToken = default)
     {
         var path = $"properties?pageSize=50";
 
         if (!string.IsNullOrWhiteSpace(location))
             path += $"&location={Uri.EscapeDataString(location)}";
+
+        if (!string.IsNullOrWhiteSpace(loaiHinh) && !loaiHinh.Equals("ALL", StringComparison.OrdinalIgnoreCase))
+            path += $"&loaiHinh={Uri.EscapeDataString(loaiHinh)}";
+
+        if (checkIn.HasValue)
+            path += $"&checkIn={checkIn.Value:yyyy-MM-dd}";
+
+        if (checkOut.HasValue)
+            path += $"&checkOut={checkOut.Value:yyyy-MM-dd}";
+
+        if (guestCount.HasValue && guestCount.Value > 0)
+            path += $"&guestCount={guestCount.Value}";
 
         return await http.GetFromJsonAsync<List<PropertySummary>>(
             path,
@@ -137,8 +153,23 @@ public sealed class HomestayApiClient(HttpClient http)
         string token,
         CancellationToken cancellationToken = default)
     {
+        if ((input.RoomIds == null || input.RoomIds.Count == 0) && input.RoomId.HasValue)
+        {
+            input.RoomIds = new List<int> { input.RoomId.Value };
+        }
+
+        var payload = new
+        {
+            RoomIds = input.RoomIds,
+            CheckIn = input.CheckIn,
+            CheckOut = input.CheckOut,
+            GuestCount = input.GuestCount > 0 ? input.GuestCount : 1,
+            Adults = Math.Max(1, input.GuestCount),
+            Children = 0
+        };
+
         using var request = CreateAuthorizedRequest(HttpMethod.Post, "bookings", token);
-        request.Content = JsonContent.Create(input);
+        request.Content = JsonContent.Create(payload);
 
         using var response = await http.SendAsync(request, cancellationToken);
 

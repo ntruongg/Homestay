@@ -1,0 +1,12 @@
+{
+  "HomestayApi": {
+    "BaseUrl": "http://localhost:5176/api/"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}

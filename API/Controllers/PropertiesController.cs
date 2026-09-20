@@ -22,44 +22,217 @@ public sealed class PropertiesController(
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<PropertySummaryResponse>>> GetProperties(
-        [FromQuery] string? location, [FromQuery] int page = 1, [FromQuery] int pageSize = 20,
+        [FromQuery] string? location,
+        [FromQuery] DateTime? checkIn,
+        [FromQuery] DateTime? checkOut,
+        [FromQuery] string? loaiHinh,
+        [FromQuery] decimal? minPrice,
+        [FromQuery] decimal? maxPrice,
+        [FromQuery] int? guestCount,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
         var query = db.CoSoLuuTrus.AsNoTracking()
+            .Include(p => p.Phongs)
             .Where(p => p.TrangThai);
 
         if (!string.IsNullOrWhiteSpace(location))
-            query = query.Where(p => (p.DiaChi ?? "").Contains(location) || (p.ThanhPho ?? "").Contains(location));
+        {
+            var loc = location.Trim();
+            query = query.Where(p => (p.DiaChi ?? "").Contains(loc) || (p.ThanhPho ?? "").Contains(loc) || (p.TenCoSoLuuTru ?? "").Contains(loc));
+        }
 
-        var properties = await query.OrderBy(p => p.TenCoSoLuuTru)
-            .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(p => new PropertySummaryResponse(
-                p.MaCoSoLuuTru, p.TenCoSoLuuTru, p.DiaChi, p.LoaiHinh,
-                p.Phongs.Any() ? p.Phongs.Min(r => r.GiaGoc) : 0,
-                db.HinhAnhs.Where(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru)
-                    .Select(i => i.UrlHinhAnh).FirstOrDefault()))
+        if (!string.IsNullOrWhiteSpace(loaiHinh) && !loaiHinh.Equals("ALL", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(p => p.LoaiHinh.ToUpper() == loaiHinh.Trim().ToUpper());
+        }
+
+        // Lấy danh sách ID phòng bận nếu có khoảng ngày tìm kiếm (Anti-overlap logic)
+        List<int> busyRoomIds = [];
+        if (checkIn.HasValue && checkOut.HasValue && checkOut.Value > checkIn.Value)
+        {
+            var cIn = checkIn.Value;
+            var cOut = checkOut.Value;
+
+            var bookedRoomIds = await db.ChiTietDons.AsNoTracking()
+                .Where(d => (d.DonDatPhong.TrangThai == "Pending" || d.DonDatPhong.TrangThai == "Confirmed") &&
+                            d.DonDatPhong.NgayDen < cOut && d.DonDatPhong.NgayDi > cIn)
+                .Select(d => d.MaPhong)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            var calendarBusyRoomIds = await db.LichLuuTrus.AsNoTracking()
+                .Where(l => l.Ngay >= cIn.Date && l.Ngay < cOut.Date && l.TrangThai != "Trống")
+                .Select(l => l.MaPhong)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            busyRoomIds = bookedRoomIds.Union(calendarBusyRoomIds).Distinct().ToList();
+        }
+
+        var allProperties = await query.ToListAsync(cancellationToken);
+
+        // Áp dụng bộ lọc phân biệt HOMESTAY vs HOTEL và giá/sức chứa
+        var filteredProperties = allProperties.Where(p =>
+        {
+            var isHomestay = p.LoaiHinh.Equals("HOMESTAY", StringComparison.OrdinalIgnoreCase) ||
+                             p.LoaiHinh.Equals("Homestay", StringComparison.OrdinalIgnoreCase);
+
+            var availableRooms = p.Phongs.Where(r => !busyRoomIds.Contains(r.MaPhong)).ToList();
+
+            if (busyRoomIds.Count > 0)
+            {
+                if (isHomestay)
+                {
+                    // Nếu là HOMESTAY: Chỉ kiểm tra căn phòng đại diện; nếu phòng đó bận lịch, loại bỏ toàn bộ Homestay khỏi kết quả
+                    var repRoom = p.Phongs.FirstOrDefault();
+                    if (repRoom == null || busyRoomIds.Contains(repRoom.MaPhong))
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    // Nếu là HOTEL: Phải có ít nhất 1 phòng còn trống trong khách sạn
+                    if (!availableRooms.Any())
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            // Lọc theo sức chứa
+            if (guestCount.HasValue && guestCount.Value > 0)
+            {
+                var roomsToCheck = busyRoomIds.Count > 0 ? availableRooms : p.Phongs;
+                if (!roomsToCheck.Any(r => r.SucChua >= guestCount.Value))
+                {
+                    return false;
+                }
+            }
+
+            // Lọc theo khoảng giá
+            if (minPrice.HasValue && minPrice.Value > 0)
+            {
+                var roomsToCheck = busyRoomIds.Count > 0 ? availableRooms : p.Phongs;
+                if (!roomsToCheck.Any(r => r.GiaGoc >= minPrice.Value))
+                {
+                    return false;
+                }
+            }
+
+            if (maxPrice.HasValue && maxPrice.Value > 0)
+            {
+                var roomsToCheck = busyRoomIds.Count > 0 ? availableRooms : p.Phongs;
+                if (!roomsToCheck.Any(r => r.GiaGoc <= maxPrice.Value))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }).ToList();
+
+        var pagedProperties = filteredProperties
+            .OrderBy(p => p.TenCoSoLuuTru)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        var propertyIds = pagedProperties.Select(p => p.MaCoSoLuuTru).ToList();
+        var images = await db.HinhAnhs.AsNoTracking()
+            .Where(i => i.MaCoSoLuuTru.HasValue && propertyIds.Contains(i.MaCoSoLuuTru.Value))
             .ToListAsync(cancellationToken);
 
-        return Ok(properties);
+        var result = pagedProperties.Select(p =>
+        {
+            var coverUrl = images.FirstOrDefault(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru)?.UrlHinhAnh;
+            var roomsToCheck = busyRoomIds.Count > 0 ? p.Phongs.Where(r => !busyRoomIds.Contains(r.MaPhong)).ToList() : p.Phongs;
+            var minP = roomsToCheck.Any() ? roomsToCheck.Min(r => r.GiaGoc) : (p.Phongs.Any() ? p.Phongs.Min(r => r.GiaGoc) : 0);
+
+            return new PropertySummaryResponse(
+                p.MaCoSoLuuTru,
+                p.TenCoSoLuuTru,
+                p.DiaChi,
+                p.LoaiHinh,
+                minP,
+                coverUrl);
+        }).ToList();
+
+        return Ok(result);
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<PropertyDetailsResponse>> GetProperty(int id, CancellationToken cancellationToken)
+    public async Task<ActionResult<PropertyDetailsResponse>> GetProperty(
+        int id,
+        [FromQuery] DateTime? checkIn,
+        [FromQuery] DateTime? checkOut,
+        CancellationToken cancellationToken)
     {
         var property = await db.CoSoLuuTrus.AsNoTracking()
-            .Where(p => p.MaCoSoLuuTru == id && p.TrangThai)
-            .Select(p => new PropertyDetailsResponse(
-                p.MaCoSoLuuTru, p.TenCoSoLuuTru, p.DienThoai, p.Email, p.DiaChi, p.LoaiHinh,
-                db.HinhAnhs.Where(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru).Select(i => i.UrlHinhAnh).ToList(),
-                p.Phongs.Select(r => new RoomResponse(
-                    r.MaPhong, r.SoPhong, r.SucChua, r.GiaGoc, r.TinhTrang,
-                    r.LoaiPhong == null ? null : r.LoaiPhong.TenLoaiPhong,
-                    db.HinhAnhs.Where(i => i.MaPhong == r.MaPhong).Select(i => i.UrlHinhAnh).ToList())).ToList()))
-            .SingleOrDefaultAsync(cancellationToken);
+            .Include(p => p.Phongs).ThenInclude(r => r.LoaiPhong)
+            .FirstOrDefaultAsync(p => p.MaCoSoLuuTru == id && p.TrangThai, cancellationToken);
 
-        return property is null ? NotFound() : Ok(property);
+        if (property is null) return NotFound();
+
+        var busyRoomIds = new List<int>();
+        if (checkIn.HasValue && checkOut.HasValue && checkOut.Value > checkIn.Value)
+        {
+            var cIn = checkIn.Value;
+            var cOut = checkOut.Value;
+
+            var bookedRoomIds = await db.ChiTietDons.AsNoTracking()
+                .Where(d => (d.DonDatPhong.TrangThai == "Pending" || d.DonDatPhong.TrangThai == "Confirmed") &&
+                            d.DonDatPhong.NgayDen < cOut && d.DonDatPhong.NgayDi > cIn)
+                .Select(d => d.MaPhong)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            var calendarBusyRoomIds = await db.LichLuuTrus.AsNoTracking()
+                .Where(l => l.Ngay >= cIn.Date && l.Ngay < cOut.Date && l.TrangThai != "Trống")
+                .Select(l => l.MaPhong)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            busyRoomIds = bookedRoomIds.Union(calendarBusyRoomIds).Distinct().ToList();
+        }
+
+        var isHotel = property.LoaiHinh.Equals("HOTEL", StringComparison.OrdinalIgnoreCase);
+        // Nếu là HOTEL: Lọc và chỉ trả về các phòng còn trống trong khách sạn đó
+        var roomsToReturn = (isHotel && busyRoomIds.Count > 0)
+            ? property.Phongs.Where(r => !busyRoomIds.Contains(r.MaPhong)).ToList()
+            : property.Phongs.ToList();
+
+        var roomIds = roomsToReturn.Select(r => r.MaPhong).ToList();
+        var allImages = await db.HinhAnhs.AsNoTracking()
+            .Where(i => i.MaCoSoLuuTru == id || (i.MaPhong.HasValue && roomIds.Contains(i.MaPhong.Value)))
+            .ToListAsync(cancellationToken);
+
+        var propertyImages = allImages.Where(i => i.MaCoSoLuuTru == id).Select(i => i.UrlHinhAnh).ToList();
+
+        var response = new PropertyDetailsResponse(
+            property.MaCoSoLuuTru,
+            property.TenCoSoLuuTru,
+            property.DienThoai,
+            property.Email,
+            property.DiaChi,
+            property.LoaiHinh,
+            propertyImages,
+            roomsToReturn.Select(r => new RoomResponse(
+                r.MaPhong,
+                r.SoPhong,
+                r.SucChua,
+                r.GiaGoc,
+                r.TinhTrang,
+                r.LoaiPhong?.TenLoaiPhong,
+                allImages.Where(i => i.MaPhong == r.MaPhong).Select(i => i.UrlHinhAnh).ToList()
+            )).ToList()
+        );
+
+        return Ok(response);
     }
 
     [HttpGet("amenities")]

@@ -53,7 +53,12 @@
 
                     <!-- Danh sách items Homestay -->
                     <ListBox Grid.Row="1" ItemsSource="{Binding DanhSachCoSo}" SelectedItem="{Binding CoSoDangChon}"
-                             BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="8,6">
+                             BorderThickness="0" Background="Transparent"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             ScrollViewer.CanContentScroll="True"
+                             VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+                             Padding="8,6">
                         <ListBox.ItemContainerStyle>
                             <Style TargetType="ListBoxItem">
                                 <Setter Property="Padding" Value="14,12"/>
@@ -147,7 +152,10 @@
                                     <StackPanel MaxWidth="620" HorizontalAlignment="Left">
                                         <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                                             <Border Background="#E1F0FE" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
-                                                <TextBlock Text="HOMESTAY CHỜ DUYỆT" Foreground="#0194F3" FontSize="10" FontWeight="Bold"/>
+                                                <TextBlock Text="CƠ SỞ CHỜ DUYỆT" Foreground="#0194F3" FontSize="10" FontWeight="Bold"/>
+                                            </Border>
+                                            <Border Background="#EDE9FE" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                                                <TextBlock Text="{Binding CoSoDangChon.TenLoaiHinhHienThi, StringFormat='Mô hình: {0}'}" Foreground="#6D28D9" FontSize="10" FontWeight="Bold"/>
                                             </Border>
                                             <Border Background="#F1F5F9" CornerRadius="4" Padding="6,2">
                                                 <TextBlock Text="{Binding CoSoDangChon.TinhThanh, StringFormat='Khu vực: {0}'}" Foreground="#475569" FontSize="10" FontWeight="SemiBold"/>
@@ -171,21 +179,23 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <!-- Thẻ 1: Đối tác chủ nhà -->
+                                    <!-- Thẻ 1: Đối tác chủ nhà & CCCD xác thực -->
                                     <Border Grid.Column="0" Background="#F8FAFC" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1" Padding="12,10">
                                         <StackPanel>
                                             <TextBlock Text="ĐỐI TÁC CHỦ NHÀ" FontSize="10" FontWeight="Bold" Foreground="#64748B"/>
                                             <TextBlock Text="{Binding CoSoDangChon.TenChuHome}" FontWeight="Bold" FontSize="13" Foreground="#1E293B" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding CoSoDangChon.SoDienThoaiChuHome, StringFormat='📞 {0}'}" FontSize="12" Foreground="#0194F3" FontWeight="SemiBold" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding CoSoDangChon.SoDienThoaiChuHome, StringFormat='📞 {0}'}" FontSize="12" Foreground="#0194F3" FontWeight="SemiBold" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding CoSoDangChon.CCCDChuHome, StringFormat='🪪 CCCD: {0}'}" FontSize="11.5" Foreground="#475569" FontWeight="Medium" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Border>
 
-                                    <!-- Thẻ 2: Quy mô & giá niêm yết -->
+                                    <!-- Thẻ 2: Mô hình & quy mô phòng -->
                                     <Border Grid.Column="2" Background="#F8FAFC" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1" Padding="12,10">
                                         <StackPanel>
-                                            <TextBlock Text="QUY MÔ &amp; GIÁ NIÊM YẾT" FontSize="10" FontWeight="Bold" Foreground="#64748B"/>
-                                            <TextBlock Text="{Binding CoSoDangChon.TongSoPhong, StringFormat='Quy mô: {0} phòng'}" FontWeight="Bold" FontSize="13" Foreground="#1E293B" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding CoSoDangChon.KhoangGiaHienThi}" FontSize="12" Foreground="#0E9F6E" FontWeight="Bold" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="MÔ HÌNH &amp; GIÁ NIÊM YẾT" FontSize="10" FontWeight="Bold" Foreground="#64748B"/>
+                                            <TextBlock Text="{Binding CoSoDangChon.TenLoaiHinhHienThi}" FontWeight="Bold" FontSize="12.5" Foreground="#6D28D9" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding CoSoDangChon.TongSoPhong, StringFormat='Quy mô: {0} phòng'}" FontWeight="SemiBold" FontSize="12" Foreground="#1E293B" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding CoSoDangChon.KhoangGiaHienThi}" FontSize="11.5" Foreground="#0E9F6E" FontWeight="Bold" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Border>
 

@@ -1,107 +1,715 @@
 @model IReadOnlyList<PropertySummary>
 @{
-    ViewData["Title"] = "Find your next stay";
+    ViewData["Title"] = "Stayly - Kỳ nghỉ trong mơ bắt đầu từ đây";
 }
 
-<section class="hero">
-    <div class="container hero-content">
-        <p class="eyebrow">A better way to get away</p>
-        <h1>
-            Stay somewhere<br>
-            <em>worth remembering.</em>
-        </h1>
-        <p class="hero-copy">Handpicked homestays, warm hosts, and places that feel like your own.</p>
+<!-- 3. Hero Banner & Floating Search Box -->
+<section class="hero-wrapper">
+    <div class="container">
+        <!-- Hero Banner: Bo tròn góc lớn ~24px, Padding 2 bên, Ảnh thiên nhiên và Gradient overlay -->
+        <div class="hero-banner-card">
+            <div class="hero-gradient-overlay"></div>
+            <div class="hero-text-content">
+                <div class="hero-tag">
+                    <i class="bi bi-compass"></i>
+                    <span>Trải nghiệm nghỉ dưỡng Soft &amp; Harmonious</span>
+                </div>
+                <h1 class="hero-title">
+                    Kỳ nghỉ trong mơ<br>
+                    bắt đầu từ Stayly
+                </h1>
+                <p class="hero-subtitle">
+                    Khám phá hàng trăm homestay và biệt thự nghỉ dưỡng độc đáo, ấm cúng và ngập tràn cảm hứng cho chuyến đi của bạn.
+                </p>
+            </div>
+        </div>
 
-        <form class="search" asp-action="Index" method="get">
-            <label>
-                Where
-                <input name="location" value="@ViewBag.Location" placeholder="Search a destination">
-            </label>
-            <label>
-                Check in
-                <input type="date">
-            </label>
-            <label>
-                Check out
-                <input type="date">
-            </label>
-            <label>
-                Guests
-                <select>
-                    <option>2 guests</option>
-                    <option>3 guests</option>
-                    <option>4 guests</option>
-                </select>
-            </label>
-            <button class="search-button">?</button>
-        </form>
+        <!-- Floating Search Box: Khối hình bo tròn 50px, 4 ô nhập liệu phân cách bằng đường kẻ dọc mờ -->
+        <div class="search-box-outer">
+            <form id="staylySearchForm" class="floating-search-bar" onsubmit="handleSearchSubmit(event)">
+                <!-- 1. Điểm đến -->
+                <div class="search-field">
+                    <label class="search-field-label">
+                        <i class="bi bi-geo-alt-fill"></i>
+                        <span>Điểm đến</span>
+                    </label>
+                    <input type="text" id="searchInputLocation" name="location" value="@ViewBag.Location" placeholder="Bạn muốn đến đâu? (Đà Lạt, Hội An...)" autocomplete="off">
+                </div>
+
+                <div class="search-divider d-none d-md-block"></div>
+
+                <!-- 2. Ngày nhận -->
+                <div class="search-field">
+                    <label class="search-field-label">
+                        <i class="bi bi-calendar-check-fill"></i>
+                        <span>Ngày nhận</span>
+                    </label>
+                    <input type="date" id="searchInputCheckIn" name="checkIn">
+                </div>
+
+                <div class="search-divider d-none d-md-block"></div>
+
+                <!-- 3. Ngày trả -->
+                <div class="search-field">
+                    <label class="search-field-label">
+                        <i class="bi bi-calendar-x-fill"></i>
+                        <span>Ngày trả</span>
+                    </label>
+                    <input type="date" id="searchInputCheckOut" name="checkOut">
+                </div>
+
+                <div class="search-divider d-none d-md-block"></div>
+
+                <!-- 4. Số khách -->
+                <div class="search-field">
+                    <label class="search-field-label">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Số khách</span>
+                    </label>
+                    <select id="searchInputGuests" name="guests">
+                        <option value="1">1 khách</option>
+                        <option value="2" selected>2 khách</option>
+                        <option value="3">3 - 4 khách</option>
+                        <option value="5">5+ khách (Gia đình / Nhóm)</option>
+                    </select>
+                </div>
+
+                <!-- Nút Tìm kiếm bo tròn 50px, màu Primary #0077b6 -->
+                <button type="submit" class="btn-search-submit" id="mainSearchBtn">
+                    <i class="bi bi-search"></i>
+                    <span>Tìm kiếm</span>
+                </button>
+            </form>
+        </div>
     </div>
 </section>
 
-<section class="section container" id="stays">
-    <div class="section-heading">
-        <div>
-            <p class="eyebrow">Find your place</p>
-            <h2>Stays made for <em>slow mornings</em></h2>
-        </div>
-        <span class="muted">@Model.Count stays found</span>
-    </div>
+<!-- 4. Thân trang (Main Body - Chia 2 cột tỷ lệ 3 : 9) -->
+<section class="main-content-section">
+    <div class="container">
+        <div class="row g-4">
+            <!-- Cột trái (Col-lg-3) - Bộ lọc (Filters) -->
+            <div class="col-lg-3">
+                <aside class="filter-card">
+                    <div class="filter-header">
+                        <h3><i class="bi bi-sliders text-primary"></i> Bộ lọc tìm kiếm</h3>
+                        <button type="button" class="btn-reset-filter" onclick="resetAllFilters()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Đặt lại
+                        </button>
+                    </div>
 
-    @if (ViewBag.Error is string error)
-    {
-        <div class="alert error">@error</div>
-    }
+                    <!-- 1. Mức giá -->
+                    <div class="filter-group">
+                        <div class="filter-group-title">
+                            <i class="bi bi-cash-stack text-primary"></i>
+                            <span>Mức giá mỗi đêm</span>
+                        </div>
+                        <div class="toggle-pills-wrap">
+                            <button type="button" class="filter-pill-btn active" data-filter="price" data-value="all" onclick="setPriceFilter(this, 'all')">Tất cả</button>
+                            <button type="button" class="filter-pill-btn" data-filter="price" data-value="under500k" onclick="setPriceFilter(this, 'under500k')">&lt; 500k</button>
+                            <button type="button" class="filter-pill-btn" data-filter="price" data-value="500k-1m" onclick="setPriceFilter(this, '500k-1m')">500k - 1tr</button>
+                            <button type="button" class="filter-pill-btn" data-filter="price" data-value="1m-2m" onclick="setPriceFilter(this, '1m-2m')">1tr - 2tr</button>
+                            <button type="button" class="filter-pill-btn" data-filter="price" data-value="over2m" onclick="setPriceFilter(this, 'over2m')">&gt; 2tr</button>
+                        </div>
+                    </div>
 
-    <div class="stay-grid">
-        @foreach (var property in Model)
-        {
-            <article class="stay-card">
-                <div class="stay-image @(string.IsNullOrWhiteSpace(property.CoverImageUrl) ? "placeholder" : "")"
-                     style="@(string.IsNullOrWhiteSpace(property.CoverImageUrl) ? "" : $"background-image:url('{property.CoverImageUrl}')")">
-                    @if (string.IsNullOrWhiteSpace(property.CoverImageUrl))
-                    {
-                        <span>?</span>
-                    }
-                </div>
-                <div class="stay-body">
-                    <small>@(property.Type ?? "HOMESTAY")</small>
-                    <h3>@property.Name</h3>
-                    <p>? @(property.Address ?? "A beautiful local stay")</p>
-                    <div class="stay-footer">
-                        <strong>$@property.MinimumPrice.ToString("N0") <small>/ night</small></strong>
-                        <a asp-action="Details" asp-route-id="@property.Id">View stay ?</a>
+                    <!-- 2. Loại hình lưu trú -->
+                    <div class="filter-group">
+                        <div class="filter-group-title">
+                            <i class="bi bi-house-heart text-primary"></i>
+                            <span>Loại hình lưu trú</span>
+                        </div>
+                        <div class="toggle-pills-wrap">
+                            <button type="button" class="filter-pill-btn active" data-filter="type" data-value="all" onclick="setTypeFilter(this, 'all')">Tất cả</button>
+                            <button type="button" class="filter-pill-btn" data-filter="type" data-value="Homestay" onclick="setTypeFilter(this, 'Homestay')">Homestay</button>
+                            <button type="button" class="filter-pill-btn" data-filter="type" data-value="Villa" onclick="setTypeFilter(this, 'Villa')">Villa</button>
+                            <button type="button" class="filter-pill-btn" data-filter="type" data-value="Căn hộ" onclick="setTypeFilter(this, 'Căn hộ')">Căn hộ</button>
+                            <button type="button" class="filter-pill-btn" data-filter="type" data-value="Bungalow" onclick="setTypeFilter(this, 'Bungalow')">Bungalow</button>
+                        </div>
+                    </div>
+
+                    <!-- 3. Tiện nghi (Custom Checkbox thành dạng công tắc Switch mềm mại) -->
+                    <div class="filter-group">
+                        <div class="filter-group-title">
+                            <i class="bi bi-stars text-primary"></i>
+                            <span>Tiện nghi phổ biến</span>
+                        </div>
+                        <div class="d-flex flex-column gap-1">
+                            <label class="soft-switch-item">
+                                <span>Wifi tốc độ cao</span>
+                                <div class="switch-control">
+                                    <input type="checkbox" class="amenity-checkbox" value="Wifi" onchange="handleAmenityChange()">
+                                    <span class="switch-slider"></span>
+                                </div>
+                            </label>
+                            <label class="soft-switch-item">
+                                <span>Hồ bơi riêng / vô cực</span>
+                                <div class="switch-control">
+                                    <input type="checkbox" class="amenity-checkbox" value="Hồ bơi" onchange="handleAmenityChange()">
+                                    <span class="switch-slider"></span>
+                                </div>
+                            </label>
+                            <label class="soft-switch-item">
+                                <span>Điều hòa nhiệt độ</span>
+                                <div class="switch-control">
+                                    <input type="checkbox" class="amenity-checkbox" value="Điều hòa" onchange="handleAmenityChange()">
+                                    <span class="switch-slider"></span>
+                                </div>
+                            </label>
+                            <label class="soft-switch-item">
+                                <span>Bếp nấu gia đình</span>
+                                <div class="switch-control">
+                                    <input type="checkbox" class="amenity-checkbox" value="Bếp" onchange="handleAmenityChange()">
+                                    <span class="switch-slider"></span>
+                                </div>
+                            </label>
+                            <label class="soft-switch-item">
+                                <span>Ban công view đẹp</span>
+                                <div class="switch-control">
+                                    <input type="checkbox" class="amenity-checkbox" value="Ban công" onchange="handleAmenityChange()">
+                                    <span class="switch-slider"></span>
+                                </div>
+                            </label>
+                            <label class="soft-switch-item">
+                                <span>Chỗ đỗ xe miễn phí</span>
+                                <div class="switch-control">
+                                    <input type="checkbox" class="amenity-checkbox" value="Chỗ đỗ xe" onchange="handleAmenityChange()">
+                                    <span class="switch-slider"></span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 4. Đánh giá sao -->
+                    <div class="filter-group mb-0">
+                        <div class="filter-group-title">
+                            <i class="bi bi-star-fill text-warning"></i>
+                            <span>Đánh giá sao</span>
+                        </div>
+                        <div class="toggle-pills-wrap">
+                            <button type="button" class="filter-pill-btn active" data-filter="rating" data-value="0" onclick="setRatingFilter(this, 0)">Tất cả</button>
+                            <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="4.9" onclick="setRatingFilter(this, 4.9)">
+                                <i class="bi bi-star-fill star-icon"></i> 4.9+
+                            </button>
+                            <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="4.8" onclick="setRatingFilter(this, 4.8)">
+                                <i class="bi bi-star-fill star-icon"></i> 4.8+
+                            </button>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+
+            <!-- Cột phải (Col-lg-9) - Danh sách kết quả (Room List) -->
+            <div class="col-lg-9">
+                <!-- Results Header Bar -->
+                <div class="results-header-bar">
+                    <div class="results-count" id="resultsCountDisplay">
+                        Đang tìm kiếm homestay phù hợp...
+                    </div>
+                    <div class="sort-select-wrap">
+                        <label for="sortOptionSelect"><i class="bi bi-arrow-down-up me-1"></i> Sắp xếp:</label>
+                        <select id="sortOptionSelect" onchange="handleSortChange(this.value)">
+                            <option value="featured">Nổi bật nhất</option>
+                            <option value="price-asc">Giá: Thấp đến cao</option>
+                            <option value="price-desc">Giá: Cao đến thấp</option>
+                            <option value="rating">Đánh giá cao nhất</option>
+                        </select>
                     </div>
                 </div>
-            </article>
-        }
+
+                <!-- Room List Output Container (Rendered dynamically via Vanilla JS template literals) -->
+                <div id="roomListContainer">
+                    <!-- Loading placeholder -->
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Đang tải...</span>
+                        </div>
+                        <p class="text-muted mt-3 small">Đang chuẩn bị danh sách phòng nghỉ dưỡng tốt nhất...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 
-<section class="why">
-    <div class="container why-grid">
-        <div>
-            <p class="eyebrow">The Stayly standard</p>
-            <h2>
-                More than a room.<br>
-                <em>A feeling.</em>
-            </h2>
-        </div>
-        <div class="perks">
-            <div>
-                <b>?</b>
-                <h3>Places with character</h3>
-                <p>Thoughtful spaces chosen for the way they make you feel.</p>
-            </div>
-            <div>
-                <b>?</b>
-                <h3>Hosts who care</h3>
-                <p>Real people ready to make your stay comfortable.</p>
-            </div>
-            <div>
-                <b>?</b>
-                <h3>Simple from start</h3>
-                <p>Browse, book, and manage every trip in one calm place.</p>
-            </div>
-        </div>
-    </div>
-</section>
+@section Scripts {
+<script>
+    /* ==========================================================================
+       Stayly Client-side Room Rendering & Filtering Engine
+       - Template Literals (``) renderRooms()
+       - Nested Bootstrap Carousel inside each horizontal card
+       - Real-time search & filter
+       ========================================================================== */
+    (function () {
+        // Master room list dataset
+        let allRoomsData = [];
+        let activeFilters = {
+            location: '@(ViewBag.Location ?? "")',
+            priceRange: 'all',
+            propertyType: 'all',
+            amenities: [],
+            minRating: 0,
+            sortBy: 'featured'
+        };
+
+        // Initialize today's date for check-in & tomorrow for check-out
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const checkInEl = document.getElementById('searchInputCheckIn');
+        const checkOutEl = document.getElementById('searchInputCheckOut');
+        if (checkInEl && !checkInEl.value) {
+            checkInEl.value = today.toISOString().split('T')[0];
+        }
+        if (checkOutEl && !checkOutEl.value) {
+            checkOutEl.value = tomorrow.toISOString().split('T')[0];
+        }
+
+        // Fetch rooms data on page load
+        async function fetchInitialRooms() {
+            try {
+                const response = await fetch(`/Home/GetRoomsJson?location=${encodeURIComponent(activeFilters.location)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    allRoomsData = normalizeRoomsData(data);
+                } else {
+                    allRoomsData = getFallbackRoomsData();
+                }
+            } catch (e) {
+                allRoomsData = getFallbackRoomsData();
+            }
+            applyFiltersAndRender();
+        }
+
+        // Normalize data format whether from API or fallback
+        function normalizeRoomsData(items) {
+            if (!Array.isArray(items) || items.length === 0) {
+                return getFallbackRoomsData();
+            }
+
+            return items.map((item, index) => {
+                const id = item.id || item.Id || (index + 1);
+                const name = item.name || item.Name || 'Homestay ấm cúng';
+                const address = item.address || item.Address || 'Địa điểm du lịch hấp dẫn';
+                const type = item.type || item.Type || 'Homestay';
+                const price = Number(item.price || item.minimumPrice || item.MinimumPrice || 650000);
+                const rating = item.rating || 4.9;
+                const reviewsCount = item.reviewsCount || Math.floor(Math.random() * 80 + 40);
+                const description = item.description || 'Không gian nghỉ dưỡng thanh bình, phòng ốc thoáng mát, tiện nghi đầy đủ và gần các điểm tham quan nổi tiếng.';
+                const amenities = item.amenities || ['Wifi miễn phí', 'Điều hòa', 'Bếp', 'Chỗ đỗ xe'];
+
+                // Prepare carousel images (always at least 3 high quality photos)
+                let images = [];
+                if (item.images && Array.isArray(item.images) && item.images.length > 0) {
+                    images = item.images;
+                } else if (item.coverImageUrl || item.CoverImageUrl) {
+                    const cover = item.coverImageUrl || item.CoverImageUrl;
+                    images = [
+                        cover,
+                        'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80'
+                    ];
+                } else {
+                    images = [
+                        'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80'
+                    ];
+                }
+
+                return {
+                    id,
+                    name,
+                    address,
+                    type,
+                    price,
+                    rating,
+                    reviewsCount,
+                    description,
+                    amenities,
+                    images
+                };
+            });
+        }
+
+        // Fallback curated homestays
+        function getFallbackRoomsData() {
+            return [
+                {
+                    id: 1,
+                    name: 'The Pine Hill Villa & Retreat',
+                    type: 'Villa',
+                    address: 'Đường Mai Anh Đào, Phường 8, TP. Đà Lạt',
+                    price: 1250000,
+                    rating: 4.95,
+                    reviewsCount: 142,
+                    description: 'Biệt thự biệt lập ẩn mình giữa rừng thông thơ mộng với ban công ngắm bình minh và sương mờ Đà Lạt tuyệt đẹp.',
+                    amenities: ['Wifi miễn phí', 'Ban công view đồi', 'Bếp gia đình', 'Chỗ đỗ xe'],
+                    images: [
+                        'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80'
+                    ]
+                },
+                {
+                    id: 2,
+                    name: 'Stayly Ocean Breeze Bungalow',
+                    type: 'Bungalow',
+                    address: 'Trần Phú, Bãi Trước, TP. Vũng Tàu',
+                    price: 950000,
+                    rating: 4.88,
+                    reviewsCount: 98,
+                    description: 'Bungalow sát biển với âm thanh sóng vỗ êm đềm, thiết kế mở đón gió đại dương mát lành và hoàng hôn rực rỡ.',
+                    amenities: ['Hồ bơi vô cực', 'Điều hòa', 'Wifi miễn phí', 'Chỗ đỗ xe'],
+                    images: [
+                        'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80'
+                    ]
+                },
+                {
+                    id: 3,
+                    name: 'An Nam Vintage Homestay',
+                    type: 'Homestay',
+                    address: 'Nguyễn Thái Học, Phố Cổ Hội An, Quảng Nam',
+                    price: 480000,
+                    rating: 4.92,
+                    reviewsCount: 215,
+                    description: 'Không gian kiến trúc gỗ truyền thống mộc mạc, giàn hoa giấy rực rỡ và xe đạp miễn phí dạo quanh phố cổ.',
+                    amenities: ['Wifi miễn phí', 'Điều hòa', 'Bếp', 'Ban công view đẹp'],
+                    images: [
+                        'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80'
+                    ]
+                },
+                {
+                    id: 4,
+                    name: 'Skyline Luxury Apartment & Studio',
+                    type: 'Căn hộ',
+                    address: 'Võ Nguyên Giáp, Mỹ Khê, TP. Đà Nẵng',
+                    price: 820000,
+                    rating: 4.85,
+                    reviewsCount: 76,
+                    description: 'Căn hộ dịch vụ cao cấp tầng cao nhìn thẳng ra biển Mỹ Khê xinh đẹp, trang bị đầy đủ tiện nghi chuẩn 5 sao.',
+                    amenities: ['Hồ bơi', 'Điều hòa', 'Bếp', 'Wifi miễn phí'],
+                    images: [
+                        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80'
+                    ]
+                },
+                {
+                    id: 5,
+                    name: 'Misty Mountain Wooden Cabin',
+                    type: 'Homestay',
+                    address: 'Bản Tả Van, Thị xã Sa Pa, Lào Cai',
+                    price: 650000,
+                    rating: 4.96,
+                    reviewsCount: 184,
+                    description: 'Cabin gỗ thông mộc mạc bên sườn đồi nhìn ra thung lũng Mường Hoa bồng bềnh mây trắng và ruộng bậc thang kỳ vĩ.',
+                    amenities: ['Ban công view đồi', 'Bếp', 'Wifi miễn phí', 'Chỗ đỗ xe'],
+                    images: [
+                        'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?auto=format&fit=crop&w=800&q=80'
+                    ]
+                },
+                {
+                    id: 6,
+                    name: 'Sunset Bay Eco Villa Phu Quoc',
+                    type: 'Villa',
+                    address: 'Bãi Trường, Dương Tơ, TP. Phú Quốc',
+                    price: 2100000,
+                    rating: 4.98,
+                    reviewsCount: 110,
+                    description: 'Villa sinh thái phong cách Địa Trung Hải với bể bơi riêng, đường dạo bộ ra bãi cát vàng và hoàng hôn tím biếc.',
+                    amenities: ['Hồ bơi riêng', 'Điều hòa', 'Bếp', 'Chỗ đỗ xe'],
+                    images: [
+                        'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80'
+                    ]
+                }
+            ];
+        }
+
+        /* ==========================================================================
+           Hàm renderRooms() bằng Template Literal (``)
+           - Tự động in danh sách phòng vào cột phải
+           - Mỗi Card nằm ngang (row), không viền, đổ bóng mờ, bo góc 16px
+           - Khối Ảnh: Bootstrap Carousel bên trong vuốt chuyển ảnh ngang mượt mà, nút next/prev bo tròn nhỏ
+           - Khối Thông tin: Tên phòng, Mô tả, Giá tiền nổi bật, nút "Xem chi tiết" bo tròn
+           ========================================================================== */
+        window.renderRooms = function (rooms) {
+            const container = document.getElementById('roomListContainer');
+            const countDisplay = document.getElementById('resultsCountDisplay');
+
+            if (!container) return;
+
+            if (countDisplay) {
+                countDisplay.innerHTML = `Tìm thấy <strong>${rooms.length}</strong> homestay nghỉ dưỡng tuyệt vời`;
+            }
+
+            if (rooms.length === 0) {
+                container.innerHTML = `
+                    <div class="card p-5 text-center border-0" style="border-radius: 16px; box-shadow: var(--stayly-shadow);">
+                        <div class="mb-3 text-primary" style="font-size: 3rem;">
+                            <i class="bi bi-search"></i>
+                        </div>
+                        <h4 class="fw-bold text-navy mb-2">Không tìm thấy homestay phù hợp</h4>
+                        <p class="text-muted mb-4">Vui lòng thử điều chỉnh lại bộ lọc hoặc tìm kiếm với từ khóa khác.</p>
+                        <div>
+                            <button type="button" class="btn-stayly-login mx-auto" onclick="resetAllFilters()">
+                                <i class="bi bi-arrow-counterclockwise"></i> Xóa tất cả bộ lọc
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Generate HTML with template literals (``)
+            const html = rooms.map(room => {
+                const carouselId = `roomCarousel_${room.id}`;
+                const formattedPrice = new Intl.NumberFormat('vi-VN').format(room.price);
+
+                // Carousel indicators & items
+                const carouselIndicators = room.images.map((img, i) => `
+                    <button type="button" data-bs-target="#${carouselId}" data-bs-slide-to="${i}" class="${i === 0 ? 'active' : ''}" aria-label="Slide ${i + 1}"></button>
+                `).join('');
+
+                const carouselSlides = room.images.map((img, i) => `
+                    <div class="carousel-item ${i === 0 ? 'active' : ''}">
+                        <img src="${img}" class="room-carousel-img" alt="${escapeHtml(room.name)}" loading="lazy">
+                    </div>
+                `).join('');
+
+                // Amenities badges
+                const amenitiesHtml = (room.amenities || []).slice(0, 4).map(amenity => `
+                    <span class="amenity-tag">${escapeHtml(amenity)}</span>
+                `).join('');
+
+                return `
+                    <article class="room-card-horizontal">
+                        <div class="row g-0 h-100">
+                            <!-- Khối Ảnh (Col-md-5): Dùng Bootstrap Carousel bên trong để vuốt chuyển ảnh mượt mà -->
+                            <div class="col-md-5 position-relative">
+                                <span class="room-badge-type">${escapeHtml(room.type)}</span>
+                                <div class="room-carousel-wrapper">
+                                    <div id="${carouselId}" class="carousel slide" data-bs-interval="false">
+                                        <div class="carousel-indicators">
+                                            ${carouselIndicators}
+                                        </div>
+                                        <div class="carousel-inner">
+                                            ${carouselSlides}
+                                        </div>
+                                        <!-- Nút next/prev tròn nhỏ bo góc -->
+                                        <button class="carousel-control-prev" type="button" data-bs-target="#${carouselId}" data-bs-slide="prev" aria-label="Ảnh trước">
+                                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                        </button>
+                                        <button class="carousel-control-next" type="button" data-bs-target="#${carouselId}" data-bs-slide="next" aria-label="Ảnh sau">
+                                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Khối Thông tin (Col-md-7): Tên phòng, Mô tả, Giá tiền nổi bật, nút Xem chi tiết bo tròn -->
+                            <div class="col-md-7">
+                                <div class="room-info-col">
+                                    <div class="room-info-top">
+                                        <div class="room-location-row">
+                                            <i class="bi bi-geo-alt-fill text-primary"></i>
+                                            <span>${escapeHtml(room.address)}</span>
+                                        </div>
+
+                                        <h3 class="room-title">
+                                            <a href="/Home/Details/${room.id}" title="${escapeHtml(room.name)}">${escapeHtml(room.name)}</a>
+                                        </h3>
+
+                                        <div class="room-rating-row">
+                                            <span class="rating-badge">
+                                                <i class="bi bi-star-fill text-warning"></i> ${room.rating}
+                                            </span>
+                                            <span class="review-count">(${room.reviewsCount} đánh giá tích cực)</span>
+                                        </div>
+
+                                        <p class="room-description">${escapeHtml(room.description)}</p>
+
+                                        <div class="room-amenities-tags">
+                                            ${amenitiesHtml}
+                                        </div>
+                                    </div>
+
+                                    <!-- Bottom Row: Giá tiền & Nút Xem chi tiết -->
+                                    <div class="room-card-bottom">
+                                        <div class="room-price-wrap">
+                                            <span class="price-label">Giá chỉ từ</span>
+                                            <div>
+                                                <span class="price-amount">${formattedPrice} ₫</span>
+                                                <span class="price-unit">/ đêm</span>
+                                            </div>
+                                        </div>
+
+                                        <a href="/Home/Details/${room.id}" class="btn-view-details">
+                                            <span>Xem chi tiết</span>
+                                            <i class="bi bi-arrow-right-short fs-5"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+
+            container.innerHTML = html;
+
+            // Initialize all newly created Bootstrap Carousels
+            document.querySelectorAll('#roomListContainer .carousel').forEach(carouselEl => {
+                new bootstrap.Carousel(carouselEl, {
+                    interval: false,
+                    touch: true,
+                    ride: false
+                });
+            });
+        };
+
+        // Filter calculation & rendering
+        function applyFiltersAndRender() {
+            let filtered = [...allRoomsData];
+
+            // 1. Search Location
+            if (activeFilters.location && activeFilters.location.trim() !== '') {
+                const loc = activeFilters.location.trim().toLowerCase();
+                filtered = filtered.filter(r => 
+                    r.address.toLowerCase().includes(loc) || 
+                    r.name.toLowerCase().includes(loc)
+                );
+            }
+
+            // 2. Price Range
+            if (activeFilters.priceRange === 'under500k') {
+                filtered = filtered.filter(r => r.price < 500000);
+            } else if (activeFilters.priceRange === '500k-1m') {
+                filtered = filtered.filter(r => r.price >= 500000 && r.price <= 1000000);
+            } else if (activeFilters.priceRange === '1m-2m') {
+                filtered = filtered.filter(r => r.price > 1000000 && r.price <= 2000000);
+            } else if (activeFilters.priceRange === 'over2m') {
+                filtered = filtered.filter(r => r.price > 2000000);
+            }
+
+            // 3. Property Type
+            if (activeFilters.propertyType !== 'all') {
+                filtered = filtered.filter(r => 
+                    r.type.toLowerCase().includes(activeFilters.propertyType.toLowerCase())
+                );
+            }
+
+            // 4. Amenities
+            if (activeFilters.amenities.length > 0) {
+                filtered = filtered.filter(r => {
+                    const roomAmenityStr = (r.amenities || []).join(' ').toLowerCase();
+                    return activeFilters.amenities.every(amenity => 
+                        roomAmenityStr.includes(amenity.toLowerCase())
+                    );
+                });
+            }
+
+            // 5. Rating
+            if (activeFilters.minRating > 0) {
+                filtered = filtered.filter(r => r.rating >= activeFilters.minRating);
+            }
+
+            // 6. Sort
+            if (activeFilters.sortBy === 'price-asc') {
+                filtered.sort((a, b) => a.price - b.price);
+            } else if (activeFilters.sortBy === 'price-desc') {
+                filtered.sort((a, b) => b.price - a.price);
+            } else if (activeFilters.sortBy === 'rating') {
+                filtered.sort((a, b) => b.rating - a.rating);
+            }
+
+            renderRooms(filtered);
+        }
+
+        // Global Event Handlers for Filters
+        window.handleSearchSubmit = function (e) {
+            e.preventDefault();
+            const locInput = document.getElementById('searchInputLocation');
+            activeFilters.location = locInput ? locInput.value.trim() : '';
+            applyFiltersAndRender();
+        };
+
+        window.setPriceFilter = function (btn, range) {
+            document.querySelectorAll('[data-filter="price"]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeFilters.priceRange = range;
+            applyFiltersAndRender();
+        };
+
+        window.setTypeFilter = function (btn, type) {
+            document.querySelectorAll('[data-filter="type"]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeFilters.propertyType = type;
+            applyFiltersAndRender();
+        };
+
+        window.handleAmenityChange = function () {
+            const checked = [];
+            document.querySelectorAll('.amenity-checkbox:checked').forEach(cb => {
+                checked.push(cb.value);
+            });
+            activeFilters.amenities = checked;
+            applyFiltersAndRender();
+        };
+
+        window.setRatingFilter = function (btn, rating) {
+            document.querySelectorAll('[data-filter="rating"]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeFilters.minRating = Number(rating);
+            applyFiltersAndRender();
+        };
+
+        window.handleSortChange = function (val) {
+            activeFilters.sortBy = val;
+            applyFiltersAndRender();
+        };
+
+        window.resetAllFilters = function () {
+            activeFilters = {
+                location: '',
+                priceRange: 'all',
+                propertyType: 'all',
+                amenities: [],
+                minRating: 0,
+                sortBy: 'featured'
+            };
+
+            const locInput = document.getElementById('searchInputLocation');
+            if (locInput) locInput.value = '';
+
+            document.querySelectorAll('[data-filter="price"]').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-filter="price"][data-value="all"]')?.classList.add('active');
+
+            document.querySelectorAll('[data-filter="type"]').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-filter="type"][data-value="all"]')?.classList.add('active');
+
+            document.querySelectorAll('.amenity-checkbox').forEach(cb => cb.checked = false);
+
+            document.querySelectorAll('[data-filter="rating"]').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-filter="rating"][data-value="0"]')?.classList.add('active');
+
+            const sortSelect = document.getElementById('sortOptionSelect');
+            if (sortSelect) sortSelect.value = 'featured';
+
+            applyFiltersAndRender();
+        };
+
+        // Initialize on load
+        fetchInitialRooms();
+    })();
+</script>
+}

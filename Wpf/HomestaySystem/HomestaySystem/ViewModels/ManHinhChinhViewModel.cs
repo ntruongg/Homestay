@@ -27,6 +27,7 @@ namespace HomestaySystem.ViewModels
         public QuanLyDonDatViewModel QuanLyDonDatVM { get; set; }
         public BaoCaoDoanhThuViewModel BaoCaoDoanhThuVM { get; set; }
         public QuanLyKhuyenMaiViewModel QuanLyKhuyenMaiVM { get; set; }
+        public BaoTriHeThongViewModel BaoTriHeThongVM { get; set; }
 
         public ViewModelBase ManHinhHienTai
         {
@@ -71,6 +72,7 @@ namespace HomestaySystem.ViewModels
         public ICommand ChuyenManHinhQuyetToanCommand => ChuyenManHinhDonDatCommand; // Tương thích ngược
         public ICommand ChuyenManHinhBaoCaoCommand { get; }
         public ICommand ChuyenManHinhKhuyenMaiCommand { get; }
+        public ICommand ChuyenManHinhBaoTriCommand { get; }
         public ICommand DangXuatCommand { get; }
 
         public ManHinhChinhViewModel(IAdminService? adminService = null)
@@ -83,6 +85,7 @@ namespace HomestaySystem.ViewModels
             QuanLyDonDatVM = new QuanLyDonDatViewModel(_adminService);
             BaoCaoDoanhThuVM = new BaoCaoDoanhThuViewModel(_adminService);
             QuanLyKhuyenMaiVM = new QuanLyKhuyenMaiViewModel(_adminService);
+            BaoTriHeThongVM = new BaoTriHeThongViewModel(_adminService);
 
             // Màn hình khởi đầu: Kiểm duyệt Homestay
             _manHinhHienTai = KiemDuyetVM;
@@ -121,6 +124,13 @@ namespace HomestaySystem.ViewModels
                 ManHinhHienTai = QuanLyKhuyenMaiVM;
                 TieuDeTrang = "Quản lý Mã ưu đãi (Voucher giảm giá)";
                 MenuDangChon = "KhuyenMai";
+            });
+
+            ChuyenManHinhBaoTriCommand = new RelayCommand(() =>
+            {
+                ManHinhHienTai = BaoTriHeThongVM;
+                TieuDeTrang = "Bảo trì Hệ thống & Sao lưu/Phục hồi CSDL SQL Server";
+                MenuDangChon = "BaoTri";
             });
 
             DangXuatCommand = new RelayCommand(ThucHienDangXuat);

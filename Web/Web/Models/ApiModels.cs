@@ -127,12 +127,16 @@ public sealed class ProfileViewModel
     public string ActiveTab { get; set; } = "personal";
 }
 
-public sealed class BookingInput
+public class BookingInput
 {
-    public int RoomId { get; set; }
+    public int? RoomId { get; set; } // Dành cho Homestay nguyên căn hoặc chọn 1 phòng lẻ
+    public List<int> RoomIds { get; set; } = new(); // Dành cho mảng phòng
     public DateTime CheckIn { get; set; }
     public DateTime CheckOut { get; set; }
     public int GuestCount { get; set; }
+    public string? FullName { get; set; }
+    public string? PhoneNumber { get; set; }
+    public string? Email { get; set; }
 }
 
 // Owner Dashboard Models

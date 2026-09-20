@@ -8,6 +8,7 @@ using API.Models;
 using API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
@@ -524,6 +525,43 @@ public sealed class AdminController(HomestayDbContext db, IEmailService emailSer
 
         var previousStatus = booking.TrangThai ?? "Pending";
         booking.TrangThai = "Refunded";
+
+        var adminEmail = User.FindFirstValue(ClaimTypes.Email) 
+            ?? User.FindFirstValue(JwtRegisteredClaimNames.Email) 
+            ?? "admin@stayly.com";
+
+        // 1. Lưu hồ sơ Hoàn tiền HoanTien vào CSDL
+        var hoanTien = new HoanTien
+        {
+            MaDonDatPhong = id,
+            SoTienHoan = request.RefundAmount,
+            LyDoHoan = request.Reason,
+            NgayYeuCau = DateTime.UtcNow,
+            NguoiDuyet = adminEmail,
+            TrangThai = "Đã hoàn tiền"
+        };
+        db.HoanTiens.Add(hoanTien);
+
+        // 2. Mở khóa lịch phòng lưu trú (LichLuuTru) trả lại trạng thái 'Trống'
+        var roomIds = booking.ChiTietDons.Select(d => d.MaPhong).ToList();
+        var blockedCalendar = await db.LichLuuTrus
+            .Where(l => roomIds.Contains(l.MaPhong) && l.Ngay >= booking.NgayDen && l.Ngay < booking.NgayDi)
+            .ToListAsync(cancellationToken);
+        foreach (var slot in blockedCalendar)
+        {
+            slot.TrangThai = "Trống";
+        }
+
+        // 3. Ghi vết kiểm toán vào Nhật ký hệ thống NhatKyHeThong
+        db.NhatKyHeThongs.Add(new NhatKyHeThong
+        {
+            HanhDong = "HoanTien",
+            NguoiThucHien = adminEmail,
+            DoiTuongAnhHuong = $"Đơn đặt #{id}",
+            LyDo = $"{request.Reason} (Hoàn {request.RefundAmount:N0} VNĐ). {request.DecisionNote}",
+            ThoiGian = DateTime.UtcNow
+        });
+
         await db.SaveChangesAsync(cancellationToken);
 
         var property = booking.ChiTietDons.FirstOrDefault()?.Phong?.CoSoLuuTru;
@@ -857,6 +895,20 @@ public sealed class AdminController(HomestayDbContext db, IEmailService emailSer
             return NotFound("User not found.");
 
         user.TrangThai = request.IsActive;
+
+        var adminEmail = User.FindFirstValue(ClaimTypes.Email) 
+            ?? User.FindFirstValue(JwtRegisteredClaimNames.Email) 
+            ?? "admin@stayly.com";
+
+        db.NhatKyHeThongs.Add(new NhatKyHeThong
+        {
+            HanhDong = request.IsActive ? "MoTaiKhoan" : "KhoaTaiKhoan",
+            NguoiThucHien = adminEmail,
+            DoiTuongAnhHuong = user.Email,
+            LyDo = request.Reason ?? (request.IsActive ? "Mở khóa tài khoản người dùng." : "Khóa tài khoản vi phạm chính sách của nền tảng."),
+            ThoiGian = DateTime.UtcNow
+        });
+
         await db.SaveChangesAsync(cancellationToken);
 
         return Ok(new { message = $"User #{id} status updated to {(request.IsActive ? "Active" : "Locked")}.", isActive = user.TrangThai });
@@ -952,6 +1004,170 @@ public sealed class AdminController(HomestayDbContext db, IEmailService emailSer
         );
 
         return Ok(report);
+    }
+    #endregion
+
+    #region 7. Bảo trì hệ thống & Nhật ký hệ thống (System Maintenance & Audit Logs)
+    [HttpGet("audit-logs")]
+    public async Task<ActionResult<IReadOnlyList<AuditLogResponse>>> GetAuditLogs(
+        [FromQuery] int limit = 100,
+        CancellationToken cancellationToken = default)
+    {
+        var logs = await db.NhatKyHeThongs.AsNoTracking()
+            .OrderByDescending(n => n.ThoiGian)
+            .Take(Math.Clamp(limit, 1, 500))
+            .Select(n => new AuditLogResponse(
+                n.MaNhatKy,
+                n.HanhDong,
+                n.NguoiThucHien,
+                n.DoiTuongAnhHuong,
+                n.LyDo,
+                n.ThoiGian
+            ))
+            .ToListAsync(cancellationToken);
+
+        return Ok(logs);
+    }
+
+    [HttpPost("maintenance/backup")]
+    public async Task<ActionResult<MaintenanceResultResponse>> BackupDatabase(
+        [FromBody] BackupDatabaseRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var adminEmail = User.FindFirstValue(ClaimTypes.Email) 
+            ?? User.FindFirstValue(JwtRegisteredClaimNames.Email) 
+            ?? "admin@stayly.com";
+
+        try
+        {
+            string backupDirectory;
+            if (!string.IsNullOrWhiteSpace(request?.BackupPath) && Directory.Exists(request.BackupPath))
+            {
+                backupDirectory = request.BackupPath;
+            }
+            else
+            {
+                backupDirectory = @"D:\DO_AN_HK7\KhoaLuanCuNhan\KLCN\Wpf\Backup";
+                if (!Directory.Exists(backupDirectory))
+                {
+                    Directory.CreateDirectory(backupDirectory);
+                }
+            }
+
+            var fileName = $"HOMESTAY_DB_Backup_{DateTime.Now:yyyyMMdd_HHmmss}.bak";
+            var fullPath = Path.Combine(backupDirectory, fileName);
+
+            var databaseName = db.Database.GetDbConnection().Database;
+            if (string.IsNullOrWhiteSpace(databaseName))
+            {
+                databaseName = "HOMESTAY_DB";
+            }
+
+            var sql = $"BACKUP DATABASE [{databaseName}] TO DISK = '{fullPath.Replace("'", "''")}' WITH FORMAT, INIT, NAME = N'HomestayDB_AutoBackup';";
+            await db.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+
+            db.NhatKyHeThongs.Add(new NhatKyHeThong
+            {
+                HanhDong = "SaoLuuCSDL",
+                NguoiThucHien = adminEmail,
+                DoiTuongAnhHuong = databaseName,
+                LyDo = $"Tạo bản sao lưu tại: {fullPath}",
+                ThoiGian = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Ok(new MaintenanceResultResponse(
+                true,
+                $"Sao lưu CSDL '{databaseName}' thành công ra tệp: {fullPath}",
+                fullPath,
+                DateTime.UtcNow
+            ));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new MaintenanceResultResponse(
+                false,
+                $"Lỗi thực thi sao lưu CSDL SQL Server: {ex.Message}",
+                null,
+                DateTime.UtcNow
+            ));
+        }
+    }
+
+    [HttpPost("maintenance/restore")]
+    public async Task<ActionResult<MaintenanceResultResponse>> RestoreDatabase(
+        [FromBody] RestoreDatabaseRequest request,
+        CancellationToken cancellationToken)
+    {
+        var adminEmail = User.FindFirstValue(ClaimTypes.Email) 
+            ?? User.FindFirstValue(JwtRegisteredClaimNames.Email) 
+            ?? "admin@stayly.com";
+
+        if (string.IsNullOrWhiteSpace(request.BackupFilePath) || !System.IO.File.Exists(request.BackupFilePath))
+        {
+            return BadRequest(new MaintenanceResultResponse(false, "Tệp sao lưu .bak không tồn tại trên hệ thống máy chủ.", null, DateTime.UtcNow));
+        }
+
+        try
+        {
+            var databaseName = db.Database.GetDbConnection().Database;
+            if (string.IsNullOrWhiteSpace(databaseName))
+            {
+                databaseName = "HOMESTAY_DB";
+            }
+
+            var rawConnStr = db.Database.GetConnectionString();
+            var builder = new SqlConnectionStringBuilder(rawConnStr)
+            {
+                InitialCatalog = "master"
+            };
+
+            await using var masterConn = new SqlConnection(builder.ConnectionString);
+            await masterConn.OpenAsync(cancellationToken);
+
+            var escapedPath = request.BackupFilePath.Replace("'", "''");
+            var restoreSql = $@"
+                ALTER DATABASE [{databaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                RESTORE DATABASE [{databaseName}] FROM DISK = '{escapedPath}' WITH REPLACE;
+                ALTER DATABASE [{databaseName}] SET MULTI_USER;
+            ";
+
+            await using var cmd = masterConn.CreateCommand();
+            cmd.CommandText = restoreSql;
+            cmd.CommandTimeout = 300;
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
+
+            // Ghi nhật ký sau khi database phục hồi
+            try
+            {
+                db.NhatKyHeThongs.Add(new NhatKyHeThong
+                {
+                    HanhDong = "PhucHoiCSDL",
+                    NguoiThucHien = adminEmail,
+                    DoiTuongAnhHuong = databaseName,
+                    LyDo = $"Phục hồi CSDL thành công từ bản sao lưu: {request.BackupFilePath}",
+                    ThoiGian = DateTime.UtcNow
+                });
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            catch { }
+
+            return Ok(new MaintenanceResultResponse(
+                true,
+                $"Phục hồi CSDL '{databaseName}' thành công từ bản sao lưu: {request.BackupFilePath}",
+                request.BackupFilePath,
+                DateTime.UtcNow
+            ));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new MaintenanceResultResponse(
+                false,
+                $"Lỗi khi phục hồi CSDL SQL Server: {ex.Message}",
+                request.BackupFilePath,
+                DateTime.UtcNow
+            ));
+        }
     }
     #endregion
 

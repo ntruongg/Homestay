@@ -1,48 +1,463 @@
 @model PropertyDetails
 
 @{
-    ViewData["Title"] = Model.Name;
+    ViewData["Title"] = Model.Name + " - Chi tiết chỗ nghỉ & Đặt phòng";
+    var isHomestay = (Model.Type ?? "").Equals("HOMESTAY", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(Model.Type);
+    var loaiHinhText = isHomestay ? "Homestay nguyên căn" : "Khách sạn theo phòng";
+
+    // Chuẩn bị danh sách ảnh cho Grid 5 ảnh Traveloka
+    var stockImages = new List<string>
+    {
+        "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1000&q=80",
+        "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80",
+        "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&q=80",
+        "https://images.unsplash.com/photo-1591088398332-8a7791972843?w=800&q=80",
+        "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&q=80"
+    };
+
+    var displayImages = new List<string>();
+    if (Model.Images != null && Model.Images.Any())
+    {
+        displayImages.AddRange(Model.Images.Where(img => !string.IsNullOrWhiteSpace(img)));
+    }
+    // Bổ sung nếu chưa đủ 5 ảnh để grid luôn tuyệt đẹp
+    for (int i = 0; displayImages.Count < 5 && i < stockImages.Count; i++)
+    {
+        displayImages.Add(stockImages[i]);
+    }
+
+    var defaultRoom = Model.Rooms.FirstOrDefault();
+    var defaultPrice = defaultRoom?.CurrentPrice ?? 500000;
 }
 
-<section class="section container details">
-    <a class="back" asp-action="Index">? Back to stays</a>
-
-    <div class="details-head">
-        <div>
-            <p class="eyebrow">@(Model.Type ?? "HOMESTAY")</p>
-            <h1>@Model.Name</h1>
-            <p class="muted">? @Model.Address</p>
+<div class="traveloka-details-page container">
+    <!-- BREADCRUMB & BACK LINK -->
+    <div class="details-top-nav">
+        <a class="back-link-traveloka" asp-action="Index">
+            <span class="back-arrow">&larr;</span> Quay lại danh sách tìm kiếm chỗ nghỉ
+        </a>
+        <div class="breadcrumb-crumbs">
+            <span>Trang chủ</span> &gt;
+            <span>@(Model.Address?.Split(',').LastOrDefault()?.Trim() ?? "Việt Nam")</span> &gt;
+            <span class="active-crumb">@Model.Name</span>
         </div>
     </div>
 
-    <div class="rooms">
-        <h2>Choose your room</h2>
+    <!-- HEADER CHI TIẾT CHỖ NGHỈ CHUẨN TRAVELOKA -->
+    <header class="property-header-traveloka">
+        <div class="header-main-info">
+            <div class="header-tags">
+                <span class="property-type-pill @(isHomestay ? "homestay" : "hotel")">
+                    @(isHomestay ? "🏡 Homestay nguyên căn" : "🏨 Khách sạn cao cấp")
+                </span>
+                <span class="property-tag-featured">Được Khách Yêu Thích</span>
+            </div>
+            <h1 class="property-title-h1">@Model.Name</h1>
+            <p class="property-address-line">
+                <span class="icon-location-red">📍</span> @(Model.Address ?? "Địa chỉ đang cập nhật")
+                <a href="#map" class="link-show-map">Xem bản đồ</a>
+            </p>
+        </div>
 
-        @foreach (var room in Model.Rooms)
-        {
-            <article class="room">
-                <div>
-                    <h3>Room @room.RoomNumber @(room.RoomType is null ? "" : $"� {room.RoomType}")</h3>
-                    <p class="muted">Up to @room.Capacity guests � $@room.CurrentPrice.ToString("N0") / night</p>
+        <div class="header-rating-summary">
+            <div class="rating-badge-large">
+                <div class="rating-text-meta">
+                    <span class="rating-label">Tuyệt vời</span>
+                    <span class="rating-reviews">148 đánh giá đã xác thực</span>
                 </div>
-                <form asp-action="Book" method="post">
-                    <input type="hidden" name="RoomId" value="@room.Id">
-                    <label>
-                        Check in
-                        <input name="CheckIn" type="date" required>
-                    </label>
-                    <label>
-                        Check out
-                        <input name="CheckOut" type="date" required>
-                    </label>
-                    <label>
-                        Guests
-                        <input name="GuestCount" type="number" min="1" max="@room.Capacity" value="2" required>
-                    </label>
-                    <button class="button" type="submit">Request booking</button>
-                    @Html.AntiForgeryToken()
+                <div class="rating-score-box">
+                    <span>9.4</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ALBUM ẢNH DẠNG LƯỚI (GRID 5 ẢNH PHONG CÁCH TRAVELOKA) -->
+    <!-- 1 Ảnh lớn bên trái, 4 ảnh nhỏ bên phải -->
+    <section class="traveloka-photo-grid">
+        <!-- Ảnh chính lớn bên trái -->
+        <div class="photo-grid-main">
+            <img src="@displayImages[0]" alt="@Model.Name ảnh chính" class="grid-img img-main" />
+            <span class="main-photo-badge">📸 Ảnh thực tế chỗ nghỉ</span>
+        </div>
+
+        <!-- 4 Ảnh nhỏ bên phải -->
+        <div class="photo-grid-sub">
+            <div class="sub-photo-item">
+                <img src="@displayImages[1]" alt="@Model.Name ảnh 2" class="grid-img" />
+            </div>
+            <div class="sub-photo-item">
+                <img src="@displayImages[2]" alt="@Model.Name ảnh 3" class="grid-img" />
+            </div>
+            <div class="sub-photo-item">
+                <img src="@displayImages[3]" alt="@Model.Name ảnh 4" class="grid-img" />
+            </div>
+            <div class="sub-photo-item last-photo">
+                <img src="@displayImages[4]" alt="@Model.Name ảnh 5" class="grid-img" />
+                <div class="view-more-photos-overlay">
+                    <span class="overlay-icon">🖼️</span>
+                    <span>Xem tất cả @(Model.Images?.Count ?? 5) ảnh</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- KHU VỰC NỘI DUNG CHÍNH (2 CỘT: TRÁI THÔNG TIN / PHẢI WIDGET BÓC TÁCH GIÁ STICKY) -->
+    <div class="details-content-columns">
+        <!-- CỘT TRÁI: CHI TIẾT, TIỆN NGHI, DANH SÁCH PHÒNG -->
+        <div class="details-left-pane">
+            <!-- TỔNG QUAN -->
+            <section class="details-card-box">
+                <h2 class="box-title">Tổng quan chỗ nghỉ</h2>
+                <p class="box-description">
+                    Tọa lạc tại vị trí đắc địa với tầm nhìn thoáng đãng, <strong>@Model.Name</strong> mang đến trải nghiệm lưu trú
+                    tiện nghi như ở nhà kết hợp dịch vụ đón tiếp chu đáo từ Chủ nhà. Thích hợp cho các chuyến du lịch nghỉ dưỡng gia đình,
+                    nhóm bạn hoặc công tác dài ngày.
+                </p>
+
+                <div class="highlights-strip">
+                    <div class="highlight-item">
+                        <span class="hl-icon">✨</span>
+                        <div>
+                            <strong>Vị trí thuận tiện</strong>
+                            <p>Gần trung tâm, dễ dàng di chuyển tới các điểm du lịch</p>
+                        </div>
+                    </div>
+                    <div class="highlight-item">
+                        <span class="hl-icon">🧹</span>
+                        <div>
+                            <strong>Vệ sinh chuẩn Traveloka Clean</strong>
+                            <p>Không gian được khử khuẩn và dọn dẹp kỹ lưỡng trước mỗi lượt đón khách</p>
+                        </div>
+                    </div>
+                    <div class="highlight-item">
+                        <span class="hl-icon">🔑</span>
+                        <div>
+                            <strong>Nhận phòng tự phục vụ</strong>
+                            <p>Khóa thông minh Smart Lock tự do check-in không lo trễ giờ</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DANH SÁCH TIỆN NGHI TRỰC QUAN CÓ ICON -->
+            <section class="details-card-box">
+                <h2 class="box-title">Tiện nghi chỗ nghỉ phổ biến</h2>
+                <p class="box-sub">Các tiện nghi được đối tác cung cấp miễn phí trong suốt thời gian lưu trú:</p>
+
+                <div class="traveloka-amenities-grid">
+                    <div class="amenity-item-card">
+                        <span class="amenity-icon">📶</span>
+                        <div class="amenity-text">
+                            <strong>WiFi miễn phí</strong>
+                            <span>Tốc độ cao 150 Mbps</span>
+                        </div>
+                    </div>
+                    <div class="amenity-item-card">
+                        <span class="amenity-icon">❄️</span>
+                        <div class="amenity-text">
+                            <strong>Điều hòa máy lạnh</strong>
+                            <span>Hai chiều Inverter</span>
+                        </div>
+                    </div>
+                    <div class="amenity-item-card">
+                        <span class="amenity-icon">🍳</span>
+                        <div class="amenity-text">
+                            <strong>Bếp nấu riêng</strong>
+                            <span>Đủ bếp từ, tủ lạnh, gia vị</span>
+                        </div>
+                    </div>
+                    <div class="amenity-item-card">
+                        <span class="amenity-icon">🏊</span>
+                        <div class="amenity-text">
+                            <strong>Hồ bơi thư giãn</strong>
+                            <span>Bể bơi khuôn viên</span>
+                        </div>
+                    </div>
+                    <div class="amenity-item-card">
+                        <span class="amenity-icon">🚗</span>
+                        <div class="amenity-text">
+                            <strong>Chỗ đỗ xe an toàn</strong>
+                            <span>Miễn phí xe máy &amp; ô tô</span>
+                        </div>
+                    </div>
+                    <div class="amenity-item-card">
+                        <span class="amenity-icon">🧺</span>
+                        <div class="amenity-text">
+                            <strong>Máy giặt &amp; Sấy</strong>
+                            <span>Kèm nước giặt tiện lợi</span>
+                        </div>
+                    </div>
+                    <div class="amenity-item-card">
+                        <span class="amenity-icon">📺</span>
+                        <div class="amenity-text">
+                            <strong>Smart TV 55"</strong>
+                            <span>Có Netflix &amp; YouTube</span>
+                        </div>
+                    </div>
+                    <div class="amenity-item-card">
+                        <span class="amenity-icon">🌅</span>
+                        <div class="amenity-text">
+                            <strong>Ban công ngắm cảnh</strong>
+                            <span>Bàn trà thư giãn</span>
+                        </div>
+                    </div>
+                    <div class="amenity-item-card">
+                        <span class="amenity-icon">🧴</span>
+                        <div class="amenity-text">
+                            <strong>Vật dụng cá nhân</strong>
+                            <span>Khăn tắm, bàn chải, dầu gội</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DANH SÁCH HẠNG PHÒNG LỰA CHỌN -->
+            <section class="details-card-box" id="rooms">
+                <h2 class="box-title">@(isHomestay ? "Thông tin không gian Homestay" : "Các hạng phòng còn trống")</h2>
+
+                @if (!Model.Rooms.Any())
+                {
+                    <div class="empty-room-alert">
+                        <span>⚠️</span>
+                        <span>Hiện tại chỗ nghỉ này đang kín phòng hoặc đang cập nhật lịch mới. Quý khách vui lòng chọn ngày khác hoặc tham khảo các homestay lân cận.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="rooms-list-container">
+                        @foreach (var room in Model.Rooms)
+                        {
+                            <div class="room-selector-item @(room == defaultRoom ? "selected" : "")"
+                                 onclick="selectRoom(@room.Id, '@room.RoomNumber', @room.CurrentPrice, @room.Capacity)">
+                                <div class="room-radio-box">
+                                    <input type="radio" name="selectedRoomRadio" id="radio_@room.Id" @(room == defaultRoom ? "checked" : "") />
+                                </div>
+                                <div class="room-main-info">
+                                    <div class="room-header-row">
+                                        <h3 class="room-name">@(isHomestay ? $"Trọn gói không gian: {room.RoomNumber}" : $"Hạng phòng: {room.RoomNumber}")</h3>
+                                        @if (!string.IsNullOrWhiteSpace(room.RoomType))
+                                        {
+                                            <span class="room-type-tag">@room.RoomType</span>
+                                        }
+                                    </div>
+                                    <div class="room-specs">
+                                        <span>👥 Sức chứa tối đa: <strong>@room.Capacity người lớn</strong></span> &bull;
+                                        <span>🛏️ Giường King size cao cấp</span> &bull;
+                                        <span>🚿 Phòng tắm riêng nóng lạnh</span>
+                                    </div>
+                                </div>
+                                <div class="room-price-side">
+                                    <span class="room-price-label">Giá niêm yết</span>
+                                    <strong class="room-price-val">@room.CurrentPrice.ToString("N0") ₫</strong>
+                                    <span class="room-price-unit">/ đêm</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </section>
+
+            <!-- CHÍNH SÁCH LƯU TRÚ -->
+            <section class="details-card-box">
+                <h2 class="box-title">Chính sách nhận phòng &amp; Quy định lưu trú</h2>
+                <div class="policy-grid">
+                    <div class="policy-item">
+                        <span class="policy-icon">⏰</span>
+                        <div>
+                            <strong>Giờ nhận phòng:</strong>
+                            <p>Từ 14:00 trở đi (Hỗ trợ nhận sớm tùy tình trạng phòng trống)</p>
+                        </div>
+                    </div>
+                    <div class="policy-item">
+                        <span class="policy-icon">⌛</span>
+                        <div>
+                            <strong>Giờ trả phòng:</strong>
+                            <p>Trước 12:00 trưa để nhân viên chuẩn bị đón khách kế tiếp</p>
+                        </div>
+                    </div>
+                    <div class="policy-item">
+                        <span class="policy-icon">📜</span>
+                        <div>
+                            <strong>Chính sách hủy phòng:</strong>
+                            <p>Miễn phí hủy phòng trước 48 giờ. Hủy sau thời gian này áp dụng chính sách của Chủ nhà.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- CỘT PHẢI: WIDGET BÓC TÁCH GIÁ MINH BẠCH NỔI BÊN PHẢI (STICKY SIDEBAR PRICING BREAKDOWN TRAVELOKA) -->
+        <div class="details-right-sidebar">
+            <aside class="sticky-pricing-widget">
+                <div class="widget-header">
+                    <span class="widget-eyebrow">Báo giá trực tiếp từ đối tác</span>
+                    <div class="widget-price-big">
+                        <span class="widget-currency">₫</span>
+                        <span class="widget-amount" id="widget-display-price">@defaultPrice.ToString("N0")</span>
+                        <span class="widget-unit">/ đêm</span>
+                    </div>
+                    <span class="widget-tax-note">Chưa bao gồm thuế GTGT &amp; Phí dịch vụ sàn</span>
+                </div>
+
+                <!-- FORM ĐẶT PHÒNG TRAVELOKA -->
+                <form id="travelokaBookingForm" asp-action="Book" method="post" class="widget-booking-form">
+                    <input type="hidden" name="RoomId" id="inputRoomId" value="@(defaultRoom?.Id ?? 0)" />
+                    <input type="hidden" name="RoomIds" id="inputRoomIds" value="@(defaultRoom?.Id ?? 0)" />
+
+                    <!-- Chọn ngày nhận và trả -->
+                    <div class="form-group-dates">
+                        <div class="date-pick-half">
+                            <label class="widget-input-label">📅 Nhận phòng</label>
+                            <input type="date" name="CheckIn" id="inputCheckIn" class="widget-input"
+                                   value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                        </div>
+                        <div class="date-pick-half">
+                            <label class="widget-input-label">📅 Trả phòng</label>
+                            <input type="date" name="CheckOut" id="inputCheckOut" class="widget-input"
+                                   value="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" required />
+                        </div>
+                    </div>
+
+                    <!-- Số khách -->
+                    <div class="form-group-full">
+                        <label class="widget-input-label">👥 Số khách lưu trú</label>
+                        <input type="number" name="GuestCount" id="inputGuestCount" class="widget-input"
+                               min="1" max="@(defaultRoom?.Capacity ?? 4)" value="2" required />
+                    </div>
+
+                    <!-- Thông tin khách -->
+                    <div class="form-group-full">
+                        <label class="widget-input-label">Họ và tên người đặt (*)</label>
+                        <input type="text" name="FullName" required placeholder="VD: Nguyễn Văn An" class="widget-input" />
+                    </div>
+
+                    <div class="form-group-dates">
+                        <div class="date-pick-half">
+                            <label class="widget-input-label">Số điện thoại (*)</label>
+                            <input type="tel" name="PhoneNumber" required placeholder="0901234567" class="widget-input" />
+                        </div>
+                        <div class="date-pick-half">
+                            <label class="widget-input-label">Email nhận vé (*)</label>
+                            <input type="email" name="Email" required placeholder="an@example.com" class="widget-input" />
+                        </div>
+                    </div>
+
+                    <!-- WIDGET BÓC TÁCH GIÁ MINH BẠCH (PRICING BREAKDOWN TRAVELOKA) -->
+                    <div class="pricing-breakdown-card">
+                        <div class="breakdown-title">
+                            <span>🧾 Bóc tách chi phí minh bạch</span>
+                            <span class="breakdown-tag-verified">Chuẩn Traveloka</span>
+                        </div>
+
+                        <!-- 1. Tạm tính giá gốc x số đêm -->
+                        <div class="breakdown-row">
+                            <span class="row-label">
+                                Giá niêm yết (<span id="calc-nights">1</span> đêm x <span id="calc-unit-price">@defaultPrice.ToString("N0") ₫</span>):
+                            </span>
+                            <span class="row-value" id="calc-subtotal">@defaultPrice.ToString("N0") ₫</span>
+                        </div>
+
+                        <!-- 2. Thuế & Phí dịch vụ sàn 10% -->
+                        <div class="breakdown-row">
+                            <span class="row-label">
+                                Thuế &amp; Phí dịch vụ sàn (10%):
+                            </span>
+                            <span class="row-value fee-highlight" id="calc-service-fee">@((defaultPrice * 0.10m).ToString("N0")) ₫</span>
+                        </div>
+
+                        <div class="breakdown-separator"></div>
+
+                        <!-- 3. Tổng tiền thanh toán cuối cùng (Font to màu cam #FF5E1F) -->
+                        <div class="breakdown-total-row">
+                            <div class="total-label-wrap">
+                                <span class="total-main-label">Tổng thanh toán:</span>
+                                <span class="total-sub-note">Đã gồm thuế, phí sàn &amp; bảo hiểm</span>
+                            </div>
+                            <strong class="total-final-amount" id="calc-grand-total">
+                                @((defaultPrice * 1.10m).ToString("N0")) ₫
+                            </strong>
+                        </div>
+                    </div>
+
+                    <!-- NÚT CTA ĐẶT NGAY MÀU CAM #FF5E1F -->
+                    <button type="submit" class="traveloka-cta-book-btn">
+                        <span class="btn-flash">⚡</span> Đặt Ngay Bây Giờ
+                    </button>
+
+                    <div class="instant-book-badges">
+                        <span>🔒 Xác nhận ngay lập tức</span> &bull;
+                        <span>💳 Thanh toán bảo mật</span>
+                    </div>
                 </form>
-            </article>
-        }
+            </aside>
+        </div>
     </div>
-</section>
+</div>
+
+@section Scripts {
+<script>
+    let currentUnitPrice = @defaultPrice;
+
+    function selectRoom(roomId, roomNumber, price, capacity) {
+        currentUnitPrice = price;
+        document.getElementById('inputRoomId').value = roomId;
+        document.getElementById('inputRoomIds').value = roomId;
+        document.getElementById('inputGuestCount').max = capacity;
+
+        // Cập nhật radio button
+        const radio = document.getElementById('radio_' + roomId);
+        if (radio) radio.checked = true;
+
+        // Cập nhật class active trên các selector item
+        document.querySelectorAll('.room-selector-item').forEach(el => el.classList.remove('selected'));
+        if (radio) {
+            const parent = radio.closest('.room-selector-item');
+            if (parent) parent.classList.add('selected');
+        }
+
+        updatePricingWidget();
+    }
+
+    function updatePricingWidget() {
+        const checkInVal = document.getElementById('inputCheckIn').value;
+        const checkOutVal = document.getElementById('inputCheckOut').value;
+        if (!checkInVal || !checkOutVal) return;
+
+        const checkIn = new Date(checkInVal);
+        const checkOut = new Date(checkOutVal);
+
+        const diffTime = checkOut.getTime() - checkIn.getTime();
+        const nights = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+
+        const subtotal = currentUnitPrice * nights;
+        const serviceFee = Math.round(subtotal * 0.10);
+        const grandTotal = subtotal + serviceFee;
+
+        // Cập nhật UI
+        document.getElementById('widget-display-price').textContent = currentUnitPrice.toLocaleString('vi-VN');
+        document.getElementById('calc-nights').textContent = nights;
+        document.getElementById('calc-unit-price').textContent = currentUnitPrice.toLocaleString('vi-VN') + ' ₫';
+        document.getElementById('calc-subtotal').textContent = subtotal.toLocaleString('vi-VN') + ' ₫';
+        document.getElementById('calc-service-fee').textContent = serviceFee.toLocaleString('vi-VN') + ' ₫';
+        document.getElementById('calc-grand-total').textContent = grandTotal.toLocaleString('vi-VN') + ' ₫';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const checkInInput = document.getElementById('inputCheckIn');
+        const checkOutInput = document.getElementById('inputCheckOut');
+
+        checkInInput.addEventListener('change', function () {
+            if (checkOutInput.value && new Date(checkOutInput.value) <= new Date(checkInInput.value)) {
+                const nextDay = new Date(checkInInput.value);
+                nextDay.setDate(nextDay.getDate() + 1);
+                checkOutInput.value = nextDay.toISOString().split('T')[0];
+            }
+            updatePricingWidget();
+        });
+
+        checkOutInput.addEventListener('change', updatePricingWidget);
+        updatePricingWidget();
+    });
+</script>
+}

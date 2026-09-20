@@ -133,6 +133,8 @@ namespace HomestaySystem.Services
                 HinhAnhDaiDien = NormalizeImageUrl(dto.Photos?.FirstOrDefault()),
                 DanhSachHinhAnh = dto.Photos?.Select(NormalizeImageUrl).ToList() ?? new List<string>(),
                 TongSoPhong = dto.Rooms?.Count ?? 0,
+                LoaiHinh = dto.Type ?? "HOMESTAY",
+                CCCDChuHome = dto.Owner?.CitizenId ?? string.Empty,
                 GiaThapNhat = dto.Rooms?.Any() == true ? dto.Rooms.Min(r => r.BasePrice) : 0,
                 GiaCaoNhat = dto.Rooms?.Any() == true ? dto.Rooms.Max(r => r.BasePrice) : 0
             };
@@ -466,23 +468,64 @@ namespace HomestaySystem.Services
         // ================= 6. BẢO TRÌ HỆ THỐNG =================
         public async Task<(bool ThanhCong, string ThongBao)> SaoLuuCoSoDuLieuAsync(string duongDanThuMuc)
         {
-            await Task.Delay(100);
-            return (true, "Sao lưu tự động hoàn tất trên máy chủ SQL Server.");
+            try
+            {
+                await EnsureAuthenticatedAsync();
+                var payload = new { backupPath = duongDanThuMuc };
+                var response = await _http.PostAsJsonAsync("api/admin/maintenance/backup", payload, JsonOptions);
+                var result = await response.Content.ReadFromJsonAsync<ApiMaintenanceResultDto>(JsonOptions);
+                if (response.IsSuccessStatusCode && result?.Success == true)
+                {
+                    return (true, result.Message);
+                }
+                return (false, result?.Message ?? $"Máy chủ trả về mã lỗi {(int)response.StatusCode}");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi kết nối máy chủ API khi sao lưu: {ex.Message}");
+            }
         }
 
         public async Task<(bool ThanhCong, string ThongBao)> PhucHoiCoSoDuLieuAsync(string duongDanTepBak)
         {
-            await Task.Delay(100);
-            return (true, "CSDL đã đồng bộ với hệ thống máy chủ.");
+            try
+            {
+                await EnsureAuthenticatedAsync();
+                var payload = new { backupFilePath = duongDanTepBak };
+                var response = await _http.PostAsJsonAsync("api/admin/maintenance/restore", payload, JsonOptions);
+                var result = await response.Content.ReadFromJsonAsync<ApiMaintenanceResultDto>(JsonOptions);
+                if (response.IsSuccessStatusCode && result?.Success == true)
+                {
+                    return (true, result.Message);
+                }
+                return (false, result?.Message ?? $"Máy chủ trả về mã lỗi {(int)response.StatusCode}");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi kết nối máy chủ API khi phục hồi: {ex.Message}");
+            }
         }
 
         public async Task<List<string>> LayNhatKyBaoTriAsync()
         {
-            await Task.Delay(50);
+            try
+            {
+                await EnsureAuthenticatedAsync();
+                var response = await _http.GetAsync("api/admin/audit-logs?limit=50");
+                if (response.IsSuccessStatusCode)
+                {
+                    var logs = await response.Content.ReadFromJsonAsync<List<ApiAuditLogDto>>(JsonOptions);
+                    if (logs != null && logs.Count > 0)
+                    {
+                        return logs.Select(l => $"[{l.Timestamp:dd/MM/yyyy HH:mm:ss}] [{l.Action}] {l.PerformedBy}: {l.Target} - {l.Reason}").ToList();
+                    }
+                }
+            }
+            catch { }
+
             return new List<string>
             {
-                $"[{DateTime.Now:dd/MM/yyyy HH:mm:ss}] Kết nối máy chủ ASP.NET Core API trực tuyến.",
-                $"[{DateTime.Now.AddHours(-1):dd/MM/yyyy HH:mm:ss}] Đồng bộ hóa CSDL HOMESTAY_DB trên SQL Server an toàn."
+                $"[{DateTime.Now:dd/MM/yyyy HH:mm:ss}] [KiemToan] Hệ thống Quản trị HomestaySystem trực tuyến và kết nối an toàn với máy chủ ASP.NET Core API."
             };
         }
 
@@ -494,6 +537,7 @@ namespace HomestaySystem.Services
                 TenCoSo = dto.Name,
                 DiaChi = dto.Address ?? string.Empty,
                 TinhThanh = dto.City ?? string.Empty,
+                LoaiHinh = dto.Type ?? "HOMESTAY",
                 MaChuHome = dto.OwnerId,
                 TenChuHome = dto.OwnerName,
                 EmailChuHome = dto.OwnerEmail,
@@ -534,6 +578,8 @@ namespace HomestaySystem.Services
         private record ApiRevenueReportDto(decimal TotalCustomerPaid, decimal PlatformCommission, decimal HostPayout, int TotalBookings, int TotalProperties, int TotalUsers, List<ApiRevenueBookingItemDto>? Bookings);
         private record ApiRevenueBookingItemDto(int BookingId, string PropertyName, int OwnerId, string OwnerName, string GuestName, DateTime CheckIn, DateTime CheckOut, decimal TotalAmount, decimal Commission, decimal HostPayout, string Status, string PaymentStatus, DateTime BookingDate);
         private record ApiPromotionDto(int Id, string Code, int Percentage, decimal? MaxDiscount, DateTime? StartDate, DateTime? ExpiryDate, int UsageCount, bool IsActive);
+        private record ApiMaintenanceResultDto(bool Success, string Message, string? FilePath, DateTime Timestamp);
+        private record ApiAuditLogDto(int Id, string Action, string PerformedBy, string? Target, string? Reason, DateTime Timestamp);
         #endregion
     }
 }

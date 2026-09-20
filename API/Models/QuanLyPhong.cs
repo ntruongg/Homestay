@@ -31,7 +31,7 @@ public class CoSoLuuTru
     [StringLength(200)]
     public string? GiayToAnttUrl { get; set; }
     [StringLength(50)]
-    public string LoaiHinh { get; set; } = "Homestay";
+    public string LoaiHinh { get; set; } = "HOMESTAY";
     [StringLength(200)]
     public string? ChinhSach { get; set; }
     public bool TrangThai { get; set; } = false;

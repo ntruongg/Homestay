@@ -1,22 +1,22 @@
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=tensv;Database=HOMESTAY_DB;Trusted_Connection=True;TrustServerCertificate=True;"
+    "DefaultConnection": "Server=localhost;Database=HOMESTAY_DB;Trusted_Connection=True;TrustServerCertificate=True;"
   },
   "Jwt": {
-    "Key": "keybimat"
+    "Key": "YOUR_JWT_SECRET_KEY_HERE"
   },
   "Cloudinary": {
-    "CloudName": "your_cloud_name",
-    "ApiKey": "your_api_key",
-    "ApiSecret": "your_api_secret"
+    "CloudName": "YOUR_CLOUDINARY_CLOUD_NAME",
+    "ApiKey": "YOUR_CLOUDINARY_API_KEY",
+    "ApiSecret": "YOUR_CLOUDINARY_API_SECRET"
   },
   "Smtp": {
     "Host": "smtp.gmail.com",
     "Port": 587,
     "Username": "your_email@gmail.com",
-    "Password": "your_16_char_app_password",
+    "Password": "YOUR_APP_PASSWORD_HERE",
     "EnableSsl": true,
-    "FromEmail": "no-reply@stayly.com",
+    "FromEmail": "noreply@stayly.com",
     "FromName": "Stayly Support"
   },
   "Auth": {

@@ -142,14 +142,19 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- BẢNG DANH SÁCH TÀI KHOẢN -->
-                <Border Grid.Column="0" Background="White" CornerRadius="12" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                    <DataGrid ItemsSource="{Binding DanhSachHienThi}" SelectedItem="{Binding TaiKhoanDangChon}"
-                              AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
-                              HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F1F5F9"
-                              Background="White" BorderThickness="0" RowHeight="46" Padding="4"
-                              HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
-                              ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
-                              ScrollViewer.CanContentScroll="True">
+                <Border Grid.Column="0" Background="White" CornerRadius="12" BorderBrush="{StaticResource MauVien}" BorderThickness="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <DataGrid Grid.Row="0" ItemsSource="{Binding DanhSachHienThi}" SelectedItem="{Binding TaiKhoanDangChon}"
+                                  AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                                  HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F1F5F9"
+                                  Background="White" BorderThickness="0" RowHeight="46" Padding="4"
+                                  VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+                                  ScrollViewer.CanContentScroll="True"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto">
                         <DataGrid.ColumnHeaderStyle>
                             <Style TargetType="DataGridColumnHeader">
                                 <Setter Property="Background" Value="#F8FAFC"/>
@@ -211,6 +216,7 @@
                             <DataGridTextColumn Header="Ngày tham gia" Binding="{Binding NgayTao, Mode=OneWay, StringFormat='{}{0:dd/MM/yyyy}'}" Width="110"/>
                         </DataGrid.Columns>
                     </DataGrid>
+                    </Grid>
                 </Border>
 
                 <!-- CHI TIẾT TÀI KHOẢN & HỒ SƠ TERA CHỦ HOME -->

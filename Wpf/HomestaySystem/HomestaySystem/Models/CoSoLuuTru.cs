@@ -14,12 +14,16 @@ namespace HomestaySystem.Models
         public string DiaChi { get; set; } = string.Empty;
         public string TinhThanh { get; set; } = string.Empty;
         public string MoTa { get; set; } = string.Empty;
+        public string LoaiHinh { get; set; } = "HOMESTAY";
 
         // Thông tin chủ sở hữu
         public int MaChuHome { get; set; }
         public string TenChuHome { get; set; } = string.Empty;
         public string SoDienThoaiChuHome { get; set; } = string.Empty;
         public string EmailChuHome { get; set; } = string.Empty;
+        public string CCCDChuHome { get; set; } = string.Empty;
+
+        public string TenLoaiHinhHienThi => LoaiHinh == "HOTEL" ? "Khách sạn (theo phòng)" : "Homestay nguyên căn";
 
         /// <summary>
         /// Trạng thái kiểm duyệt: "ChoDuyet", "DaDuyet", "TuChoi"

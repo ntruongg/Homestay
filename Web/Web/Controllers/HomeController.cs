@@ -8,14 +8,22 @@ public sealed class HomeController(HomestayApiClient api) : Controller
 {
     public async Task<IActionResult> Index(
         string? location,
+        string? loaiHinh,
+        DateTime? checkIn,
+        DateTime? checkOut,
+        int? guests,
         CancellationToken cancellationToken)
     {
         ViewBag.Location = location;
+        ViewBag.LoaiHinh = loaiHinh ?? "ALL";
+        ViewBag.CheckIn = checkIn?.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd");
+        ViewBag.CheckOut = checkOut?.ToString("yyyy-MM-dd") ?? DateTime.Today.AddDays(1).ToString("yyyy-MM-dd");
+        ViewBag.Guests = guests ?? 2;
         ViewBag.User = HttpContext.Session.GetString("userName");
 
         try
         {
-            return View(await api.GetPropertiesAsync(location, cancellationToken));
+            return View(await api.GetPropertiesAsync(location, loaiHinh, checkIn, checkOut, guests, cancellationToken));
         }
         catch (Exception ex)
         {
@@ -626,6 +634,12 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         BookingInput input,
         CancellationToken cancellationToken)
     {
+        input.RoomIds ??= new List<int>();
+        if (input.RoomIds.Count == 0 && input.RoomId.HasValue)
+        {
+            input.RoomIds.Add(input.RoomId.Value);
+        }
+
         var token = HttpContext.Session.GetString("token");
 
         if (token is null)

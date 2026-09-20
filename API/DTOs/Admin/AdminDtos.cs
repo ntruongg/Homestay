@@ -240,7 +240,37 @@ public sealed record AdminUserResponse(
 public sealed class UpdateUserStatusRequest
 {
     public bool IsActive { get; set; }
+    public string? Reason { get; set; }
 }
+
+#region Maintenance & Audit Log DTOs
+public sealed class BackupDatabaseRequest
+{
+    public string? BackupPath { get; set; }
+}
+
+public sealed class RestoreDatabaseRequest
+{
+    [Required]
+    public string BackupFilePath { get; set; } = string.Empty;
+}
+
+public sealed record MaintenanceResultResponse(
+    bool Success,
+    string Message,
+    string? FilePath,
+    DateTime Timestamp
+);
+
+public sealed record AuditLogResponse(
+    int Id,
+    string Action,
+    string PerformedBy,
+    string? Target,
+    string? Reason,
+    DateTime Timestamp
+);
+#endregion
 #endregion
 
 #region Revenue Report DTOs

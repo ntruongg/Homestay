@@ -52,10 +52,12 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
             GhiChu = f.Note?.Trim()
         }).ToList() ?? [];
 
-        var nights = (request.CheckOut.Date - request.CheckIn.Date).Days;
+        var nights = Math.Max(1, (request.CheckOut.Date - request.CheckIn.Date).Days);
         var roomTotal = rooms.Sum(r => r.GiaGoc) * nights;
         var extraFeesTotal = extraFees.Sum(f => f.ThanhTien);
-        var total = roomTotal + extraFeesTotal;
+        var tienGoc = roomTotal + extraFeesTotal;
+        var phiDichVu = tienGoc * 0.10m; // Phí dịch vụ sàn 10% theo chuẩn Traveloka
+        var tongTien = tienGoc + phiDichVu;
 
         var booking = new DonDatPhong
         {
@@ -66,17 +68,59 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
             SoNguoiLon = adults,
             SoTreEm = children,
             SoNguoi = guestCount,
+            TongTien = tongTien,
             TrangThai = "Pending",
-            ChiTietDons = rooms.Select(r => new ChiTietDon { MaPhong = r.MaPhong }).ToList(),
+            ChiTietDons = rooms.Select(r => new ChiTietDon { 
+                MaPhong = r.MaPhong,
+                DonGia = r.GiaGoc
+            }).ToList(),
             PhuThus = extraFees
         };
 
         db.DonDatPhongs.Add(booking);
         await db.SaveChangesAsync(cancellationToken);
+
+        // Sinh bản ghi Hóa đơn thanh toán (ACID Transaction)
+        var thanhToan = new ThanhToan
+        {
+            MaDonDatPhong = booking.MaDonDatPhong,
+            TienGoc = tienGoc,
+            PhiDichVu = phiDichVu,
+            TongTien = tongTien,
+            PTTT = "DirectPayment",
+            TrangThai = "Đã thanh toán",
+            NgayThanhToan = DateTime.UtcNow
+        };
+        db.ThanhToans.Add(thanhToan);
+
+        // Khóa lịch phòng trong bảng LichLuuTru
+        for (var date = request.CheckIn.Date.Date; date < request.CheckOut.Date.Date; date = date.AddDays(1))
+        {
+            foreach (var r in rooms)
+            {
+                var existingSchedule = await db.LichLuuTrus.FirstOrDefaultAsync(
+                    s => s.MaPhong == r.MaPhong && s.Ngay == date, cancellationToken);
+                if (existingSchedule != null)
+                {
+                    existingSchedule.TrangThai = "Đã đặt";
+                }
+                else
+                {
+                    db.LichLuuTrus.Add(new LichLuuTru
+                    {
+                        MaPhong = r.MaPhong,
+                        Ngay = date,
+                        TrangThai = "Đã đặt"
+                    });
+                }
+            }
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = booking.MaDonDatPhong },
-            ToResponse(booking, request.RoomIds, total));
+            ToResponse(booking, request.RoomIds, tongTien));
     }
 
     [HttpGet]
@@ -90,7 +134,7 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
             .OrderByDescending(b => b.NgayDat).ToListAsync(cancellationToken);
 
         return Ok(bookings.Select(b => ToResponse(b, b.ChiTietDons.Select(d => d.MaPhong),
-            b.ChiTietDons.Sum(d => d.Phong.GiaGoc) * (b.NgayDi.Date - b.NgayDen.Date).Days + b.PhuThus.Sum(f => f.ThanhTien))));
+            b.TongTien > 0 ? b.TongTien : (b.ChiTietDons.Sum(d => d.DonGia > 0 ? d.DonGia : d.Phong.GiaGoc) * Math.Max(1, (b.NgayDi.Date - b.NgayDen.Date).Days) + b.PhuThus.Sum(f => f.ThanhTien)))));
     }
 
     [HttpGet("{id:int}")]
@@ -105,20 +149,33 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
         return booking is null
             ? NotFound()
             : Ok(ToResponse(booking, booking.ChiTietDons.Select(d => d.MaPhong),
-                booking.ChiTietDons.Sum(d => d.Phong.GiaGoc) * (booking.NgayDi.Date - booking.NgayDen.Date).Days + booking.PhuThus.Sum(f => f.ThanhTien)));
+                booking.TongTien > 0 ? booking.TongTien : (booking.ChiTietDons.Sum(d => d.DonGia > 0 ? d.DonGia : d.Phong.GiaGoc) * Math.Max(1, (booking.NgayDi.Date - booking.NgayDen.Date).Days) + booking.PhuThus.Sum(f => f.ThanhTien))));
     }
 
     [HttpPut("{id:int}/cancel")]
     public async Task<IActionResult> Cancel(int id, CancellationToken cancellationToken)
     {
-        var booking = await db.DonDatPhongs.SingleOrDefaultAsync(
-            b => b.MaDonDatPhong == id && b.MaKhachHang == GetAccountId(), cancellationToken);
+        var booking = await db.DonDatPhongs
+            .Include(b => b.ChiTietDons)
+            .SingleOrDefaultAsync(
+                b => b.MaDonDatPhong == id && b.MaKhachHang == GetAccountId(), cancellationToken);
         if (booking is null)
             return NotFound();
         if (booking.TrangThai is not ("Pending" or "Confirmed"))
             return Conflict("Only pending or confirmed bookings can be cancelled.");
 
         booking.TrangThai = "Cancelled";
+
+        // Nhả lịch trong LichLuuTru về Trống
+        var roomIds = booking.ChiTietDons.Select(d => d.MaPhong).ToList();
+        var schedules = await db.LichLuuTrus
+            .Where(l => roomIds.Contains(l.MaPhong) && l.Ngay >= booking.NgayDen.Date && l.Ngay < booking.NgayDi.Date)
+            .ToListAsync(cancellationToken);
+        foreach (var s in schedules)
+        {
+            s.TrangThai = "Trống";
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return NoContent();
     }

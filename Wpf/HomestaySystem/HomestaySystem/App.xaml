@@ -4,8 +4,7 @@
              xmlns:local="clr-namespace:HomestaySystem"
              xmlns:vm="clr-namespace:HomestaySystem.ViewModels"
              xmlns:views="clr-namespace:HomestaySystem.Views"
-             xmlns:conv="clr-namespace:HomestaySystem.Converters"
-             StartupUri="MainWindow.xaml">
+             xmlns:conv="clr-namespace:HomestaySystem.Converters">
     <Application.Resources>
         <!-- Converters toàn cục (Hỗ trợ cả tên chuẩn và tên rút gọn) -->
         <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>

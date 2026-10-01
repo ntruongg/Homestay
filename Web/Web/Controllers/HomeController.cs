@@ -744,8 +744,21 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         var (success, details, error) = await api.GetOwnerPropertyAsync(id, token, cancellationToken);
         if (!success || details is null)
             return BadRequest(new { message = error ?? "Không thể tải chi tiết cơ sở lưu trú." });
-
         return Ok(details);
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> TogglePropertyActive(int id, [FromServices] HomestayApiClient api, CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (token is null)
+            return Unauthorized(new { message = "Vui lòng đăng nhập lại." });
+
+        var (success, msg, isActive) = await api.TogglePropertyActiveAsync(id, token, cancellationToken);
+        if (!success)
+            return BadRequest(new { message = msg });
+            
+        return Ok(new { message = msg, isActive = isActive });
     }
 
     [HttpPost]

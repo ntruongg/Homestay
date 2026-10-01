@@ -439,7 +439,8 @@ public sealed class HomestayApiClient(HttpClient http)
             input.AmenityIds,
             input.PhotoUrls,
             input.HomestayPrice,
-            input.HomestayCapacity,
+            input.HomestayAdultCapacity,
+            input.HomestayChildCapacity,
             input.HomestayRoomTypeId,
             InitialRooms = input.InitialRooms?.Select(r => new
             {
@@ -484,6 +485,29 @@ public sealed class HomestayApiClient(HttpClient http)
         }
     }
 
+    public async Task<(bool Success, string? Message, bool? IsActive)> TogglePropertyActiveAsync(int id, string token, CancellationToken cancellationToken = default)
+    {
+        using var request = CreateAuthorizedRequest(HttpMethod.Put, $"properties/{id}/toggle-active", token);
+        request.Content = new StringContent(string.Empty);
+        using var response = await http.SendAsync(request, cancellationToken);
+        var jsonString = await response.Content.ReadAsStringAsync(cancellationToken);
+        
+        if (!response.IsSuccessStatusCode)
+            return (false, string.IsNullOrWhiteSpace(jsonString) ? "Lỗi máy chủ." : jsonString, null);
+            
+        try
+        {
+            var json = System.Text.Json.JsonDocument.Parse(jsonString);
+            var msg = json.RootElement.GetProperty("message").GetString();
+            var isActive = json.RootElement.GetProperty("isActive").GetBoolean();
+            return (true, msg, isActive);
+        }
+        catch
+        {
+            return (true, "Thành công", null);
+        }
+    }
+
     public async Task<(bool Success, string? Error)> UpdatePropertyAsync(
         UpdatePropertyInput input,
         string token,
@@ -504,7 +528,8 @@ public sealed class HomestayApiClient(HttpClient http)
             input.SecurityDocumentUrl,
             input.AmenityIds,
             input.HomestayPrice,
-            input.HomestayCapacity,
+            input.HomestayAdultCapacity,
+            input.HomestayChildCapacity,
             input.HomestayRoomTypeId,
             input.Resubmit
         };

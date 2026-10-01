@@ -1,8 +1,11 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using ClosedXML.Excel;
+using System.Security.Claims;
 using API.Data;
 using API.DTOs.Owner;
 using API.DTOs.Reviews;
+using API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -50,7 +53,7 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
         var propDtos = properties.Select(p =>
         {
             var latestApproval = p.LichSuDuyets.OrderByDescending(h => h.NgayDuyet).FirstOrDefault();
-            var approvalStatus = p.TrangThai ? "Approved" : (latestApproval?.TrangThaiDuyet ?? "Pending");
+            var approvalStatus = p.TrangThaiDuyet;
             var rejectionReason = latestApproval?.LyDoTuChoi;
 
             return new OwnerPropertyDto(
@@ -66,7 +69,8 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
                 p.ChinhSach,
                 rejectionReason,
                 p.Phongs.Count,
-                coverImages.FirstOrDefault(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru)?.UrlHinhAnh
+                coverImages.FirstOrDefault(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru)?.UrlHinhAnh,
+                p.TrangThaiHoatDong
             );
         }).ToList();
 
@@ -77,7 +81,7 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
             r.SoPhong,
             r.SucChua,
             r.GiaGoc,
-            r.TinhTrang ?? "Trống",
+            r.TinhTrang ?? "DangTrong",
             r.LoaiPhong?.TenLoaiPhong ?? "Standard"
         )).ToList();
 
@@ -86,20 +90,20 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
             var propName = b.ChiTietDons.FirstOrDefault()?.Phong?.CoSoLuuTru?.TenCoSoLuuTru ?? "Homestay";
             var roomNos = b.ChiTietDons.Select(d => d.Phong?.SoPhong ?? d.MaPhong.ToString()).ToList();
             var nights = Math.Max(1, (b.NgayDi.Date - b.NgayDen.Date).Days);
-            var calculatedTotal = b.ChiTietDons.Sum(d => d.Phong?.GiaGoc ?? 0) * nights;
+            var calculatedTotal = b.ChiTietDons.Sum(d => d.DonGia) * nights;
 
             return new OwnerBookingDto(
                 b.MaDonDatPhong,
                 propName,
                 roomNos,
-                b.KhachHang?.MaTaiKhoan ?? 0,
+                b.KhachHang?.MaNguoiDung ?? 0,
                 b.KhachHang?.HoTen ?? "Guest",
                 b.KhachHang?.DienThoai ?? "",
                 b.KhachHang?.Email ?? "",
                 b.NgayDen,
                 b.NgayDi,
                 b.SoNguoi,
-                b.TrangThai ?? "Pending",
+                b.TrangThai,
                 calculatedTotal,
                 b.NgayDat
             );
@@ -117,20 +121,19 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
                 guestName,
                 booking?.NgayDat ?? DateTime.UtcNow,
                 inv.TongTien,
-                inv.TienGoc,
+                inv.TienThucNhanChu > 0 ? inv.TienThucNhanChu : inv.TienGoc,
                 string.IsNullOrWhiteSpace(inv.PTTT) ? "Direct / Cash" : inv.PTTT
             );
         }).ToList();
 
         decimal totalRevenue = invoices.Any()
-            ? invoices.Sum(i => i.TongTien)
+            ? invoices.Sum(i => i.TienThucNhanChu > 0 ? i.TienThucNhanChu : i.TongTien)
             : bookingDtos
-                .Where(b => b.Status is "Confirmed" or "CheckedIn" or "CheckedOut")
+                .Where(b => b.Status is "Confirmed" or "DaDuyet" or "DaHoanTat")
                 .Sum(b => b.TotalAmount);
 
-        var approvedProperties = properties.Count(p => p.TrangThai);
-        var pendingProperties = properties.Count(p => !p.TrangThai &&
-            (p.LichSuDuyets.OrderByDescending(h => h.NgayDuyet).FirstOrDefault()?.TrangThaiDuyet ?? "Pending") == "Pending");
+        var approvedProperties = properties.Count(p => p.TrangThaiDuyet == "DaDuyet");
+        var pendingProperties = properties.Count(p => p.TrangThaiDuyet == "ChoDuyet");
 
         var summary = new OwnerSummaryDto(
             properties.Count,
@@ -138,11 +141,84 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
             pendingProperties,
             allRooms.Count,
             bookings.Count,
-            bookings.Count(b => b.TrangThai == "Pending"),
+            bookings.Count(b => b.TrangThai == "ChoDuyet" || b.TrangThai == "Pending"),
             totalRevenue
         );
 
         return Ok(new OwnerDashboardResponse(summary, propDtos, roomDtos, bookingDtos, invoiceDtos));
+    }
+
+    [HttpGet("export")]
+    public async Task<IActionResult> ExportExcel(CancellationToken cancellationToken)
+    {
+        var ownerId = GetAccountId();
+        var properties = await db.CoSoLuuTrus.AsNoTracking()
+            .Where(p => p.MaChuCoSoLuuTru == ownerId)
+            .Include(p => p.Phongs)
+            .ToListAsync(cancellationToken);
+            
+        var roomIds = properties.SelectMany(p => p.Phongs).Select(r => r.MaPhong).ToList();
+        
+        var bookings = await db.DonDatPhongs.AsNoTracking()
+            .Where(b => b.ChiTietDons.Any(d => roomIds.Contains(d.MaPhong)))
+            .Include(b => b.KhachHang)
+            .Include(b => b.ThanhToan)
+            .Include(b => b.GiamGia)
+            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong)
+            .OrderByDescending(b => b.NgayDat)
+            .ToListAsync(cancellationToken);
+
+        using var workbook = new ClosedXML.Excel.XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Thống kê đặt phòng");
+
+        worksheet.Cell(1, 1).Value = "Mã Đơn";
+        worksheet.Cell(1, 2).Value = "Khách Hàng";
+        worksheet.Cell(1, 3).Value = "Phòng";
+        worksheet.Cell(1, 4).Value = "Ngày Đặt";
+        worksheet.Cell(1, 5).Value = "Nhận Phòng";
+        worksheet.Cell(1, 6).Value = "Trả Phòng";
+        worksheet.Cell(1, 7).Value = "Trạng Thái";
+        worksheet.Cell(1, 8).Value = "Mã Giảm Giá";
+        worksheet.Cell(1, 9).Value = "Khách Trả (VNĐ)";
+        worksheet.Cell(1, 10).Value = "Thực Nhận (VNĐ)";
+
+        var headerRow = worksheet.Row(1);
+        headerRow.Style.Font.Bold = true;
+        headerRow.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightBlue;
+
+        int row = 2;
+        foreach (var b in bookings)
+        {
+            var roomNumbers = string.Join(", ", b.ChiTietDons.Select(d => d.Phong?.SoPhong ?? "N/A"));
+            worksheet.Cell(row, 1).Value = b.MaDonDatPhong;
+            worksheet.Cell(row, 2).Value = b.KhachHang?.HoTen ?? "Khách";
+            worksheet.Cell(row, 3).Value = roomNumbers;
+            worksheet.Cell(row, 4).Value = b.NgayDat.ToString("dd/MM/yyyy HH:mm");
+            worksheet.Cell(row, 5).Value = b.NgayDen.ToString("dd/MM/yyyy");
+            worksheet.Cell(row, 6).Value = b.NgayDi.ToString("dd/MM/yyyy");
+            worksheet.Cell(row, 7).Value = b.TrangThai;
+            worksheet.Cell(row, 8).Value = b.GiamGia?.TenMa ?? "";
+            
+            decimal tongTien = b.ThanhToan?.TongTien ?? 0;
+            decimal thucNhan = b.ThanhToan?.TienThucNhanChu ?? 0;
+            
+            worksheet.Cell(row, 9).Value = tongTien;
+            worksheet.Cell(row, 9).Style.NumberFormat.Format = "#,##0";
+            
+            worksheet.Cell(row, 10).Value = thucNhan;
+            worksheet.Cell(row, 10).Style.NumberFormat.Format = "#,##0";
+            
+            row++;
+        }
+
+        worksheet.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        var content = stream.ToArray();
+
+        return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+            $"ThongKe_DatPhong_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx");
     }
 
     [HttpPut("bookings/{id:int}/status")]
@@ -174,6 +250,51 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
         return NoContent();
     }
 
+    [HttpPut("rooms/{id:int}/toggle-active")]
+    public async Task<IActionResult> ToggleRoomActive(int id, CancellationToken cancellationToken)
+    {
+        var ownerId = GetAccountId();
+        var room = await db.Phongs
+            .Include(r => r.CoSoLuuTru)
+            .FirstOrDefaultAsync(r => r.MaPhong == id, cancellationToken);
+
+        if (room is null)
+            return NotFound("Không tìm thấy phòng.");
+
+        if (room.CoSoLuuTru.MaChuCoSoLuuTru != ownerId)
+            return Forbid();
+
+        room.TrangThaiHoatDong = !room.TrangThaiHoatDong;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { success = true, isActive = room.TrangThaiHoatDong });
+    }
+
+    [HttpPut("rooms/{id:int}/status")]
+    public async Task<IActionResult> UpdateRoomOperationStatus(
+        int id, [FromBody] string status, CancellationToken cancellationToken)
+    {
+        var ownerId = GetAccountId();
+        var room = await db.Phongs
+            .Include(r => r.CoSoLuuTru)
+            .FirstOrDefaultAsync(r => r.MaPhong == id, cancellationToken);
+
+        if (room is null)
+            return NotFound("Không tìm thấy phòng.");
+
+        if (room.CoSoLuuTru.MaChuCoSoLuuTru != ownerId)
+            return Forbid();
+
+        var validStatuses = new[] { "DangTrong", "DangCoKhach", "DangSuaChua" };
+        if (!validStatuses.Contains(status))
+            return BadRequest("Tình trạng phòng phải là DangTrong, DangCoKhach hoặc DangSuaChua.");
+
+        room.TinhTrang = status;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { success = true, status = room.TinhTrang });
+    }
+
     [HttpGet("bookings/{id:int}")]
     public async Task<ActionResult<BookingDetailDto>> GetBookingDetail(int id, CancellationToken cancellationToken)
     {
@@ -183,7 +304,7 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
             .Where(b => b.MaDonDatPhong == id)
             .Include(b => b.KhachHang)
             .Include(b => b.GiamGia)
-            .Include(b => b.PhuThus)
+            .Include(b => b.DonDatPhongDichVus).ThenInclude(d => d.DichVu)
             .Include(b => b.ThanhToan)
             .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(r => r.CoSoLuuTru)
             .FirstOrDefaultAsync(cancellationToken);
@@ -198,15 +319,15 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
         var propName = booking.ChiTietDons.FirstOrDefault()?.Phong?.CoSoLuuTru?.TenCoSoLuuTru ?? "Homestay";
         var roomNos = booking.ChiTietDons.Select(d => d.Phong?.SoPhong ?? d.MaPhong.ToString()).ToList();
         var nights = Math.Max(1, (booking.NgayDi.Date - booking.NgayDen.Date).Days);
-        var basePrice = booking.ChiTietDons.Sum(d => d.Phong?.GiaGoc ?? 0) * nights;
+        var basePrice = booking.ChiTietDons.Sum(d => d.DonGia) * nights;
 
-        var extraFees = booking.PhuThus.Select(p => new ExtraFeeItemDto(
-            p.MaPhuThu,
-            p.TenPhuThu,
+        var extraFees = booking.DonDatPhongDichVus.Select(p => new ExtraFeeItemDto(
+            p.MaDichVu,
+            p.DichVu?.TenDichVu ?? "Dịch vụ",
             p.SoLuong,
             p.DonGia,
             p.ThanhTien,
-            p.GhiChu
+            null
         )).ToList();
 
         string? promoCode = booking.GiamGia?.TenMa;
@@ -225,14 +346,14 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
             booking.MaDonDatPhong,
             propName,
             roomNos,
-            booking.KhachHang?.MaTaiKhoan ?? 0,
+            booking.KhachHang?.MaNguoiDung ?? 0,
             booking.KhachHang?.HoTen ?? "Khách vãng lai",
             booking.KhachHang?.DienThoai ?? "",
             booking.KhachHang?.Email ?? "",
             booking.NgayDen,
             booking.NgayDi,
             booking.SoNguoi,
-            booking.TrangThai ?? "Pending",
+            booking.TrangThai,
             basePrice,
             totalAmount,
             promoCode,
@@ -243,6 +364,60 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
         ));
     }
 
+    [HttpGet("properties/{propertyId:int}/services")]
+    public async Task<IActionResult> GetServices(int propertyId, CancellationToken cancellationToken)
+    {
+        var ownerId = GetAccountId();
+        var hasAccess = await db.CoSoLuuTrus.AnyAsync(p => p.MaCoSoLuuTru == propertyId && p.MaChuCoSoLuuTru == ownerId, cancellationToken);
+        if (!hasAccess) return Forbid();
+
+        var services = await db.DichVus.AsNoTracking()
+            .Where(s => s.MaCoSoLuuTru == propertyId)
+            .Select(s => new
+            {
+                id = s.MaDichVu,
+                name = s.TenDichVu,
+                description = s.MoTa,
+                price = s.GiaDichVu,
+                isActive = s.TrangThaiHoatDong
+            }).ToListAsync(cancellationToken);
+
+        return Ok(services);
+    }
+
+    [HttpPost("properties/{propertyId:int}/services")]
+    public async Task<IActionResult> SaveService(int propertyId, [FromBody] SaveServiceDto request, CancellationToken cancellationToken)
+    {
+        var ownerId = GetAccountId();
+        var hasAccess = await db.CoSoLuuTrus.AnyAsync(p => p.MaCoSoLuuTru == propertyId && p.MaChuCoSoLuuTru == ownerId, cancellationToken);
+        if (!hasAccess) return Forbid();
+
+        if (request.Id == 0)
+        {
+            var svc = new DichVu
+            {
+                MaCoSoLuuTru = propertyId,
+                TenDichVu = request.Name,
+                GiaDichVu = request.Price,
+                MoTa = request.Description,
+                TrangThaiHoatDong = request.IsActive
+            };
+            db.DichVus.Add(svc);
+        }
+        else
+        {
+            var svc = await db.DichVus.FirstOrDefaultAsync(s => s.MaDichVu == request.Id && s.MaCoSoLuuTru == propertyId, cancellationToken);
+            if (svc == null) return NotFound("Không tìm thấy dịch vụ");
+            svc.TenDichVu = request.Name;
+            svc.GiaDichVu = request.Price;
+            svc.MoTa = request.Description;
+            svc.TrangThaiHoatDong = request.IsActive;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        return Ok(new { success = true });
+    }
+
     private int GetAccountId()
     {
         var claim = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
@@ -250,4 +425,13 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
             ?? User.FindFirstValue("nameid");
         return int.Parse(claim!);
     }
+}
+
+public sealed class SaveServiceDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public decimal Price { get; set; }
+    public bool IsActive { get; set; }
 }

@@ -2,10 +2,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.Data;
 using API.DTOs.Admin;
-using API.DTOs.Email;
 using API.DTOs.Properties;
 using API.Models;
-using API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,10 +14,7 @@ namespace API.Controllers;
 [ApiController]
 [Authorize(Roles = "ADMIN")]
 [Route("api/admin")]
-public sealed class AdminController(
-    HomestayDbContext db, 
-    IEmailService emailService, 
-    IPasswordHasher<TaiKhoan> passwordHasher) : ControllerBase
+public sealed class AdminController(HomestayDbContext db) : ControllerBase
 {
     #region 1. Quản lý cơ sở (Property Management)
     [HttpGet("areas")]
@@ -54,20 +49,17 @@ public sealed class AdminController(
 
         if (!string.IsNullOrWhiteSpace(status) && !status.Equals("All", StringComparison.OrdinalIgnoreCase))
         {
-            if (status.Equals("Approved", StringComparison.OrdinalIgnoreCase))
+            if (status.Equals("Approved", StringComparison.OrdinalIgnoreCase) || status.Equals("DaDuyet", StringComparison.OrdinalIgnoreCase))
             {
-                query = query.Where(p => p.TrangThai);
+                query = query.Where(p => p.TrangThaiDuyet == "DaDuyet");
             }
-            else if (status.Equals("Pending", StringComparison.OrdinalIgnoreCase))
+            else if (status.Equals("Pending", StringComparison.OrdinalIgnoreCase) || status.Equals("ChoDuyet", StringComparison.OrdinalIgnoreCase))
             {
-                query = query.Where(p => !p.TrangThai &&
-                    (p.LichSuDuyets.OrderByDescending(h => h.NgayDuyet).Select(h => h.TrangThaiDuyet).FirstOrDefault() == "Pending"
-                     || !p.LichSuDuyets.Any()));
+                query = query.Where(p => p.TrangThaiDuyet == "ChoDuyet");
             }
-            else if (status.Equals("Rejected", StringComparison.OrdinalIgnoreCase))
+            else if (status.Equals("Rejected", StringComparison.OrdinalIgnoreCase) || status.Equals("TuChoi", StringComparison.OrdinalIgnoreCase))
             {
-                query = query.Where(p => !p.TrangThai &&
-                    p.LichSuDuyets.OrderByDescending(h => h.NgayDuyet).Select(h => h.TrangThaiDuyet).FirstOrDefault() == "Rejected");
+                query = query.Where(p => p.TrangThaiDuyet == "TuChoi");
             }
         }
 
@@ -97,7 +89,7 @@ public sealed class AdminController(
         var result = properties.Select(p =>
         {
             var latestHistory = p.LichSuDuyets.OrderByDescending(h => h.NgayDuyet).FirstOrDefault();
-            var approvalStatus = p.TrangThai ? "Approved" : (latestHistory?.TrangThaiDuyet ?? "Pending");
+            var approvalStatus = p.TrangThaiDuyet;
             var rejectionReason = latestHistory?.LyDoTuChoi;
             var coverUrl = coverImages.FirstOrDefault(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru)?.UrlHinhAnh;
 
@@ -107,11 +99,11 @@ public sealed class AdminController(
                 p.DiaChi,
                 p.ThanhPho,
                 p.LoaiHinh,
-                p.TrangThai,
+                p.TrangThaiHoatDong,
                 approvalStatus,
                 rejectionReason,
                 p.Phongs.Count,
-                p.ChuCoSoLuuTru.MaTaiKhoan,
+                p.ChuCoSoLuuTru.MaNguoiDung,
                 p.ChuCoSoLuuTru.HoTen,
                 p.ChuCoSoLuuTru.Email,
                 p.ChuCoSoLuuTru.DienThoai,
@@ -124,20 +116,22 @@ public sealed class AdminController(
 
     [HttpGet("properties/{id:int}")]
     public async Task<ActionResult<AdminPropertyDetailsResponse>> GetPropertyDetails(
-        int id, CancellationToken cancellationToken)
+        int id,
+        CancellationToken cancellationToken)
     {
         var property = await db.CoSoLuuTrus.AsNoTracking()
             .Include(p => p.ChuCoSoLuuTru)
             .Include(p => p.Phongs).ThenInclude(r => r.LoaiPhong)
-            .Include(p => p.Phongs).ThenInclude(r => r.TienNghis).ThenInclude(pt => pt.TienNghi)
+            .Include(p => p.Phongs).ThenInclude(r => r.TienNghis).ThenInclude(rt => rt.TienNghiPhong)
+            .Include(p => p.TienNghis).ThenInclude(pt => pt.TienNghiCoSo)
             .Include(p => p.LichSuDuyets).ThenInclude(h => h.NguoiDuyet)
             .FirstOrDefaultAsync(p => p.MaCoSoLuuTru == id, cancellationToken);
 
         if (property is null)
-            return NotFound("Property not found.");
+            return NotFound("Không tìm thấy cơ sở lưu trú.");
 
         var photos = await db.HinhAnhs.AsNoTracking()
-            .Where(i => i.MaCoSoLuuTru == id)
+            .Where(i => i.MaCoSoLuuTru == id && i.MaPhong == null)
             .Select(i => i.UrlHinhAnh)
             .ToListAsync(cancellationToken);
 
@@ -146,22 +140,19 @@ public sealed class AdminController(
             .Where(i => i.MaPhong.HasValue && roomIds.Contains(i.MaPhong.Value))
             .ToListAsync(cancellationToken);
 
-        var latestHistory = property.LichSuDuyets.OrderByDescending(h => h.NgayDuyet).FirstOrDefault();
-        var approvalStatus = property.TrangThai ? "Approved" : (latestHistory?.TrangThaiDuyet ?? "Pending");
-
         var rooms = property.Phongs.Select(r => new AdminRoomDetailsResponse(
             r.MaPhong,
             r.SoPhong,
             r.SucChua,
             r.GiaGoc,
-            r.TinhTrang ?? "Trống",
+            r.TinhTrang ?? "DangTrong",
             r.LoaiPhong?.TenLoaiPhong,
             roomPhotos.Where(i => i.MaPhong == r.MaPhong).Select(i => i.UrlHinhAnh).ToList(),
-            r.TienNghis.Select(pt => new AdminAmenityResponse(
-                pt.MaTienNghi,
-                pt.TienNghi.TenTienNghi,
-                pt.SoLuong
-            )).ToList()
+            r.TienNghis.Select(rt => new AdminAmenityResponse(rt.MaTienNghi, rt.TienNghiPhong.TenTienNghi, rt.SoLuong)).ToList(),
+            r.SucChuaNguoiLon,
+            r.SucChuaTreEm,
+            r.MoTaPhong,
+            r.TrangThaiHoatDong
         )).ToList();
 
         var historyDtos = property.LichSuDuyets
@@ -176,9 +167,24 @@ public sealed class AdminController(
                 h.NgayDuyet
             )).ToList();
 
+        var owner = property.ChuCoSoLuuTru;
+        var ownerContact = new AdminOwnerContact(
+            owner.MaNguoiDung,
+            owner.HoTen,
+            owner.Email,
+            owner.DienThoai,
+            owner.CCCD,
+            owner.ThongTinNganHang,
+            owner.NganHang,
+            owner.SoTaiKhoan,
+            owner.TenNguoiThuHuong
+        );
+
+        var latestHistory = property.LichSuDuyets.OrderByDescending(h => h.NgayDuyet).FirstOrDefault();
+
         var response = new AdminPropertyDetailsResponse(
             property.MaCoSoLuuTru,
-            property.TenCoSoLuuTru ?? "",
+            property.TenCoSoLuuTru,
             property.DienThoai,
             property.Email,
             property.DiaChi,
@@ -186,20 +192,13 @@ public sealed class AdminController(
             property.ThanhPho,
             property.LoaiHinh,
             property.ChinhSach,
-            property.TrangThai,
-            approvalStatus,
+            property.TrangThaiHoatDong,
+            property.TrangThaiDuyet,
             latestHistory?.LyDoTuChoi,
             property.GiayPhepKinhDoanhUrl,
             property.GiayToPcccUrl,
             property.GiayToAnttUrl,
-            new AdminOwnerContact(
-                property.ChuCoSoLuuTru.MaTaiKhoan,
-                property.ChuCoSoLuuTru.HoTen,
-                property.ChuCoSoLuuTru.Email,
-                property.ChuCoSoLuuTru.DienThoai,
-                property.ChuCoSoLuuTru.CCCD,
-                property.ChuCoSoLuuTru.ThongTinNganHang
-            ),
+            ownerContact,
             photos,
             rooms,
             historyDtos
@@ -208,122 +207,39 @@ public sealed class AdminController(
         return Ok(response);
     }
 
-    [HttpPut("properties/{id:int}")]
-    public async Task<IActionResult> UpdateProperty(
-        int id,
-        [FromBody] UpdatePropertyAdminRequest request,
-        CancellationToken cancellationToken)
-    {
-        var property = await db.CoSoLuuTrus.FindAsync([id], cancellationToken);
-        if (property is null)
-            return NotFound("Property not found.");
-
-        property.TenCoSoLuuTru = request.Name.Trim();
-        if (!string.IsNullOrWhiteSpace(request.Address)) property.DiaChi = request.Address.Trim();
-        if (!string.IsNullOrWhiteSpace(request.Ward)) property.PhuongXa = request.Ward.Trim();
-        if (!string.IsNullOrWhiteSpace(request.City)) property.ThanhPho = request.City.Trim();
-        if (!string.IsNullOrWhiteSpace(request.Type)) property.LoaiHinh = request.Type.Trim();
-        if (!string.IsNullOrWhiteSpace(request.Phone)) property.DienThoai = request.Phone.Trim();
-        if (!string.IsNullOrWhiteSpace(request.Email)) property.Email = request.Email.Trim();
-        if (request.Policy != null) property.ChinhSach = request.Policy.Trim();
-        if (request.IsActive.HasValue) property.TrangThai = request.IsActive.Value;
-
-        await db.SaveChangesAsync(cancellationToken);
-        return Ok(new { message = $"Cơ sở #{id} đã được cập nhật thành công.", propertyId = id });
-    }
-    #endregion
-
-    #region 2. Duyệt đơn tạo cơ sở (Review & Decisions)
-    [HttpGet("properties/pending")]
-    public async Task<ActionResult<IReadOnlyList<PropertySummaryResponse>>> GetPendingProperties(
-        CancellationToken cancellationToken)
-    {
-        var properties = await db.CoSoLuuTrus.AsNoTracking()
-            .Where(p => !p.TrangThai)
-            .OrderByDescending(p => p.MaCoSoLuuTru)
-            .Select(p => new PropertySummaryResponse(
-                p.MaCoSoLuuTru,
-                p.TenCoSoLuuTru,
-                p.DiaChi,
-                p.LoaiHinh,
-                p.Phongs.Any() ? p.Phongs.Min(r => r.GiaGoc) : 0,
-                db.HinhAnhs.Where(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru)
-                    .Select(i => i.UrlHinhAnh).FirstOrDefault()))
-            .ToListAsync(cancellationToken);
-
-        return Ok(properties);
-    }
-
     [HttpPost("properties/{id:int}/approve")]
-    public async Task<IActionResult> Approve(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> ApproveProperty(int id, CancellationToken cancellationToken)
     {
         var adminId = GetAccountId();
         var property = await db.CoSoLuuTrus
             .Include(p => p.ChuCoSoLuuTru)
-            .Include(p => p.Phongs)
             .FirstOrDefaultAsync(p => p.MaCoSoLuuTru == id, cancellationToken);
 
         if (property is null)
-            return NotFound("Property not found.");
+            return NotFound("Không tìm thấy cơ sở.");
 
-        property.TrangThai = true;
-
-        // Activate all rooms that were pending review
-        foreach (var room in property.Phongs)
-        {
-            if (room.TinhTrang == "Chờ duyệt")
-            {
-                room.TinhTrang = "Trống";
-            }
-        }
-
-        // For Homestay: if no room exists yet, ensure the single whole-unit booking row is created
-        if (property.LoaiHinh == "Homestay" && !property.Phongs.Any())
-        {
-            var defaultRoomType = await db.LoaiPhongs.FirstOrDefaultAsync(l => l.TenLoaiPhong.Contains("Villa") || l.TenLoaiPhong.Contains("Nguyên căn"), cancellationToken)
-                ?? await db.LoaiPhongs.FirstOrDefaultAsync(cancellationToken);
-
-            var wholeUnitRoom = new Phong
-            {
-                CoSoLuuTru = property,
-                SoPhong = "Nguyên căn",
-                SucChua = 4,
-                GiaGoc = 1000000,
-                MaLoaiPhong = defaultRoomType?.MaLoaiPhong ?? 1,
-                TinhTrang = "Trống"
-            };
-            db.Phongs.Add(wholeUnitRoom);
-        }
+        property.TrangThaiDuyet = "DaDuyet";
 
         var history = new LichSuDuyet
         {
             MaCoSoLuuTru = id,
             MaNguoiDuyet = adminId,
-            TrangThaiDuyet = "Approved",
+            TrangThaiDuyet = "DaDuyet",
             LyDoTuChoi = null,
             NgayDuyet = DateTime.UtcNow
         };
         db.LichSuDuyets.Add(history);
+
+        // Ghi Audit Log
+        await LogActionAsync(adminId, "DUYET_CO_SO", "CoSoLuuTru", id,
+            $"Admin #{adminId} duyệt cơ sở '{property.TenCoSoLuuTru}'", cancellationToken);
+
         await db.SaveChangesAsync(cancellationToken);
-
-        // Notify owner via email using Razor template
-        var ownerEmail = property.ChuCoSoLuuTru.Email;
-        var subject = $"[Stayly] Cơ sở lưu trú \"{property.TenCoSoLuuTru}\" của bạn đã được phê duyệt!";
-        var approvalModel = new PropertyApprovalEmailModel(
-            OwnerName: property.ChuCoSoLuuTru.HoTen,
-            PropertyName: property.TenCoSoLuuTru,
-            PropertyId: property.MaCoSoLuuTru,
-            DashboardUrl: "http://localhost:5173/owner/properties",
-            ApprovalDate: DateTime.UtcNow
-        );
-
-        await emailService.SendTemplateEmailAsync(ownerEmail, subject, "PropertyApproved", approvalModel, cancellationToken);
-
-        return Ok(new { message = $"Property #{id} has been approved and activated." });
+        return Ok(new { message = $"Cơ sở '{property.TenCoSoLuuTru}' đã được phê duyệt thành công!" });
     }
 
     [HttpPost("properties/{id:int}/reject")]
-    public async Task<IActionResult> Reject(
+    public async Task<IActionResult> RejectProperty(
         int id,
         [FromBody] AdminReviewPropertyRequest request,
         CancellationToken cancellationToken)
@@ -334,63 +250,48 @@ public sealed class AdminController(
             .FirstOrDefaultAsync(p => p.MaCoSoLuuTru == id, cancellationToken);
 
         if (property is null)
-            return NotFound("Property not found.");
+            return NotFound("Không tìm thấy cơ sở.");
 
-        property.TrangThai = false;
-        var rejectionReason = string.IsNullOrWhiteSpace(request.Reason)
-            ? "Hồ sơ chưa đạt tiêu chuẩn quy định của hệ thống Stayly."
-            : request.Reason.Trim();
+        property.TrangThaiDuyet = "TuChoi";
 
         var history = new LichSuDuyet
         {
             MaCoSoLuuTru = id,
             MaNguoiDuyet = adminId,
-            TrangThaiDuyet = "Rejected",
-            LyDoTuChoi = rejectionReason,
+            TrangThaiDuyet = "TuChoi",
+            LyDoTuChoi = request.Reason?.Trim(),
             NgayDuyet = DateTime.UtcNow
         };
         db.LichSuDuyets.Add(history);
+
+        // Ghi Audit Log
+        await LogActionAsync(adminId, "TU_CHOI_CO_SO", "CoSoLuuTru", id,
+            $"Admin #{adminId} từ chối cơ sở '{property.TenCoSoLuuTru}'. Lý do: {request.Reason}", cancellationToken);
+
         await db.SaveChangesAsync(cancellationToken);
-
-        // Notify owner via email using Razor template
-        var ownerEmail = property.ChuCoSoLuuTru.Email;
-        var subject = $"[Stayly] Thông báo từ chối duyệt cơ sở lưu trú \"{property.TenCoSoLuuTru}\"";
-        var rejectionModel = new PropertyRejectionEmailModel(
-            OwnerName: property.ChuCoSoLuuTru.HoTen,
-            PropertyName: property.TenCoSoLuuTru,
-            PropertyId: property.MaCoSoLuuTru,
-            RejectionReason: rejectionReason,
-            ReviewDate: DateTime.UtcNow
-        );
-
-        await emailService.SendTemplateEmailAsync(ownerEmail, subject, "PropertyRejected", rejectionModel, cancellationToken);
-
-        return Ok(new { message = $"Property #{id} has been rejected.", reason = rejectionReason });
+        return Ok(new { message = $"Đã từ chối duyệt cơ sở '{property.TenCoSoLuuTru}'." });
     }
 
-    [HttpGet("properties/{id:int}/history")]
-    public async Task<ActionResult<IReadOnlyList<ApprovalHistoryDto>>> GetHistory(
-        int id, CancellationToken cancellationToken)
+    [HttpPut("properties/{id:int}/toggle-active")]
+    public async Task<IActionResult> TogglePropertyActive(int id, CancellationToken cancellationToken)
     {
-        var history = await db.LichSuDuyets.AsNoTracking()
-            .Where(h => h.MaCoSoLuuTru == id)
-            .Include(h => h.NguoiDuyet)
-            .OrderByDescending(h => h.NgayDuyet)
-            .Select(h => new ApprovalHistoryDto(
-                h.MaLichSu,
-                h.MaCoSoLuuTru,
-                h.TrangThaiDuyet,
-                h.LyDoTuChoi,
-                h.MaNguoiDuyet,
-                h.NguoiDuyet != null ? h.NguoiDuyet.HoTen : null,
-                h.NgayDuyet))
-            .ToListAsync(cancellationToken);
+        var adminId = GetAccountId();
+        var property = await db.CoSoLuuTrus.FirstOrDefaultAsync(p => p.MaCoSoLuuTru == id, cancellationToken);
+        if (property is null)
+            return NotFound("Không tìm thấy cơ sở.");
 
-        return Ok(history);
+        property.TrangThaiHoatDong = !property.TrangThaiHoatDong;
+
+        // Ghi Audit Log
+        await LogActionAsync(adminId, "BAT_TAT_CO_SO", "CoSoLuuTru", id,
+            $"Admin #{adminId} chuyển trạng thái hoạt động cơ sở '{property.TenCoSoLuuTru}' thành {(property.TrangThaiHoatDong ? "Đang mở" : "Tạm dừng")}", cancellationToken);
+
+        await db.SaveChangesAsync(cancellationToken);
+        return Ok(new { message = "Đã cập nhật trạng thái hoạt động.", isActive = property.TrangThaiHoatDong });
     }
     #endregion
 
-    #region 3. Quản lý đơn đặt & Hoàn tiền (Bookings & Refund Support)
+    #region 2. Quản lý đặt phòng & Hoàn tiền (Bookings & Refunds)
     [HttpGet("bookings")]
     public async Task<ActionResult<IReadOnlyList<AdminBookingSummaryResponse>>> GetBookings(
         [FromQuery] string? status,
@@ -405,25 +306,24 @@ public sealed class AdminController(
         var query = db.DonDatPhongs.AsNoTracking()
             .Include(b => b.KhachHang)
             .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru)
-            .Include(b => b.PhuThus)
             .Include(b => b.ThanhToan)
+            .Include(b => b.DonDatPhongDichVus).ThenInclude(d => d.DichVu)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(status) && !status.Equals("All", StringComparison.OrdinalIgnoreCase))
         {
-            query = query.Where(b => b.TrangThai == status);
+            query = query.Where(b => b.TrangThai == status ||
+                (status == "RefundRequested" && b.TrangThai == "YeuCauHoanTien"));
         }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim().ToLower();
             query = query.Where(b =>
-                b.MaDonDatPhong.ToString().Contains(term) ||
                 b.KhachHang.HoTen.ToLower().Contains(term) ||
                 b.KhachHang.Email.ToLower().Contains(term) ||
                 b.KhachHang.DienThoai.Contains(term) ||
-                b.ChiTietDons.Any(d => d.Phong.CoSoLuuTru.TenCoSoLuuTru != null &&
-                                      d.Phong.CoSoLuuTru.TenCoSoLuuTru.ToLower().Contains(term)));
+                b.ChiTietDons.Any(d => d.Phong.CoSoLuuTru.TenCoSoLuuTru.ToLower().Contains(term)));
         }
 
         var bookings = await query
@@ -434,22 +334,19 @@ public sealed class AdminController(
 
         var result = bookings.Select(b =>
         {
-            var propName = b.ChiTietDons.FirstOrDefault()?.Phong?.CoSoLuuTru?.TenCoSoLuuTru ?? "Homestay";
-            var roomNumbers = b.ChiTietDons.Select(d => d.Phong?.SoPhong ?? d.MaPhong.ToString()).ToList();
-            var nights = Math.Max(1, (b.NgayDi.Date - b.NgayDen.Date).Days);
-            var roomTotal = b.ChiTietDons.Sum(d => d.Phong?.GiaGoc ?? 0) * nights;
-            var extraTotal = b.PhuThus.Sum(f => f.ThanhTien);
-            var calculatedTotal = b.ThanhToan?.TongTien ?? (roomTotal + extraTotal);
+            var firstRoom = b.ChiTietDons.FirstOrDefault()?.Phong;
+            var propName = firstRoom?.CoSoLuuTru?.TenCoSoLuuTru ?? "Homestay";
+            var roomNos = b.ChiTietDons.Select(d => d.Phong?.SoPhong ?? d.MaPhong.ToString()).ToList();
 
-            var paymentStatus = b.ThanhToan != null
-                ? "Paid"
-                : (b.TrangThai == "Cancelled" ? "Cancelled" : (b.TrangThai == "Refunded" ? "Refunded" : "Unpaid"));
+            var nights = Math.Max(1, (b.NgayDi.Date - b.NgayDen.Date).Days);
+            var roomTotal = b.ChiTietDons.Sum(d => d.DonGia) * nights;
+            var total = b.ThanhToan?.TongTien ?? (roomTotal + b.DonDatPhongDichVus.Sum(f => f.ThanhTien));
 
             return new AdminBookingSummaryResponse(
                 b.MaDonDatPhong,
                 propName,
-                roomNumbers,
-                b.KhachHang.MaTaiKhoan,
+                roomNos,
+                b.KhachHang.MaNguoiDung,
                 b.KhachHang.HoTen,
                 b.KhachHang.Email,
                 b.KhachHang.DienThoai,
@@ -458,188 +355,54 @@ public sealed class AdminController(
                 b.SoNguoiLon,
                 b.SoTreEm,
                 b.SoNguoi,
-                b.TrangThai ?? "Pending",
-                calculatedTotal,
+                b.TrangThai,
+                total,
                 b.NgayDat,
-                paymentStatus,
+                b.ThanhToan != null ? "Paid" : "Unpaid",
                 b.ThanhToan?.PTTT,
-                b.TrangThaiQuyetToan ?? "ChuaQuyetToan",
-                b.MaGiaoDichQuyetToan,
-                b.NgayQuyetToan,
-                b.SoTienQuyetToan,
-                b.GhiChuQuyetToan
+                b.LyDoHoanTien,
+                b.ThoiGianYeuCauHoan,
+                b.KhachHang.NganHang,
+                b.KhachHang.SoTaiKhoan,
+                b.KhachHang.TenNguoiThuHuong
             );
         }).ToList();
 
         return Ok(result);
     }
 
-    [HttpGet("bookings/{id:int}")]
-    public async Task<ActionResult<AdminBookingDetailsResponse>> GetBookingDetails(
-        int id, CancellationToken cancellationToken)
-    {
-        var booking = await db.DonDatPhongs.AsNoTracking()
-            .Include(b => b.KhachHang)
-            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru).ThenInclude(c => c.ChuCoSoLuuTru)
-            .Include(b => b.PhuThus)
-            .Include(b => b.ThanhToan)
-            .FirstOrDefaultAsync(b => b.MaDonDatPhong == id, cancellationToken);
-
-        if (booking is null)
-            return NotFound("Booking not found.");
-
-        var firstRoom = booking.ChiTietDons.FirstOrDefault()?.Phong;
-        var property = firstRoom?.CoSoLuuTru;
-        var owner = property?.ChuCoSoLuuTru;
-
-        var nights = Math.Max(1, (booking.NgayDi.Date - booking.NgayDen.Date).Days);
-        var roomTotal = booking.ChiTietDons.Sum(d => d.Phong?.GiaGoc ?? 0) * nights;
-        var extraTotal = booking.PhuThus.Sum(f => f.ThanhTien);
-        var totalAmount = booking.ThanhToan?.TongTien ?? (roomTotal + extraTotal);
-
-        var roomItems = booking.ChiTietDons.Select(d => new AdminBookingRoomItem(
-            d.MaPhong,
-            d.Phong?.SoPhong ?? d.MaPhong.ToString(),
-            d.Phong?.GiaGoc ?? 0
-        )).ToList();
-
-        var extraFeeItems = booking.PhuThus.Select(f => new AdminPhuThuItem(
-            f.MaPhuThu,
-            f.TenPhuThu,
-            f.SoLuong,
-            f.DonGia,
-            f.ThanhTien,
-            f.GhiChu
-        )).ToList();
-
-        var invoiceInfo = booking.ThanhToan is null ? null : new AdminInvoiceInfo(
-            booking.ThanhToan.MaHoaDon,
-            booking.ThanhToan.TongTien,
-            booking.ThanhToan.TienGoc,
-            string.IsNullOrWhiteSpace(booking.ThanhToan.PTTT) ? "Direct / Cash" : booking.ThanhToan.PTTT
-        );
-
-        var response = new AdminBookingDetailsResponse(
-            booking.MaDonDatPhong,
-            booking.NgayDat,
-            booking.NgayDen,
-            booking.NgayDi,
-            booking.SoNguoiLon,
-            booking.SoTreEm,
-            booking.SoNguoi,
-            booking.TrangThai ?? "Pending",
-            totalAmount,
-            new AdminGuestInfo(
-                booking.KhachHang.MaTaiKhoan,
-                booking.KhachHang.HoTen,
-                booking.KhachHang.Email,
-                booking.KhachHang.DienThoai
-            ),
-            new AdminOwnerInfo(
-                owner?.MaTaiKhoan ?? 0,
-                owner?.HoTen ?? "N/A",
-                owner?.Email ?? "N/A",
-                owner?.DienThoai ?? "N/A"
-            ),
-            property?.MaCoSoLuuTru ?? 0,
-            property?.TenCoSoLuuTru ?? "Homestay",
-            property?.DiaChi,
-            roomItems,
-            extraFeeItems,
-            invoiceInfo,
-            booking.TrangThaiQuyetToan ?? "ChuaQuyetToan",
-            booking.MaGiaoDichQuyetToan,
-            booking.NgayQuyetToan,
-            booking.SoTienQuyetToan,
-            booking.GhiChuQuyetToan
-        );
-
-        return Ok(response);
-    }
-
     [HttpPost("bookings/{id:int}/refund")]
-    public async Task<ActionResult<RefundResponse>> ProcessRefund(
+    public async Task<IActionResult> ProcessRefund(
         int id,
         [FromBody] ProcessRefundRequest request,
         CancellationToken cancellationToken)
     {
+        var adminId = GetAccountId();
         var booking = await db.DonDatPhongs
             .Include(b => b.KhachHang)
-            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru).ThenInclude(c => c.ChuCoSoLuuTru)
-            .Include(b => b.PhuThus)
             .Include(b => b.ThanhToan)
             .FirstOrDefaultAsync(b => b.MaDonDatPhong == id, cancellationToken);
 
         if (booking is null)
-            return NotFound("Booking not found.");
+            return NotFound("Không tìm thấy đơn đặt phòng.");
 
-        var previousStatus = booking.TrangThai ?? "Pending";
-        booking.TrangThai = "Refunded";
+        var prevStatus = booking.TrangThai;
+        booking.TrangThai = "DaHoanTien";
+
+        // Ghi Audit Log
+        await LogActionAsync(adminId, "DUYET_HOAN_TIEN", "DonDatPhong", id,
+            $"Admin #{adminId} duyệt hoàn {request.RefundAmount:N0}đ cho đơn #{id}. Lý do: {request.Reason}", cancellationToken);
+
         await db.SaveChangesAsync(cancellationToken);
 
-        var property = booking.ChiTietDons.FirstOrDefault()?.Phong?.CoSoLuuTru;
-        var owner = property?.ChuCoSoLuuTru;
-        var guest = booking.KhachHang;
-        var notifiedEmails = new List<string>();
-
-        // 1. Email notification to Guest using RazorLight template
-        if (!string.IsNullOrWhiteSpace(guest?.Email))
-        {
-            var guestSubject = $"[Stayly] Thông báo hoàn tiền & Quyết định xử lý đơn đặt #{booking.MaDonDatPhong}";
-            var guestModel = new RefundAcceptedEmailModel(
-                GuestName: guest.HoTen,
-                BookingId: booking.MaDonDatPhong,
-                PropertyName: property?.TenCoSoLuuTru ?? "Homestay",
-                RefundAmount: request.RefundAmount,
-                Reason: request.Reason,
-                DecisionNote: request.DecisionNote,
-                DecisionDate: DateTime.UtcNow
-            );
-
-            await emailService.SendTemplateEmailAsync(guest.Email, guestSubject, "RefundAccepted", guestModel, cancellationToken);
-            notifiedEmails.Add(guest.Email);
-        }
-
-        // 2. Email notification to Owner
-        if (!string.IsNullOrWhiteSpace(owner?.Email))
-        {
-            var ownerSubject = $"[Stayly] Thông báo xử lý hoàn tiền đơn đặt #{booking.MaDonDatPhong} tại {property?.TenCoSoLuuTru}";
-            var ownerBody = $@"
-                <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-                    <h2 style='color: #d97706;'>Thông báo xử lý khiếu nại & hoàn tiền đơn đặt</h2>
-                    <p>Xin chào đối tác <strong>{owner.HoTen}</strong>,</p>
-                    <p>Ban Quản trị Stayly thông báo về việc xử lý khiếu nại/hoàn tiền liên quan đến đơn đặt phòng <strong>#{booking.MaDonDatPhong}</strong> tại cơ sở lưu trú <strong>{property?.TenCoSoLuuTru}</strong>.</p>
-                    
-                    <div style='background: #fffbeb; border-radius: 8px; padding: 16px; margin: 16px 0; border: 1px solid #fef3c7;'>
-                        <p style='margin: 4px 0;'><strong>Khách hàng:</strong> {guest?.HoTen} ({guest?.DienThoai})</p>
-                        <p style='margin: 4px 0;'><strong>Thời gian lưu trú:</strong> {booking.NgayDen:dd/MM/yyyy} - {booking.NgayDi:dd/MM/yyyy}</p>
-                        <p style='margin: 4px 0;'><strong>Số tiền hoàn trả khách:</strong> <span style='color: #b45309; font-size: 18px; font-weight: bold;'>{request.RefundAmount:N0} VNĐ</span></p>
-                    </div>
-
-                    <div style='border-left: 4px solid #d97706; padding-left: 12px; margin: 16px 0;'>
-                        <p style='margin: 4px 0;'><strong>Lý do giải quyết:</strong> {request.Reason}</p>
-                        <p style='margin: 4px 0;'><strong>Nội dung & Quyết định xử lý:</strong> {request.DecisionNote}</p>
-                    </div>
-
-                    <p style='color: #4b5563; font-size: 14px;'>Đơn đặt phòng này đã được cập nhật trạng thái hoàn tiền trên hệ thống của Quý đối tác.</p>
-                    <br/>
-                    <p style='color: #6b7280; font-size: 13px;'>Trân trọng,<br/>Bộ phận Vận hành Stayly</p>
-                </div>";
-
-            await emailService.SendEmailAsync(owner.Email, ownerSubject, ownerBody, cancellationToken);
-            notifiedEmails.Add(owner.Email);
-        }
-
-        var response = new RefundResponse(
+        return Ok(new RefundResponse(
             booking.MaDonDatPhong,
             request.RefundAmount,
-            previousStatus,
-            booking.TrangThai,
-            $"Refund of {request.RefundAmount:N0} VNĐ processed successfully. Decision emails dispatched.",
-            notifiedEmails
-        );
-
-        return Ok(response);
+            prevStatus,
+            "DaHoanTien",
+            "Đã xử lý hoàn tiền thành công.",
+            [booking.KhachHang.Email]
+        ));
     }
 
     [HttpPost("bookings/{id:int}/refund/deny")]
@@ -648,334 +411,41 @@ public sealed class AdminController(
         [FromBody] DenyRefundRequest request,
         CancellationToken cancellationToken)
     {
-        var booking = await db.DonDatPhongs
-            .Include(b => b.KhachHang)
-            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru)
-            .FirstOrDefaultAsync(b => b.MaDonDatPhong == id, cancellationToken);
-
+        var adminId = GetAccountId();
+        var booking = await db.DonDatPhongs.FirstOrDefaultAsync(b => b.MaDonDatPhong == id, cancellationToken);
         if (booking is null)
-            return NotFound("Booking not found.");
+            return NotFound("Không tìm thấy đơn đặt phòng.");
 
-        var denialReason = string.IsNullOrWhiteSpace(request.Reason)
-            ? "Yêu cầu hoàn tiền không đáp ứng các điều kiện trong chính sách hủy phòng của cơ sở."
-            : request.Reason.Trim();
+        booking.TrangThai = "DaDuyet";
 
-        var property = booking.ChiTietDons.FirstOrDefault()?.Phong?.CoSoLuuTru;
-        var guest = booking.KhachHang;
-
-        if (!string.IsNullOrWhiteSpace(guest?.Email))
-        {
-            var subject = $"[Stayly] Quyết định xử lý khiếu nại/hoàn tiền đơn đặt #{booking.MaDonDatPhong}";
-            var model = new RefundDeniedEmailModel(
-                GuestName: guest.HoTen,
-                BookingId: booking.MaDonDatPhong,
-                PropertyName: property?.TenCoSoLuuTru ?? "Homestay",
-                DenialReason: denialReason,
-                DecisionNote: request.DecisionNote,
-                DecisionDate: DateTime.UtcNow
-            );
-
-            await emailService.SendTemplateEmailAsync(guest.Email, subject, "RefundDenied", model, cancellationToken);
-        }
-
-        return Ok(new { message = $"Refund request for booking #{id} has been denied.", reason = denialReason });
-    }
-
-    [HttpPost("bookings/{id:int}/payout")]
-    public async Task<ActionResult<PayoutResponse>> RecordBookingPayout(
-        int id,
-        [FromBody] RecordPayoutRequest request,
-        CancellationToken cancellationToken)
-    {
-        var booking = await db.DonDatPhongs
-            .Include(b => b.KhachHang)
-            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru).ThenInclude(c => c.ChuCoSoLuuTru)
-            .Include(b => b.PhuThus)
-            .Include(b => b.ThanhToan)
-            .FirstOrDefaultAsync(b => b.MaDonDatPhong == id, cancellationToken);
-
-        if (booking is null)
-            return NotFound("Booking not found.");
-
-        var nights = Math.Max(1, (booking.NgayDi.Date - booking.NgayDen.Date).Days);
-        var roomTotal = booking.ChiTietDons.Sum(d => d.Phong?.GiaGoc ?? 0) * nights;
-        var extraTotal = booking.PhuThus.Sum(f => f.ThanhTien);
-        var total = booking.ThanhToan?.TongTien ?? (roomTotal + extraTotal);
-        var hostPayout = request.Amount ?? Math.Round(total * 0.85m, 2);
-
-        booking.TrangThaiQuyetToan = "DaQuyetToan";
-        booking.MaGiaoDichQuyetToan = request.TransactionCode.Trim();
-        booking.NgayQuyetToan = DateTime.UtcNow;
-        booking.SoTienQuyetToan = hostPayout;
-        booking.GhiChuQuyetToan = request.Note?.Trim() ?? $"Quyết toán chuyển khoản ngân hàng ngày {DateTime.UtcNow:dd/MM/yyyy}";
+        // Ghi Audit Log
+        await LogActionAsync(adminId, "TU_CHOI_HOAN_TIEN", "DonDatPhong", id,
+            $"Admin #{adminId} từ chối yêu cầu hoàn tiền đơn #{id}. Lý do: {request.Reason}", cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
-
-        var property = booking.ChiTietDons.FirstOrDefault()?.Phong?.CoSoLuuTru;
-        var owner = property?.ChuCoSoLuuTru;
-
-        if (!string.IsNullOrWhiteSpace(owner?.Email))
-        {
-            var subject = $"[Stayly] Xác nhận quyết toán doanh thu đơn #{booking.MaDonDatPhong}";
-            var body = $@"
-                <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-                    <h2 style='color: #059669;'>Xác nhận quyết toán doanh thu đối tác</h2>
-                    <p>Xin chào đối tác <strong>{owner.HoTen}</strong>,</p>
-                    <p>Ban Quản trị Stayly đã hoàn tất chuyển khoản quyết toán doanh thu (85%) cho đơn đặt phòng <strong>#{booking.MaDonDatPhong}</strong> tại <strong>{property?.TenCoSoLuuTru}</strong>.</p>
-                    
-                    <div style='background: #ecfdf5; border-radius: 8px; padding: 16px; margin: 16px 0; border: 1px solid #a7f3d0;'>
-                        <p style='margin: 4px 0;'><strong>Số tiền quyết toán (85%):</strong> <span style='color: #047857; font-size: 18px; font-weight: bold;'>{hostPayout:N0} VNĐ</span></p>
-                        <p style='margin: 4px 0;'><strong>Mã giao dịch ngân hàng:</strong> <code>{booking.MaGiaoDichQuyetToan}</code></p>
-                        <p style='margin: 4px 0;'><strong>Thời gian thực hiện:</strong> {booking.NgayQuyetToan:dd/MM/yyyy HH:mm} (UTC)</p>
-                        <p style='margin: 4px 0;'><strong>Tài khoản thụ hưởng:</strong> {owner.ThongTinNganHang ?? "Theo thông tin hồ sơ"}</p>
-                    </div>
-
-                    <p style='color: #4b5563; font-size: 14px;'>Ghi chú: {booking.GhiChuQuyetToan}</p>
-                    <br/>
-                    <p style='color: #6b7280; font-size: 13px;'>Trân trọng,<br/>Phòng Tài chính & Vận hành Stayly</p>
-                </div>";
-
-            try
-            {
-                await emailService.SendEmailAsync(owner.Email, subject, body, cancellationToken);
-            }
-            catch
-            {
-                // Bỏ qua lỗi gửi mail
-            }
-        }
-
-        var response = new PayoutResponse(
-            booking.MaDonDatPhong,
-            booking.MaGiaoDichQuyetToan,
-            hostPayout,
-            booking.NgayQuyetToan.Value,
-            booking.TrangThaiQuyetToan,
-            booking.GhiChuQuyetToan
-        );
-
-        return Ok(response);
-    }
-
-    [HttpPut("bookings/{id:int}")]
-    public async Task<IActionResult> UpdateBooking(
-        int id,
-        [FromBody] UpdateBookingAdminRequest request,
-        CancellationToken cancellationToken)
-    {
-        var booking = await db.DonDatPhongs
-            .Include(b => b.KhachHang)
-            .FirstOrDefaultAsync(b => b.MaDonDatPhong == id, cancellationToken);
-
-        if (booking is null)
-            return NotFound("Booking not found.");
-
-        if (!string.IsNullOrWhiteSpace(request.Status))
-        {
-            booking.TrangThai = request.Status.Trim();
-        }
-        if (request.Adults.HasValue && request.Adults.Value > 0)
-        {
-            booking.SoNguoiLon = request.Adults.Value;
-        }
-        if (request.Children.HasValue && request.Children.Value >= 0)
-        {
-            booking.SoTreEm = request.Children.Value;
-        }
-        if (booking.SoNguoiLon + booking.SoTreEm > 0)
-        {
-            booking.SoNguoi = booking.SoNguoiLon + booking.SoTreEm;
-        }
-        if (request.CheckIn.HasValue) booking.NgayDen = request.CheckIn.Value;
-        if (request.CheckOut.HasValue) booking.NgayDi = request.CheckOut.Value;
-
-        if (booking.KhachHang != null)
-        {
-            if (!string.IsNullOrWhiteSpace(request.GuestName)) booking.KhachHang.HoTen = request.GuestName.Trim();
-            if (!string.IsNullOrWhiteSpace(request.GuestPhone)) booking.KhachHang.DienThoai = request.GuestPhone.Trim();
-            if (!string.IsNullOrWhiteSpace(request.GuestEmail)) booking.KhachHang.Email = request.GuestEmail.Trim();
-        }
-
-        await db.SaveChangesAsync(cancellationToken);
-        return Ok(new { message = $"Đơn đặt #{id} đã được cập nhật thành công.", bookingId = id });
+        return Ok(new { message = "Đã từ chối yêu cầu hoàn tiền." });
     }
     #endregion
 
-    #region 4. Quản lý khuyến mãi (Promotions CRUD)
-    [HttpGet("promotions")]
-    public async Task<ActionResult<IReadOnlyList<PromotionResponse>>> GetPromotions(
-        CancellationToken cancellationToken)
-    {
-        var promotions = await db.GiamGias.AsNoTracking()
-            .Include(g => g.DonDatPhongs)
-            .OrderByDescending(g => g.MaGiamGia)
-            .Select(g => new PromotionResponse(
-                g.MaGiamGia,
-                g.TenMa,
-                g.PhanTram,
-                g.ToiDa,
-                g.NgayBatDau,
-                g.NgayHetHan,
-                g.DonDatPhongs.Count,
-                (!g.NgayBatDau.HasValue || g.NgayBatDau.Value.Date <= DateTime.UtcNow.Date) &&
-                (!g.NgayHetHan.HasValue || g.NgayHetHan.Value.Date >= DateTime.UtcNow.Date)
-            ))
-            .ToListAsync(cancellationToken);
-
-        return Ok(promotions);
-    }
-
-    [HttpGet("promotions/{id:int}")]
-    public async Task<ActionResult<PromotionResponse>> GetPromotion(
-        int id, CancellationToken cancellationToken)
-    {
-        var g = await db.GiamGias.AsNoTracking()
-            .Include(x => x.DonDatPhongs)
-            .FirstOrDefaultAsync(x => x.MaGiamGia == id, cancellationToken);
-
-        if (g is null)
-            return NotFound("Promotion voucher not found.");
-
-        var response = new PromotionResponse(
-            g.MaGiamGia,
-            g.TenMa,
-            g.PhanTram,
-            g.ToiDa,
-            g.NgayBatDau,
-            g.NgayHetHan,
-            g.DonDatPhongs.Count,
-            (!g.NgayBatDau.HasValue || g.NgayBatDau.Value.Date <= DateTime.UtcNow.Date) &&
-            (!g.NgayHetHan.HasValue || g.NgayHetHan.Value.Date >= DateTime.UtcNow.Date)
-        );
-
-        return Ok(response);
-    }
-
-    [HttpPost("promotions")]
-    public async Task<ActionResult<PromotionResponse>> CreatePromotion(
-        [FromBody] CreatePromotionRequest request,
-        CancellationToken cancellationToken)
-    {
-        var code = request.Code.Trim().ToUpperInvariant();
-        var exists = await db.GiamGias.AnyAsync(g => g.TenMa == code, cancellationToken);
-        if (exists)
-            return Conflict($"Promotion code '{code}' already exists.");
-
-        if (request.StartDate.HasValue && request.ExpiryDate.HasValue && request.StartDate > request.ExpiryDate)
-            return BadRequest("Start date cannot be later than expiry date.");
-
-        var promo = new GiamGia
-        {
-            TenMa = code,
-            PhanTram = request.Percentage,
-            ToiDa = request.MaxDiscount,
-            NgayBatDau = request.StartDate,
-            NgayHetHan = request.ExpiryDate
-        };
-
-        db.GiamGias.Add(promo);
-        await db.SaveChangesAsync(cancellationToken);
-
-        var response = new PromotionResponse(
-            promo.MaGiamGia,
-            promo.TenMa,
-            promo.PhanTram,
-            promo.ToiDa,
-            promo.NgayBatDau,
-            promo.NgayHetHan,
-            0,
-            (!promo.NgayBatDau.HasValue || promo.NgayBatDau.Value.Date <= DateTime.UtcNow.Date) &&
-            (!promo.NgayHetHan.HasValue || promo.NgayHetHan.Value.Date >= DateTime.UtcNow.Date)
-        );
-
-        return CreatedAtAction(nameof(GetPromotion), new { id = promo.MaGiamGia }, response);
-    }
-
-    [HttpPut("promotions/{id:int}")]
-    public async Task<ActionResult<PromotionResponse>> UpdatePromotion(
-        int id,
-        [FromBody] UpdatePromotionRequest request,
-        CancellationToken cancellationToken)
-    {
-        var promo = await db.GiamGias
-            .Include(g => g.DonDatPhongs)
-            .FirstOrDefaultAsync(g => g.MaGiamGia == id, cancellationToken);
-
-        if (promo is null)
-            return NotFound("Promotion voucher not found.");
-
-        var code = request.Code.Trim().ToUpperInvariant();
-        var exists = await db.GiamGias.AnyAsync(g => g.MaGiamGia != id && g.TenMa == code, cancellationToken);
-        if (exists)
-            return Conflict($"Another promotion with code '{code}' already exists.");
-
-        if (request.StartDate.HasValue && request.ExpiryDate.HasValue && request.StartDate > request.ExpiryDate)
-            return BadRequest("Start date cannot be later than expiry date.");
-
-        promo.TenMa = code;
-        promo.PhanTram = request.Percentage;
-        promo.ToiDa = request.MaxDiscount;
-        promo.NgayBatDau = request.StartDate;
-        promo.NgayHetHan = request.ExpiryDate;
-
-        await db.SaveChangesAsync(cancellationToken);
-
-        var response = new PromotionResponse(
-            promo.MaGiamGia,
-            promo.TenMa,
-            promo.PhanTram,
-            promo.ToiDa,
-            promo.NgayBatDau,
-            promo.NgayHetHan,
-            promo.DonDatPhongs.Count,
-            (!promo.NgayBatDau.HasValue || promo.NgayBatDau.Value.Date <= DateTime.UtcNow.Date) &&
-            (!promo.NgayHetHan.HasValue || promo.NgayHetHan.Value.Date >= DateTime.UtcNow.Date)
-        );
-
-        return Ok(response);
-    }
-
-    [HttpDelete("promotions/{id:int}")]
-    public async Task<IActionResult> DeletePromotion(int id, CancellationToken cancellationToken)
-    {
-        var promo = await db.GiamGias
-            .Include(g => g.DonDatPhongs)
-            .FirstOrDefaultAsync(g => g.MaGiamGia == id, cancellationToken);
-
-        if (promo is null)
-            return NotFound("Promotion voucher not found.");
-
-        if (promo.DonDatPhongs.Any())
-        {
-            return Conflict("Cannot delete voucher because it has already been used in bookings. You can set the expiry date to yesterday to deactivate it instead.");
-        }
-
-        db.GiamGias.Remove(promo);
-        await db.SaveChangesAsync(cancellationToken);
-
-        return NoContent();
-    }
-    #endregion
-
-    #region 5. Quản lý tài khoản (User Management)
+    #region 3. Quản lý người dùng (User Management)
     [HttpGet("users")]
     public async Task<ActionResult<IReadOnlyList<AdminUserResponse>>> GetUsers(
         [FromQuery] string? role,
         [FromQuery] string? search,
         CancellationToken cancellationToken)
     {
-        var query = db.TaiKhoans.AsNoTracking()
+        var query = db.NguoiDungs.AsNoTracking()
             .Include(t => t.VaiTro)
             .Include(t => t.CoSoLuuTrus)
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(role) && !role.Equals("All", StringComparison.OrdinalIgnoreCase) && !role.Equals("TatCa", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(role) && !role.Equals("All", StringComparison.OrdinalIgnoreCase))
         {
-            if (role.Equals("Owner", StringComparison.OrdinalIgnoreCase) || role.Equals("ChuHome", StringComparison.OrdinalIgnoreCase))
+            if (role.Equals("Owner", StringComparison.OrdinalIgnoreCase))
                 query = query.Where(t => t.MaVaiTro == VaiTro.OWNER);
-            else if (role.Equals("Guest", StringComparison.OrdinalIgnoreCase) || role.Equals("KhachHang", StringComparison.OrdinalIgnoreCase))
+            else if (role.Equals("Guest", StringComparison.OrdinalIgnoreCase))
                 query = query.Where(t => t.MaVaiTro == VaiTro.GUEST);
-            else if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase) || role.Equals("QuanTriVien", StringComparison.OrdinalIgnoreCase))
+            else if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
                 query = query.Where(t => t.MaVaiTro == VaiTro.ADMIN);
         }
 
@@ -985,12 +455,11 @@ public sealed class AdminController(
             query = query.Where(t =>
                 t.HoTen.ToLower().Contains(term) ||
                 t.Email.ToLower().Contains(term) ||
-                t.DienThoai.Contains(term) ||
-                (t.CCCD != null && t.CCCD.Contains(term)));
+                t.DienThoai.Contains(term));
         }
 
-        var users = await query.OrderByDescending(t => t.MaTaiKhoan).ToListAsync(cancellationToken);
-        var userIds = users.Select(u => u.MaTaiKhoan).ToList();
+        var users = await query.OrderByDescending(t => t.MaNguoiDung).ToListAsync(cancellationToken);
+        var userIds = users.Select(u => u.MaNguoiDung).ToList();
 
         var bookingCounts = await db.DonDatPhongs.AsNoTracking()
             .Where(b => userIds.Contains(b.MaKhachHang))
@@ -999,7 +468,7 @@ public sealed class AdminController(
             .ToDictionaryAsync(g => g.UserId, g => g.Count, cancellationToken);
 
         var result = users.Select(u => new AdminUserResponse(
-            u.MaTaiKhoan,
+            u.MaNguoiDung,
             u.Email,
             u.HoTen,
             u.DienThoai,
@@ -1010,7 +479,10 @@ public sealed class AdminController(
             u.CCCD,
             u.ThongTinNganHang,
             u.CoSoLuuTrus.Count,
-            bookingCounts.GetValueOrDefault(u.MaTaiKhoan, 0)
+            bookingCounts.GetValueOrDefault(u.MaNguoiDung, 0),
+            u.NganHang,
+            u.SoTaiKhoan,
+            u.TenNguoiThuHuong
         )).ToList();
 
         return Ok(result);
@@ -1022,147 +494,23 @@ public sealed class AdminController(
         [FromBody] UpdateUserStatusRequest request,
         CancellationToken cancellationToken)
     {
-        var user = await db.TaiKhoans.FindAsync([id], cancellationToken);
+        var adminId = GetAccountId();
+        var user = await db.NguoiDungs.FindAsync([id], cancellationToken);
         if (user is null)
-            return NotFound("User not found.");
+            return NotFound("Người dùng không tồn tại.");
 
         user.TrangThai = request.IsActive;
-        await db.SaveChangesAsync(cancellationToken);
 
-        return Ok(new { message = $"User #{id} status updated to {(request.IsActive ? "Active" : "Locked")}.", isActive = user.TrangThai });
-    }
-
-    [HttpPost("users")]
-    public async Task<ActionResult<AdminUserResponse>> CreateUser(
-        [FromBody] CreateUserAdminRequest request,
-        CancellationToken cancellationToken)
-    {
-        var email = request.Email.Trim().ToLowerInvariant();
-
-        var existingUser = await db.TaiKhoans
-            .FirstOrDefaultAsync(u => u.Email.ToLower() == email, cancellationToken);
-
-        if (existingUser != null)
-        {
-            return Conflict("Email này đã được sử dụng bởi một tài khoản khác.");
-        }
-
-        int roleId = VaiTro.GUEST;
-        var roleUpper = request.Role?.Trim().ToUpperInvariant() ?? "GUEST";
-        if (roleUpper == "OWNER" || roleUpper == "CHUHOME") roleId = VaiTro.OWNER;
-        else if (roleUpper == "ADMIN" || roleUpper == "QUANTRI") roleId = VaiTro.ADMIN;
-
-        var bankInfo = !string.IsNullOrWhiteSpace(request.BankInformation)
-            ? request.BankInformation.Trim()
-            : (!string.IsNullOrWhiteSpace(request.BankName) || !string.IsNullOrWhiteSpace(request.BankAccount))
-                ? $"{request.BankName?.Trim()} - {request.BankAccount?.Trim()} ({request.BankHolder?.Trim() ?? request.FullName.Trim()})"
-                : null;
-
-        var newUser = new TaiKhoan
-        {
-            HoTen = request.FullName.Trim(),
-            Email = email,
-            DienThoai = request.Phone.Trim(),
-            MaVaiTro = roleId,
-            TrangThai = true,
-            NgayTao = DateTime.UtcNow,
-            CCCD = request.CitizenId?.Trim(),
-            ThongTinNganHang = bankInfo,
-            NgaySinh = request.DateOfBirth,
-            GioiTinh = request.Gender?.Trim()
-        };
-
-        newUser.MatKhau = passwordHasher.HashPassword(newUser, request.Password.Trim());
-
-        db.TaiKhoans.Add(newUser);
-        await db.SaveChangesAsync(cancellationToken);
-
-        var vaiTro = await db.VaiTros.FindAsync([roleId], cancellationToken);
-
-        var response = new AdminUserResponse(
-            newUser.MaTaiKhoan,
-            newUser.Email,
-            newUser.HoTen,
-            newUser.DienThoai,
-            vaiTro?.TenVaiTro ?? roleUpper,
-            newUser.MaVaiTro,
-            newUser.TrangThai,
-            newUser.NgayTao,
-            newUser.CCCD,
-            newUser.ThongTinNganHang,
-            0,
-            0
-        );
-
-        return CreatedAtAction(nameof(GetUsers), new { search = newUser.Email }, response);
-    }
-
-    [HttpPut("users/{id:int}")]
-    public async Task<ActionResult<AdminUserResponse>> UpdateUser(
-        int id,
-        [FromBody] UpdateUserAdminRequest request,
-        CancellationToken cancellationToken)
-    {
-        var user = await db.TaiKhoans
-            .Include(t => t.VaiTro)
-            .Include(t => t.CoSoLuuTrus)
-            .FirstOrDefaultAsync(u => u.MaTaiKhoan == id, cancellationToken);
-
-        if (user is null)
-            return NotFound("User not found.");
-
-        user.HoTen = request.FullName.Trim();
-        if (!string.IsNullOrWhiteSpace(request.Email)) user.Email = request.Email.Trim().ToLowerInvariant();
-        if (!string.IsNullOrWhiteSpace(request.Phone)) user.DienThoai = request.Phone.Trim();
-        if (request.CitizenId != null) user.CCCD = request.CitizenId.Trim();
-        if (request.DateOfBirth.HasValue) user.NgaySinh = request.DateOfBirth.Value;
-        if (!string.IsNullOrWhiteSpace(request.Gender)) user.GioiTinh = request.Gender.Trim();
-
-        var bankInfo = !string.IsNullOrWhiteSpace(request.BankInformation)
-            ? request.BankInformation.Trim()
-            : (!string.IsNullOrWhiteSpace(request.BankName) || !string.IsNullOrWhiteSpace(request.BankAccount))
-                ? $"{request.BankName?.Trim()} - {request.BankAccount?.Trim()} ({request.BankHolder?.Trim() ?? request.FullName.Trim()})"
-                : user.ThongTinNganHang;
-
-        if (bankInfo != null) user.ThongTinNganHang = bankInfo;
-
-        if (!string.IsNullOrWhiteSpace(request.Role))
-        {
-            var roleUpper = request.Role.Trim().ToUpperInvariant();
-            if (roleUpper == "OWNER" || roleUpper == "CHUHOME") user.MaVaiTro = VaiTro.OWNER;
-            else if (roleUpper == "ADMIN" || roleUpper == "QUANTRI") user.MaVaiTro = VaiTro.ADMIN;
-            else if (roleUpper == "GUEST" || roleUpper == "KHACH" || roleUpper == "CUSTOMER") user.MaVaiTro = VaiTro.GUEST;
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.Password))
-        {
-            user.MatKhau = passwordHasher.HashPassword(user, request.Password.Trim());
-        }
+        // Ghi Audit Log
+        await LogActionAsync(adminId, request.IsActive ? "MO_KHOA_TAI_KHOAN" : "KHOA_TAI_KHOAN", "NguoiDung", id,
+            $"Admin #{adminId} {(request.IsActive ? "mở khóa" : "khóa")} tài khoản {user.Email}", cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
-
-        var bookingCount = await db.DonDatPhongs.CountAsync(b => b.MaKhachHang == user.MaTaiKhoan, cancellationToken);
-
-        var response = new AdminUserResponse(
-            user.MaTaiKhoan,
-            user.Email,
-            user.HoTen,
-            user.DienThoai,
-            user.VaiTro?.TenVaiTro ?? (user.MaVaiTro == VaiTro.OWNER ? "OWNER" : (user.MaVaiTro == VaiTro.ADMIN ? "ADMIN" : "GUEST")),
-            user.MaVaiTro,
-            user.TrangThai,
-            user.NgayTao,
-            user.CCCD,
-            user.ThongTinNganHang,
-            user.CoSoLuuTrus.Count,
-            bookingCount
-        );
-
-        return Ok(response);
+        return Ok(new { message = $"Tài khoản #{id} đã được {(request.IsActive ? "kích hoạt" : "khóa")}.", isActive = user.TrangThai });
     }
     #endregion
 
-    #region 6. Báo cáo doanh thu & Dòng tiền (Revenue & Platform Reporting)
+    #region 4. Báo cáo doanh thu với hoa hồng cố định 15% (Revenue Report)
     [HttpGet("reports/revenue")]
     public async Task<ActionResult<RevenueReportResponse>> GetRevenueReport(
         [FromQuery] DateTime? fromDate,
@@ -1173,7 +521,7 @@ public sealed class AdminController(
         var query = db.DonDatPhongs.AsNoTracking()
             .Include(b => b.KhachHang)
             .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru).ThenInclude(c => c.ChuCoSoLuuTru)
-            .Include(b => b.PhuThus)
+            .Include(b => b.DonDatPhongDichVus).ThenInclude(d => d.DichVu)
             .Include(b => b.ThanhToan)
             .AsQueryable();
 
@@ -1203,19 +551,24 @@ public sealed class AdminController(
             var owner = property?.ChuCoSoLuuTru;
 
             var nights = Math.Max(1, (b.NgayDi.Date - b.NgayDen.Date).Days);
-            var roomTotal = b.ChiTietDons.Sum(d => d.Phong?.GiaGoc ?? 0) * nights;
-            var extraTotal = b.PhuThus.Sum(f => f.ThanhTien);
+            var roomTotal = b.ChiTietDons.Sum(d => d.DonGia) * nights;
+            var extraTotal = b.DonDatPhongDichVus.Sum(f => f.ThanhTien);
             var total = b.ThanhToan?.TongTien ?? (roomTotal + extraTotal);
 
-            var commission = Math.Round(total * 0.15m, 2);
-            var hostPayout = total - commission;
+            decimal commission = b.ThanhToan != null && b.ThanhToan.TienHoaHong > 0
+                ? b.ThanhToan.TienHoaHong
+                : Math.Round(total * 0.15m, 2);
 
-            var paymentStatus = b.ThanhToan != null ? "Paid" : (b.TrangThai == "Cancelled" ? "Cancelled" : (b.TrangThai == "Refunded" ? "Refunded" : "Unpaid"));
+            decimal hostPayout = b.ThanhToan != null && b.ThanhToan.TienThucNhanChu > 0
+                ? b.ThanhToan.TienThucNhanChu
+                : (total - commission);
+
+            var paymentStatus = b.ThanhToan != null ? "Paid" : (b.TrangThai == "DaHuy" ? "Cancelled" : (b.TrangThai == "DaHoanTien" ? "Refunded" : "Unpaid"));
 
             return new RevenueBookingItemResponse(
                 b.MaDonDatPhong,
                 property?.TenCoSoLuuTru ?? "Homestay",
-                owner?.MaTaiKhoan ?? 0,
+                owner?.MaNguoiDung ?? 0,
                 owner?.HoTen ?? "N/A",
                 b.KhachHang?.HoTen ?? "N/A",
                 b.NgayDen,
@@ -1223,19 +576,14 @@ public sealed class AdminController(
                 total,
                 commission,
                 hostPayout,
-                b.TrangThai ?? "Pending",
+                b.TrangThai,
                 paymentStatus,
-                b.NgayDat,
-                b.TrangThaiQuyetToan ?? "ChuaQuyetToan",
-                b.MaGiaoDichQuyetToan,
-                b.NgayQuyetToan,
-                b.SoTienQuyetToan ?? hostPayout,
-                b.GhiChuQuyetToan
+                b.NgayDat
             );
         }).ToList();
 
         var qualifyingBookings = bookingItems
-            .Where(b => b.PaymentStatus == "Paid" || b.Status == "Confirmed" || b.Status == "CheckedIn" || b.Status == "CheckedOut")
+            .Where(b => b.PaymentStatus == "Paid" || b.Status is "DaDuyet" or "DaHoanTat")
             .ToList();
 
         var totalPaid = qualifyingBookings.Sum(b => b.TotalAmount);
@@ -1243,7 +591,7 @@ public sealed class AdminController(
         var totalPayout = qualifyingBookings.Sum(b => b.HostPayout);
 
         var totalProperties = await db.CoSoLuuTrus.CountAsync(cancellationToken);
-        var totalUsers = await db.TaiKhoans.CountAsync(cancellationToken);
+        var totalUsers = await db.NguoiDungs.CountAsync(cancellationToken);
 
         var report = new RevenueReportResponse(
             totalPaid,
@@ -1258,6 +606,140 @@ public sealed class AdminController(
         return Ok(report);
     }
     #endregion
+
+    #region 5. Quản lý Tiện nghi riêng biệt (Amenity Management - No Icon)
+    [HttpGet("amenities/properties")]
+    public async Task<ActionResult<IReadOnlyList<AmenityManagementItem>>> GetPropertyAmenities(CancellationToken cancellationToken)
+    {
+        var amenities = await db.TienNghiCoSos.AsNoTracking()
+            .Select(t => new AmenityManagementItem(
+                t.MaTienNghi,
+                t.TenTienNghi,
+                db.CoSoLuuTru_TienNghis.Count(c => c.MaTienNghi == t.MaTienNghi)
+            ))
+            .OrderBy(a => a.Name)
+            .ToListAsync(cancellationToken);
+
+        return Ok(amenities);
+    }
+
+    [HttpPost("amenities/properties")]
+    public async Task<IActionResult> CreatePropertyAmenity(
+        [FromBody] CreateAmenityRequest request, CancellationToken cancellationToken)
+    {
+        var name = request.Name.Trim();
+        if (await db.TienNghiCoSos.AnyAsync(t => t.TenTienNghi == name, cancellationToken))
+            return Conflict("Tiện nghi cơ sở này đã tồn tại.");
+
+        var amenity = new TienNghiCoSo { TenTienNghi = name };
+        db.TienNghiCoSos.Add(amenity);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { id = amenity.MaTienNghi, name = amenity.TenTienNghi });
+    }
+
+    [HttpDelete("amenities/properties/{id:int}")]
+    public async Task<IActionResult> DeletePropertyAmenity(int id, CancellationToken cancellationToken)
+    {
+        var amenity = await db.TienNghiCoSos.FindAsync([id], cancellationToken);
+        if (amenity is null) return NotFound();
+
+        db.TienNghiCoSos.Remove(amenity);
+        await db.SaveChangesAsync(cancellationToken);
+        return NoContent();
+    }
+
+    [HttpGet("amenities/rooms")]
+    public async Task<ActionResult<IReadOnlyList<AmenityManagementItem>>> GetRoomAmenities(CancellationToken cancellationToken)
+    {
+        var amenities = await db.TienNghiPhongs.AsNoTracking()
+            .Select(t => new AmenityManagementItem(
+                t.MaTienNghi,
+                t.TenTienNghi,
+                db.Phong_TienNghis.Count(c => c.MaTienNghi == t.MaTienNghi)
+            ))
+            .OrderBy(a => a.Name)
+            .ToListAsync(cancellationToken);
+
+        return Ok(amenities);
+    }
+
+    [HttpPost("amenities/rooms")]
+    public async Task<IActionResult> CreateRoomAmenity(
+        [FromBody] CreateAmenityRequest request, CancellationToken cancellationToken)
+    {
+        var name = request.Name.Trim();
+        if (await db.TienNghiPhongs.AnyAsync(t => t.TenTienNghi == name, cancellationToken))
+            return Conflict("Tiện nghi phòng này đã tồn tại.");
+
+        var amenity = new TienNghiPhong { TenTienNghi = name };
+        db.TienNghiPhongs.Add(amenity);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { id = amenity.MaTienNghi, name = amenity.TenTienNghi });
+    }
+
+    [HttpDelete("amenities/rooms/{id:int}")]
+    public async Task<IActionResult> DeleteRoomAmenity(int id, CancellationToken cancellationToken)
+    {
+        var amenity = await db.TienNghiPhongs.FindAsync([id], cancellationToken);
+        if (amenity is null) return NotFound();
+
+        db.TienNghiPhongs.Remove(amenity);
+        await db.SaveChangesAsync(cancellationToken);
+        return NoContent();
+    }
+    #endregion
+
+    #region 6. Nhật ký hệ thống (Audit Logs)
+    [HttpGet("audit-logs")]
+    public async Task<ActionResult<IReadOnlyList<AdminAuditLogResponse>>> GetAuditLogs(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 100,
+        CancellationToken cancellationToken = default)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 200);
+
+        var logs = await db.NhatKyHoatDongs.AsNoTracking()
+            .Include(l => l.NguoiDung)
+            .OrderByDescending(l => l.ThoiGian)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(l => new AdminAuditLogResponse(
+                l.MaNhatKy,
+                l.MaNguoiDung,
+                l.NguoiDung != null ? l.NguoiDung.HoTen : "Hệ thống",
+                l.NguoiDung != null ? l.NguoiDung.Email : null,
+                l.HanhDong,
+                l.LoaiDoiTuong,
+                l.MaDoiTuong,
+                l.MoTaChiTiet,
+                l.DiaChiIP,
+                l.ThoiGian
+            ))
+            .ToListAsync(cancellationToken);
+
+        return Ok(logs);
+    }
+    #endregion
+
+    private async Task LogActionAsync(
+        int? userId, string action, string targetType, int? targetId,
+        string description, CancellationToken cancellationToken)
+    {
+        var log = new NhatKyHoatDong
+        {
+            MaNguoiDung = userId,
+            HanhDong = action,
+            LoaiDoiTuong = targetType,
+            MaDoiTuong = targetId,
+            MoTaChiTiet = description,
+            DiaChiIP = HttpContext?.Connection?.RemoteIpAddress?.ToString(),
+            ThoiGian = DateTime.UtcNow
+        };
+        await db.NhatKyHoatDongs.AddAsync(log, cancellationToken);
+    }
 
     private int GetAccountId()
     {

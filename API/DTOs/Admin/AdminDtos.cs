@@ -27,7 +27,10 @@ public sealed record AdminOwnerContact(
     string Email,
     string Phone,
     string? CitizenId,
-    string? BankInformation
+    string? BankInformation,
+    string? BankName = null,
+    string? AccountNumber = null,
+    string? AccountHolder = null
 );
 
 public sealed record AdminAmenityResponse(
@@ -44,7 +47,11 @@ public sealed record AdminRoomDetailsResponse(
     string Status,
     string? RoomType,
     IReadOnlyList<string> Photos,
-    IReadOnlyList<AdminAmenityResponse> Amenities
+    IReadOnlyList<AdminAmenityResponse> Amenities,
+    int AdultCapacity = 2,
+    int ChildCapacity = 1,
+    string? Description = null,
+    bool IsActive = true
 );
 
 public sealed record AdminPropertyDetailsResponse(
@@ -104,25 +111,31 @@ public sealed record AdminBookingSummaryResponse(
     DateTime BookingDate,
     string PaymentStatus,
     string? PaymentMethod,
-    string TrangThaiQuyetToan = "ChuaQuyetToan",
-    string? MaGiaoDichQuyetToan = null,
-    DateTime? NgayQuyetToan = null,
-    decimal? SoTienQuyetToan = null,
-    string? GhiChuQuyetToan = null
+    string? RefundReason = null,
+    DateTime? RefundRequestedAt = null,
+    string? GuestBankName = null,
+    string? GuestAccountNumber = null,
+    string? GuestAccountHolder = null
 );
 
 public sealed record AdminGuestInfo(
     int Id,
     string FullName,
     string Email,
-    string Phone
+    string Phone,
+    string? BankName = null,
+    string? AccountNumber = null,
+    string? AccountHolder = null
 );
 
 public sealed record AdminOwnerInfo(
     int Id,
     string FullName,
     string Email,
-    string Phone
+    string Phone,
+    string? BankName = null,
+    string? AccountNumber = null,
+    string? AccountHolder = null
 );
 
 public sealed record AdminBookingRoomItem(
@@ -131,20 +144,22 @@ public sealed record AdminBookingRoomItem(
     decimal Price
 );
 
-public sealed record AdminPhuThuItem(
-    int FeeId,
+public sealed record AdminServiceItem(
+    int ServiceId,
     string Name,
     int Quantity,
     decimal UnitPrice,
-    decimal Total,
-    string? Note
+    decimal Total
 );
 
 public sealed record AdminInvoiceInfo(
     int InvoiceId,
     decimal TotalAmount,
     decimal BaseAmount,
-    string PaymentMethod
+    string PaymentMethod,
+    decimal CommissionPercentage = 15.00m,
+    decimal CommissionAmount = 0.00m,
+    decimal HostPayout = 0.00m
 );
 
 public sealed record AdminBookingDetailsResponse(
@@ -163,13 +178,10 @@ public sealed record AdminBookingDetailsResponse(
     string PropertyName,
     string? PropertyAddress,
     IReadOnlyList<AdminBookingRoomItem> Rooms,
-    IReadOnlyList<AdminPhuThuItem> ExtraFees,
+    IReadOnlyList<AdminServiceItem> Services,
     AdminInvoiceInfo? Invoice,
-    string TrangThaiQuyetToan = "ChuaQuyetToan",
-    string? MaGiaoDichQuyetToan = null,
-    DateTime? NgayQuyetToan = null,
-    decimal? SoTienQuyetToan = null,
-    string? GhiChuQuyetToan = null
+    string? RefundReason = null,
+    DateTime? RefundRequestedAt = null
 );
 
 public sealed class ProcessRefundRequest
@@ -293,7 +305,10 @@ public sealed record AdminUserResponse(
     string? CitizenId,
     string? BankInformation,
     int PropertyCount,
-    int BookingCount
+    int BookingCount,
+    string? BankName = null,
+    string? AccountNumber = null,
+    string? AccountHolder = null
 );
 
 public sealed class UpdateUserStatusRequest
@@ -390,3 +405,35 @@ public sealed record RevenueBookingItemResponse(
 );
 #endregion
 
+#region Amenity & Audit Log DTOs
+public sealed record AmenityManagementItem(
+    int Id,
+    string Name,
+    int UsageCount
+);
+
+public sealed class CreateAmenityRequest
+{
+    [Required, StringLength(100)]
+    public string Name { get; set; } = string.Empty;
+}
+
+public sealed class UpdateAmenityRequest
+{
+    [Required, StringLength(100)]
+    public string Name { get; set; } = string.Empty;
+}
+
+public sealed record AdminAuditLogResponse(
+    int Id,
+    int? UserId,
+    string? UserName,
+    string? UserEmail,
+    string Action,
+    string TargetType,
+    int? TargetId,
+    string? Description,
+    string? IpAddress,
+    DateTime Timestamp
+);
+#endregion

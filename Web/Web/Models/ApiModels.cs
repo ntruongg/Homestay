@@ -20,7 +20,10 @@ public sealed record PropertyDetails(
     string? Address,
     string? Type,
     IReadOnlyList<string> Images,
-    IReadOnlyList<Room> Rooms);
+    IReadOnlyList<Room> Rooms,
+    IReadOnlyList<ServiceItem>? Services = null);
+
+public sealed record ServiceItem(int Id, string Name, decimal Price, string? Description);
 
 public sealed record Room(
     int Id,
@@ -37,12 +40,16 @@ public sealed record Room(
 
 public sealed record Booking(
     int Id,
-    int RoomId,
+    IReadOnlyList<int> RoomIds,
     DateTime CheckIn,
     DateTime CheckOut,
     int GuestCount,
+    int Adults,
+    int Children,
     string Status,
-    decimal TotalAmount);
+    decimal TotalAmount,
+    string? PromoCode,
+    decimal DiscountAmount);
 
 public sealed record AuthResult(
     string AccessToken,
@@ -83,7 +90,9 @@ public sealed class RegisterOwnerInput : RegisterGuestInput
 {
     [Required]
     public string CitizenId { get; set; } = string.Empty;
-    [Required]
+    public string? BankName { get; set; }
+    public string? AccountNumber { get; set; }
+    public string? AccountHolder { get; set; }
     public string BankInformation { get; set; } = string.Empty;
 }
 
@@ -98,7 +107,9 @@ public sealed class ProfileInput
     [Required, EmailAddress]
     public string Email { get; set; } = string.Empty;
     public string? CitizenId { get; set; }
-    public string? BankInformation { get; set; }
+    public string? BankName { get; set; }
+    public string? AccountNumber { get; set; }
+    public string? AccountHolder { get; set; }
 }
 
 public sealed class ChangePasswordInput
@@ -111,6 +122,18 @@ public sealed class ChangePasswordInput
 
     [Required, Compare(nameof(NewPassword), ErrorMessage = "Passwords do not match.")]
     public string ConfirmPassword { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Mã xác thực OTP là bắt buộc.")]
+    public string OtpCode { get; set; } = string.Empty;
+}
+
+public sealed class ChangeEmailInput
+{
+    [Required, EmailAddress(ErrorMessage = "Email không hợp lệ.")]
+    public string NewEmail { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Mã xác thực OTP là bắt buộc.")]
+    public string OtpCode { get; set; } = string.Empty;
 }
 
 public sealed record Profile(
@@ -121,14 +144,17 @@ public sealed record Profile(
     string? Gender,
     string Phone,
     string Role,
-    string? BankInformation,
-    string? CitizenId);
+    string? CitizenId,
+    string? BankName,
+    string? AccountNumber,
+    string? AccountHolder);
 
 public sealed class ProfileViewModel
 {
     public Profile Profile { get; set; } = null!;
     public ProfileInput Input { get; set; } = new();
     public ChangePasswordInput PasswordInput { get; set; } = new();
+    public ChangeEmailInput EmailInput { get; set; } = new();
     public string ActiveTab { get; set; } = "personal";
 }
 
@@ -138,6 +164,16 @@ public sealed class BookingInput
     public DateTime CheckIn { get; set; }
     public DateTime CheckOut { get; set; }
     public int GuestCount { get; set; }
+    public int Adults { get; set; } = 1;
+    public int Children { get; set; } = 0;
+    public string? PromoCode { get; set; }
+    public List<BookingServiceRequest>? Services { get; set; }
+}
+
+public sealed class BookingServiceRequest
+{
+    public int ServiceId { get; set; }
+    public int Quantity { get; set; }
 }
 
 // Owner Dashboard Models
@@ -164,7 +200,8 @@ public sealed record OwnerProperty(
     string? Policy,
     string? RejectionReason,
     int RoomsCount,
-    string? CoverImageUrl
+    string? CoverImageUrl,
+    bool IsActive = true
 );
 
 public sealed record ApprovalHistoryItem(
@@ -283,7 +320,8 @@ public sealed class CreatePropertyInput
 
     // Homestay Whole-unit Configuration
     public decimal? HomestayPrice { get; set; }
-    public int? HomestayCapacity { get; set; }
+    public int? HomestayAdultCapacity { get; set; }
+    public int? HomestayChildCapacity { get; set; }
     public int? HomestayRoomTypeId { get; set; }
 
     // Hotel Multi-room Configuration
@@ -336,7 +374,8 @@ public sealed class UpdatePropertyInput
 
     // Homestay whole-unit setup (for updating price/capacity on resubmit)
     public decimal? HomestayPrice { get; set; }
-    public int? HomestayCapacity { get; set; }
+    public int? HomestayAdultCapacity { get; set; }
+    public int? HomestayChildCapacity { get; set; }
     public int? HomestayRoomTypeId { get; set; }
     public bool Resubmit { get; set; } = false;
 }
@@ -370,7 +409,9 @@ public sealed record RoomDetailItem(
     decimal OriginalPrice,
     string? RoomStatus,
     string? RoomType,
-    IReadOnlyList<string> Images
+    IReadOnlyList<string> Images,
+    int AdultCapacity = 2,
+    int ChildCapacity = 1
 );
 
 public sealed class CreateRoomInput
@@ -470,5 +511,15 @@ public sealed record ExtraFeeItem(
     decimal Total,
     string? Note
 );
+
+public sealed class ErrorViewModel
+{
+    public int StatusCode { get; set; } = 500;
+    public string Title { get; set; } = "Đã xảy ra lỗi";
+    public string Message { get; set; } = "Hệ thống gặp sự cố trong quá trình xử lý yêu cầu. Vui lòng thử lại sau.";
+    public string? RequestId { get; set; }
+    public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+}
+
 
 

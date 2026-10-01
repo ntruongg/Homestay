@@ -5,7 +5,7 @@
 
 <!-- 3. Hero Banner & Floating Search Box -->
 <section class="hero-wrapper">
-    <div class="container">
+    <div class="container-fluid px-3 px-md-4 px-xl-5">
         <!-- Hero Banner: Bo tròn góc lớn ~24px, Padding 2 bên, Ảnh thiên nhiên và Gradient overlay -->
         <div class="hero-banner-card">
             <div class="hero-gradient-overlay"></div>
@@ -28,12 +28,14 @@
         <div class="search-box-outer">
             <form id="staylySearchForm" class="floating-search-bar" onsubmit="handleSearchSubmit(event)">
                 <!-- 1. Điểm đến -->
-                <div class="search-field">
+                <div class="search-field position-relative" id="destinationFieldContainer">
                     <label class="search-field-label">
                         <i class="bi bi-geo-alt-fill"></i>
                         <span>Điểm đến</span>
                     </label>
                     <input type="text" id="searchInputLocation" name="location" value="@ViewBag.Location" placeholder="Bạn muốn đến đâu? (Đà Lạt, Hội An...)" autocomplete="off">
+                    <!-- Dropdown Autocomplete gợi ý tỉnh thành phố Việt Nam -->
+                    <div class="destination-autocomplete-dropdown d-none" id="destinationAutocompleteDropdown"></div>
                 </div>
 
                 <div class="search-divider d-none d-md-block"></div>
@@ -60,18 +62,83 @@
 
                 <div class="search-divider d-none d-md-block"></div>
 
-                <!-- 4. Số khách -->
-                <div class="search-field">
+                <!-- 4. Số khách với ô tách Người lớn / Trẻ em & dynamic age selectors -->
+                <div class="search-field position-relative" id="guestFieldContainer">
                     <label class="search-field-label">
                         <i class="bi bi-people-fill"></i>
                         <span>Số khách</span>
                     </label>
-                    <select id="searchInputGuests" name="guests">
-                        <option value="1">1 khách</option>
-                        <option value="2" selected>2 khách</option>
-                        <option value="3">3 - 4 khách</option>
-                        <option value="5">5+ khách (Gia đình / Nhóm)</option>
-                    </select>
+                    <button type="button" class="search-guest-trigger" id="guestSummaryBtn" onclick="toggleGuestPopover(event)">
+                        <span id="guestSummaryText">2 người lớn · 0 trẻ em</span>
+                        <i class="bi bi-chevron-down ms-auto text-muted small"></i>
+                    </button>
+                    <input type="hidden" name="adults" id="inputAdults" value="2">
+                    <input type="hidden" name="children" id="inputChildren" value="0">
+                    <input type="hidden" name="childrenAges" id="inputChildrenAges" value="">
+                    <input type="hidden" name="guests" id="searchInputGuests" value="2">
+
+                    <!-- Guest Popover Dropdown -->
+                    <div class="guest-popover-card d-none" id="guestPopover">
+                        <div class="guest-popover-header">
+                            <span class="fw-bold text-navy small">Chọn số lượng khách</span>
+                            <button type="button" class="btn-close btn-close-sm" onclick="closeGuestPopover()"></button>
+                        </div>
+
+                        <!-- Row 1: Người lớn -->
+                        <div class="guest-counter-row">
+                            <div>
+                                <div class="guest-row-title">Người lớn</div>
+                                <div class="guest-row-subtitle">Từ 13 tuổi trở lên</div>
+                            </div>
+                            <div class="counter-group">
+                                <button type="button" class="counter-btn" id="btnDecAdults" onclick="changeAdults(-1)">
+                                    <i class="bi bi-dash"></i>
+                                </button>
+                                <span class="counter-num" id="displayAdults">2</span>
+                                <button type="button" class="counter-btn" id="btnIncAdults" onclick="changeAdults(1)">
+                                    <i class="bi bi-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Row 2: Trẻ em -->
+                        <div class="guest-counter-row">
+                            <div>
+                                <div class="guest-row-title">Trẻ em</div>
+                                <div class="guest-row-subtitle">Độ tuổi 5 - 12 (Tối đa 4)</div>
+                            </div>
+                            <div class="counter-group">
+                                <button type="button" class="counter-btn" id="btnDecChildren" onclick="changeChildren(-1)">
+                                    <i class="bi bi-dash"></i>
+                                </button>
+                                <span class="counter-num" id="displayChildren">0</span>
+                                <button type="button" class="counter-btn" id="btnIncChildren" onclick="changeChildren(1)">
+                                    <i class="bi bi-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Note about age rules -->
+                        <div class="guest-policy-note">
+                            <i class="bi bi-info-circle-fill text-primary me-1"></i>
+                            Trẻ em chỉ từ 5 - 12 tuổi. Dưới 5 tuổi miễn phí (không tính); trên 12 tuổi tính là người lớn.
+                        </div>
+
+                        <!-- Dynamic Child Age Inputs (visible when children > 0) -->
+                        <div id="childAgesSection" class="child-ages-box d-none">
+                            <div class="child-ages-title">Độ tuổi của từng trẻ em (5 - 12 tuổi):</div>
+                            <div id="childAgesList" class="child-ages-grid">
+                                <!-- Dynamically rendered per child -->
+                            </div>
+                        </div>
+
+                        <!-- Popover footer -->
+                        <div class="guest-popover-footer">
+                            <button type="button" class="btn-guest-apply" onclick="closeGuestPopover()">
+                                Xác nhận
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Nút Tìm kiếm bo tròn 50px, màu Primary #0077b6 -->
@@ -86,7 +153,7 @@
 
 <!-- 4. Thân trang (Main Body - Chia 2 cột tỷ lệ 3 : 9) -->
 <section class="main-content-section">
-    <div class="container">
+    <div class="container-fluid px-3 px-md-4 px-xl-5">
         <div class="row g-4">
             <!-- Cột trái (Col-lg-3) - Bộ lọc (Filters) -->
             <div class="col-lg-3">
@@ -235,6 +302,134 @@
 @section Scripts {
 <script>
     /* ==========================================================================
+       Guest Selector State & Functions (Adults, Children 5-12, Dynamic Ages)
+       ========================================================================== */
+    const guestState = {
+        adults: 2,
+        children: 0,
+        childrenAges: []
+    };
+
+    window.toggleGuestPopover = function (e) {
+        if (e) e.stopPropagation();
+        const popover = document.getElementById('guestPopover');
+        if (popover) {
+            popover.classList.toggle('d-none');
+        }
+    };
+
+    window.closeGuestPopover = function () {
+        const popover = document.getElementById('guestPopover');
+        if (popover) {
+            popover.classList.add('d-none');
+        }
+    };
+
+    window.changeAdults = function (delta) {
+        const newCount = guestState.adults + delta;
+        if (newCount >= 1 && newCount <= 15) {
+            guestState.adults = newCount;
+            updateGuestUI();
+        }
+    };
+
+    window.changeChildren = function (delta) {
+        const newCount = guestState.children + delta;
+        if (newCount >= 0 && newCount <= 4) {
+            guestState.children = newCount;
+            while (guestState.childrenAges.length < newCount) {
+                guestState.childrenAges.push(5);
+            }
+            while (guestState.childrenAges.length > newCount) {
+                guestState.childrenAges.pop();
+            }
+            updateGuestUI();
+        }
+    };
+
+    window.updateChildAge = function (index, age) {
+        if (index >= 0 && index < guestState.childrenAges.length) {
+            guestState.childrenAges[index] = Number(age);
+            updateGuestSummaryText();
+        }
+    };
+
+    function updateGuestUI() {
+        const displayAdults = document.getElementById('displayAdults');
+        const displayChildren = document.getElementById('displayChildren');
+        const inputAdults = document.getElementById('inputAdults');
+        const inputChildren = document.getElementById('inputChildren');
+        const inputChildrenAges = document.getElementById('inputChildrenAges');
+        const searchInputGuests = document.getElementById('searchInputGuests');
+
+        if (displayAdults) displayAdults.textContent = guestState.adults;
+        if (displayChildren) displayChildren.textContent = guestState.children;
+        if (inputAdults) inputAdults.value = guestState.adults;
+        if (inputChildren) inputChildren.value = guestState.children;
+        if (inputChildrenAges) inputChildrenAges.value = guestState.childrenAges.join(',');
+        if (searchInputGuests) searchInputGuests.value = guestState.adults + guestState.children;
+
+        const btnDecAdults = document.getElementById('btnDecAdults');
+        const btnIncAdults = document.getElementById('btnIncAdults');
+        const btnDecChildren = document.getElementById('btnDecChildren');
+        const btnIncChildren = document.getElementById('btnIncChildren');
+
+        if (btnDecAdults) btnDecAdults.disabled = guestState.adults <= 1;
+        if (btnIncAdults) btnIncAdults.disabled = guestState.adults >= 15;
+        if (btnDecChildren) btnDecChildren.disabled = guestState.children <= 0;
+        if (btnIncChildren) btnIncChildren.disabled = guestState.children >= 4;
+
+        const childAgesSection = document.getElementById('childAgesSection');
+        const childAgesList = document.getElementById('childAgesList');
+
+        if (childAgesSection && childAgesList) {
+            if (guestState.children > 0) {
+                childAgesSection.classList.remove('d-none');
+                let html = '';
+                for (let i = 0; i < guestState.children; i++) {
+                    const currentAge = guestState.childrenAges[i] || 5;
+                    let optionsHtml = '';
+                    for (let age = 5; age <= 12; age++) {
+                        optionsHtml += `<option value="${age}" ${age === currentAge ? 'selected' : ''}>${age} tuổi</option>`;
+                    }
+                    html += `
+                        <div class="child-age-row">
+                            <span class="child-age-label">Bé thứ ${i + 1}:</span>
+                            <select class="child-age-select" onchange="updateChildAge(${i}, this.value)">
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                    `;
+                }
+                childAgesList.innerHTML = html;
+            } else {
+                childAgesSection.classList.add('d-none');
+                childAgesList.innerHTML = '';
+            }
+        }
+
+        updateGuestSummaryText();
+    }
+
+    function updateGuestSummaryText() {
+        const textEl = document.getElementById('guestSummaryText');
+        if (!textEl) return;
+        let text = `${guestState.adults} người lớn`;
+        if (guestState.children > 0) {
+            text += ` · ${guestState.children} trẻ em`;
+        }
+        textEl.textContent = text;
+    }
+
+    // Dismiss guest popover on click outside
+    document.addEventListener('click', function (e) {
+        const field = document.getElementById('guestFieldContainer');
+        if (field && !field.contains(e.target)) {
+            closeGuestPopover();
+        }
+    });
+
+    /* ==========================================================================
        Stayly Client-side Room Rendering & Filtering Engine
        - Template Literals (``) renderRooms()
        - Nested Bootstrap Carousel inside each horizontal card
@@ -301,13 +496,12 @@
 
                 let images = [];
                 if (item.images && Array.isArray(item.images) && item.images.length > 0) {
-                    images = item.images;
+                    images = item.images.filter(x => !!x);
                 } else if (item.coverImageUrl || item.CoverImageUrl) {
                     images = [item.coverImageUrl || item.CoverImageUrl];
                 } else {
                     images = [
-                        'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80'
+                        'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80'
                     ];
                 }
 
@@ -329,19 +523,15 @@
         /* ==========================================================================
            Hàm renderRooms() bằng Template Literal (``)
            - Tự động in danh sách phòng vào cột phải
-           - Mỗi Card nằm ngang (row), không viền, đổ bóng mờ, bo góc 16px
-           - Khối Ảnh: Bootstrap Carousel bên trong vuốt chuyển ảnh ngang mượt mà, nút next/prev bo tròn nhỏ
-           - Khối Thông tin: Tên phòng, Mô tả, Giá tiền nổi bật, nút "Xem chi tiết" bo tròn
+           - Thẻ ngang chuẩn đẹp, bo góc 16px, không ép card giãn theo ảnh
+           - Ảnh định dạng vừa vặn với card (object-fit: cover)
+           - Chỉ hiển thị đúng ảnh thực tế (1 ảnh thì không hiển thị carousel navigation)
            ========================================================================== */
         window.renderRooms = function (rooms) {
             const container = document.getElementById('roomListContainer');
-            const countDisplay = document.getElementById('resultsCountDisplay');
 
             if (!container) return;
 
-            if (countDisplay) {
-                countDisplay.innerHTML = `Tìm thấy <strong>${rooms.length}</strong> homestay nghỉ dưỡng tuyệt vời`;
-            }
 
             if (rooms.length === 0) {
                 container.innerHTML = `
@@ -363,48 +553,61 @@
 
             // Generate HTML with template literals (``)
             const html = rooms.map(room => {
-                const carouselId = `roomCarousel_${room.id}`;
                 const formattedPrice = new Intl.NumberFormat('vi-VN').format(room.price);
 
-                // Carousel indicators & items
-                const carouselIndicators = room.images.map((img, i) => `
-                    <button type="button" data-bs-target="#${carouselId}" data-bs-slide-to="${i}" class="${i === 0 ? 'active' : ''}" aria-label="Slide ${i + 1}"></button>
-                `).join('');
+                // Khối hiển thị ảnh: Nếu có nhiều hơn 1 ảnh thực tế thì dùng Carousel, nếu 1 ảnh thì hiển thị ảnh tĩnh vừa vặn
+                let imageBlockHtml = '';
+                if (room.images.length > 1) {
+                    const carouselId = `roomCarousel_${room.id}`;
+                    const carouselIndicators = room.images.map((img, i) => `
+                        <button type="button" data-bs-target="#${carouselId}" data-bs-slide-to="${i}" class="${i === 0 ? 'active' : ''}" aria-label="Slide ${i + 1}"></button>
+                    `).join('');
 
-                const carouselSlides = room.images.map((img, i) => `
-                    <div class="carousel-item ${i === 0 ? 'active' : ''}">
-                        <img src="${img}" class="room-carousel-img" alt="${escapeHtml(room.name)}" loading="lazy">
-                    </div>
-                `).join('');
+                    const carouselSlides = room.images.map((img, i) => `
+                        <div class="carousel-item ${i === 0 ? 'active' : ''} h-100">
+                            <img src="${img}" class="room-carousel-img" alt="${escapeHtml(room.name)}" loading="lazy">
+                        </div>
+                    `).join('');
 
-                // Amenities badges
-                const amenitiesHtml = (room.amenities || []).slice(0, 4).map(amenity => `
+                    imageBlockHtml = `
+                        <div class="room-carousel-wrapper">
+                            <div id="${carouselId}" class="carousel slide h-100" data-bs-interval="false">
+                                <div class="carousel-indicators">
+                                    ${carouselIndicators}
+                                </div>
+                                <div class="carousel-inner h-100">
+                                    ${carouselSlides}
+                                </div>
+                                <button class="carousel-control-prev" type="button" data-bs-target="#${carouselId}" data-bs-slide="prev" aria-label="Ảnh trước">
+                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#${carouselId}" data-bs-slide="next" aria-label="Ảnh sau">
+                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const singleImg = room.images[0] || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80';
+                    imageBlockHtml = `
+                        <div class="room-carousel-wrapper">
+                            <img src="${singleImg}" class="room-carousel-img" alt="${escapeHtml(room.name)}" loading="lazy">
+                        </div>
+                    `;
+                }
+
+                // Amenities badges (tối đa 3 tag để card luôn gọn gàng)
+                const amenitiesHtml = (room.amenities || []).slice(0, 3).map(amenity => `
                     <span class="amenity-tag">${escapeHtml(amenity)}</span>
                 `).join('');
 
                 return `
                     <article class="room-card-horizontal">
                         <div class="row g-0 h-100">
-                            <!-- Khối Ảnh (Col-md-5): Dùng Bootstrap Carousel bên trong để vuốt chuyển ảnh mượt mà -->
+                            <!-- Khối Ảnh (Col-md-5): Ảnh vừa vặn với card -->
                             <div class="col-md-5 position-relative">
                                 <span class="room-badge-type">${escapeHtml(room.type)}</span>
-                                <div class="room-carousel-wrapper">
-                                    <div id="${carouselId}" class="carousel slide" data-bs-interval="false">
-                                        <div class="carousel-indicators">
-                                            ${carouselIndicators}
-                                        </div>
-                                        <div class="carousel-inner">
-                                            ${carouselSlides}
-                                        </div>
-                                        <!-- Nút next/prev tròn nhỏ bo góc -->
-                                        <button class="carousel-control-prev" type="button" data-bs-target="#${carouselId}" data-bs-slide="prev" aria-label="Ảnh trước">
-                                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                                        </button>
-                                        <button class="carousel-control-next" type="button" data-bs-target="#${carouselId}" data-bs-slide="next" aria-label="Ảnh sau">
-                                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                                        </button>
-                                    </div>
-                                </div>
+                                ${imageBlockHtml}
                             </div>
 
                             <!-- Khối Thông tin (Col-md-7): Tên phòng, Mô tả, Giá tiền nổi bật, nút Xem chi tiết bo tròn -->
@@ -599,8 +802,32 @@
             applyFiltersAndRender();
         };
 
+        // Initialize destination autocomplete with Vietnam cities
+        const locInput = document.getElementById('searchInputLocation');
+        const locDropdown = document.getElementById('destinationAutocompleteDropdown');
+        if (locInput && locDropdown && window.StaylyAddress) {
+            StaylyAddress.initDestinationAutocomplete(locInput, locDropdown, function (selectedCity) {
+                activeFilters.location = selectedCity;
+                applyFiltersAndRender();
+            });
+        }
+
         // Initialize on load
         fetchInitialRooms();
+
+        // Check for login requirement
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('login') === 'true') {
+            setTimeout(() => {
+                const modalEl = document.getElementById('authModal');
+                if (modalEl && window.bootstrap) {
+                    const authModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    authModal.show();
+                    // Clean url
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            }, 500);
+        }
     })();
 </script>
 }

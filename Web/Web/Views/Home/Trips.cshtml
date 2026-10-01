@@ -1,29 +1,102 @@
 @model IReadOnlyList<Booking>
 
 @{
-    ViewData["Title"] = "My trips";
+    ViewData["Title"] = "Đơn đặt phòng của tôi";
 }
 
-<section class="section container">
-    <p class="eyebrow">Your travel journal</p>
-    <h1>My trips</h1>
-
-    <div class="trip-list">
-        @if (!Model.Any())
-        {
-            <p class="muted">Your next adventure is waiting.</p>
-        }
-
-        @foreach (var booking in Model)
-        {
-            <article class="trip">
-                <div>
-                    <h3>Room @booking.RoomId</h3>
-                    <p class="muted">@booking.CheckIn.ToString("dd MMM yyyy") ? @booking.CheckOut.ToString("dd MMM yyyy")</p>
-                </div>
-                <span class="status">@booking.Status</span>
-                <strong>$@booking.TotalAmount.ToString("N0")</strong>
-            </article>
-        }
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <h1 class="fw-bold text-navy mb-2"><i class="bi bi-journal-bookmark-fill me-2 text-primary"></i>Đơn đặt phòng của tôi</h1>
+            <p class="text-muted">Theo dõi và quản lý các chuyến đi của bạn</p>
+        </div>
     </div>
-</section>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row g-4 justify-content-center">
+        <div class="col-lg-8">
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5 bg-light rounded-4 border-0 shadow-sm">
+                    <i class="bi bi-box-seam display-1 text-muted mb-3 d-block"></i>
+                    <h4 class="text-navy">Chưa có đơn đặt phòng nào</h4>
+                    <p class="text-muted mb-4">Bạn chưa thực hiện bất kỳ chuyến đi nào cùng Stayly.</p>
+                    <a href="/" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold">Khám phá ngay</a>
+                </div>
+            }
+            else
+            {
+                @foreach (var booking in Model)
+                {
+                    string badgeClass = booking.Status switch
+                    {
+                        "Pending" or "ChoDuyet" => "bg-warning text-dark",
+                        "Confirmed" or "DaDuyet" => "bg-info text-dark",
+                        "CheckedIn" or "DangLuuTru" => "bg-primary",
+                        "Completed" or "DaHoanTat" => "bg-success",
+                        "Cancelled" or "DaHuy" => "bg-danger",
+                        _ => "bg-secondary"
+                    };
+
+                    string statusText = booking.Status switch
+                    {
+                        "Pending" or "ChoDuyet" => "Chờ duyệt",
+                        "Confirmed" or "DaDuyet" => "Đã xác nhận",
+                        "CheckedIn" or "DangLuuTru" => "Đang lưu trú",
+                        "Completed" or "DaHoanTat" => "Đã hoàn tất",
+                        "Cancelled" or "DaHuy" => "Đã huỷ",
+                        _ => booking.Status
+                    };
+
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-muted small">Mã đơn: #@booking.Id</span>
+                            <span class="badge @badgeClass rounded-pill px-3 py-2 fw-semibold">@statusText</span>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row align-items-center">
+                                <div class="col-md-8 mb-3 mb-md-0">
+                                    <h4 class="fw-bold text-navy mb-2">Phòng: @string.Join(", ", booking.RoomIds)</h4>
+                                    <div class="d-flex align-items-center text-muted mb-2">
+                                        <i class="bi bi-calendar2-check me-2"></i>
+                                        <span>@booking.CheckIn.ToString("dd/MM/yyyy") - @booking.CheckOut.ToString("dd/MM/yyyy")</span>
+                                    </div>
+                                    <div class="d-flex align-items-center text-muted mb-3">
+                                        <i class="bi bi-people me-2"></i>
+                                        <span>@booking.Adults người lớn, @booking.Children trẻ em</span>
+                                    </div>
+                                    
+                                    @if (!string.IsNullOrEmpty(booking.PromoCode))
+                                    {
+                                        <div class="d-inline-flex align-items-center bg-light text-success rounded-pill px-3 py-1 fw-semibold small">
+                                            <i class="bi bi-tag-fill me-2"></i> Mã @booking.PromoCode (-@booking.DiscountAmount.ToString("N0") ₫)
+                                        </div>
+                                    }
+                                </div>
+                                <div class="col-md-4 text-md-end">
+                                    <div class="text-muted small mb-1">Tổng thanh toán</div>
+                                    <h3 class="fw-bold text-primary mb-0">@booking.TotalAmount.ToString("N0") ₫</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>

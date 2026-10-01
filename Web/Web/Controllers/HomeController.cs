@@ -137,9 +137,9 @@ public sealed class HomeController(HomestayApiClient api) : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> AjaxRegisterGuest([FromBody] RegisterGuestInput input, CancellationToken cancellationToken)
+    public async Task<IActionResult> AjaxRegisterGuest([FromBody] RegisterGuestInput? input, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(input.Email) || string.IsNullOrWhiteSpace(input.Password) || string.IsNullOrWhiteSpace(input.FullName))
+        if (input == null || string.IsNullOrWhiteSpace(input.Email) || string.IsNullOrWhiteSpace(input.Password) || string.IsNullOrWhiteSpace(input.FullName))
             return BadRequest(new { success = false, message = "Vui lòng điền đầy đủ thông tin bắt buộc (Họ tên, Email, Mật khẩu)." });
 
         try
@@ -165,6 +165,54 @@ public sealed class HomeController(HomestayApiClient api) : Controller
                 },
                 token = result.Result.AccessToken,
                 message = "Đăng ký tài khoản thành công!"
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, message = $"Lỗi máy chủ khi đăng ký: {ex.Message}" });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AjaxRegisterOwner([FromBody] RegisterOwnerInput? input, CancellationToken cancellationToken)
+    {
+        if (input == null || string.IsNullOrWhiteSpace(input.Email) || string.IsNullOrWhiteSpace(input.Password) || string.IsNullOrWhiteSpace(input.FullName))
+            return BadRequest(new { success = false, message = "Vui lòng điền đầy đủ thông tin bắt buộc (Họ tên, Email, Mật khẩu)." });
+
+        if (string.IsNullOrWhiteSpace(input.CitizenId))
+            return BadRequest(new { success = false, message = "Vui lòng nhập số CCCD / định danh cá nhân." });
+
+        if (string.IsNullOrWhiteSpace(input.OtpCode))
+            return BadRequest(new { success = false, message = "Vui lòng nhập mã xác thực OTP gửi về email của bạn." });
+
+        if (string.IsNullOrWhiteSpace(input.BankInformation) && !string.IsNullOrWhiteSpace(input.BankName))
+        {
+            input.BankInformation = $"{input.BankName} - {input.AccountNumber} - {input.AccountHolder}".Trim(' ', '-');
+        }
+
+        try
+        {
+            var result = await api.RegisterOwnerAsync(input, cancellationToken);
+            if (!result.Success || result.Result is null)
+            {
+                return BadRequest(new { success = false, message = result.Error ?? "Đăng ký tài khoản chủ cơ sở không thành công. Vui lòng kiểm tra lại thông tin." });
+            }
+
+            SaveAuth(result.Result);
+            await HttpContext.Session.CommitAsync(cancellationToken);
+
+            return Ok(new
+            {
+                success = true,
+                user = new
+                {
+                    id = result.Result.User.Id,
+                    email = result.Result.User.Email,
+                    fullName = result.Result.User.FullName,
+                    role = result.Result.User.Role
+                },
+                token = result.Result.AccessToken,
+                message = "Đăng ký tài khoản chủ cơ sở thành công!"
             });
         }
         catch (Exception ex)
@@ -255,6 +303,11 @@ public sealed class HomeController(HomestayApiClient api) : Controller
     {
         ViewBag.IsPartner = true;
 
+        if (string.IsNullOrWhiteSpace(input.BankInformation) && !string.IsNullOrWhiteSpace(input.BankName))
+        {
+            input.BankInformation = $"{input.BankName} - {input.AccountNumber} - {input.AccountHolder}".Trim(' ', '-');
+        }
+
         if (!ModelState.IsValid)
             return View("Register", input);
 
@@ -276,10 +329,10 @@ public sealed class HomeController(HomestayApiClient api) : Controller
 
     [HttpPost]
     public async Task<IActionResult> RequestRegisterOtp(
-        [FromBody] SendOtpRequestModel model,
+        [FromBody] SendOtpRequestModel? model,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(model.Email))
+        if (model == null || string.IsNullOrWhiteSpace(model.Email))
             return BadRequest(new { message = "Email không được để trống." });
 
         var (success, message, error) = await api.SendOtpAsync(model.Email.Trim(), model.FullName, model.Purpose ?? "Register", cancellationToken);
@@ -290,6 +343,23 @@ public sealed class HomeController(HomestayApiClient api) : Controller
     }
 
     [HttpGet]
+    public async Task<IActionResult> CheckContactAvailability(string? email, string? phone, CancellationToken cancellationToken)
+    {
+        var (success, emailExists, phoneExists, message, error) = await api.CheckAvailabilityAsync(email, phone, cancellationToken);
+        if (!success)
+            return StatusCode(500, new { success = false, message = error ?? "Lỗi kiểm tra tính khả dụng của thông tin liên hệ." });
+
+        return Ok(new
+        {
+            success = true,
+            emailExists,
+            phoneExists,
+            isAvailable = !emailExists && !phoneExists,
+            message
+        });
+    }
+
+    [HttpGet]
     public async Task<IActionResult> Profile(
         string tab = "personal",
         CancellationToken cancellationToken = default)
@@ -297,7 +367,7 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         var token = HttpContext.Session.GetString("token");
 
         if (token is null)
-            return RedirectToAction(nameof(Login));
+            return RedirectToAction(nameof(Index), new { login = true });
 
         var result = await api.GetProfileAsync(token, cancellationToken);
 
@@ -319,13 +389,33 @@ public sealed class HomeController(HomestayApiClient api) : Controller
                 Gender = result.Result.Gender,
                 Phone = result.Result.Phone,
                 CitizenId = result.Result.CitizenId,
-                BankInformation = result.Result.BankInformation
+                BankName = result.Result.BankName,
+                AccountNumber = result.Result.AccountNumber,
+                AccountHolder = result.Result.AccountHolder
             },
             PasswordInput = new ChangePasswordInput(),
             ActiveTab = tab
         };
 
         return View(viewModel);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportDashboardBookings(CancellationToken cancellationToken = default)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (string.IsNullOrWhiteSpace(token))
+            return RedirectToAction(nameof(Login));
+
+        var result = await api.GetOwnerDashboardExcelAsync(token, cancellationToken);
+        if (!result.Success || result.FileBytes == null)
+        {
+            TempData["Error"] = result.Error ?? "Không thể xuất file báo cáo.";
+            return RedirectToAction(nameof(Dashboard), new { tab = "bookings" });
+        }
+
+        return File(result.FileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+            $"ThongKe_DatPhong_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx");
     }
 
     [HttpPost]
@@ -342,10 +432,11 @@ public sealed class HomeController(HomestayApiClient api) : Controller
 
         if (!ModelState.IsValid)
         {
+            // Optional: Log model state errors or simply reload view
             var profileResult = await api.GetProfileAsync(token, cancellationToken);
             return View(new ProfileViewModel
             {
-                Profile = profileResult.Result ?? new Profile(0, input.Email, input.FullName, input.DateOfBirth, input.Gender, input.Phone, role ?? "GUEST", input.BankInformation, input.CitizenId),
+                Profile = profileResult.Result ?? new Profile(0, input.Email, input.FullName, input.DateOfBirth, input.Gender, input.Phone, role ?? "GUEST", input.CitizenId, input.BankName, input.AccountNumber, input.AccountHolder),
                 Input = input,
                 ActiveTab = "personal"
             });
@@ -361,7 +452,7 @@ public sealed class HomeController(HomestayApiClient api) : Controller
             var profileResult = await api.GetProfileAsync(token, cancellationToken);
             return View(new ProfileViewModel
             {
-                Profile = profileResult.Result ?? new Profile(0, input.Email, input.FullName, input.DateOfBirth, input.Gender, input.Phone, role ?? "GUEST", input.BankInformation, input.CitizenId),
+                Profile = profileResult.Result ?? new Profile(0, input.Email, input.FullName, input.DateOfBirth, input.Gender, input.Phone, role ?? "GUEST", input.CitizenId, input.BankName, input.AccountNumber, input.AccountHolder),
                 Input = input,
                 ActiveTab = "personal"
             });
@@ -397,7 +488,9 @@ public sealed class HomeController(HomestayApiClient api) : Controller
                     Gender = profileResult.Result?.Gender,
                     Phone = profileResult.Result?.Phone ?? "",
                     CitizenId = profileResult.Result?.CitizenId,
-                    BankInformation = profileResult.Result?.BankInformation
+                    BankName = profileResult.Result?.BankName,
+                    AccountNumber = profileResult.Result?.AccountNumber,
+                    AccountHolder = profileResult.Result?.AccountHolder
                 },
                 PasswordInput = passwordInput,
                 ActiveTab = "security"
@@ -413,6 +506,48 @@ public sealed class HomeController(HomestayApiClient api) : Controller
 
         TempData["Success"] = "Your password has been changed successfully.";
         return RedirectToAction(nameof(Profile), new { tab = "security" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangeEmail(
+        ChangeEmailInput input,
+        CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (token is null) return RedirectToAction(nameof(Login));
+
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "Vui lòng nhập email hợp lệ và mã OTP.";
+            return RedirectToAction(nameof(Profile), new { tab = "security" });
+        }
+
+        var result = await api.ChangeEmailAsync(input.NewEmail, input.OtpCode, token, cancellationToken);
+        if (!result.Success)
+        {
+            TempData["Error"] = result.Error ?? "Không thể đổi email.";
+        }
+        else
+        {
+            TempData["Success"] = "Đổi email thành công.";
+        }
+
+        return RedirectToAction(nameof(Profile), new { tab = "security" });
+    }
+
+
+    [HttpPost]
+    public async Task<IActionResult> SendProfileOtp([FromQuery] string purpose, CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (token is null) return Unauthorized("Vui lòng đăng nhập.");
+
+        var result = await api.SendProfileOtpAsync(purpose, token, cancellationToken);
+        if (result.Success)
+            return Ok();
+        
+        return BadRequest(result.Error ?? "Không thể gửi OTP.");
     }
 
     [HttpGet]
@@ -609,8 +744,21 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         var (success, details, error) = await api.GetOwnerPropertyAsync(id, token, cancellationToken);
         if (!success || details is null)
             return BadRequest(new { message = error ?? "Không thể tải chi tiết cơ sở lưu trú." });
-
         return Ok(details);
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> TogglePropertyActive(int id, [FromServices] HomestayApiClient api, CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (token is null)
+            return Unauthorized(new { message = "Vui lòng đăng nhập lại." });
+
+        var (success, msg, isActive) = await api.TogglePropertyActiveAsync(id, token, cancellationToken);
+        if (!success)
+            return BadRequest(new { message = msg });
+            
+        return Ok(new { message = msg, isActive = isActive });
     }
 
     [HttpPost]
@@ -795,11 +943,36 @@ public sealed class HomeController(HomestayApiClient api) : Controller
             token,
             cancellationToken);
 
-        if (!result.Success)
-            TempData["Error"] = result.Error ?? "The room could not be booked.";
-        else
-            TempData["Success"] = "Your booking request has been sent.";
+        if (!result.Success || result.Booking == null)
+        {
+            TempData["Error"] = result.Error ?? "Không thể tạo đơn đặt phòng.";
+            return RedirectToAction(nameof(Details), new { id = input.RoomId });
+        }
 
+        return RedirectToAction(nameof(Checkout), new { bookingId = result.Booking.Id });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Checkout(int bookingId, CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (token is null) return RedirectToAction(nameof(Login));
+
+        var bookings = await api.GetBookingsAsync(token, cancellationToken);
+        var booking = bookings.FirstOrDefault(b => b.Id == bookingId);
+
+        if (booking == null) return NotFound();
+
+        return View(booking);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult CompletePayment(int bookingId, CancellationToken cancellationToken)
+    {
+        // For demonstration, simply redirect to Trips with success message.
+        // In a real application, this would verify payment status with VNPay.
+        TempData["Success"] = "Thanh toán và đặt phòng thành công! Đơn của bạn đang chờ chủ cơ sở duyệt.";
         return RedirectToAction(nameof(Trips));
     }
 
@@ -922,6 +1095,73 @@ public sealed class HomeController(HomestayApiClient api) : Controller
 
         return Ok(new { success = true, message = "Đánh giá của bạn đã được gửi thành công!" });
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetServicesList(int propertyId, CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (string.IsNullOrWhiteSpace(token)) return Unauthorized(new { success = false, message = "Unauthorized" });
+
+        var services = await api.GetOwnerServicesAsync(propertyId, token, cancellationToken);
+        return Ok(new { success = true, data = services });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SaveServiceJson([FromBody] SaveServiceAjaxInput input, CancellationToken cancellationToken)
+    {
+        if (input == null || input.PropertyId <= 0)
+            return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ" });
+
+        var token = HttpContext.Session.GetString("token");
+        if (string.IsNullOrWhiteSpace(token)) return Unauthorized(new { success = false, message = "Unauthorized" });
+
+        var result = await api.SaveOwnerServiceAsync(input.PropertyId, input, token, cancellationToken);
+        if (!result.Success) return BadRequest(new { success = false, message = result.Error });
+
+        return Ok(new { success = true });
+    }
+
+    [HttpGet("chinh-sach-chung")]
+    public IActionResult GeneralPolicy() => View();
+
+    [HttpGet("chinh-sach-doi-tac")]
+    public IActionResult PartnerPolicy() => View();
+
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult Error(int? statusCode = null, string? message = null)
+    {
+        var code = statusCode ?? HttpContext.Response.StatusCode;
+        if (code < 400 || code > 599) code = 500;
+
+        var title = code switch
+        {
+            404 => "Không tìm thấy trang yêu cầu",
+            403 => "Truy cập bị từ chối",
+            401 => "Yêu cầu đăng nhập",
+            400 => "Yêu cầu không hợp lệ",
+            _ => "Đã có lỗi xảy ra trên hệ thống"
+        };
+
+        var desc = message ?? (code switch
+        {
+            404 => "Địa chỉ trang web bạn đang tìm kiếm không tồn tại hoặc đã được chuyển sang đường dẫn khác.",
+            403 => "Bạn không có quyền hạn truy cập vào trang này hoặc tài nguyên này.",
+            401 => "Phiên làm việc của bạn đã hết hạn. Vui lòng đăng nhập lại để tiếp tục sử dụng.",
+            400 => "Dữ liệu gửi lên không đúng định dạng hoặc yêu cầu không thể xử lý.",
+            _ => "Hệ thống gặp sự cố trong quá trình xử lý yêu cầu của bạn. Vui lòng thử lại sau ít phút."
+        });
+
+        var model = new ErrorViewModel
+        {
+            StatusCode = code,
+            Title = title,
+            Message = desc,
+            RequestId = System.Diagnostics.Activity.Current?.Id ?? HttpContext.TraceIdentifier
+        };
+
+        Response.StatusCode = code;
+        return View("~/Views/Shared/Error.cshtml", model);
+    }
 }
 
 public sealed class ReplyReviewAjaxInput
@@ -935,4 +1175,14 @@ public sealed class CreateReviewAjaxInput
     public int BookingId { get; set; }
     public int Rating { get; set; } = 5;
     public string? Comment { get; set; }
+}
+
+public sealed class SaveServiceAjaxInput
+{
+    public int Id { get; set; }
+    public int PropertyId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+    public string? Description { get; set; }
+    public bool IsActive { get; set; }
 }

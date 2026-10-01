@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace API.Models;
 
+[Table("VaiTro")]
 public class VaiTro
 {
     public const int GUEST = 1;
@@ -17,5 +19,5 @@ public class VaiTro
     [StringLength(200)]
     public string? MoTa { get; set; }
 
-    public ICollection<TaiKhoan> TaiKhoans { get; set; } = [];
+    public ICollection<NguoiDung> NguoiDungs { get; set; } = [];
 }

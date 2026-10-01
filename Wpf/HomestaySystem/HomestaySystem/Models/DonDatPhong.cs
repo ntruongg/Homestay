@@ -56,6 +56,7 @@ namespace HomestaySystem.Models
         public string? GhiChuQuyetToan { get; set; }
 
         public DateTime ThoiGianTao { get; set; } = DateTime.Now;
+        public string GhiChu { get; set; } = string.Empty;
 
         // ================= THUỘC TÍNH BỔ TRỢ GIAO DIỆN =================
         public string MaDonHienThi { get => $"DDP{MaDon:D6}"; set {} }
@@ -86,12 +87,9 @@ namespace HomestaySystem.Models
         {
             get => TrangThai switch
             {
-                "Confirmed" or "DaXacNhan" or "CheckedIn" => "#0E9F6E",
-                "Pending" or "ChoXacNhan" => "#F59E0B",
-                "RefundRequested" or "YeuCauHoanTien" => "#FF5E1F",
-                "Refunded" or "DaHoanTien" => "#8B5CF6",
-                "Cancelled" or "DaHuy" => "#EF4444",
-                "CheckedOut" or "HoanThanh" => "#0194F3",
+                "Confirmed" or "DaXacNhan" or "CheckedIn" or "DangO" or "CheckedOut" or "HoanThanh" or "Refunded" or "DaHoanTien" => "#10B981", // Xanh lá: Hoạt động, đã hoàn thành
+                "Pending" or "ChoXacNhan" or "RefundRequested" or "YeuCauHoanTien" => "#F59E0B", // Vàng: Cảnh báo, chờ duyệt
+                "Cancelled" or "DaHuy" or "TuChoi" or "BiKhoa" => "#EF4444", // Đỏ: Dừng hoạt động, hủy, từ chối
                 _ => "#64748B"
             };
             set {}
@@ -101,5 +99,15 @@ namespace HomestaySystem.Models
         public string MauQuyetToan { get => TrangThaiQuyetToan == "DaQuyetToan" ? "#10B981" : "#EF4444"; set {} }
         public bool CoTheQuyetToan { get => (TrangThai == "HoanThanh" || TrangThai == "CheckedOut") && TrangThaiQuyetToan == "ChuaQuyetToan"; set {} }
         public bool CoTheHoanTien { get => TrangThai == "RefundRequested" || TrangThai == "Confirmed" || TrangThai == "DaXacNhan"; set {} }
+
+        // Bổ trợ hoàn tiền & cổng thanh toán
+        public string CongThanhToan { get; set; } = "VNPay QR";
+        public string HangThanhVienKhach { get; set; } = "Hội viên Vàng";
+        public string ChinhSachHuy { get; set; } = "Miễn phí 100% hủy phòng trước 07 ngày; hủy sau 7 ngày mất 50% tiền cọc.";
+        public string ThoiDiemKhachHuy { get; set; } = "Hôm qua lúc 14:30 (Trước 09 ngày)";
+        public string KetQuaThamDinh { get; set; } = "Đủ điều kiện hoàn 100%";
+        public decimal TienPhiXuLyHoan { get; set; } = 0m;
+        public decimal TienHoanThucTe => Math.Max(0m, TongTien - TienPhiXuLyHoan);
+        public string NgayNhanTraHienThi => $"{NgayCheckIn:dd/MM} ➔ {NgayCheckOut:dd/MM/yyyy}";
     }
 }

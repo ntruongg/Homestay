@@ -120,7 +120,7 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
                 .HasForeignKey(x => x.MaPhong).OnDelete(DeleteBehavior.ClientSetNull);
 
             // Ràng buộc 1: Exclusive Arc - Ảnh phải thuộc về Cơ sở HOẶC Phòng (Không được cả 2, không được bỏ trống cả 2)
-            entity.ToTable(t => t.HasCheckConstraint("CK_HinhAnh_ExclusiveOwner", 
+            entity.ToTable(t => t.HasCheckConstraint("CK_HinhAnh_ExclusiveOwner",
                 "(MaCoSoLuuTru IS NOT NULL AND MaPhong IS NULL) OR (MaCoSoLuuTru IS NULL AND MaPhong IS NOT NULL)"));
         });
 
@@ -173,7 +173,7 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
             entity.HasKey(x => new { x.MaDonDatPhong, x.MaDichVu });
             entity.Property(x => x.DonGia).HasColumnType("decimal(12,2)");
             entity.Property(x => x.ThanhTien).HasColumnType("decimal(12,2)");
-            
+
             entity.HasOne(x => x.DonDatPhong).WithMany(x => x.DonDatPhongDichVus)
                 .HasForeignKey(x => x.MaDonDatPhong).OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(x => x.DichVu).WithMany(x => x.DonDatPhongDichVus)

@@ -5,21 +5,22 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:HomestaySystem.ViewModels"
         mc:Ignorable="d"
-        Title="HomestaySystem - Cổng Quản Trị Hệ Thống" 
-        Height="820" Width="1380"
-        MinHeight="680" MinWidth="1100"
+        Title="Stayly Admin - Cổng Quản Trị Hệ Thống Toàn Diện" 
+        WindowState="Maximized"
+        Height="800" Width="1280"
+        MinHeight="650" MinWidth="1024"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource MauNenChinh}">
 
-    <!-- CẤU TRÚC 2 CỘT: CỘT TRÁI (SIDEBAR 280PX) + CỘT PHẢI (NỘI DUNG CHÍNH) -->
+    <!-- CẤU TRÚC 2 CỘT: CỘT TRÁI (SIDEBAR 230PX GỌN GÀNG CÂN ĐỐI) + CỘT PHẢI (VÙNG NỘI DUNG RỘNG RÃI THOÁNG ĐÃNG) -->
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="280"/>
+            <ColumnDefinition Width="230"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- ================= CỘT 1: SIDEBAR NAVIGATION HOMESTAYSYSTEM ================= -->
-        <Border Grid.Column="0" Background="{StaticResource MauSidebarNen}">
+        <!-- ================= CỘT 1: SIDEBAR NAVIGATION STAYLY ADMIN (NỀN XANH NHẠT PASTEL #EBF3FA) ================= -->
+        <Border Grid.Column="0" Background="{StaticResource MauSidebarNen}" BorderThickness="0,0,1,0" BorderBrush="{StaticResource MauSidebarVien}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -27,170 +28,317 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- 1.1. LOGO & TIÊU ĐỀ THƯƠNG HIỆU HOMESTAYSYSTEM -->
-                <Border Grid.Row="0" Padding="20,22" BorderBrush="#142E5C" BorderThickness="0,0,0,1">
+                <!-- 1.1. LOGO & TIÊU ĐỀ THƯƠNG HIỆU STAYLY ADMIN -->
+                <Border Grid.Row="0" Padding="14,16" BorderBrush="{StaticResource MauSidebarVien}" BorderThickness="0,0,0,1">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <!-- Biểu tượng HomestaySystem -->
-                        <Border Grid.Column="0" Width="44" Height="44" CornerRadius="12" Background="#0194F3" VerticalAlignment="Center">
-                            <TextBlock Text="🏡" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <!-- Biểu tượng Stayly Logo -->
+                        <Border Grid.Column="0" Width="38" Height="38" CornerRadius="12" Background="{StaticResource MauStaylySkyBlue}" VerticalAlignment="Center">
+                            <TextBlock Text="🏡" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
-                        <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                        <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="HOMESTAY" FontWeight="Black" FontSize="16" Foreground="#FFFFFF"/>
-                                <TextBlock Text="SYSTEM" FontWeight="Black" FontSize="16" Foreground="#0194F3" Margin="4,0,0,0"/>
+                                <TextBlock Text="STAYLY" FontWeight="Black" FontSize="16" Foreground="#0F172A"/>
+                                <TextBlock Text="ADMIN" FontWeight="Black" FontSize="16" Foreground="{StaticResource MauStaylySkyBlue}" Margin="4,0,0,0"/>
                             </StackPanel>
-                            <TextBlock Text="Cổng Quản Trị Hệ Thống" FontSize="11" Foreground="#93C5FD" Margin="0,3,0,0"/>
+                            <TextBlock Text="Cổng Quản Trị Hệ Thống" FontSize="10.5" Foreground="#64748B" Margin="0,2,0,0"/>
                         </StackPanel>
                     </Grid>
                 </Border>
 
-                <!-- 1.2. DANH SÁCH MENU ĐIỀU HƯỚNG CHỨC NĂNG -->
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,16,0,16">
-                    <StackPanel Margin="14,0">
-                        <!-- Nhãn nhóm 1 -->
-                        <TextBlock Text="NGHIỆP VỤ CỐT LÕI" Foreground="#64748B" FontSize="10" FontWeight="Bold" Margin="12,6,0,8"/>
+                <!-- 1.2. DANH SÁCH MENU ĐIỀU HƯỚNG 7 PHÂN HỆ -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,10,0,10">
+                    <StackPanel Margin="10,0">
+                        <!-- Nhóm 1: Quản Trị & Vận Hành Chỗ Nghỉ -->
+                        <TextBlock Text="QUẢN TRỊ &amp; DUYỆT CHỖ NGHỈ" Foreground="#64748B" FontSize="9.5" FontWeight="Bold" Margin="8,4,0,6"/>
 
-                        <!-- Menu 1: Kiểm duyệt Homestay -->
-                        <RadioButton GroupName="SidebarMenu" Command="{Binding ChuyenManHinhKiemDuyetCommand}" IsChecked="True">
+                        <!-- Menu 1: Kiểm duyệt Homestay & Pháp lý -->
+                        <RadioButton GroupName="SidebarMenu" 
+                                     Command="{Binding ChuyenManHinhKiemDuyetCommand}" 
+                                     IsChecked="{Binding IsMenuKiemDuyet, Mode=TwoWay}"
+                                     FocusVisualStyle="{x:Null}">
                             <RadioButton.Template>
                                 <ControlTemplate TargetType="RadioButton">
-                                    <Border x:Name="btnBorder" Background="Transparent" CornerRadius="8" Padding="14,11" Margin="0,3" Cursor="Hand">
+                                    <Border x:Name="btnBorder" Background="Transparent" CornerRadius="10" Padding="10,8.5" Margin="0,2" Cursor="Hand" BorderThickness="1" BorderBrush="Transparent">
                                         <Grid>
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="📋" FontSize="16" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                                <TextBlock Text="Kiểm duyệt Homestay" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#94A3B8"/>
+                                                <TextBlock Text="🛡️" FontSize="14" VerticalAlignment="Center" Margin="0,0,9,0"/>
+                                                <TextBlock Text="Kiểm duyệt Homestay" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#475569"/>
                                             </StackPanel>
-                                            <!-- Badge số lượng chờ duyệt màu cam HomestaySystem -->
-                                            <Border HorizontalAlignment="Right" Background="#FF5E1F" CornerRadius="10" Padding="8,2" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding KiemDuyetVM.SoLuongChoDuyet}" Foreground="White" FontSize="11" FontWeight="Bold"/>
+                                            <!-- Badge số lượng chờ duyệt -->
+                                            <Border HorizontalAlignment="Right" Background="{StaticResource MauStaylyOrange}" CornerRadius="9" Padding="6,1.5" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding KiemDuyetVM.SoLuongChoDuyet}" Foreground="White" FontSize="10.5" FontWeight="Bold"/>
                                             </Border>
                                         </Grid>
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="btnBorder" Property="Background" Value="#142E5C"/>
-                                            <Setter TargetName="txtTitle" Property="Foreground" Value="White"/>
+                                             <Setter TargetName="btnBorder" Property="Background" Value="{StaticResource MauSidebarHover}"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="#000000"/>
                                         </Trigger>
                                         <Trigger Property="IsChecked" Value="True">
-                                            <Setter TargetName="btnBorder" Property="Background" Value="#0194F3"/>
-                                            <Setter TargetName="txtTitle" Property="Foreground" Value="White"/>
+                                            <Setter TargetName="btnBorder" Property="Background" Value="#FFFFFF"/>
+                                            <Setter TargetName="btnBorder" Property="BorderBrush" Value="#E2E8F0"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="#000000"/>
                                             <Setter TargetName="txtTitle" Property="FontWeight" Value="Bold"/>
+                                            <Setter TargetName="btnBorder" Property="Effect">
+                                                <Setter.Value>
+                                                    <DropShadowEffect Color="#0077B6" Opacity="0.10" BlurRadius="12" ShadowDepth="2" Direction="270"/>
+                                                </Setter.Value>
+                                            </Setter>
                                         </Trigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
                             </RadioButton.Template>
                         </RadioButton>
 
-                        <!-- Menu 2: Quản lý Tài khoản & Đối tác TERA -->
-                        <RadioButton GroupName="SidebarMenu" Command="{Binding ChuyenManHinhTaiKhoanCommand}">
+                        <!-- Menu 2: Quản lý người dùng -->
+                        <RadioButton GroupName="SidebarMenu" 
+                                     Command="{Binding ChuyenManHinhNguoiDungCommand}"
+                                     IsChecked="{Binding IsMenuNguoiDung, Mode=TwoWay}"
+                                     FocusVisualStyle="{x:Null}">
                             <RadioButton.Template>
                                 <ControlTemplate TargetType="RadioButton">
-                                    <Border x:Name="btnBorder" Background="Transparent" CornerRadius="8" Padding="14,11" Margin="0,3" Cursor="Hand">
+                                    <Border x:Name="btnBorder" Background="Transparent" CornerRadius="10" Padding="10,8.5" Margin="0,2" Cursor="Hand" BorderThickness="1" BorderBrush="Transparent">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="👥" FontSize="16" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                            <TextBlock Text="Tài khoản &amp; Người dùng" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#94A3B8"/>
+                                            <TextBlock Text="👤" FontSize="14" VerticalAlignment="Center" Margin="0,0,9,0"/>
+                                            <TextBlock Text="Quản lý người dùng" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#475569"/>
                                         </StackPanel>
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="btnBorder" Property="Background" Value="#142E5C"/>
-                                            <Setter TargetName="txtTitle" Property="Foreground" Value="White"/>
+                                            <Setter TargetName="btnBorder" Property="Background" Value="{StaticResource MauSidebarHover}"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="#000000"/>
                                         </Trigger>
                                         <Trigger Property="IsChecked" Value="True">
-                                            <Setter TargetName="btnBorder" Property="Background" Value="#0194F3"/>
-                                            <Setter TargetName="txtTitle" Property="Foreground" Value="White"/>
+                                            <Setter TargetName="btnBorder" Property="Background" Value="#FFFFFF"/>
+                                            <Setter TargetName="btnBorder" Property="BorderBrush" Value="#E2E8F0"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="#000000"/>
                                             <Setter TargetName="txtTitle" Property="FontWeight" Value="Bold"/>
+                                            <Setter TargetName="btnBorder" Property="Effect">
+                                                <Setter.Value>
+                                                    <DropShadowEffect Color="#0077B6" Opacity="0.10" BlurRadius="12" ShadowDepth="2" Direction="270"/>
+                                                </Setter.Value>
+                                            </Setter>
                                         </Trigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
                             </RadioButton.Template>
                         </RadioButton>
 
-                        <!-- Nhãn nhóm 2 -->
-                        <TextBlock Text="ĐẶT PHÒNG &amp; DÒNG TIỀN" Foreground="#64748B" FontSize="10" FontWeight="Bold" Margin="12,18,0,8"/>
-
-                        <!-- Menu 3: Quản lý Đơn đặt phòng & Hoàn tiền -->
-                        <RadioButton GroupName="SidebarMenu" Command="{Binding ChuyenManHinhDonDatCommand}">
+                        <!-- Menu 3: Quản lý đối tác -->
+                        <RadioButton GroupName="SidebarMenu" 
+                                     Command="{Binding ChuyenManHinhDoiTacCommand}"
+                                     IsChecked="{Binding IsMenuDoiTac, Mode=TwoWay}"
+                                     FocusVisualStyle="{x:Null}">
                             <RadioButton.Template>
                                 <ControlTemplate TargetType="RadioButton">
-                                    <Border x:Name="btnBorder" Background="Transparent" CornerRadius="8" Padding="14,11" Margin="0,3" Cursor="Hand">
+                                    <Border x:Name="btnBorder" Background="Transparent" CornerRadius="10" Padding="10,8.5" Margin="0,2" Cursor="Hand" BorderThickness="1" BorderBrush="Transparent">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="🤝" FontSize="14" VerticalAlignment="Center" Margin="0,0,9,0"/>
+                                            <TextBlock Text="Quản lý đối tác" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#475569"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="btnBorder" Property="Background" Value="{StaticResource MauSidebarHover}"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="#000000"/>
+                                        </Trigger>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="btnBorder" Property="Background" Value="#FFFFFF"/>
+                                            <Setter TargetName="btnBorder" Property="BorderBrush" Value="#E2E8F0"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="#000000"/>
+                                            <Setter TargetName="txtTitle" Property="FontWeight" Value="Bold"/>
+                                            <Setter TargetName="btnBorder" Property="Effect">
+                                                <Setter.Value>
+                                                    <DropShadowEffect Color="#0077B6" Opacity="0.10" BlurRadius="12" ShadowDepth="2" Direction="270"/>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </RadioButton.Template>
+                        </RadioButton>
+
+                        <!-- Menu 3: Danh mục & chỗ nghỉ -->
+                        <RadioButton GroupName="SidebarMenu" 
+                                     Command="{Binding ChuyenManHinhDanhMucCommand}"
+                                     IsChecked="{Binding IsMenuDanhMuc, Mode=TwoWay}"
+                                     FocusVisualStyle="{x:Null}">
+                            <RadioButton.Template>
+                                <ControlTemplate TargetType="RadioButton">
+                                    <Border x:Name="btnBorder" Background="Transparent" CornerRadius="10" Padding="10,8.5" Margin="0,2" Cursor="Hand" BorderThickness="1" BorderBrush="Transparent">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="🏘️" FontSize="14" VerticalAlignment="Center" Margin="0,0,9,0"/>
+                                            <TextBlock Text="Danh mục &amp; chỗ nghỉ" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#475569"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="btnBorder" Property="Background" Value="{StaticResource MauSidebarHover}"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="#000000"/>
+                                        </Trigger>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="btnBorder" Property="Background" Value="#FFFFFF"/>
+                                            <Setter TargetName="btnBorder" Property="BorderBrush" Value="#E2E8F0"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="#000000"/>
+                                            <Setter TargetName="txtTitle" Property="FontWeight" Value="Bold"/>
+                                            <Setter TargetName="btnBorder" Property="Effect">
+                                                <Setter.Value>
+                                                    <DropShadowEffect Color="#0077B6" Opacity="0.10" BlurRadius="12" ShadowDepth="2" Direction="270"/>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </RadioButton.Template>
+                        </RadioButton>
+
+                        <!-- Nhóm 2: Giao Dịch & Dòng Tiền Sàn -->
+                        <TextBlock Text="GIAO DỊCH &amp; DÒNG TIỀN SÀN" Foreground="#64748B" FontSize="9.5" FontWeight="Bold" Margin="8,15,0,6"/>
+
+                        <!-- Menu 4: Đơn đặt & hoàn tiền -->
+                        <RadioButton GroupName="SidebarMenu" 
+                                     Command="{Binding ChuyenManHinhDonDatCommand}"
+                                     IsChecked="{Binding IsMenuDonDat, Mode=TwoWay}"
+                                     FocusVisualStyle="{x:Null}">
+                            <RadioButton.Template>
+                                <ControlTemplate TargetType="RadioButton">
+                                    <Border x:Name="btnBorder" Background="Transparent" CornerRadius="10" Padding="10,8.5" Margin="0,2" Cursor="Hand" BorderThickness="1" BorderBrush="Transparent">
                                         <Grid>
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="📑" FontSize="16" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                                <TextBlock Text="Đơn đặt &amp; Hoàn tiền" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#94A3B8"/>
+                                                <TextBlock Text="📑" FontSize="14" VerticalAlignment="Center" Margin="0,0,9,0"/>
+                                                <TextBlock Text="Đơn đặt &amp; hoàn tiền" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#475569"/>
                                             </StackPanel>
-                                            <!-- Badge số đơn yêu cầu hoàn tiền nếu có -->
-                                            <Border HorizontalAlignment="Right" Background="#EF4444" CornerRadius="10" Padding="7,2" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding QuanLyDonDatVM.SoDonYeuCauHoanTien}" Foreground="White" FontSize="11" FontWeight="Bold"/>
+                                            <!-- Badge số đơn yêu cầu hoàn tiền -->
+                                            <Border HorizontalAlignment="Right" Background="{StaticResource MauStaylyRed}" CornerRadius="9" Padding="6,1.5" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding QuanLyDonDatVM.SoDonYeuCauHoanTien}" Foreground="White" FontSize="10.5" FontWeight="Bold"/>
                                             </Border>
                                         </Grid>
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="btnBorder" Property="Background" Value="#142E5C"/>
-                                            <Setter TargetName="txtTitle" Property="Foreground" Value="White"/>
+                                            <Setter TargetName="btnBorder" Property="Background" Value="{StaticResource MauSidebarHover}"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="#000000"/>
                                         </Trigger>
                                         <Trigger Property="IsChecked" Value="True">
-                                            <Setter TargetName="btnBorder" Property="Background" Value="#0194F3"/>
-                                            <Setter TargetName="txtTitle" Property="Foreground" Value="White"/>
+                                            <Setter TargetName="btnBorder" Property="Background" Value="#FFFFFF"/>
+                                            <Setter TargetName="btnBorder" Property="BorderBrush" Value="#E2E8F0"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="#000000"/>
                                             <Setter TargetName="txtTitle" Property="FontWeight" Value="Bold"/>
+                                            <Setter TargetName="btnBorder" Property="Effect">
+                                                <Setter.Value>
+                                                    <DropShadowEffect Color="#0077B6" Opacity="0.10" BlurRadius="12" ShadowDepth="2" Direction="270"/>
+                                                </Setter.Value>
+                                            </Setter>
                                         </Trigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
                             </RadioButton.Template>
                         </RadioButton>
 
-                        <!-- Menu 4: Báo cáo Doanh thu -->
-                        <RadioButton GroupName="SidebarMenu" Command="{Binding ChuyenManHinhBaoCaoCommand}">
+                        <!-- Menu 5: Báo cáo doanh thu -->
+                        <RadioButton GroupName="SidebarMenu" 
+                                     Command="{Binding ChuyenManHinhBaoCaoCommand}"
+                                     IsChecked="{Binding IsMenuBaoCao, Mode=TwoWay}"
+                                     FocusVisualStyle="{x:Null}">
                             <RadioButton.Template>
                                 <ControlTemplate TargetType="RadioButton">
-                                    <Border x:Name="btnBorder" Background="Transparent" CornerRadius="8" Padding="14,11" Margin="0,3" Cursor="Hand">
+                                    <Border x:Name="btnBorder" Background="Transparent" CornerRadius="10" Padding="10,8.5" Margin="0,2" Cursor="Hand" BorderThickness="1" BorderBrush="Transparent">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="📊" FontSize="16" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                            <TextBlock Text="Báo cáo Doanh thu Sàn" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#94A3B8"/>
+                                            <TextBlock Text="📊" FontSize="14" VerticalAlignment="Center" Margin="0,0,9,0"/>
+                                            <TextBlock Text="Báo cáo doanh thu" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#475569"/>
                                         </StackPanel>
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="btnBorder" Property="Background" Value="#142E5C"/>
-                                            <Setter TargetName="txtTitle" Property="Foreground" Value="White"/>
+                                            <Setter TargetName="btnBorder" Property="Background" Value="{StaticResource MauSidebarHover}"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="#000000"/>
                                         </Trigger>
                                         <Trigger Property="IsChecked" Value="True">
-                                            <Setter TargetName="btnBorder" Property="Background" Value="#0194F3"/>
-                                            <Setter TargetName="txtTitle" Property="Foreground" Value="White"/>
+                                            <Setter TargetName="btnBorder" Property="Background" Value="#FFFFFF"/>
+                                            <Setter TargetName="btnBorder" Property="BorderBrush" Value="#E2E8F0"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="#000000"/>
                                             <Setter TargetName="txtTitle" Property="FontWeight" Value="Bold"/>
+                                            <Setter TargetName="btnBorder" Property="Effect">
+                                                <Setter.Value>
+                                                    <DropShadowEffect Color="#0077B6" Opacity="0.10" BlurRadius="12" ShadowDepth="2" Direction="270"/>
+                                                </Setter.Value>
+                                            </Setter>
                                         </Trigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
                             </RadioButton.Template>
                         </RadioButton>
 
-                        <!-- Nhãn nhóm 3 -->
-                        <TextBlock Text="MARKETING &amp; ƯU ĐÃI" Foreground="#64748B" FontSize="10" FontWeight="Bold" Margin="12,18,0,8"/>
+                        <!-- Nhóm 3: Marketing & Hạ Tầng Hệ Thống -->
+                        <TextBlock Text="MARKETING &amp; HẠ TẦNG" Foreground="#64748B" FontSize="9.5" FontWeight="Bold" Margin="8,15,0,6"/>
 
-                        <!-- Menu 5: Quản lý Khuyến mãi -->
-                        <RadioButton GroupName="SidebarMenu" Command="{Binding ChuyenManHinhKhuyenMaiCommand}">
+                        <!-- Menu 6: Mã ưu đãi -->
+                        <RadioButton GroupName="SidebarMenu" 
+                                     Command="{Binding ChuyenManHinhKhuyenMaiCommand}"
+                                     IsChecked="{Binding IsMenuKhuyenMai, Mode=TwoWay}"
+                                     FocusVisualStyle="{x:Null}">
                             <RadioButton.Template>
                                 <ControlTemplate TargetType="RadioButton">
-                                    <Border x:Name="btnBorder" Background="Transparent" CornerRadius="8" Padding="14,11" Margin="0,3" Cursor="Hand">
+                                    <Border x:Name="btnBorder" Background="Transparent" CornerRadius="10" Padding="10,8.5" Margin="0,2" Cursor="Hand" BorderThickness="1" BorderBrush="Transparent">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="🎟️" FontSize="16" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                            <TextBlock Text="Mã ưu đãi (Voucher giảm giá)" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#94A3B8"/>
+                                            <TextBlock Text="🎟️" FontSize="14" VerticalAlignment="Center" Margin="0,0,9,0"/>
+                                            <TextBlock Text="Mã ưu đãi" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#475569"/>
                                         </StackPanel>
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="btnBorder" Property="Background" Value="#142E5C"/>
-                                            <Setter TargetName="txtTitle" Property="Foreground" Value="White"/>
+                                            <Setter TargetName="btnBorder" Property="Background" Value="{StaticResource MauSidebarHover}"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="#000000"/>
                                         </Trigger>
                                         <Trigger Property="IsChecked" Value="True">
-                                            <Setter TargetName="btnBorder" Property="Background" Value="#0194F3"/>
-                                            <Setter TargetName="txtTitle" Property="Foreground" Value="White"/>
+                                            <Setter TargetName="btnBorder" Property="Background" Value="#FFFFFF"/>
+                                            <Setter TargetName="btnBorder" Property="BorderBrush" Value="#E2E8F0"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="#000000"/>
                                             <Setter TargetName="txtTitle" Property="FontWeight" Value="Bold"/>
+                                            <Setter TargetName="btnBorder" Property="Effect">
+                                                <Setter.Value>
+                                                    <DropShadowEffect Color="#0077B6" Opacity="0.10" BlurRadius="12" ShadowDepth="2" Direction="270"/>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </RadioButton.Template>
+                        </RadioButton>
+
+                        <!-- Menu 7: Bảo trì Hệ thống & Sao lưu CSDL -->
+                        <RadioButton GroupName="SidebarMenu" 
+                                     Command="{Binding ChuyenManHinhBaoTriCommand}"
+                                     IsChecked="{Binding IsMenuBaoTri, Mode=TwoWay}"
+                                     FocusVisualStyle="{x:Null}">
+                            <RadioButton.Template>
+                                <ControlTemplate TargetType="RadioButton">
+                                    <Border x:Name="btnBorder" Background="Transparent" CornerRadius="10" Padding="10,8.5" Margin="0,2" Cursor="Hand" BorderThickness="1" BorderBrush="Transparent">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="🛠️" FontSize="14" VerticalAlignment="Center" Margin="0,0,9,0"/>
+                                            <TextBlock Text="Bảo trì &amp; Sao lưu" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#475569"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="btnBorder" Property="Background" Value="{StaticResource MauSidebarHover}"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="#000000"/>
+                                        </Trigger>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="btnBorder" Property="Background" Value="#FFFFFF"/>
+                                            <Setter TargetName="btnBorder" Property="BorderBrush" Value="#E2E8F0"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="#000000"/>
+                                            <Setter TargetName="txtTitle" Property="FontWeight" Value="Bold"/>
+                                            <Setter TargetName="btnBorder" Property="Effect">
+                                                <Setter.Value>
+                                                    <DropShadowEffect Color="#0077B6" Opacity="0.10" BlurRadius="12" ShadowDepth="2" Direction="270"/>
+                                                </Setter.Value>
+                                            </Setter>
                                         </Trigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
@@ -200,31 +348,31 @@
                 </ScrollViewer>
 
                 <!-- 1.3. PROFILE QUẢN TRỊ VIÊN & NÚT ĐĂNG XUẤT -->
-                <Border Grid.Row="2" Padding="16,14" Background="{StaticResource MauSidebarFooter}" BorderBrush="#142E5C" BorderThickness="0,1,0,0">
+                <Border Grid.Row="2" Padding="10,12" Background="{StaticResource MauSidebarFooter}" BorderBrush="{StaticResource MauSidebarVien}" BorderThickness="0,1,0,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Border Grid.Column="0" Width="38" Height="38" CornerRadius="19" Background="#0194F3" VerticalAlignment="Center">
-                            <TextBlock Text="👨‍💼" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border Grid.Column="0" Width="34" Height="34" CornerRadius="17" Background="{StaticResource MauStaylySkyBlue}" VerticalAlignment="Center">
+                            <TextBlock Text="👨‍💼" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
-                        <StackPanel Grid.Column="1" Margin="10,0,8,0" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding TenQuanTriVien}" FontWeight="Bold" FontSize="12" Foreground="White" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="{Binding VaiTroQuanTriVien}" FontSize="10" Foreground="#93C5FD" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                        <StackPanel Grid.Column="1" Margin="8,0,6,0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding TenQuanTriVien, FallbackValue='Admin Stayly'}" FontWeight="Bold" FontSize="11.5" Foreground="#0F172A" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding VaiTroQuanTriVien, FallbackValue='Quản Trị Hệ Thống'}" FontSize="9.5" Foreground="{StaticResource MauStaylyPrimary}" Margin="0,1,0,0" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                         <Button Grid.Column="2" Command="{Binding DangXuatCommand}" ToolTip="Đăng xuất khỏi hệ thống"
-                                Background="#1E293B" BorderBrush="#334155" BorderThickness="1" Foreground="#F87171"
-                                FontWeight="Bold" FontSize="11" Cursor="Hand" Padding="10,6">
+                                Background="White" BorderBrush="#CBD5E1" BorderThickness="1" Foreground="#EF4444"
+                                FontWeight="Bold" FontSize="10.5" Cursor="Hand" Padding="7,4">
                             <Button.Resources>
                                 <Style TargetType="Border">
                                     <Setter Property="CornerRadius" Value="6"/>
                                 </Style>
                             </Button.Resources>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🚪" FontSize="12" Margin="0,0,4,0"/>
-                                <TextBlock Text="Đăng xuất"/>
+                                <TextBlock Text="🚪" FontSize="11" Margin="0,0,3,0"/>
+                                <TextBlock Text="Thoát"/>
                             </StackPanel>
                         </Button>
                     </Grid>
@@ -232,41 +380,41 @@
             </Grid>
         </Border>
 
-        <!-- ================= CỘT 2: VÙNG NỘI DUNG CHÍNH (CONTENT AREA) ================= -->
+        <!-- ================= CỘT 2: VÙNG NỘI DUNG CHÍNH (CONTENT AREA RỘNG RÃI, THOÁNG ĐÃNG) ================= -->
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="66"/>
+                <RowDefinition Height="64"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- 2.1. HEADER THANH TRÊN CÙNG CHUẨN HOMESTAYSYSTEM -->
-            <Border Grid.Row="0" Background="White" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1" Padding="28,0">
+            <!-- 2.1. HEADER THANH TRÊN CÙNG CHUẨN STAYLY ADMIN -->
+            <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource MauVien}" BorderThickness="0,0,0,1" Padding="20,0">
                 <Grid>
                     <!-- Tiêu đề trang hiện hành & Breadcrumb -->
                     <StackPanel Orientation="Vertical" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="HomestaySystem" FontSize="11" Foreground="#64748B" FontWeight="Medium"/>
+                            <TextBlock Text="Quản trị hệ thống" FontSize="11" Foreground="{StaticResource MauChuPhu}" FontWeight="Medium"/>
                             <TextBlock Text=" ❯ " FontSize="10" Foreground="#94A3B8" Margin="4,0"/>
-                            <TextBlock Text="{Binding TieuDeTrang}" FontSize="11" Foreground="#0194F3" FontWeight="Bold"/>
+                            <TextBlock Text="{Binding TieuDeTrang}" FontSize="11" Foreground="{StaticResource MauStaylyPrimary}" FontWeight="Bold"/>
                         </StackPanel>
-                        <TextBlock Text="{Binding TieuDeTrang}" FontSize="18" FontWeight="ExtraBold" Foreground="#0F172A" Margin="0,2,0,0"/>
+                        <TextBlock Text="{Binding TieuDeTrang}" FontSize="18" FontWeight="ExtraBold" Foreground="{StaticResource MauChuTieuDe}" Margin="0,2,0,0"/>
                     </StackPanel>
 
                     <!-- Bên phải: Trạng thái kết nối & Đồng hồ hệ thống -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <!-- Chỉ thị trạng thái Server HomestaySystem -->
-                        <Border Background="#E8F7EE" BorderBrush="#A7F3D0" BorderThickness="1" CornerRadius="14" Padding="12,5" Margin="0,0,14,0">
+                        <!-- Chỉ thị trạng thái Server -->
+                        <Border Background="#ECFDF5" BorderBrush="#A7F3D0" BorderThickness="1" CornerRadius="14" Padding="12,5" Margin="0,0,14,0">
                             <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="8" Height="8" Fill="#0E9F6E" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="Hệ Thống Trực Tuyến" Foreground="#0E9F6E" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <Ellipse Width="8" Height="8" Fill="{StaticResource MauStaylyGreen}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Hệ Thống Trực Tuyến" Foreground="{StaticResource MauStaylyGreen}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Border>
 
-                        <!-- Đồng hồ hệ thống -->
-                        <Border Background="#F7F9FA" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="12,6">
+                        <!-- Đồng hồ hệ thống thời gian thực -->
+                        <Border Background="#F8FAFC" BorderBrush="{StaticResource MauVien}" BorderThickness="1" CornerRadius="10" Padding="12,6">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🕒 " FontSize="11" Foreground="#64748B"/>
-                                <TextBlock Text="{Binding ThoiGianHeThong}" Foreground="#334155" FontSize="12" FontWeight="SemiBold"/>
+                                <TextBlock Text="🕒 " FontSize="11" Foreground="{StaticResource MauChuPhu}"/>
+                                <TextBlock Text="{Binding ThoiGianHeThong}" Foreground="{StaticResource MauChuChinh}" FontSize="12" FontWeight="SemiBold"/>
                             </StackPanel>
                         </Border>
                     </StackPanel>

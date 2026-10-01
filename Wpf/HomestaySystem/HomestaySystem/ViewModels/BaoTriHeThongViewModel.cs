@@ -148,15 +148,15 @@ namespace HomestaySystem.ViewModels
                 }
             }
 
-            DuongDanTepPhucHoi = Path.Combine(DuongDanThuMucSaoLuu, "HomestayDB_Backup_Latest.bak");
+            DuongDanTepPhucHoi = Path.Combine(DuongDanThuMucSaoLuu, "Backup_Latest.bak");
         }
 
         private void ThucHienDuyetTep()
         {
             var dialog = new OpenFileDialog
             {
-                Title = "Chọn tệp sao lưu (.bak) để phục hồi CSDL",
-                Filter = "Tệp sao lưu SQL Server (*.bak)|*.bak|Tất cả các tệp (*.*)|*.*",
+                Title = "Chọn tệp sao lưu (.bak) để phục hồi dữ liệu",
+                Filter = "Tệp sao lưu (*.bak)|*.bak|Tất cả các tệp (*.*)|*.*",
                 InitialDirectory = Directory.Exists(DuongDanThuMucSaoLuu) ? DuongDanThuMucSaoLuu : THU_MUC_BACKUP_MAC_DINH
             };
 
@@ -170,20 +170,20 @@ namespace HomestaySystem.ViewModels
         {
             if (string.IsNullOrWhiteSpace(DuongDanThuMucSaoLuu))
             {
-                MessageBox.Show("Vui lòng nhập hoặc chọn thư mục lưu trữ tệp sao lưu .bak!", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Vui lòng nhập hoặc chọn thư mục lưu trữ tệp sao lưu!", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             var xacNhan = MessageBox.Show(
-                $"Bắt đầu tiến trình SAO LƯU CSDL (BACKUP DATABASE) vào thư mục:\n{DuongDanThuMucSaoLuu}\n\nQuá trình sẽ đóng gói toàn bộ bảng dữ liệu, đơn đặt phòng, tài khoản và doanh thu.",
-                "Xác nhận Sao lưu CSDL",
+                $"Xác nhận sao lưu dữ liệu vào thư mục:\n{DuongDanThuMucSaoLuu}\n\nHệ thống sẽ lưu lại toàn bộ dữ liệu cơ sở lưu trú, đơn đặt, tài khoản và doanh thu.",
+                "Xác nhận sao lưu",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
             if (xacNhan != MessageBoxResult.Yes) return;
 
             DangXuLy = true;
-            ThongBaoTrangThai = "Đang tiến hành sao lưu toàn bộ cơ sở dữ liệu HomestayDB...";
+            ThongBaoTrangThai = "Đang tiến hành sao lưu dữ liệu...";
             try
             {
                 var (thanhCong, thongBao) = await _adminService.SaoLuuCoSoDuLieuAsync(DuongDanThuMucSaoLuu);
@@ -216,20 +216,20 @@ namespace HomestaySystem.ViewModels
 
             if (!File.Exists(DuongDanTepPhucHoi))
             {
-                MessageBox.Show($"Tệp sao lưu không tồn tại trên ổ đĩa:\n{DuongDanTepPhucHoi}\n\nVui lòng thực hiện Sao lưu trước hoặc chọn tệp .bak hợp lệ.", "Lỗi tệp sao lưu", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Tệp sao lưu không tồn tại trên ổ đĩa:\n{DuongDanTepPhucHoi}\n\nVui lòng kiểm tra lại đường dẫn tệp sao lưu hợp lệ.", "Lỗi tệp sao lưu", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             var xacNhan = MessageBox.Show(
-                $"CẢNH BÁO NGUY HIỂM:\nBạn có chắc chắn muốn PHỤC HỒI CSDL từ tệp:\n'{DuongDanTepPhucHoi}'?\n\nToàn bộ dữ liệu hiện hành sẽ được khôi phục về trạng thái tại thời điểm tạo bản sao lưu này.",
-                "Cảnh báo phục hồi CSDL",
+                $"Lưu ý: Dữ liệu hiện tại sẽ được khôi phục về trạng thái của tệp sao lưu:\n'{DuongDanTepPhucHoi}'.\n\nBạn có chắc chắn muốn thực hiện không?",
+                "Xác nhận phục hồi dữ liệu",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
             if (xacNhan != MessageBoxResult.Yes) return;
 
             DangXuLy = true;
-            ThongBaoTrangThai = "Đang tiến hành phục hồi CSDL từ bản sao lưu...";
+            ThongBaoTrangThai = "Đang tiến hành phục hồi dữ liệu từ bản sao lưu...";
             try
             {
                 var (thanhCong, thongBao) = await _adminService.PhucHoiCoSoDuLieuAsync(DuongDanTepPhucHoi);

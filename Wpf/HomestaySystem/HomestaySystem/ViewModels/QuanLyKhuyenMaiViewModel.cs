@@ -32,7 +32,13 @@ namespace HomestaySystem.ViewModels
         public KhuyenMai? KhuyenMaiDangChon
         {
             get => _khuyenMaiDangChon;
-            set => SetProperty(ref _khuyenMaiDangChon, value);
+            set
+            {
+                if (SetProperty(ref _khuyenMaiDangChon, value) && value != null)
+                {
+                    ThucHienMoSua();
+                }
+            }
         }
 
         public KhuyenMai KhuyenMaiForm
@@ -44,7 +50,14 @@ namespace HomestaySystem.ViewModels
         public bool DangThemMoi
         {
             get => _dangThemMoi;
-            set => SetProperty(ref _dangThemMoi, value);
+            set
+            {
+                if (SetProperty(ref _dangThemMoi, value))
+                {
+                    OnPropertyChanged(nameof(TieuDeDialog));
+                    OnPropertyChanged(nameof(TieuDeNutLuu));
+                }
+            }
         }
 
         public bool HienThiDialogForm
@@ -65,11 +78,14 @@ namespace HomestaySystem.ViewModels
             set => SetProperty(ref _thongBaoTrangThai, value);
         }
 
-        public string TieuDeDialog
-        {
-            get => DangThemMoi ? "TẠO MÃ KHUYẾN MÃI MỚI" : "CẬP NHẬT MÃ KHUYẾN MÃI";
-            set { }
-        }
+        public string TieuDeDialog => DangThemMoi ? "TẠO MÃ VOUCHER MỚI" : "CẬP NHẬT MÃ KHUYẾN MÃI";
+        public string TieuDeNutLuu => DangThemMoi ? "Tạo voucher mới" : "Lưu thay đổi";
+
+        // KPI Metrics
+        public int TongSoVoucher => DanhSachKhuyenMai.Count;
+        public int SoVoucherDangHoatDong => System.Linq.Enumerable.Count(DanhSachKhuyenMai, v => v.TrangThai == "HoatDong");
+        public int SoLuotApDung => System.Linq.Enumerable.Sum(DanhSachKhuyenMai, v => v.SoLuongDaDung);
+        public string TongNganSachDaChi => $"{System.Linq.Enumerable.Sum(DanhSachKhuyenMai, v => v.SoLuongDaDung * 120000):N0} đ";
 
         // Commands
         public ICommand TaiDuLieuCommand { get; }
@@ -78,17 +94,27 @@ namespace HomestaySystem.ViewModels
         public ICommand LuuKhuyenMaiCommand { get; }
         public ICommand HuyDialogFormCommand { get; }
         public ICommand KhoaMoKhoaCommand { get; }
+        public ICommand SinhMaNgauNhienCommand { get; }
+        public ICommand DongHoSoCommand { get; }
+        public ICommand XemHoSoCommand { get; }
 
         public QuanLyKhuyenMaiViewModel(IAdminService adminService)
         {
             _adminService = adminService;
 
+            DongHoSoCommand = new RelayCommand(ThucHienDongDialog);
+            HuyDialogFormCommand = new RelayCommand(ThucHienDongDialog);
+            XemHoSoCommand = new RelayCommand<KhuyenMai>(km =>
+            {
+                if (km != null) KhuyenMaiDangChon = km;
+            });
+
             TaiDuLieuCommand = new RelayCommand(async () => await TaiDanhSachKhuyenMaiAsync());
             MoDialogThemMoiCommand = new RelayCommand(ThucHienMoThemMoi);
             MoDialogSuaCommand = new RelayCommand(ThucHienMoSua, () => KhuyenMaiDangChon != null);
             LuuKhuyenMaiCommand = new RelayCommand(async () => await ThucHienLuuKhuyenMaiAsync());
-            HuyDialogFormCommand = new RelayCommand(() => HienThiDialogForm = false);
-            KhoaMoKhoaCommand = new RelayCommand(async () => await ThucHienKhoaMoKhoaAsync(), () => KhuyenMaiDangChon != null);
+            KhoaMoKhoaCommand = new RelayCommand(async () => await ThucHienKhoaMoKhoaAsync());
+            SinhMaNgauNhienCommand = new RelayCommand(ThucHienSinhMaNgauNhien);
 
             _ = TaiDanhSachKhuyenMaiAsync();
         }
@@ -101,9 +127,9 @@ namespace HomestaySystem.ViewModels
             {
                 var ds = await _adminService.LayDanhSachKhuyenMaiAsync();
                 DanhSachKhuyenMai = new ObservableCollection<KhuyenMai>(ds);
-                if (DanhSachKhuyenMai.Count > 0)
+                if (KhuyenMaiDangChon != null && !DanhSachKhuyenMai.Contains(KhuyenMaiDangChon))
                 {
-                    KhuyenMaiDangChon = DanhSachKhuyenMai[0];
+                    KhuyenMaiDangChon = null;
                 }
                 ThongBaoTrangThai = $"Đã tải {DanhSachKhuyenMai.Count} mã khuyến mãi.";
             }
@@ -113,22 +139,30 @@ namespace HomestaySystem.ViewModels
             }
         }
 
+        private void ThucHienDongDialog()
+        {
+            HienThiDialogForm = false;
+            _khuyenMaiDangChon = null;
+            OnPropertyChanged(nameof(KhuyenMaiDangChon));
+        }
+
         private void ThucHienMoThemMoi()
         {
+            _khuyenMaiDangChon = null;
+            OnPropertyChanged(nameof(KhuyenMaiDangChon));
             DangThemMoi = true;
             KhuyenMaiForm = new KhuyenMai
             {
-                MaCode = "",
+                MaCode = "STAYLY" + new Random().Next(1000, 9999),
                 TenChuongTrinh = "",
                 PhanTramGiam = 10,
                 GiamToiDa = 200000,
-                DonGiaToiThieu = 500000,
+                DonGiaToiThieu = 0,
                 NgayBatDau = DateTime.Today,
                 NgayKetThuc = DateTime.Today.AddMonths(1),
                 SoLuongToiDa = 100,
                 TrangThai = "HoatDong"
             };
-            OnPropertyChanged(nameof(TieuDeDialog));
             HienThiDialogForm = true;
         }
 
@@ -151,7 +185,6 @@ namespace HomestaySystem.ViewModels
                 SoLuongDaDung = KhuyenMaiDangChon.SoLuongDaDung,
                 TrangThai = KhuyenMaiDangChon.TrangThai
             };
-            OnPropertyChanged(nameof(TieuDeDialog));
             HienThiDialogForm = true;
         }
 
@@ -192,6 +225,8 @@ namespace HomestaySystem.ViewModels
             if (thanhCong)
             {
                 HienThiDialogForm = false;
+                _khuyenMaiDangChon = null;
+                OnPropertyChanged(nameof(KhuyenMaiDangChon));
                 MessageBox.Show($"{(DangThemMoi ? "Thêm mới" : "Cập nhật")} mã voucher thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
                 await TaiDanhSachKhuyenMaiAsync();
             }
@@ -199,13 +234,16 @@ namespace HomestaySystem.ViewModels
 
         private async Task ThucHienKhoaMoKhoaAsync()
         {
-            if (KhuyenMaiDangChon == null) return;
+            int maKm = KhuyenMaiDangChon?.MaKhuyenMai ?? KhuyenMaiForm.MaKhuyenMai;
+            if (maKm <= 0) return;
 
-            string trangThaiMoi = KhuyenMaiDangChon.TrangThai == "HoatDong" ? "Khoa" : "HoatDong";
+            string maCode = KhuyenMaiDangChon?.MaCode ?? KhuyenMaiForm.MaCode;
+            string currentStatus = KhuyenMaiDangChon?.TrangThai ?? KhuyenMaiForm.TrangThai;
+            string trangThaiMoi = currentStatus == "HoatDong" ? "Khoa" : "HoatDong";
             string hanhDong = trangThaiMoi == "Khoa" ? "KHÓA" : "MỞ KHÓA";
 
             var result = MessageBox.Show(
-                $"Bạn có chắc chắn muốn {hanhDong} mã voucher '{KhuyenMaiDangChon.MaCode}'?",
+                $"Bạn có chắc chắn muốn {hanhDong} mã voucher '{maCode}'?",
                 "Xác nhận thay đổi trạng thái",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
@@ -213,15 +251,25 @@ namespace HomestaySystem.ViewModels
             if (result == MessageBoxResult.Yes)
             {
                 DangTaiDuLieu = true;
-                bool thanhCong = await _adminService.DoiTrangThaiKhuyenMaiAsync(KhuyenMaiDangChon.MaKhuyenMai, trangThaiMoi);
+                bool thanhCong = await _adminService.DoiTrangThaiKhuyenMaiAsync(maKm, trangThaiMoi);
                 DangTaiDuLieu = false;
 
                 if (thanhCong)
                 {
+                    HienThiDialogForm = false;
+                    _khuyenMaiDangChon = null;
+                    OnPropertyChanged(nameof(KhuyenMaiDangChon));
                     MessageBox.Show($"Đã {hanhDong.ToLower()} mã voucher thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
                     await TaiDanhSachKhuyenMaiAsync();
                 }
             }
+        }
+
+        private void ThucHienSinhMaNgauNhien()
+        {
+            var rand = new Random();
+            KhuyenMaiForm.MaCode = "STAYLY" + rand.Next(1000, 9999);
+            OnPropertyChanged(nameof(KhuyenMaiForm));
         }
     }
 }

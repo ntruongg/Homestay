@@ -135,10 +135,18 @@ namespace HomestaySystem.ViewModels
         public ICommand MoDialogQuyetToanCommand { get; }
         public ICommand XacNhanQuyetToanCommand { get; }
         public ICommand HuyDialogQuyetToanCommand { get; }
+        public ICommand DongHoSoCommand { get; }
+        public ICommand XemHoSoCommand { get; }
 
         public QuyetToanTaiChinhViewModel(IAdminService adminService)
         {
             _adminService = adminService;
+
+            DongHoSoCommand = new RelayCommand(() => DonDangChon = null);
+            XemHoSoCommand = new RelayCommand<DonDatPhong>(d =>
+            {
+                if (d != null) DonDangChon = d;
+            });
 
             TaiDuLieuCommand = new RelayCommand(async () => await TaiDanhSachQuyetToanAsync());
             MoDialogQuyetToanCommand = new RelayCommand(ThucHienMoDialog, () => DonDangChon != null && DonDangChon.CoTheQuyetToan);
@@ -206,7 +214,7 @@ namespace HomestaySystem.ViewModels
             if (DonDangChon == null) return;
 
             DangTaiDuLieu = true;
-            bool thanhCong = await _adminService.XacNhanQuyetToanAsync(DonDangChon.MaDon, MaGiaoDichNhap.Trim(), GhiChuNhap.Trim());
+            bool thanhCong = await _adminService.XacNhanQuyetToanAsync(DonDangChon.MaDon, MaGiaoDichNhap.Trim(), GhiChuNhap.Trim(), DonDangChon.TienChuHomeNhan);
             DangTaiDuLieu = false;
 
             if (thanhCong)

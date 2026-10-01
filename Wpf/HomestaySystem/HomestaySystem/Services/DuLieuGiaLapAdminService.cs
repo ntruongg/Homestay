@@ -38,6 +38,8 @@ namespace HomestaySystem.Services
                     HoTen = "Nguyễn Quang Huy (Tổng Quản trị)",
                     Email = "admin@homestayviet.vn",
                     SoDienThoai = "0909123456",
+                    NgaySinh = new DateTime(1992, 5, 20),
+                    GioiTinh = "Nam",
                     DiaChi = "Tòa nhà Bitexco, Q.1, TP.HCM",
                     VaiTro = "QuanTriVien",
                     TrangThai = "HoatDong",
@@ -51,6 +53,8 @@ namespace HomestaySystem.Services
                     HoTen = "Nguyễn Văn An",
                     Email = "an.nguyen@dalathomestay.com",
                     SoDienThoai = "0912345678",
+                    NgaySinh = new DateTime(1988, 3, 15),
+                    GioiTinh = "Nam",
                     DiaChi = "12 Hoàng Hoa Thám, P.10, TP. Đà Lạt, Lâm Đồng",
                     VaiTro = "ChuHome",
                     TrangThai = "HoatDong",
@@ -61,7 +65,8 @@ namespace HomestaySystem.Services
                     SoTaiKhoanNganHang = "101234567890",
                     ChuTaiKhoanNganHang = "NGUYEN VAN AN",
                     DaXacThucTERA = true,
-                    NgayXacThucTERA = DateTime.Today.AddMonths(-5)
+                    NgayXacThucTERA = DateTime.Today.AddMonths(-5),
+                    SoCoSoLuuTru = 2
                 },
                 new TaiKhoan
                 {
@@ -71,6 +76,8 @@ namespace HomestaySystem.Services
                     HoTen = "Trần Thị Mai",
                     Email = "mai.tran@hoianriverside.vn",
                     SoDienThoai = "0987654321",
+                    NgaySinh = new DateTime(1991, 10, 12),
+                    GioiTinh = "Nữ",
                     DiaChi = "45 Cửa Đại, TP. Hội An, Quảng Nam",
                     VaiTro = "ChuHome",
                     TrangThai = "HoatDong",
@@ -81,7 +88,8 @@ namespace HomestaySystem.Services
                     SoTaiKhoanNganHang = "098765432199",
                     ChuTaiKhoanNganHang = "TRAN THI MAI",
                     DaXacThucTERA = true,
-                    NgayXacThucTERA = DateTime.Today.AddMonths(-3)
+                    NgayXacThucTERA = DateTime.Today.AddMonths(-3),
+                    SoCoSoLuuTru = 1
                 },
                 new TaiKhoan
                 {
@@ -91,6 +99,8 @@ namespace HomestaySystem.Services
                     HoTen = "Lê Hoàng Long",
                     Email = "long.le@vungtaubreeze.com",
                     SoDienThoai = "0933557799",
+                    NgaySinh = new DateTime(1985, 7, 24),
+                    GioiTinh = "Nam",
                     DiaChi = "88 Thùy Vân, P. Thắng Tam, TP. Vũng Tàu",
                     VaiTro = "ChuHome",
                     TrangThai = "HoatDong",
@@ -100,7 +110,31 @@ namespace HomestaySystem.Services
                     TenNganHang = "Techcombank (TCB - CN Vũng Tàu)",
                     SoTaiKhoanNganHang = "19034567890123",
                     ChuTaiKhoanNganHang = "LE HOANG LONG",
-                    DaXacThucTERA = false // Chưa xác thực TERA
+                    DaXacThucTERA = false, // Chưa xác thực TERA
+                    SoCoSoLuuTru = 1
+                },
+                new TaiKhoan
+                {
+                    MaTaiKhoan = 7,
+                    TenDangNhap = "chuhome_bao",
+                    MatKhau = "Bao123456",
+                    HoTen = "Hoàng Gia Bảo",
+                    Email = "bao.hoang@phuquocvilla.com",
+                    SoDienThoai = "0908889999",
+                    NgaySinh = new DateTime(1987, 12, 5),
+                    GioiTinh = "Nam",
+                    DiaChi = "Bãi Trường, Dương Tơ, TP. Phú Quốc, Kiên Giang",
+                    VaiTro = "ChuHome",
+                    TrangThai = "TuChoi", // Đối tác bị từ chối
+                    LyDoTuChoi = "Ảnh chụp CCCD và Giấy phép kinh doanh bị mờ, thông tin tài khoản ngân hàng thụ hưởng không trùng khớp với chủ cơ sở.",
+                    NgayTao = DateTime.Today.AddMonths(-1),
+                    SoCCCD = "091090001234",
+                    MaSoThue = "8345678901",
+                    TenNganHang = "VPBank (CN Kiên Giang)",
+                    SoTaiKhoanNganHang = "888899990000",
+                    ChuTaiKhoanNganHang = "HOANG GIA BAO",
+                    DaXacThucTERA = false,
+                    SoCoSoLuuTru = 0
                 },
                 new TaiKhoan
                 {
@@ -110,10 +144,13 @@ namespace HomestaySystem.Services
                     HoTen = "Phạm Hoàng Minh",
                     Email = "hoangminh.pham@gmail.com",
                     SoDienThoai = "0944112233",
+                    NgaySinh = new DateTime(1994, 9, 2),
+                    GioiTinh = "Nam",
                     DiaChi = "Cầu Giấy, Hà Nội",
                     VaiTro = "KhachHang",
                     TrangThai = "HoatDong",
-                    NgayTao = DateTime.Today.AddMonths(-3)
+                    NgayTao = DateTime.Today.AddMonths(-3),
+                    SoLuotDatPhong = 5
                 },
                 new TaiKhoan
                 {
@@ -123,10 +160,47 @@ namespace HomestaySystem.Services
                     HoTen = "Võ Ngọc Phương Lan",
                     Email = "phuonglan.vo@yahoo.com",
                     SoDienThoai = "0977889900",
+                    NgaySinh = new DateTime(1998, 4, 14),
+                    GioiTinh = "Nữ",
                     DiaChi = "Hải Châu, Đà Nẵng",
                     VaiTro = "KhachHang",
                     TrangThai = "BiKhoa", // Tài khoản bị khóa do vi phạm hủy phòng
-                    NgayTao = DateTime.Today.AddMonths(-2)
+                    LyDoTuChoi = "Khách hàng liên tục hủy phòng cận ngày 4 lần không có lý do chính đáng và gây thất thoát chi phí của chủ nhà.",
+                    NgayTao = DateTime.Today.AddMonths(-2),
+                    SoLuotDatPhong = 1
+                },
+                new TaiKhoan
+                {
+                    MaTaiKhoan = 8,
+                    TenDangNhap = "guest.traveler",
+                    MatKhau = "Khach123",
+                    HoTen = "Lê Thị Bích Trâm",
+                    Email = "guest.traveler@stayly.com",
+                    SoDienThoai = "0987654321",
+                    NgaySinh = new DateTime(1996, 8, 18),
+                    GioiTinh = "Nữ",
+                    DiaChi = "Quận 1, TP. Hồ Chí Minh",
+                    VaiTro = "KhachHang",
+                    TrangThai = "HoatDong",
+                    NgayTao = DateTime.Today.AddDays(-20),
+                    SoLuotDatPhong = 3
+                },
+                new TaiKhoan
+                {
+                    MaTaiKhoan = 9,
+                    TenDangNhap = "khach_ngoc",
+                    MatKhau = "Khach123",
+                    HoTen = "Nguyễn Bảo Ngọc",
+                    Email = "baongoc.spam@tempmail.com",
+                    SoDienThoai = "0911002288",
+                    NgaySinh = new DateTime(2000, 11, 30),
+                    GioiTinh = "Nữ",
+                    DiaChi = "Bình Thạnh, TP. Hồ Chí Minh",
+                    VaiTro = "KhachHang",
+                    TrangThai = "TuChoi", // Tài khoản bị từ chối
+                    LyDoTuChoi = "Tài khoản có dấu hiệu tạo ảo để spam đánh giá giả mạo và thông tin liên hệ không thể xác minh.",
+                    NgayTao = DateTime.Today.AddDays(-5),
+                    SoLuotDatPhong = 0
                 }
             });
 
@@ -145,6 +219,7 @@ namespace HomestaySystem.Services
                     SoDienThoaiChuHome = "0912345678",
                     EmailChuHome = "an.nguyen@dalathomestay.com",
                     TrangThai = "ChoDuyet", // Chờ Admin duyệt
+                    LoaiHinh = "Homestay nguyên căn",
                     NgayGuiDuyet = DateTime.Now.AddDays(-1),
                     HinhAnhDaiDien = "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=800",
                     HinhAnhGiayPhepKinhDoanh = "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800",
@@ -166,6 +241,7 @@ namespace HomestaySystem.Services
                     SoDienThoaiChuHome = "0987654321",
                     EmailChuHome = "mai.tran@hoianriverside.vn",
                     TrangThai = "ChoDuyet", // Chờ Admin duyệt
+                    LoaiHinh = "Khách sạn",
                     NgayGuiDuyet = DateTime.Now.AddDays(-3),
                     HinhAnhDaiDien = "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800",
                     HinhAnhGiayPhepKinhDoanh = "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800",
@@ -187,6 +263,7 @@ namespace HomestaySystem.Services
                     SoDienThoaiChuHome = "0933557799",
                     EmailChuHome = "long.le@vungtaubreeze.com",
                     TrangThai = "DaDuyet", // Đã duyệt
+                    LoaiHinh = "Homestay nguyên căn",
                     NgayGuiDuyet = DateTime.Today.AddMonths(-1),
                     NgayDuyet = DateTime.Today.AddDays(-25),
                     NguoiDuyet = "Nguyễn Quang Huy",
@@ -379,9 +456,9 @@ namespace HomestaySystem.Services
             });
 
             // 5. NHẬT KÝ BẢO TRÌ
-            _nhatKyBaoTri.Add($"[{DateTime.Now.AddDays(-7):dd/MM/yyyy HH:mm:ss}] Sao lưu tự động hệ thống định kỳ (HomestayDB_20260907.bak) thành công.");
-            _nhatKyBaoTri.Add($"[{DateTime.Now.AddDays(-3):dd/MM/yyyy HH:mm:ss}] Kiểm tra tính toàn vẹn CSDL SQL Server: 0 lỗi, hiệu năng tối ưu.");
-            _nhatKyBaoTri.Add($"[{DateTime.Now.AddDays(-1):dd/MM/yyyy HH:mm:ss}] Dọn dẹp session và bộ nhớ đệm cache hệ thống.");
+            _nhatKyBaoTri.Add($"[{DateTime.Now.AddDays(-7):dd/MM/yyyy HH:mm:ss}] Sao lưu hệ thống định kỳ (BanSaoLuu_20260907.bak) thành công.");
+            _nhatKyBaoTri.Add($"[{DateTime.Now.AddDays(-3):dd/MM/yyyy HH:mm:ss}] Kiểm tra tính toàn vẹn cơ sở dữ liệu: Hoạt động ổn định.");
+            _nhatKyBaoTri.Add($"[{DateTime.Now.AddDays(-1):dd/MM/yyyy HH:mm:ss}] Dọn dẹp bộ nhớ đệm hệ thống thành công.");
         }
         #endregion
 
@@ -407,6 +484,19 @@ namespace HomestaySystem.Services
                                          c.TenChuHome.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase));
             }
             return query.OrderByDescending(c => c.NgayGuiDuyet).ToList();
+        }
+
+        public Task<List<string>> LayDanhSachKhuVucAsync()
+        {
+            var areas = _danhSachCoSo
+                .Select(c => string.IsNullOrWhiteSpace(c.TinhThanh) ? c.KhuVuc : c.TinhThanh)
+                .Where(k => !string.IsNullOrWhiteSpace(k) && !k.Equals("Việt Nam", StringComparison.OrdinalIgnoreCase))
+                .Select(k => k.Trim())
+                .Distinct()
+                .OrderBy(k => k)
+                .ToList();
+
+            return Task.FromResult(areas);
         }
 
         public async Task<CoSoLuuTru?> LayChiTietCoSoAsync(int maCoSo)
@@ -443,6 +533,22 @@ namespace HomestaySystem.Services
             }
             return false;
         }
+
+        public async Task<bool> CapNhatCoSoAsync(CoSoLuuTru coSo)
+        {
+            await Task.Delay(200);
+            var existing = _danhSachCoSo.FirstOrDefault(c => c.MaCoSo == coSo.MaCoSo);
+            if (existing != null)
+            {
+                existing.TenCoSo = coSo.TenCoSo;
+                existing.DiaChi = coSo.DiaChi;
+                existing.TinhThanh = coSo.TinhThanh;
+                existing.LoaiHinh = coSo.LoaiHinh;
+                existing.ChinhSachHuyPhong = coSo.ChinhSachHuyPhong;
+                return true;
+            }
+            return false;
+        }
         #endregion
 
         #region 2. QUẢN LÝ TÀI KHOẢN & ĐỐI TÁC TERA
@@ -470,6 +576,10 @@ namespace HomestaySystem.Services
             if (taiKhoan != null)
             {
                 taiKhoan.TrangThai = kichHoat ? "HoatDong" : "BiKhoa";
+                if (kichHoat)
+                {
+                    taiKhoan.LyDoTuChoi = null;
+                }
                 return true;
             }
             return false;
@@ -482,6 +592,23 @@ namespace HomestaySystem.Services
             if (taiKhoan != null)
             {
                 taiKhoan.TrangThai = trangThaiMoi;
+                if (trangThaiMoi == "HoatDong")
+                {
+                    taiKhoan.LyDoTuChoi = null;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        public async Task<bool> TuChoiTaiKhoanAsync(int maTaiKhoan, string lyDo)
+        {
+            await Task.Delay(250);
+            var taiKhoan = _danhSachTaiKhoan.FirstOrDefault(t => t.MaTaiKhoan == maTaiKhoan);
+            if (taiKhoan != null)
+            {
+                taiKhoan.TrangThai = "TuChoi";
+                taiKhoan.LyDoTuChoi = lyDo;
                 return true;
             }
             return false;
@@ -495,6 +622,39 @@ namespace HomestaySystem.Services
             {
                 taiKhoan.DaXacThucTERA = daXacThuc;
                 taiKhoan.NgayXacThucTERA = daXacThuc ? DateTime.Now : null;
+                return true;
+            }
+            return false;
+        }
+
+        public async Task<bool> TaoTaiKhoanAsync(TaiKhoan taiKhoan)
+        {
+            await Task.Delay(200);
+            if (taiKhoan.MaTaiKhoan <= 0)
+            {
+                taiKhoan.MaTaiKhoan = _danhSachTaiKhoan.Count > 0 ? _danhSachTaiKhoan.Max(t => t.MaTaiKhoan) + 1 : 1;
+            }
+            taiKhoan.NgayTao = DateTime.Now;
+            _danhSachTaiKhoan.Add(taiKhoan);
+            return true;
+        }
+
+        public async Task<bool> CapNhatTaiKhoanAsync(TaiKhoan taiKhoan)
+        {
+            await Task.Delay(200);
+            var existing = _danhSachTaiKhoan.FirstOrDefault(t => t.MaTaiKhoan == taiKhoan.MaTaiKhoan);
+            if (existing != null)
+            {
+                existing.HoTen = taiKhoan.HoTen;
+                existing.Email = taiKhoan.Email;
+                existing.SoDienThoai = taiKhoan.SoDienThoai;
+                existing.DiaChi = taiKhoan.DiaChi;
+                existing.SoCCCD = taiKhoan.SoCCCD;
+                existing.MaSoThue = taiKhoan.MaSoThue;
+                existing.TenNganHang = taiKhoan.TenNganHang;
+                existing.SoTaiKhoanNganHang = taiKhoan.SoTaiKhoanNganHang;
+                existing.ChuTaiKhoanNganHang = taiKhoan.ChuTaiKhoanNganHang;
+                existing.VaiTro = taiKhoan.VaiTro;
                 return true;
             }
             return false;
@@ -523,6 +683,24 @@ namespace HomestaySystem.Services
         {
             await Task.Delay(100);
             return _danhSachDon.FirstOrDefault(d => d.MaDon == maDon);
+        }
+
+        public async Task<bool> CapNhatDonDatAsync(DonDatPhong donDat)
+        {
+            await Task.Delay(200);
+            var existing = _danhSachDon.FirstOrDefault(d => d.MaDon == donDat.MaDon);
+            if (existing != null)
+            {
+                existing.TrangThai = donDat.TrangThai;
+                existing.TenKhachHang = donDat.TenKhachHang;
+                existing.SoDienThoaiKhach = donDat.SoDienThoaiKhach;
+                existing.EmailKhach = donDat.EmailKhach;
+                existing.NgayCheckIn = donDat.NgayCheckIn;
+                existing.NgayCheckOut = donDat.NgayCheckOut;
+                existing.GhiChu = donDat.GhiChu;
+                return true;
+            }
+            return false;
         }
 
         public async Task<bool> XuLyHoanTienAsync(int maDon, decimal soTienHoan, string lyDo, string ghiChu)
@@ -560,11 +738,11 @@ namespace HomestaySystem.Services
             return query.OrderByDescending(d => d.NgayCheckOut).ToList();
         }
 
-        public async Task<bool> XacNhanQuyetToanAsync(int maDon, string maGiaoDich, string ghiChu)
+        public async Task<bool> XacNhanQuyetToanAsync(int maDon, string maGiaoDich, string ghiChu, decimal? soTien = null)
         {
             await Task.Delay(300);
             var don = _danhSachDon.FirstOrDefault(d => d.MaDon == maDon);
-            if (don != null && don.TrangThai == "HoanThanh")
+            if (don != null)
             {
                 don.TrangThaiQuyetToan = "DaQuyetToan";
                 don.NgayQuyetToan = DateTime.Now;
@@ -678,7 +856,7 @@ namespace HomestaySystem.Services
             await Task.Delay(1200); // Giả lập tiến trình backup SQL Server
             try
             {
-                string tenTep = $"HomestayDB_Backup_{DateTime.Now:yyyyMMdd_HHmmss}.bak";
+                string tenTep = $"Backup_{DateTime.Now:yyyyMMdd_HHmmss}.bak";
                 string duongDanDayDu = Path.Combine(duongDanThuMuc, tenTep);
 
                 // Giả lập ghi tệp sao lưu
@@ -687,17 +865,17 @@ namespace HomestaySystem.Services
                     Directory.CreateDirectory(duongDanThuMuc);
                 }
 
-                string nhatKy = $"BACKUP DATABASE [HomestayDB] TO DISK = N'{duongDanDayDu}' WITH NOFORMAT, INIT, NAME = N'HomestayDB-Full Database Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10";
-                File.WriteAllText(duongDanDayDu, $"-- Tệp sao lưu giả lập CSDL HomestayDB\n-- Thời gian tạo: {DateTime.Now}\n{nhatKy}");
+                string nhatKy = $"BACKUP DATABASE TO DISK = N'{duongDanDayDu}'";
+                File.WriteAllText(duongDanDayDu, $"-- Tệp sao lưu CSDL\n-- Thời gian tạo: {DateTime.Now}\n{nhatKy}");
 
-                string thongBao = $"Sao lưu CSDL SQL Server thành công!\nTệp lưu trữ: {duongDanDayDu}\nDung lượng: ~24.5 MB";
-                _nhatKyBaoTri.Insert(0, $"[{DateTime.Now:dd/MM/yyyy HH:mm:ss}] Sao lưu thủ công thành công ra tệp '{tenTep}'.");
+                string thongBao = $"Đã tạo bản sao lưu thành công:\n{tenTep}";
+                _nhatKyBaoTri.Insert(0, $"[{DateTime.Now:dd/MM/yyyy HH:mm:ss}] Sao lưu dữ liệu thành công ra tệp '{tenTep}'.");
                 return (true, thongBao);
             }
             catch (Exception ex)
             {
-                string loi = $"Lỗi sao lưu CSDL: {ex.Message}";
-                _nhatKyBaoTri.Insert(0, $"[{DateTime.Now:dd/MM/yyyy HH:mm:ss}] LỖI sao lưu: {ex.Message}");
+                string loi = $"Lỗi sao lưu: {ex.Message}";
+                _nhatKyBaoTri.Insert(0, $"[{DateTime.Now:dd/MM/yyyy HH:mm:ss}] Lỗi sao lưu: {ex.Message}");
                 return (false, loi);
             }
         }
@@ -712,14 +890,14 @@ namespace HomestaySystem.Services
                     return (false, "Tệp sao lưu (.bak) không tồn tại trên hệ thống!");
                 }
 
-                string thongBao = $"Phục hồi CSDL [HomestayDB] từ tệp '{Path.GetFileName(duongDanTepBak)}' thành công!\nToàn bộ dữ liệu bảng và chỉ mục đã được tái thiết lập.";
+                string thongBao = $"Phục hồi dữ liệu từ tệp '{Path.GetFileName(duongDanTepBak)}' thành công!\nToàn bộ dữ liệu đã được đồng bộ lại.";
                 _nhatKyBaoTri.Insert(0, $"[{DateTime.Now:dd/MM/yyyy HH:mm:ss}] Phục hồi thành công từ tệp '{Path.GetFileName(duongDanTepBak)}'.");
                 return (true, thongBao);
             }
             catch (Exception ex)
             {
-                string loi = $"Lỗi phục hồi CSDL: {ex.Message}";
-                _nhatKyBaoTri.Insert(0, $"[{DateTime.Now:dd/MM/yyyy HH:mm:ss}] LỖI phục hồi: {ex.Message}");
+                string loi = $"Lỗi phục hồi: {ex.Message}";
+                _nhatKyBaoTri.Insert(0, $"[{DateTime.Now:dd/MM/yyyy HH:mm:ss}] Lỗi phục hồi: {ex.Message}");
                 return (false, loi);
             }
         }

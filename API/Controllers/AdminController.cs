@@ -2,11 +2,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.Data;
 using API.DTOs.Admin;
-using API.DTOs.Email;
 using API.DTOs.Properties;
 using API.Models;
-using API.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,9 +14,22 @@ namespace API.Controllers;
 [ApiController]
 [Authorize(Roles = "ADMIN")]
 [Route("api/admin")]
-public sealed class AdminController(HomestayDbContext db, IEmailService emailService) : ControllerBase
+public sealed class AdminController(HomestayDbContext db) : ControllerBase
 {
     #region 1. Quản lý cơ sở (Property Management)
+    [HttpGet("areas")]
+    public async Task<ActionResult<IReadOnlyList<string>>> GetAreas(CancellationToken cancellationToken = default)
+    {
+        var areas = await db.CoSoLuuTrus.AsNoTracking()
+            .Where(p => !string.IsNullOrWhiteSpace(p.ThanhPho))
+            .Select(p => p.ThanhPho!.Trim())
+            .Distinct()
+            .OrderBy(a => a)
+            .ToListAsync(cancellationToken);
+
+        return Ok(areas);
+    }
+
     [HttpGet("properties")]
     public async Task<ActionResult<IReadOnlyList<AdminPropertySummaryResponse>>> GetProperties(
         [FromQuery] string? status,

@@ -152,7 +152,7 @@ namespace HomestaySystem.Converters
     }
 
     /// <summary>
-    /// Hiển thị văn bản Huy hiệu TERA (ĐÃ XÁC THỰC TERA / CHỜ XÁC THỰC TERA)
+    /// Hiển thị văn bản Huy hiệu TERA (Đã xác thực TERA / Chưa xác thực)
     /// </summary>
     public class BooleanToTeraBadgeTextConverter : IValueConverter
     {
@@ -160,9 +160,9 @@ namespace HomestaySystem.Converters
         {
             if (value is bool daXacThuc && daXacThuc)
             {
-                return "✔ ĐỐI TÁC TERA ĐÃ XÁC THỰC";
+                return "✔ Đã xác thực TERA";
             }
-            return "⏳ CHƯA XÁC THỰC TERA";
+            return "⏳ Chưa xác thực";
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -212,7 +212,7 @@ namespace HomestaySystem.Converters
     }
 
     /// <summary>
-    /// Màu chữ cho trạng thái đơn đặt phòng kiểu HomestaySystem
+    /// Màu chữ cho trạng thái đơn đặt phòng kiểu HomestaySystem (Chỉ gồm 3 màu: Xanh lá, Đỏ, Vàng)
     /// </summary>
     public class TrangThaiDonToColorConverter : IValueConverter
     {
@@ -220,11 +220,9 @@ namespace HomestaySystem.Converters
         {
             return value?.ToString() switch
             {
-                "HoanThanh" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#059669")),
-                "DangO" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0284C7")),
-                "DaXacNhan" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4F46E5")),
-                "ChoXacNhan" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D97706")),
-                "DaHuy" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#DC2626")),
+                "HoanThanh" or "DaHoanTien" or "DaXacNhan" or "DangO" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#10B981")), // Xanh lá
+                "ChoXacNhan" or "ChoDuyet" or "Pending" or "YeuCauHoanTien" or "RefundRequested" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D97706")), // Vàng
+                "DaHuy" or "TuChoi" or "BiKhoa" or "Cancelled" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EF4444")), // Đỏ
                 _ => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#475569"))
             };
         }
@@ -233,7 +231,7 @@ namespace HomestaySystem.Converters
     }
 
     /// <summary>
-    /// Màu nền mềm cho pill trạng thái đơn đặt phòng kiểu HomestaySystem
+    /// Màu nền mềm cho pill trạng thái đơn đặt phòng (Chỉ gồm 3 màu: Xanh lá nhạt, Vàng nhạt, Đỏ nhạt)
     /// </summary>
     public class TrangThaiDonToBgConverter : IValueConverter
     {
@@ -241,11 +239,9 @@ namespace HomestaySystem.Converters
         {
             return value?.ToString() switch
             {
-                "HoanThanh" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#ECFDF5")),
-                "DangO" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E0F2FE")),
-                "DaXacNhan" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EEF2FF")),
-                "ChoXacNhan" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FEF3C7")),
-                "DaHuy" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FEE2E2")),
+                "HoanThanh" or "DaHoanTien" or "DaXacNhan" or "DangO" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#ECFDF5")), // Xanh lá nhạt
+                "ChoXacNhan" or "ChoDuyet" or "Pending" or "YeuCauHoanTien" or "RefundRequested" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFFBEB")), // Vàng nhạt
+                "DaHuy" or "TuChoi" or "BiKhoa" or "Cancelled" => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FEF2F2")), // Đỏ nhạt
                 _ => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F1F5F9"))
             };
         }

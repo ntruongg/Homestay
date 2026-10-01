@@ -30,51 +30,354 @@
         <conv:TrangThaiDonToColorConverter x:Key="TrangThaiDonToColorConverter"/>
         <conv:TrangThaiDonToBgConverter x:Key="TrangThaiDonToBgConverter"/>
 
-        <!-- ================= BẢNG MÀU CHỦ ĐẠO HOMESTAYSYSTEM (DESIGN SYSTEM) ================= -->
-        <!-- Màu xanh trời đặc trưng HomestaySystem (Primary Sky Blue) -->
-        <SolidColorBrush x:Key="MauHomestayBlue" Color="#0194F3"/>
-        <SolidColorBrush x:Key="MauHomestayBlueNhat" Color="#E1F0FE"/>
-        <SolidColorBrush x:Key="MauHomestayDeepBlue" Color="#0064D2"/>
-        <SolidColorBrush x:Key="MauHomestayDarkBlue" Color="#004394"/>
+        <!-- ================= BẢNG MÀU CHỦ ĐẠO STAYLY ADMIN (OCEAN BLUE DESIGN SYSTEM) ================= -->
+        <!-- Màu chủ đạo (Primary Ocean Blue) -->
+        <SolidColorBrush x:Key="MauStaylyPrimary" Color="#0077B6"/>
+        <SolidColorBrush x:Key="MauStaylyPrimaryLight" Color="#CAF0F8"/>
+        <SolidColorBrush x:Key="MauStaylyPrimaryDark" Color="#023E8A"/>
+        <SolidColorBrush x:Key="MauStaylySkyBlue" Color="#0194F3"/>
+        <SolidColorBrush x:Key="MauHomestayBlue" Color="#0077B6"/>
+        <SolidColorBrush x:Key="MauHomestayBlueNhat" Color="#CAF0F8"/>
 
-        <!-- Màu cam điểm nhấn HomestaySystem (Accent Orange cho Khuyến mãi, Chờ duyệt, CTA) -->
-        <SolidColorBrush x:Key="MauHomestayOrange" Color="#FF5E1F"/>
-        <SolidColorBrush x:Key="MauHomestayOrangeNhat" Color="#FFF0EB"/>
+        <!-- Màu nhấn nhẹ (Light Accent) -->
+        <SolidColorBrush x:Key="MauStaylyAccentLight" Color="#CAF0F8"/>
+        
+        <!-- 1. MÀU XANH LÁ: Hoạt động, đã hoàn thành, đã duyệt, hợp lệ -->
+        <SolidColorBrush x:Key="MauStaylyGreen" Color="#10B981"/>
+        <SolidColorBrush x:Key="MauStaylyGreenNhat" Color="#ECFDF5"/>
+        <SolidColorBrush x:Key="MauStaylyGreenDam" Color="#047857"/>
+        <SolidColorBrush x:Key="MauHomestayGreen" Color="#10B981"/>
+        <SolidColorBrush x:Key="MauHomestayGreenNhat" Color="#ECFDF5"/>
 
-        <!-- Màu xanh lá thành công & quyết toán (Green Success) -->
-        <SolidColorBrush x:Key="MauHomestayGreen" Color="#0E9F6E"/>
-        <SolidColorBrush x:Key="MauHomestayGreenNhat" Color="#E8F7EE"/>
-
-        <!-- Màu đỏ từ chối & cảnh báo (Red Danger) -->
+        <!-- 2. MÀU ĐỎ: Dừng hoạt động, hủy, từ chối, bị khóa, thất bại -->
+        <SolidColorBrush x:Key="MauStaylyRed" Color="#EF4444"/>
+        <SolidColorBrush x:Key="MauStaylyRedNhat" Color="#FEF2F2"/>
+        <SolidColorBrush x:Key="MauStaylyRedDam" Color="#B91C1C"/>
         <SolidColorBrush x:Key="MauHomestayRed" Color="#EF4444"/>
-        <SolidColorBrush x:Key="MauHomestayRedNhat" Color="#FEE2E2"/>
+        <SolidColorBrush x:Key="MauHomestayRedNhat" Color="#FEF2F2"/>
 
-        <!-- Màu thanh Sidebar HomestaySystem Navy -->
-        <SolidColorBrush x:Key="MauSidebarNen" Color="#0A1E3F"/>
-        <SolidColorBrush x:Key="MauSidebarHover" Color="#142E5C"/>
-        <SolidColorBrush x:Key="MauSidebarActive" Color="#0194F3"/>
-        <SolidColorBrush x:Key="MauSidebarFooter" Color="#07152D"/>
+        <!-- 3. MÀU VÀNG: Cảnh báo, chờ duyệt, chờ xử lý, lưu ý, tạm dừng -->
+        <SolidColorBrush x:Key="MauStaylyYellow" Color="#F59E0B"/>
+        <SolidColorBrush x:Key="MauStaylyYellowNhat" Color="#FFFBEB"/>
+        <SolidColorBrush x:Key="MauStaylyYellowDam" Color="#B45309"/>
+        <SolidColorBrush x:Key="MauStaylyOrange" Color="#F59E0B"/>
+        <SolidColorBrush x:Key="MauStaylyOrangeNhat" Color="#FFFBEB"/>
+        <SolidColorBrush x:Key="MauHomestayOrange" Color="#F59E0B"/>
+        <SolidColorBrush x:Key="MauHomestayOrangeNhat" Color="#FFFBEB"/>
 
-        <!-- Màu nền và Thẻ (Surfaces & Backgrounds) -->
-        <SolidColorBrush x:Key="MauNenChinh" Color="#F7F9FA"/>
+        <!-- Ghi đè màu chọn hệ thống Windows (Tránh hiện màu xanh đậm #0078D7 mặc định phá vỡ giao diện) -->
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#E0F2FE"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#E0F2FE"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#0F172A"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#0F172A"/>
+
+        <!-- Thanh Sidebar Stayly Admin phong cách xanh nhạt Pastel thanh lịch -->
+        <SolidColorBrush x:Key="MauSidebarNen" Color="#EBF3FA"/>
+        <SolidColorBrush x:Key="MauSidebarHover" Color="#DDEBF8"/>
+        <SolidColorBrush x:Key="MauSidebarActive" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="MauSidebarFooter" Color="#E1EEF9"/>
+        <SolidColorBrush x:Key="MauSidebarVien" Color="#D0E2F2"/>
+
+        <!-- Màu nền và Thẻ (Màu nền xanh pastel và màu trắng tinh khiết) -->
+        <SolidColorBrush x:Key="MauNenChinh" Color="#F0F4F8"/>
         <SolidColorBrush x:Key="MauTheTrang" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="MauChuTieuDe" Color="#0F172A"/>
         <SolidColorBrush x:Key="MauChuChinh" Color="#0F172A"/>
         <SolidColorBrush x:Key="MauChuPhu" Color="#64748B"/>
-        <SolidColorBrush x:Key="MauVien" Color="#E5E7EB"/>
+        <SolidColorBrush x:Key="MauVien" Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="MauVienNhat" Color="#F1F5F9"/>
 
         <!-- Cấu hình Font chữ mặc định -->
         <Style TargetType="{x:Type Control}">
-            <Setter Property="FontFamily" Value="Segoe UI, Tahoma, Arial"/>
+            <Setter Property="FontFamily" Value="Segoe UI, Inter, Tahoma, Arial"/>
         </Style>
 
-        <!-- Style Card Trắng HomestaySystem -->
-        <Style x:Key="HomestayCard" TargetType="Border">
+        <!-- Style Card Bo Tròn 16px Thân Thiện Chuẩn Stayly Admin -->
+        <Style x:Key="StaylyCard" TargetType="Border">
             <Setter Property="Background" Value="White"/>
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="BorderBrush" Value="#E5E7EB"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="BorderBrush" Value="#E2E8F0"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="18"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#0077B6" Opacity="0.08" BlurRadius="20" ShadowDepth="4" Direction="270"/>
+                </Setter.Value>
+            </Setter>
         </Style>
+        <Style x:Key="HomestayCard" TargetType="Border" BasedOn="{StaticResource StaylyCard}"/>
+
+        <!-- Style Button Nhỏ Gọn Bo Tròn cho Thao tác DataGrid -->
+        <Style x:Key="StaylyBtnSmall" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Background" Value="{StaticResource MauStaylyPrimaryLight}"/>
+            <Setter Property="Foreground" Value="{StaticResource MauStaylyPrimaryDark}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="btnBorder" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- STYLE TOÀN DIỆN CHO COMBOBOX BO TRÒN HIỆN ĐẠI (KHÔNG LỘ KHUNG XÁM, KHÔNG LỘ VIỀN) -->
+        <ControlTemplate x:Key="ModernComboBoxToggleButtonTemplate" TargetType="{x:Type ToggleButton}">
+            <Border x:Name="templateRoot" 
+                    Background="{TemplateBinding Background}" 
+                    BorderBrush="{TemplateBinding BorderBrush}" 
+                    BorderThickness="{TemplateBinding BorderThickness}" 
+                    CornerRadius="8" 
+                    SnapsToDevicePixels="true">
+                <Border Width="24" HorizontalAlignment="Right" Margin="0,0,10,0">
+                    <Path x:Name="arrow" 
+                          Data="M 0 0 L 4.5 4.5 L 9 0 Z" 
+                          Fill="#64748B" 
+                          HorizontalAlignment="Center" 
+                          VerticalAlignment="Center"/>
+                </Border>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="true">
+                    <Setter TargetName="arrow" Property="Fill" Value="#0194F3"/>
+                    <Setter TargetName="templateRoot" Property="BorderBrush" Value="#0194F3"/>
+                    <Setter TargetName="templateRoot" Property="Background" Value="#FFFFFF"/>
+                </Trigger>
+                <Trigger Property="IsChecked" Value="true">
+                    <Setter TargetName="arrow" Property="Fill" Value="#0194F3"/>
+                    <Setter TargetName="templateRoot" Property="BorderBrush" Value="#0194F3"/>
+                    <Setter TargetName="templateRoot" Property="Background" Value="#FFFFFF"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <Style TargetType="{x:Type ComboBox}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="MinHeight" Value="36"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ComboBox}">
+                        <Grid x:Name="templateRoot" SnapsToDevicePixels="true">
+                            <Popup x:Name="PART_Popup" 
+                                   AllowsTransparency="true" 
+                                   IsOpen="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" 
+                                   Placement="Bottom" 
+                                   PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}">
+                                <Border x:Name="dropDownBorder" 
+                                        Background="White" 
+                                        BorderBrush="#CBD5E1" 
+                                        BorderThickness="1" 
+                                        CornerRadius="8" 
+                                        Margin="0,4,0,0" 
+                                        Padding="2"
+                                        MaxHeight="{TemplateBinding MaxDropDownHeight}" 
+                                        MinWidth="{Binding ActualWidth, ElementName=templateRoot}">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="8" ShadowDepth="2" Direction="270" Opacity="0.12" Color="#000000"/>
+                                    </Border.Effect>
+                                    <ScrollViewer x:Name="DropDownScrollViewer" Margin="2">
+                                        <ItemsPresenter x:Name="ItemsPresenter" 
+                                                        KeyboardNavigation.DirectionalNavigation="Contained" 
+                                                        SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                            <ToggleButton x:Name="toggleButton" 
+                                          Background="{TemplateBinding Background}" 
+                                          BorderBrush="{TemplateBinding BorderBrush}" 
+                                          BorderThickness="{TemplateBinding BorderThickness}" 
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" 
+                                          Template="{StaticResource ModernComboBoxToggleButtonTemplate}"/>
+                            <ContentPresenter x:Name="contentPresenter" 
+                                              ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" 
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" 
+                                              Content="{TemplateBinding SelectionBoxItem}" 
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" 
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                              IsHitTestVisible="false" 
+                                              Margin="{TemplateBinding Padding}" 
+                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="HasItems" Value="false">
+                                <Setter TargetName="dropDownBorder" Property="Height" Value="95"/>
+                            </Trigger>
+                            <Trigger Property="IsGrouping" Value="true">
+                                <Setter Property="ScrollViewer.CanContentScroll" Value="false"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="{x:Type ComboBoxItem}">
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ComboBoxItem}">
+                        <Border x:Name="ItemBorder" 
+                                Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="6" 
+                                Margin="2,1" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="#F1F5F9"/>
+                                <Setter Property="Foreground" Value="#0194F3"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="#E0F2FE"/>
+                                <Setter Property="Foreground" Value="#0194F3"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Style DataGridCell trong suốt, không đè màu chữ và không phá vỡ bo góc hàng -->
+        <Style TargetType="{x:Type DataGridCell}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type DataGridCell}">
+                        <Border Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="0"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="BorderBrush" Value="Transparent"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Style DataGridRow với bo góc 8px, nền xanh pastel nhạt #E0F2FE và viền #7DD3FC khi chọn -->
+        <Style x:Key="StaylyDataGridRowStyle" TargetType="{x:Type DataGridRow}">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#F1F5F9"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="4,2,4,2"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Validation.ErrorTemplate" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type DataGridRow}">
+                        <Border x:Name="DGR_Border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                Padding="0"
+                                SnapsToDevicePixels="True">
+                            <DataGridCellsPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="DGR_Border" Property="Background" Value="#F0F9FF"/>
+                                <Setter TargetName="DGR_Border" Property="BorderBrush" Value="#BAE6FD"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="DGR_Border" Property="Background" Value="#E0F2FE"/>
+                                <Setter TargetName="DGR_Border" Property="BorderBrush" Value="#7DD3FC"/>
+                                <Setter TargetName="DGR_Border" Property="BorderThickness" Value="1.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Style DataGridRow mặc định toàn ứng dụng -->
+        <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource StaylyDataGridRowStyle}"/>
+
+        <!-- Style DataGrid chuẩn Enterprise Stayly Admin -->
+        <Style x:Key="StaylyDataGridStyle" TargetType="DataGrid">
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="RowHeight" Value="54"/>
+            <Setter Property="GridLinesVisibility" Value="None"/>
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="CanUserDeleteRows" Value="False"/>
+            <Setter Property="CanUserResizeRows" Value="False"/>
+            <Setter Property="CanUserResizeColumns" Value="True"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="SelectionMode" Value="Single"/>
+            <Setter Property="SelectionUnit" Value="FullRow"/>
+            <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="RowStyle" Value="{StaticResource StaylyDataGridRowStyle}"/>
+            <Setter Property="CellStyle" Value="{StaticResource {x:Type DataGridCell}}"/>
+            <Setter Property="ColumnHeaderStyle">
+                <Setter.Value>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Height" Value="44"/>
+                        <Setter Property="Background" Value="#F8FAFC"/>
+                        <Setter Property="Foreground" Value="#475569"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="FontSize" Value="12"/>
+                        <Setter Property="Padding" Value="12,0"/>
+                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                        <Setter Property="BorderBrush" Value="#E2E8F0"/>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Style DataGrid mặc định toàn hệ thống: Luôn IsReadOnly=True chống double-click sửa trực tiếp -->
+        <Style TargetType="{x:Type DataGrid}" BasedOn="{StaticResource StaylyDataGridStyle}"/>
 
         <!-- ÁNH XẠ VIEWMODEL SANG VIEW (MVVM DATATEMPLATE MAPPING) -->
         <DataTemplate DataType="{x:Type vm:KiemDuyetHomestayViewModel}">
@@ -83,20 +386,29 @@
         <DataTemplate DataType="{x:Type vm:QuanLyTaiKhoanViewModel}">
             <views:QuanLyTaiKhoanView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:QuanLyNguoiDungViewModel}">
+            <views:QuanLyNguoiDungView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:QuanLyDoiTacViewModel}">
+            <views:QuanLyDoiTacView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:QuanLyDanhMucHomestayViewModel}">
+            <views:QuanLyDanhMucHomestayView/>
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:QuanLyDonDatViewModel}">
             <views:QuanLyDonDatView/>
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:QuyetToanTaiChinhViewModel}">
-            <views:QuyetToanTaiChinhView/>
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:BaoCaoDoanhThuViewModel}">
             <views:BaoCaoDoanhThuView/>
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:QuanLyKhuyenMaiViewModel}">
-            <views:QuanLyKhuyenMaiView/>
+            <views:QuanLyVoucherView/>
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:BaoTriHeThongViewModel}">
             <views:BaoTriHeThongView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:QuyetToanTaiChinhViewModel}">
+            <views:QuyetToanTaiChinhView/>
         </DataTemplate>
     </Application.Resources>
 </Application>

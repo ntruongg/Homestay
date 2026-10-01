@@ -58,5 +58,11 @@ namespace HomestaySystem.Models
             get => TrangThai == "HoatDong";
             set { }
         }
+
+        public string ThoiHanHienThi => $"{NgayBatDau:dd/MM/yyyy} ➔ {NgayKetThuc:dd/MM/yyyy}";
+        public string MucGiamHienThi => $"{PhanTramGiam}% (Tối đa {GiamToiDa:N0} đ)";
+        public string TienDoSuDung => $"{SoLuongDaDung}/{SoLuongToiDa} ({((double)SoLuongDaDung / Math.Max(1, SoLuongToiDa) * 100):N0}%)";
+        public double PhanTramSuDung => Math.Min(100.0, ((double)SoLuongDaDung / Math.Max(1, SoLuongToiDa)) * 100);
+        public string LoaiGiam { get; set; } = "PhanTram";
     }
 }

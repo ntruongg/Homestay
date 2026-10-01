@@ -24,9 +24,13 @@ namespace HomestaySystem.ViewModels
         // Các ViewModels con (Cached instances)
         public KiemDuyetHomestayViewModel KiemDuyetVM { get; set; }
         public QuanLyTaiKhoanViewModel QuanLyTaiKhoanVM { get; set; }
+        public QuanLyNguoiDungViewModel QuanLyNguoiDungVM { get; set; }
+        public QuanLyDoiTacViewModel QuanLyDoiTacVM { get; set; }
+        public QuanLyDanhMucHomestayViewModel QuanLyDanhMucVM { get; set; }
         public QuanLyDonDatViewModel QuanLyDonDatVM { get; set; }
         public BaoCaoDoanhThuViewModel BaoCaoDoanhThuVM { get; set; }
         public QuanLyKhuyenMaiViewModel QuanLyKhuyenMaiVM { get; set; }
+        public BaoTriHeThongViewModel BaoTriHeThongVM { get; set; }
 
         public ViewModelBase ManHinhHienTai
         {
@@ -43,7 +47,111 @@ namespace HomestaySystem.ViewModels
         public string MenuDangChon
         {
             get => _menuDangChon;
-            set => SetProperty(ref _menuDangChon, value);
+            set
+            {
+                if (SetProperty(ref _menuDangChon, value))
+                {
+                    OnPropertyChanged(nameof(IsMenuKiemDuyet));
+                    OnPropertyChanged(nameof(IsMenuNguoiDung));
+                    OnPropertyChanged(nameof(IsMenuDoiTac));
+                    OnPropertyChanged(nameof(IsMenuTaiKhoan));
+                    OnPropertyChanged(nameof(IsMenuDanhMuc));
+                    OnPropertyChanged(nameof(IsMenuDonDat));
+                    OnPropertyChanged(nameof(IsMenuBaoCao));
+                    OnPropertyChanged(nameof(IsMenuKhuyenMai));
+                    OnPropertyChanged(nameof(IsMenuBaoTri));
+                }
+            }
+        }
+
+        public bool IsMenuKiemDuyet
+        {
+            get => MenuDangChon == "KiemDuyet";
+            set
+            {
+                if (value && MenuDangChon != "KiemDuyet")
+                    ChuyenManHinhKiemDuyetCommand.Execute(null);
+            }
+        }
+
+        public bool IsMenuNguoiDung
+        {
+            get => MenuDangChon == "NguoiDung";
+            set
+            {
+                if (value && MenuDangChon != "NguoiDung")
+                    ChuyenManHinhNguoiDungCommand.Execute(null);
+            }
+        }
+
+        public bool IsMenuDoiTac
+        {
+            get => MenuDangChon == "DoiTac";
+            set
+            {
+                if (value && MenuDangChon != "DoiTac")
+                    ChuyenManHinhDoiTacCommand.Execute(null);
+            }
+        }
+
+        public bool IsMenuTaiKhoan
+        {
+            get => MenuDangChon == "NguoiDung" || MenuDangChon == "TaiKhoan";
+            set
+            {
+                if (value && MenuDangChon != "NguoiDung")
+                    ChuyenManHinhNguoiDungCommand.Execute(null);
+            }
+        }
+
+        public bool IsMenuDanhMuc
+        {
+            get => MenuDangChon == "DanhMuc";
+            set
+            {
+                if (value && MenuDangChon != "DanhMuc")
+                    ChuyenManHinhDanhMucCommand.Execute(null);
+            }
+        }
+
+        public bool IsMenuDonDat
+        {
+            get => MenuDangChon == "DonDat";
+            set
+            {
+                if (value && MenuDangChon != "DonDat")
+                    ChuyenManHinhDonDatCommand.Execute(null);
+            }
+        }
+
+        public bool IsMenuBaoCao
+        {
+            get => MenuDangChon == "BaoCao";
+            set
+            {
+                if (value && MenuDangChon != "BaoCao")
+                    ChuyenManHinhBaoCaoCommand.Execute(null);
+            }
+        }
+
+        public bool IsMenuKhuyenMai
+        {
+            get => MenuDangChon == "KhuyenMai";
+            set
+            {
+                if (value && MenuDangChon != "KhuyenMai")
+                    ChuyenManHinhKhuyenMaiCommand.Execute(null);
+            }
+        }
+
+        public bool IsMenuBaoTri
+        {
+            get => MenuDangChon == "BaoTri";
+            set
+            {
+                if (value && MenuDangChon != "BaoTri")
+                    ChuyenManHinhBaoTriCommand.Execute(null);
+            }
         }
 
         public string TenQuanTriVien
@@ -66,11 +174,16 @@ namespace HomestaySystem.ViewModels
 
         // Commands điều hướng
         public ICommand ChuyenManHinhKiemDuyetCommand { get; }
-        public ICommand ChuyenManHinhTaiKhoanCommand { get; }
+        public ICommand ChuyenManHinhNguoiDungCommand { get; }
+        public ICommand ChuyenManHinhDoiTacCommand { get; }
+        public ICommand ChuyenManHinhTaiKhoanCommand => ChuyenManHinhNguoiDungCommand; // Tương thích ngược
+        public ICommand ChuyenManHinhDanhMucCommand { get; }
         public ICommand ChuyenManHinhDonDatCommand { get; }
         public ICommand ChuyenManHinhQuyetToanCommand => ChuyenManHinhDonDatCommand; // Tương thích ngược
         public ICommand ChuyenManHinhBaoCaoCommand { get; }
         public ICommand ChuyenManHinhKhuyenMaiCommand { get; }
+        public ICommand ChuyenManHinhVoucherCommand => ChuyenManHinhKhuyenMaiCommand;
+        public ICommand ChuyenManHinhBaoTriCommand { get; }
         public ICommand DangXuatCommand { get; }
 
         public ManHinhChinhViewModel(IAdminService? adminService = null)
@@ -79,10 +192,14 @@ namespace HomestaySystem.ViewModels
 
             // Khởi tạo các ViewModel con
             KiemDuyetVM = new KiemDuyetHomestayViewModel(_adminService);
+            QuanLyNguoiDungVM = new QuanLyNguoiDungViewModel(_adminService);
+            QuanLyDoiTacVM = new QuanLyDoiTacViewModel(_adminService);
             QuanLyTaiKhoanVM = new QuanLyTaiKhoanViewModel(_adminService);
+            QuanLyDanhMucVM = new QuanLyDanhMucHomestayViewModel(_adminService);
             QuanLyDonDatVM = new QuanLyDonDatViewModel(_adminService);
             BaoCaoDoanhThuVM = new BaoCaoDoanhThuViewModel(_adminService);
             QuanLyKhuyenMaiVM = new QuanLyKhuyenMaiViewModel(_adminService);
+            BaoTriHeThongVM = new BaoTriHeThongViewModel(_adminService);
 
             // Màn hình khởi đầu: Kiểm duyệt Homestay
             _manHinhHienTai = KiemDuyetVM;
@@ -91,36 +208,61 @@ namespace HomestaySystem.ViewModels
             ChuyenManHinhKiemDuyetCommand = new RelayCommand(() =>
             {
                 ManHinhHienTai = KiemDuyetVM;
-                TieuDeTrang = "Kiểm duyệt Hồ sơ Homestay & Pháp lý";
+                TieuDeTrang = "Kiểm duyệt Homestay";
                 MenuDangChon = "KiemDuyet";
             });
 
-            ChuyenManHinhTaiKhoanCommand = new RelayCommand(() =>
+            ChuyenManHinhNguoiDungCommand = new RelayCommand(() =>
             {
-                ManHinhHienTai = QuanLyTaiKhoanVM;
-                TieuDeTrang = "Quản lý Tài khoản & Phân quyền";
-                MenuDangChon = "TaiKhoan";
+                ManHinhHienTai = QuanLyNguoiDungVM;
+                TieuDeTrang = "Quản lý người dùng";
+                MenuDangChon = "NguoiDung";
+            });
+
+            ChuyenManHinhDoiTacCommand = new RelayCommand(() =>
+            {
+                ManHinhHienTai = QuanLyDoiTacVM;
+                TieuDeTrang = "Quản lý đối tác";
+                MenuDangChon = "DoiTac";
+            });
+
+            // Gắn callback chuyển đổi nhanh giữa 2 màn hình
+            QuanLyNguoiDungVM.OnYeuCauChuyenSangDoiTac = () => ChuyenManHinhDoiTacCommand.Execute(null);
+            QuanLyDoiTacVM.OnYeuCauChuyenSangNguoiDung = () => ChuyenManHinhNguoiDungCommand.Execute(null);
+
+            ChuyenManHinhDanhMucCommand = new RelayCommand(() =>
+            {
+                ManHinhHienTai = QuanLyDanhMucVM;
+                TieuDeTrang = "Danh mục & chỗ nghỉ";
+                MenuDangChon = "DanhMuc";
             });
 
             ChuyenManHinhDonDatCommand = new RelayCommand(() =>
             {
                 ManHinhHienTai = QuanLyDonDatVM;
-                TieuDeTrang = "Quản lý Đơn đặt phòng & Xử lý Hoàn tiền";
+                TieuDeTrang = "Đơn đặt & hoàn tiền";
                 MenuDangChon = "DonDat";
             });
 
             ChuyenManHinhBaoCaoCommand = new RelayCommand(() =>
             {
                 ManHinhHienTai = BaoCaoDoanhThuVM;
-                TieuDeTrang = "Báo cáo Doanh thu & Dòng tiền Sàn (100% / 15% / 85%)";
+                TieuDeTrang = "Báo cáo doanh thu";
                 MenuDangChon = "BaoCao";
             });
 
             ChuyenManHinhKhuyenMaiCommand = new RelayCommand(() =>
             {
                 ManHinhHienTai = QuanLyKhuyenMaiVM;
-                TieuDeTrang = "Quản lý Mã ưu đãi (Voucher giảm giá)";
+                TieuDeTrang = "Mã ưu đãi";
                 MenuDangChon = "KhuyenMai";
+            });
+
+            ChuyenManHinhBaoTriCommand = new RelayCommand(() =>
+            {
+                ManHinhHienTai = BaoTriHeThongVM;
+                TieuDeTrang = "Bảo trì & sao lưu";
+                MenuDangChon = "BaoTri";
             });
 
             DangXuatCommand = new RelayCommand(ThucHienDangXuat);
@@ -134,7 +276,7 @@ namespace HomestaySystem.ViewModels
 
         private void CapNhatThoiGian()
         {
-            ThoiGianHeThong = DateTime.Now.ToString("dddd, dd/MM/yyyy HH:mm:ss");
+            ThoiGianHeThong = DateTime.Now.ToString("dddd, dd/MM/yyyy HH:mm:ss", new System.Globalization.CultureInfo("vi-VN"));
         }
 
         private void ThucHienDangXuat()

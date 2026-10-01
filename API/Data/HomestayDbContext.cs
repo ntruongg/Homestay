@@ -69,6 +69,8 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
             entity.Property(x => x.NgayDat).HasColumnType("date");
             entity.Property(x => x.NgayDen).HasColumnType("date");
             entity.Property(x => x.NgayDi).HasColumnType("date");
+            entity.Property(x => x.SoTienQuyetToan).HasColumnType("decimal(12,2)");
+            entity.Property(x => x.NgayQuyetToan).HasColumnType("datetime");
             entity.HasOne(x => x.KhachHang).WithMany()
                 .HasForeignKey(x => x.MaKhachHang).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.GiamGia).WithMany(x => x.DonDatPhongs)

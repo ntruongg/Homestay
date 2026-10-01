@@ -7,6 +7,7 @@ using API.DTOs.Properties;
 using API.Models;
 using API.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,9 +16,25 @@ namespace API.Controllers;
 [ApiController]
 [Authorize(Roles = "ADMIN")]
 [Route("api/admin")]
-public sealed class AdminController(HomestayDbContext db, IEmailService emailService) : ControllerBase
+public sealed class AdminController(
+    HomestayDbContext db, 
+    IEmailService emailService, 
+    IPasswordHasher<TaiKhoan> passwordHasher) : ControllerBase
 {
     #region 1. Quản lý cơ sở (Property Management)
+    [HttpGet("areas")]
+    public async Task<ActionResult<IReadOnlyList<string>>> GetAreas(CancellationToken cancellationToken = default)
+    {
+        var areas = await db.CoSoLuuTrus.AsNoTracking()
+            .Where(p => !string.IsNullOrWhiteSpace(p.ThanhPho))
+            .Select(p => p.ThanhPho!.Trim())
+            .Distinct()
+            .OrderBy(a => a)
+            .ToListAsync(cancellationToken);
+
+        return Ok(areas);
+    }
+
     [HttpGet("properties")]
     public async Task<ActionResult<IReadOnlyList<AdminPropertySummaryResponse>>> GetProperties(
         [FromQuery] string? status,
@@ -189,6 +206,30 @@ public sealed class AdminController(HomestayDbContext db, IEmailService emailSer
         );
 
         return Ok(response);
+    }
+
+    [HttpPut("properties/{id:int}")]
+    public async Task<IActionResult> UpdateProperty(
+        int id,
+        [FromBody] UpdatePropertyAdminRequest request,
+        CancellationToken cancellationToken)
+    {
+        var property = await db.CoSoLuuTrus.FindAsync([id], cancellationToken);
+        if (property is null)
+            return NotFound("Property not found.");
+
+        property.TenCoSoLuuTru = request.Name.Trim();
+        if (!string.IsNullOrWhiteSpace(request.Address)) property.DiaChi = request.Address.Trim();
+        if (!string.IsNullOrWhiteSpace(request.Ward)) property.PhuongXa = request.Ward.Trim();
+        if (!string.IsNullOrWhiteSpace(request.City)) property.ThanhPho = request.City.Trim();
+        if (!string.IsNullOrWhiteSpace(request.Type)) property.LoaiHinh = request.Type.Trim();
+        if (!string.IsNullOrWhiteSpace(request.Phone)) property.DienThoai = request.Phone.Trim();
+        if (!string.IsNullOrWhiteSpace(request.Email)) property.Email = request.Email.Trim();
+        if (request.Policy != null) property.ChinhSach = request.Policy.Trim();
+        if (request.IsActive.HasValue) property.TrangThai = request.IsActive.Value;
+
+        await db.SaveChangesAsync(cancellationToken);
+        return Ok(new { message = $"Cơ sở #{id} đã được cập nhật thành công.", propertyId = id });
     }
     #endregion
 
@@ -421,7 +462,12 @@ public sealed class AdminController(HomestayDbContext db, IEmailService emailSer
                 calculatedTotal,
                 b.NgayDat,
                 paymentStatus,
-                b.ThanhToan?.PTTT
+                b.ThanhToan?.PTTT,
+                b.TrangThaiQuyetToan ?? "ChuaQuyetToan",
+                b.MaGiaoDichQuyetToan,
+                b.NgayQuyetToan,
+                b.SoTienQuyetToan,
+                b.GhiChuQuyetToan
             );
         }).ToList();
 
@@ -500,7 +546,12 @@ public sealed class AdminController(HomestayDbContext db, IEmailService emailSer
             property?.DiaChi,
             roomItems,
             extraFeeItems,
-            invoiceInfo
+            invoiceInfo,
+            booking.TrangThaiQuyetToan ?? "ChuaQuyetToan",
+            booking.MaGiaoDichQuyetToan,
+            booking.NgayQuyetToan,
+            booking.SoTienQuyetToan,
+            booking.GhiChuQuyetToan
         );
 
         return Ok(response);
@@ -628,6 +679,125 @@ public sealed class AdminController(HomestayDbContext db, IEmailService emailSer
         }
 
         return Ok(new { message = $"Refund request for booking #{id} has been denied.", reason = denialReason });
+    }
+
+    [HttpPost("bookings/{id:int}/payout")]
+    public async Task<ActionResult<PayoutResponse>> RecordBookingPayout(
+        int id,
+        [FromBody] RecordPayoutRequest request,
+        CancellationToken cancellationToken)
+    {
+        var booking = await db.DonDatPhongs
+            .Include(b => b.KhachHang)
+            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru).ThenInclude(c => c.ChuCoSoLuuTru)
+            .Include(b => b.PhuThus)
+            .Include(b => b.ThanhToan)
+            .FirstOrDefaultAsync(b => b.MaDonDatPhong == id, cancellationToken);
+
+        if (booking is null)
+            return NotFound("Booking not found.");
+
+        var nights = Math.Max(1, (booking.NgayDi.Date - booking.NgayDen.Date).Days);
+        var roomTotal = booking.ChiTietDons.Sum(d => d.Phong?.GiaGoc ?? 0) * nights;
+        var extraTotal = booking.PhuThus.Sum(f => f.ThanhTien);
+        var total = booking.ThanhToan?.TongTien ?? (roomTotal + extraTotal);
+        var hostPayout = request.Amount ?? Math.Round(total * 0.85m, 2);
+
+        booking.TrangThaiQuyetToan = "DaQuyetToan";
+        booking.MaGiaoDichQuyetToan = request.TransactionCode.Trim();
+        booking.NgayQuyetToan = DateTime.UtcNow;
+        booking.SoTienQuyetToan = hostPayout;
+        booking.GhiChuQuyetToan = request.Note?.Trim() ?? $"Quyết toán chuyển khoản ngân hàng ngày {DateTime.UtcNow:dd/MM/yyyy}";
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        var property = booking.ChiTietDons.FirstOrDefault()?.Phong?.CoSoLuuTru;
+        var owner = property?.ChuCoSoLuuTru;
+
+        if (!string.IsNullOrWhiteSpace(owner?.Email))
+        {
+            var subject = $"[Stayly] Xác nhận quyết toán doanh thu đơn #{booking.MaDonDatPhong}";
+            var body = $@"
+                <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                    <h2 style='color: #059669;'>Xác nhận quyết toán doanh thu đối tác</h2>
+                    <p>Xin chào đối tác <strong>{owner.HoTen}</strong>,</p>
+                    <p>Ban Quản trị Stayly đã hoàn tất chuyển khoản quyết toán doanh thu (85%) cho đơn đặt phòng <strong>#{booking.MaDonDatPhong}</strong> tại <strong>{property?.TenCoSoLuuTru}</strong>.</p>
+                    
+                    <div style='background: #ecfdf5; border-radius: 8px; padding: 16px; margin: 16px 0; border: 1px solid #a7f3d0;'>
+                        <p style='margin: 4px 0;'><strong>Số tiền quyết toán (85%):</strong> <span style='color: #047857; font-size: 18px; font-weight: bold;'>{hostPayout:N0} VNĐ</span></p>
+                        <p style='margin: 4px 0;'><strong>Mã giao dịch ngân hàng:</strong> <code>{booking.MaGiaoDichQuyetToan}</code></p>
+                        <p style='margin: 4px 0;'><strong>Thời gian thực hiện:</strong> {booking.NgayQuyetToan:dd/MM/yyyy HH:mm} (UTC)</p>
+                        <p style='margin: 4px 0;'><strong>Tài khoản thụ hưởng:</strong> {owner.ThongTinNganHang ?? "Theo thông tin hồ sơ"}</p>
+                    </div>
+
+                    <p style='color: #4b5563; font-size: 14px;'>Ghi chú: {booking.GhiChuQuyetToan}</p>
+                    <br/>
+                    <p style='color: #6b7280; font-size: 13px;'>Trân trọng,<br/>Phòng Tài chính & Vận hành Stayly</p>
+                </div>";
+
+            try
+            {
+                await emailService.SendEmailAsync(owner.Email, subject, body, cancellationToken);
+            }
+            catch
+            {
+                // Bỏ qua lỗi gửi mail
+            }
+        }
+
+        var response = new PayoutResponse(
+            booking.MaDonDatPhong,
+            booking.MaGiaoDichQuyetToan,
+            hostPayout,
+            booking.NgayQuyetToan.Value,
+            booking.TrangThaiQuyetToan,
+            booking.GhiChuQuyetToan
+        );
+
+        return Ok(response);
+    }
+
+    [HttpPut("bookings/{id:int}")]
+    public async Task<IActionResult> UpdateBooking(
+        int id,
+        [FromBody] UpdateBookingAdminRequest request,
+        CancellationToken cancellationToken)
+    {
+        var booking = await db.DonDatPhongs
+            .Include(b => b.KhachHang)
+            .FirstOrDefaultAsync(b => b.MaDonDatPhong == id, cancellationToken);
+
+        if (booking is null)
+            return NotFound("Booking not found.");
+
+        if (!string.IsNullOrWhiteSpace(request.Status))
+        {
+            booking.TrangThai = request.Status.Trim();
+        }
+        if (request.Adults.HasValue && request.Adults.Value > 0)
+        {
+            booking.SoNguoiLon = request.Adults.Value;
+        }
+        if (request.Children.HasValue && request.Children.Value >= 0)
+        {
+            booking.SoTreEm = request.Children.Value;
+        }
+        if (booking.SoNguoiLon + booking.SoTreEm > 0)
+        {
+            booking.SoNguoi = booking.SoNguoiLon + booking.SoTreEm;
+        }
+        if (request.CheckIn.HasValue) booking.NgayDen = request.CheckIn.Value;
+        if (request.CheckOut.HasValue) booking.NgayDi = request.CheckOut.Value;
+
+        if (booking.KhachHang != null)
+        {
+            if (!string.IsNullOrWhiteSpace(request.GuestName)) booking.KhachHang.HoTen = request.GuestName.Trim();
+            if (!string.IsNullOrWhiteSpace(request.GuestPhone)) booking.KhachHang.DienThoai = request.GuestPhone.Trim();
+            if (!string.IsNullOrWhiteSpace(request.GuestEmail)) booking.KhachHang.Email = request.GuestEmail.Trim();
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        return Ok(new { message = $"Đơn đặt #{id} đã được cập nhật thành công.", bookingId = id });
     }
     #endregion
 
@@ -861,6 +1031,135 @@ public sealed class AdminController(HomestayDbContext db, IEmailService emailSer
 
         return Ok(new { message = $"User #{id} status updated to {(request.IsActive ? "Active" : "Locked")}.", isActive = user.TrangThai });
     }
+
+    [HttpPost("users")]
+    public async Task<ActionResult<AdminUserResponse>> CreateUser(
+        [FromBody] CreateUserAdminRequest request,
+        CancellationToken cancellationToken)
+    {
+        var email = request.Email.Trim().ToLowerInvariant();
+
+        var existingUser = await db.TaiKhoans
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == email, cancellationToken);
+
+        if (existingUser != null)
+        {
+            return Conflict("Email này đã được sử dụng bởi một tài khoản khác.");
+        }
+
+        int roleId = VaiTro.GUEST;
+        var roleUpper = request.Role?.Trim().ToUpperInvariant() ?? "GUEST";
+        if (roleUpper == "OWNER" || roleUpper == "CHUHOME") roleId = VaiTro.OWNER;
+        else if (roleUpper == "ADMIN" || roleUpper == "QUANTRI") roleId = VaiTro.ADMIN;
+
+        var bankInfo = !string.IsNullOrWhiteSpace(request.BankInformation)
+            ? request.BankInformation.Trim()
+            : (!string.IsNullOrWhiteSpace(request.BankName) || !string.IsNullOrWhiteSpace(request.BankAccount))
+                ? $"{request.BankName?.Trim()} - {request.BankAccount?.Trim()} ({request.BankHolder?.Trim() ?? request.FullName.Trim()})"
+                : null;
+
+        var newUser = new TaiKhoan
+        {
+            HoTen = request.FullName.Trim(),
+            Email = email,
+            DienThoai = request.Phone.Trim(),
+            MaVaiTro = roleId,
+            TrangThai = true,
+            NgayTao = DateTime.UtcNow,
+            CCCD = request.CitizenId?.Trim(),
+            ThongTinNganHang = bankInfo,
+            NgaySinh = request.DateOfBirth,
+            GioiTinh = request.Gender?.Trim()
+        };
+
+        newUser.MatKhau = passwordHasher.HashPassword(newUser, request.Password.Trim());
+
+        db.TaiKhoans.Add(newUser);
+        await db.SaveChangesAsync(cancellationToken);
+
+        var vaiTro = await db.VaiTros.FindAsync([roleId], cancellationToken);
+
+        var response = new AdminUserResponse(
+            newUser.MaTaiKhoan,
+            newUser.Email,
+            newUser.HoTen,
+            newUser.DienThoai,
+            vaiTro?.TenVaiTro ?? roleUpper,
+            newUser.MaVaiTro,
+            newUser.TrangThai,
+            newUser.NgayTao,
+            newUser.CCCD,
+            newUser.ThongTinNganHang,
+            0,
+            0
+        );
+
+        return CreatedAtAction(nameof(GetUsers), new { search = newUser.Email }, response);
+    }
+
+    [HttpPut("users/{id:int}")]
+    public async Task<ActionResult<AdminUserResponse>> UpdateUser(
+        int id,
+        [FromBody] UpdateUserAdminRequest request,
+        CancellationToken cancellationToken)
+    {
+        var user = await db.TaiKhoans
+            .Include(t => t.VaiTro)
+            .Include(t => t.CoSoLuuTrus)
+            .FirstOrDefaultAsync(u => u.MaTaiKhoan == id, cancellationToken);
+
+        if (user is null)
+            return NotFound("User not found.");
+
+        user.HoTen = request.FullName.Trim();
+        if (!string.IsNullOrWhiteSpace(request.Email)) user.Email = request.Email.Trim().ToLowerInvariant();
+        if (!string.IsNullOrWhiteSpace(request.Phone)) user.DienThoai = request.Phone.Trim();
+        if (request.CitizenId != null) user.CCCD = request.CitizenId.Trim();
+        if (request.DateOfBirth.HasValue) user.NgaySinh = request.DateOfBirth.Value;
+        if (!string.IsNullOrWhiteSpace(request.Gender)) user.GioiTinh = request.Gender.Trim();
+
+        var bankInfo = !string.IsNullOrWhiteSpace(request.BankInformation)
+            ? request.BankInformation.Trim()
+            : (!string.IsNullOrWhiteSpace(request.BankName) || !string.IsNullOrWhiteSpace(request.BankAccount))
+                ? $"{request.BankName?.Trim()} - {request.BankAccount?.Trim()} ({request.BankHolder?.Trim() ?? request.FullName.Trim()})"
+                : user.ThongTinNganHang;
+
+        if (bankInfo != null) user.ThongTinNganHang = bankInfo;
+
+        if (!string.IsNullOrWhiteSpace(request.Role))
+        {
+            var roleUpper = request.Role.Trim().ToUpperInvariant();
+            if (roleUpper == "OWNER" || roleUpper == "CHUHOME") user.MaVaiTro = VaiTro.OWNER;
+            else if (roleUpper == "ADMIN" || roleUpper == "QUANTRI") user.MaVaiTro = VaiTro.ADMIN;
+            else if (roleUpper == "GUEST" || roleUpper == "KHACH" || roleUpper == "CUSTOMER") user.MaVaiTro = VaiTro.GUEST;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Password))
+        {
+            user.MatKhau = passwordHasher.HashPassword(user, request.Password.Trim());
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        var bookingCount = await db.DonDatPhongs.CountAsync(b => b.MaKhachHang == user.MaTaiKhoan, cancellationToken);
+
+        var response = new AdminUserResponse(
+            user.MaTaiKhoan,
+            user.Email,
+            user.HoTen,
+            user.DienThoai,
+            user.VaiTro?.TenVaiTro ?? (user.MaVaiTro == VaiTro.OWNER ? "OWNER" : (user.MaVaiTro == VaiTro.ADMIN ? "ADMIN" : "GUEST")),
+            user.MaVaiTro,
+            user.TrangThai,
+            user.NgayTao,
+            user.CCCD,
+            user.ThongTinNganHang,
+            user.CoSoLuuTrus.Count,
+            bookingCount
+        );
+
+        return Ok(response);
+    }
     #endregion
 
     #region 6. Báo cáo doanh thu & Dòng tiền (Revenue & Platform Reporting)
@@ -926,7 +1225,12 @@ public sealed class AdminController(HomestayDbContext db, IEmailService emailSer
                 hostPayout,
                 b.TrangThai ?? "Pending",
                 paymentStatus,
-                b.NgayDat
+                b.NgayDat,
+                b.TrangThaiQuyetToan ?? "ChuaQuyetToan",
+                b.MaGiaoDichQuyetToan,
+                b.NgayQuyetToan,
+                b.SoTienQuyetToan ?? hostPayout,
+                b.GhiChuQuyetToan
             );
         }).ToList();
 

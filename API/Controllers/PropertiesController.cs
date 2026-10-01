@@ -21,6 +21,19 @@ public sealed class PropertiesController(
     IEmailService emailService,
     ICloudinaryService cloudinaryService) : ControllerBase
 {
+    [HttpGet("locations")]
+    public async Task<ActionResult<IReadOnlyList<string>>> GetLocations(CancellationToken cancellationToken = default)
+    {
+        var locations = await db.CoSoLuuTrus.AsNoTracking()
+            .Where(p => !string.IsNullOrWhiteSpace(p.ThanhPho))
+            .Select(p => p.ThanhPho!.Trim())
+            .Distinct()
+            .OrderBy(l => l)
+            .ToListAsync(cancellationToken);
+
+        return Ok(locations);
+    }
+
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<PropertySummaryResponse>>> GetProperties(
         [FromQuery] string? location, [FromQuery] int page = 1, [FromQuery] int pageSize = 20,

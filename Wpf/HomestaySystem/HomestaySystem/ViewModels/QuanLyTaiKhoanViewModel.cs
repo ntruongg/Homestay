@@ -25,6 +25,8 @@ namespace HomestaySystem.ViewModels
         private string _tuKhoaTimKiem = string.Empty;
         private bool _dangTaiDuLieu;
         private string _thongBaoTrangThai = string.Empty;
+        private bool _hienThiDialogTuChoi;
+        private string _lyDoTuChoi = string.Empty;
 
         public ObservableCollection<TaiKhoan> DanhSachHienThi
         {
@@ -35,7 +37,19 @@ namespace HomestaySystem.ViewModels
         public TaiKhoan? TaiKhoanDangChon
         {
             get => _taiKhoanDangChon;
-            set => SetProperty(ref _taiKhoanDangChon, value);
+            set
+            {
+                if (SetProperty(ref _taiKhoanDangChon, value))
+                {
+                    OnPropertyChanged(nameof(SelectedUser));
+                }
+            }
+        }
+
+        public TaiKhoan? SelectedUser
+        {
+            get => TaiKhoanDangChon;
+            set => TaiKhoanDangChon = value;
         }
 
         public string BoLocVaiTro
@@ -74,6 +88,18 @@ namespace HomestaySystem.ViewModels
             set => SetProperty(ref _thongBaoTrangThai, value);
         }
 
+        public bool HienThiDialogTuChoi
+        {
+            get => _hienThiDialogTuChoi;
+            set => SetProperty(ref _hienThiDialogTuChoi, value);
+        }
+
+        public string LyDoTuChoi
+        {
+            get => _lyDoTuChoi;
+            set => SetProperty(ref _lyDoTuChoi, value);
+        }
+
         // Thống kê nhanh
         public int TongSoTaiKhoan
         {
@@ -102,14 +128,37 @@ namespace HomestaySystem.ViewModels
         // Commands
         public ICommand TaiDuLieuCommand { get; }
         public ICommand KhoaMoKhoaCommand { get; }
+        public ICommand KhoaTaiKhoanCommand { get; }
+        public ICommand MoKhoaTaiKhoanCommand { get; }
         public ICommand XacThucTERACommand { get; }
+        public ICommand MoDialogTuChoiCommand { get; }
+        public ICommand XacNhanTuChoiCommand { get; }
+        public ICommand HuyBoTuChoiCommand { get; }
+        public ICommand ChonLyDoGoiYCommand { get; }
+        public ICommand DongHoSoCommand { get; }
+        public ICommand XemHoSoCommand { get; }
 
         public QuanLyTaiKhoanViewModel(IAdminService adminService)
         {
             _adminService = adminService;
 
+            DongHoSoCommand = new RelayCommand(() => TaiKhoanDangChon = null);
+            XemHoSoCommand = new RelayCommand<TaiKhoan>(tk =>
+            {
+                if (tk != null) TaiKhoanDangChon = tk;
+            });
+
             TaiDuLieuCommand = new RelayCommand(async () => await TaiDanhSachTaiKhoanAsync());
             KhoaMoKhoaCommand = new RelayCommand(async () => await ThucHienKhoaMoKhoaAsync(), () => TaiKhoanDangChon != null);
+            KhoaTaiKhoanCommand = new RelayCommand(ThucHienMoDialogTuChoi, () => TaiKhoanDangChon != null);
+            MoDialogTuChoiCommand = new RelayCommand(ThucHienMoDialogTuChoi, () => TaiKhoanDangChon != null);
+            XacNhanTuChoiCommand = new RelayCommand(async () => await ThucHienXacNhanTuChoiAsync());
+            HuyBoTuChoiCommand = new RelayCommand(() => HienThiDialogTuChoi = false);
+            ChonLyDoGoiYCommand = new RelayCommand<string>(lyDo =>
+            {
+                if (!string.IsNullOrWhiteSpace(lyDo)) LyDoTuChoi = lyDo;
+            });
+            MoKhoaTaiKhoanCommand = new RelayCommand(async () => await ThucHienMoKhoaTaiKhoanAsync(), () => TaiKhoanDangChon != null);
             XacThucTERACommand = new RelayCommand(async () => await ThucHienXacThucTERAAsync(), () => TaiKhoanDangChon != null && TaiKhoanDangChon.VaiTro == "ChuHome");
 
             _ = TaiDanhSachTaiKhoanAsync();
@@ -125,6 +174,10 @@ namespace HomestaySystem.ViewModels
                 ApDungBoLoc();
                 CapNhatThongKe();
                 ThongBaoTrangThai = $"Đã tải {_tatCaTaiKhoan.Count} tài khoản thành công.";
+            }
+            catch (Exception ex)
+            {
+                ThongBaoTrangThai = $"Lỗi kết nối máy chủ: {ex.Message}. Đang sử dụng dữ liệu cục bộ.";
             }
             finally
             {
@@ -153,9 +206,9 @@ namespace HomestaySystem.ViewModels
             }
 
             DanhSachHienThi = new ObservableCollection<TaiKhoan>(ketQua);
-            if (DanhSachHienThi.Count > 0 && (TaiKhoanDangChon == null || !DanhSachHienThi.Contains(TaiKhoanDangChon)))
+            if (TaiKhoanDangChon != null && !DanhSachHienThi.Contains(TaiKhoanDangChon))
             {
-                TaiKhoanDangChon = DanhSachHienThi[0];
+                TaiKhoanDangChon = null;
             }
         }
 
@@ -182,14 +235,109 @@ namespace HomestaySystem.ViewModels
 
             if (result == MessageBoxResult.Yes)
             {
-                DangTaiDuLieu = true;
-                bool thanhCong = await _adminService.DoiTrangThaiTaiKhoanAsync(TaiKhoanDangChon.MaTaiKhoan, trangThaiMoi);
-                DangTaiDuLieu = false;
+                try
+                {
+                    DangTaiDuLieu = true;
+                    bool thanhCong = await _adminService.DoiTrangThaiTaiKhoanAsync(TaiKhoanDangChon.MaTaiKhoan, trangThaiMoi);
+                    if (thanhCong)
+                    {
+                        MessageBox.Show($"Đã {hanhDong.ToLower()} tài khoản thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                        await TaiDanhSachTaiKhoanAsync();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi thực hiện thao tác: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                finally
+                {
+                    DangTaiDuLieu = false;
+                }
+            }
+        }
 
+        private void ThucHienMoDialogTuChoi()
+        {
+            if (TaiKhoanDangChon == null) return;
+            LyDoTuChoi = !string.IsNullOrWhiteSpace(TaiKhoanDangChon.LyDoTuChoi)
+                ? TaiKhoanDangChon.LyDoTuChoi
+                : "Tài khoản vi phạm chính sách hoặc thông tin không hợp lệ.";
+            HienThiDialogTuChoi = true;
+        }
+
+        private async Task ThucHienXacNhanTuChoiAsync()
+        {
+            if (TaiKhoanDangChon == null) return;
+
+            if (string.IsNullOrWhiteSpace(LyDoTuChoi))
+            {
+                MessageBox.Show("Vui lòng nêu lý do từ chối tài khoản!", "Thiếu thông tin", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                DangTaiDuLieu = true;
+                bool thanhCong = await _adminService.TuChoiTaiKhoanAsync(TaiKhoanDangChon.MaTaiKhoan, LyDoTuChoi.Trim());
                 if (thanhCong)
                 {
-                    MessageBox.Show($"Đã {hanhDong.ToLower()} tài khoản thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                    TaiKhoanDangChon.TrangThai = "TuChoi";
+                    TaiKhoanDangChon.LyDoTuChoi = LyDoTuChoi.Trim();
+                    HienThiDialogTuChoi = false;
+                    MessageBox.Show($"Đã từ chối tài khoản '{TaiKhoanDangChon.HoTen}' thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
                     await TaiDanhSachTaiKhoanAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi từ chối tài khoản: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                DangTaiDuLieu = false;
+            }
+        }
+
+        private async Task ThucHienKhoaTaiKhoanAsync()
+        {
+            ThucHienMoDialogTuChoi();
+            await Task.CompletedTask;
+        }
+
+        private async Task ThucHienMoKhoaTaiKhoanAsync()
+        {
+            if (TaiKhoanDangChon == null) return;
+            if (TaiKhoanDangChon.TrangThai == "HoatDong")
+            {
+                MessageBox.Show("Tài khoản này hiện đang hoạt động bình thường!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"Xác nhận MỞ KHÓA hoạt động cho tài khoản '{TaiKhoanDangChon.TenDangNhap}' ({TaiKhoanDangChon.HoTen})?",
+                "Xác nhận mở khóa",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    DangTaiDuLieu = true;
+                    bool thanhCong = await _adminService.DoiTrangThaiTaiKhoanAsync(TaiKhoanDangChon.MaTaiKhoan, "HoatDong");
+                    if (thanhCong)
+                    {
+                        MessageBox.Show($"Đã mở khóa hoạt động cho tài khoản '{TaiKhoanDangChon.HoTen}'!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                        await TaiDanhSachTaiKhoanAsync();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi mở khóa tài khoản: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                finally
+                {
+                    DangTaiDuLieu = false;
                 }
             }
         }
@@ -209,14 +357,23 @@ namespace HomestaySystem.ViewModels
 
             if (result == MessageBoxResult.Yes)
             {
-                DangTaiDuLieu = true;
-                bool thanhCong = await _adminService.CapNhatXacThucTERAAsync(TaiKhoanDangChon.MaTaiKhoan, trangThaiMoi);
-                DangTaiDuLieu = false;
-
-                if (thanhCong)
+                try
                 {
-                    MessageBox.Show($"Cập nhật trạng thái xác thực TERA thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
-                    await TaiDanhSachTaiKhoanAsync();
+                    DangTaiDuLieu = true;
+                    bool thanhCong = await _adminService.CapNhatXacThucTERAAsync(TaiKhoanDangChon.MaTaiKhoan, trangThaiMoi);
+                    if (thanhCong)
+                    {
+                        MessageBox.Show($"Cập nhật trạng thái xác thực TERA thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                        await TaiDanhSachTaiKhoanAsync();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi cập nhật xác thực TERA: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                finally
+                {
+                    DangTaiDuLieu = false;
                 }
             }
         }

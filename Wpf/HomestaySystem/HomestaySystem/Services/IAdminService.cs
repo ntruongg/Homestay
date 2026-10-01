@@ -14,23 +14,29 @@ namespace HomestaySystem.Services
         // ================= 1. KIỂM DUYỆT & QUẢN LÝ CƠ SỞ LƯU TRÚ =================
         Task<List<CoSoLuuTru>> LayDanhSachCoSoChoDuyetAsync();
         Task<List<CoSoLuuTru>> LayTatCaCoSoAsync(string? trangThai = null, string? tuKhoa = null);
+        Task<List<string>> LayDanhSachKhuVucAsync();
         Task<CoSoLuuTru?> LayChiTietCoSoAsync(int maCoSo);
         Task<bool> PheDuyetCoSoAsync(int maCoSo, string nguoiDuyet);
         Task<bool> TuChoiCoSoAsync(int maCoSo, string lyDoTuChoi);
+        Task<bool> CapNhatCoSoAsync(CoSoLuuTru coSo);
 
         // ================= 2. QUẢN LÝ TÀI KHOẢN =================
         Task<List<TaiKhoan>> LayDanhSachTaiKhoanAsync(string? vaiTro = null, string? tuKhoa = null);
         Task<bool> DoiTrangThaiTaiKhoanAsync(int maTaiKhoan, bool kichHoat);
         Task<bool> DoiTrangThaiTaiKhoanAsync(int maTaiKhoan, string trangThaiMoi);
+        Task<bool> TuChoiTaiKhoanAsync(int maTaiKhoan, string lyDo);
         Task<bool> CapNhatXacThucTERAAsync(int maTaiKhoan, bool daXacThuc);
+        Task<bool> TaoTaiKhoanAsync(TaiKhoan taiKhoan);
+        Task<bool> CapNhatTaiKhoanAsync(TaiKhoan taiKhoan);
 
         // ================= 3. QUẢN LÝ ĐƠN ĐẶT PHÒNG & XỬ LÝ HOÀN TIỀN =================
         Task<List<DonDatPhong>> LayDanhSachDonDatAsync(string? trangThai = null, string? tuKhoa = null);
         Task<DonDatPhong?> LayChiTietDonDatAsync(int maDon);
+        Task<bool> CapNhatDonDatAsync(DonDatPhong donDat);
         Task<bool> XuLyHoanTienAsync(int maDon, decimal soTienHoan, string lyDo, string ghiChu);
         Task<bool> TuChoiHoanTienAsync(int maDon, string lyDo, string? ghiChu);
         Task<List<DonDatPhong>> LayDanhSachQuyetToanAsync(string? trangThaiQuyetToan = null);
-        Task<bool> XacNhanQuyetToanAsync(int maDon, string maGiaoDich, string ghiChu);
+        Task<bool> XacNhanQuyetToanAsync(int maDon, string maGiaoDich, string ghiChu, decimal? soTien = null);
 
         // ================= 4. BÁO CÁO DOANH THU & DÒNG TIỀN =================
         Task<ThongKeDoanhThu> LayThongKeDoanhThuAsync(DateTime? tuNgay, DateTime? denNgay, int? maChuHome = null);

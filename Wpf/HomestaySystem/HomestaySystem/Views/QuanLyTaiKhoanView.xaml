@@ -5,12 +5,11 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:conv="clr-namespace:HomestaySystem.Converters"
              mc:Ignorable="d" 
-             d:DesignHeight="750" d:DesignWidth="1100">
+             d:DesignHeight="850" d:DesignWidth="1200">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <conv:ChuoiMauToBrushConverter x:Key="ColorToBrush"/>
         <conv:NullToVisibilityConverter x:Key="NullToVis"/>
-        <conv:ChuoiSoSanhToVisibilityConverter x:Key="StrCompareToVis"/>
         <conv:BooleanToKhoaTextConverter x:Key="BoolToKhoaText"/>
         <conv:BooleanToKhoaBrushConverter x:Key="BoolToKhoaBrush"/>
         <conv:BooleanToTeraBadgeTextConverter x:Key="BoolToTeraText"/>
@@ -19,360 +18,486 @@
     </UserControl.Resources>
 
     <Grid Background="{StaticResource MauNenChinh}">
-        <Grid Margin="22">
+        <Grid Margin="20,16,20,16">
+            <!-- CẤU TRÚC LAYOUT 3 HÀNG RÕ RÀNG: HÀNG 2 BẮT BUỘC DÙNG CHIỀU CAO '*' -->
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/> <!-- Hàng 0: Header & Thanh tìm kiếm/Lọc -->
+                <RowDefinition Height="Auto"/> <!-- Hàng 1: 4 Thẻ Card KPI -->
+                <RowDefinition Height="*"/>    <!-- Hàng 2: BẮT BUỘC DÙNG CHIỀU CAO SAO '*' CHỨA BẢNG VÀ CHI TIẾT -->
             </Grid.RowDefinitions>
 
-            <!-- 1. THẺ THỐNG KÊ NHANH 4 NHÓM THEO PHONG CÁCH HOMESTAYSYSTEM -->
-            <Grid Grid.Row="0" Margin="0,0,0,18">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="14"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="14"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="14"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <!-- Thẻ Tổng tài khoản -->
-                <Border Grid.Column="0" Background="White" CornerRadius="12" Padding="18,16" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                    <StackPanel>
-                        <TextBlock Text="TỔNG TÀI KHOẢN HỆ THỐNG" FontSize="11" FontWeight="Bold" Foreground="#64748B"/>
-                        <TextBlock Text="{Binding TongSoTaiKhoan}" FontSize="24" FontWeight="Black" Foreground="{StaticResource MauChuChinh}" Margin="0,6,0,0"/>
-                        <TextBlock Text="Toàn bộ người dùng &amp; đối tác" FontSize="11" Foreground="#94A3B8" Margin="0,3,0,0"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Thẻ Khách hàng HomestaySystem -->
-                <Border Grid.Column="2" Background="White" CornerRadius="12" Padding="18,16" BorderBrush="#BBF7D0" BorderThickness="1.5">
-                    <StackPanel>
-                        <TextBlock Text="KHÁCH HÀNG (USERS)" FontSize="11" FontWeight="Bold" Foreground="#0E9F6E"/>
-                        <TextBlock Text="{Binding SoKhachHang}" FontSize="24" FontWeight="Black" Foreground="#0E9F6E" Margin="0,6,0,0"/>
-                        <TextBlock Text="Người đặt chỗ homestay" FontSize="11" Foreground="#64748B" Margin="0,3,0,0"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Thẻ Đối tác TERA (Chủ Homestay) -->
-                <Border Grid.Column="4" Background="White" CornerRadius="12" Padding="18,16" BorderBrush="#BAE6FD" BorderThickness="1.5">
-                    <StackPanel>
-                        <TextBlock Text="ĐỐI TÁC TERA (CHỦ HOME)" FontSize="11" FontWeight="Bold" Foreground="#0194F3"/>
-                        <TextBlock Text="{Binding SoChuHome}" FontSize="24" FontWeight="Black" Foreground="#0194F3" Margin="0,6,0,0"/>
-                        <TextBlock Text="Nhà cung cấp cơ sở lưu trú" FontSize="11" Foreground="#64748B" Margin="0,3,0,0"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Thẻ Quản trị viên -->
-                <Border Grid.Column="6" Background="White" CornerRadius="12" Padding="18,16" BorderBrush="#E2E8F0" BorderThickness="1.5">
-                    <StackPanel>
-                        <TextBlock Text="QUẢN TRỊ VIÊN (ADMIN)" FontSize="11" FontWeight="Bold" Foreground="#004394"/>
-                        <TextBlock Text="{Binding SoQuanTriVien}" FontSize="24" FontWeight="Black" Foreground="#004394" Margin="0,6,0,0"/>
-                        <TextBlock Text="Vận hành &amp; phê duyệt nền tảng" FontSize="11" Foreground="#64748B" Margin="0,3,0,0"/>
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <!-- 2. THANH CÔNG CỤ LỌC & TÌM KIẾM -->
-            <Border Grid.Row="1" Background="White" CornerRadius="12" Padding="18,14" Margin="0,0,0,18" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+            <!-- ================= HÀNG 0: HEADER & THANH TÌM KIẾM / BỘ LỌC ================= -->
+            <Border Grid.Row="0" Margin="0,0,0,16">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Column="0" Text="Phân loại vai trò:" VerticalAlignment="Center" FontWeight="Bold" Foreground="#334155" Margin="0,0,10,0" FontSize="13"/>
-                    <ComboBox Grid.Column="1" SelectedValue="{Binding BoLocVaiTro}" SelectedValuePath="Tag" Width="180" Padding="8,6" VerticalAlignment="Center">
-                        <ComboBoxItem Content="-- Tất cả vai trò --" Tag="TatCa" IsSelected="True"/>
-                        <ComboBoxItem Content="Khách hàng" Tag="KhachHang"/>
-                        <ComboBoxItem Content="Chủ Homestay (TERA)" Tag="ChuHome"/>
-                        <ComboBoxItem Content="Quản trị viên (Admin)" Tag="QuanTriVien"/>
-                    </ComboBox>
+                    <!-- 0.1 Header bar: Giữ tên tiếng Việt chuẩn nghiệp vụ -->
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Width="40" Height="40" CornerRadius="20" Background="{StaticResource MauStaylyPrimaryLight}" Margin="0,0,12,0">
+                                <TextBlock Text="👥" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Quản Lý Người Dùng &amp; Đối Tác" FontSize="18" FontWeight="Bold" Foreground="{StaticResource MauChuTieuDe}"/>
+                                <TextBlock Text="Trung tâm quản lý tài khoản, định danh đối tác và cấp quyền truy cập sàn Stayly" FontSize="12" Foreground="{StaticResource MauChuPhu}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
 
-                    <!-- Ô tìm kiếm với Placeholder -->
-                    <Grid Grid.Column="2" Margin="20,0,20,0">
-                        <TextBox Text="{Binding TuKhoaTimKiem, UpdateSourceTrigger=PropertyChanged}" Padding="10,6" FontSize="13"
-                                 BorderBrush="#CBD5E1" BorderThickness="1" VerticalAlignment="Center">
-                            <TextBox.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="8"/>
-                                </Style>
-                            </TextBox.Resources>
-                        </TextBox>
-                        <TextBlock Text="🔍 Tìm kiếm theo tên, username, SĐT, CCCD đối tác..." Foreground="#94A3B8" IsHitTestVisible="False"
-                                   VerticalAlignment="Center" Margin="12,0,0,0" FontSize="12">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding TuKhoaTimKiem}" Value="">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding TuKhoaTimKiem}" Value="{x:Null}">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Border Background="#F1F5F9" CornerRadius="8" Padding="10,5" Margin="0,0,10,0">
+                                <TextBlock Text="Phím tắt: F5 Tải lại • Nhấp chọn dòng xem hồ sơ" FontSize="11" Foreground="{StaticResource MauChuPhu}"/>
+                            </Border>
+                            <Button Command="{Binding TaiDuLieuCommand}" Cursor="Hand" ToolTip="Tải lại danh sách tài khoản"
+                                    Background="White" BorderBrush="{StaticResource MauVien}" BorderThickness="1" Padding="14,8">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="20"/>
+                                    </Style>
+                                </Button.Resources>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔄 " FontSize="12"/>
+                                    <TextBlock Text="Làm mới dữ liệu" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource MauChuChinh}"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
                     </Grid>
 
-                    <Button Grid.Column="3" Content="🔄 Tải lại danh sách" Command="{Binding TaiDuLieuCommand}"
-                            Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" Foreground="#334155"
-                            Padding="16,8" Cursor="Hand" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center">
-                        <Button.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="8"/>
-                            </Style>
-                        </Button.Resources>
-                    </Button>
+                    <!-- 0.2 Thanh tìm kiếm & bộ lọc Ribbon -->
+                    <Border Grid.Row="1" Background="White" CornerRadius="16" Padding="14,10" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Ô tìm kiếm viên thuốc -->
+                            <Border Grid.Column="0" Background="#F1F5F9" CornerRadius="20" Height="36" Padding="12,0" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                <Grid VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="🔍" FontSize="12" Margin="2,0,8,0" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" Text="{Binding TuKhoaTimKiem, UpdateSourceTrigger=PropertyChanged}"
+                                             BorderThickness="0" Background="Transparent" VerticalAlignment="Center"
+                                             FontSize="12" Foreground="{StaticResource MauChuChinh}"/>
+                                    <TextBlock Grid.Column="1" Text="Tìm kiếm theo họ tên, username, email, số điện thoại hoặc CCCD..." FontSize="12" Foreground="#94A3B8"
+                                               VerticalAlignment="Center" Margin="2,0,0,0" IsHitTestVisible="False">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding TuKhoaTimKiem}" Value="">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding TuKhoaTimKiem}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+                            </Border>
+
+                            <!-- Lọc theo vai trò ComboBox chuẩn bo tròn 8px hiện đại không lộ khung xám -->
+                            <ComboBox Grid.Column="2" SelectedValue="{Binding BoLocVaiTro}" SelectedValuePath="Tag" Height="36" VerticalAlignment="Center">
+                                <ComboBoxItem Content="Tất cả vai trò" Tag="TatCa" IsSelected="True"/>
+                                <ComboBoxItem Content="Chủ Homestay (Host)" Tag="ChuHome"/>
+                                <ComboBoxItem Content="Khách hàng (User)" Tag="KhachHang"/>
+                                <ComboBoxItem Content="Quản trị viên (Admin)" Tag="QuanTriVien"/>
+                            </ComboBox>
+
+                            <!-- Số lượng kết quả lọc -->
+                            <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Background="{StaticResource MauStaylyPrimaryLight}" CornerRadius="16" Height="36" Padding="14,0">
+                                    <TextBlock Text="{Binding DanhSachHienThi.Count, StringFormat='{}Hiển thị {0} tài khoản'}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource MauStaylyPrimary}" VerticalAlignment="Center"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
                 </Grid>
             </Border>
 
-            <!-- 3. KHU VỰC DỮ LIỆU: BẢNG DANH SÁCH + CHI TIẾT TERA BÊN PHẢI -->
+            <!-- ================= HÀNG 1: 4 THẺ CARD KPI (FORMAT CHUẨN THỐNG NHẤT) ================= -->
+            <Grid Grid.Row="1" Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- KPI 1: Tổng người dùng CRM -->
+                <Border Grid.Column="0" Background="White" CornerRadius="12" BorderBrush="{StaticResource MauVien}" BorderThickness="1" Padding="14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="TỔNG TÀI KHOẢN" FontSize="11" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding TongSoTaiKhoan, FallbackValue='0'}" FontSize="22" FontWeight="Black" Foreground="{StaticResource MauChuTieuDe}" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="Lưu trữ hệ thống" FontSize="11" Foreground="{StaticResource MauStaylySkyBlue}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <Border Grid.Column="1" Width="42" Height="42" CornerRadius="21" Background="{StaticResource MauStaylyPrimaryLight}" Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="👥" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- KPI 2: Đối tác Chủ nhà (Host) -->
+                <Border Grid.Column="2" Background="White" CornerRadius="12" BorderBrush="{StaticResource MauVien}" BorderThickness="1" Padding="14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="CHỦ NHÀ (HOST)" FontSize="11" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding SoChuHome, FallbackValue='0'}" FontSize="22" FontWeight="Black" Foreground="{StaticResource MauStaylyGreen}" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="Đối tác cơ sở lưu trú" FontSize="11" Foreground="{StaticResource MauChuPhu}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <Border Grid.Column="1" Width="42" Height="42" CornerRadius="21" Background="{StaticResource MauStaylyGreenNhat}" Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="🏡" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- KPI 3: Khách hàng thành viên -->
+                <Border Grid.Column="4" Background="White" CornerRadius="12" BorderBrush="{StaticResource MauVien}" BorderThickness="1" Padding="14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="KHÁCH HÀNG" FontSize="11" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding SoKhachHang, FallbackValue='0'}" FontSize="22" FontWeight="Black" Foreground="{StaticResource MauStaylyGreen}" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="Đặt phòng sàn Stayly" FontSize="11" Foreground="{StaticResource MauChuPhu}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <Border Grid.Column="1" Width="42" Height="42" CornerRadius="21" Background="#ECFDF5" Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="🏷️" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- KPI 4: Quản trị viên hệ thống -->
+                <Border Grid.Column="6" Background="White" CornerRadius="12" BorderBrush="{StaticResource MauVien}" BorderThickness="1" Padding="14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="QUẢN TRỊ VIÊN" FontSize="11" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding SoQuanTriVien, FallbackValue='0'}" FontSize="22" FontWeight="Black" Foreground="{StaticResource MauStaylyPrimary}" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="Toàn quyền điều hành" FontSize="11" Foreground="{StaticResource MauChuPhu}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <Border Grid.Column="1" Width="42" Height="42" CornerRadius="21" Background="#EBF3FA" Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="🛡️" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ================= HÀNG 2: BỐ CỤC CHỨA BẢNG VÀ PANEL CHI TIẾT (ẨN MẶC ĐỊNH, CHỈ HIỆN KHI CHỌN 1 TÊN) ================= -->
             <Grid Grid.Row="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="18"/>
-                    <ColumnDefinition Width="400"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- BẢNG DANH SÁCH TÀI KHOẢN -->
-                <Border Grid.Column="0" Background="White" CornerRadius="12" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                    <DataGrid ItemsSource="{Binding DanhSachHienThi}" SelectedItem="{Binding TaiKhoanDangChon}"
-                              AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
-                              HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F1F5F9"
-                              Background="White" BorderThickness="0" RowHeight="46" Padding="4"
-                              HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
-                              ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
-                              ScrollViewer.CanContentScroll="True">
-                        <DataGrid.ColumnHeaderStyle>
-                            <Style TargetType="DataGridColumnHeader">
-                                <Setter Property="Background" Value="#F8FAFC"/>
-                                <Setter Property="Foreground" Value="#475569"/>
-                                <Setter Property="FontWeight" Value="Bold"/>
-                                <Setter Property="FontSize" Value="12"/>
-                                <Setter Property="Padding" Value="12,10"/>
-                                <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                                <Setter Property="BorderBrush" Value="#E5E7EB"/>
-                            </Style>
-                        </DataGrid.ColumnHeaderStyle>
+                <!-- ================= CỘT 0: BẢNG DATAGRID CỐ ĐỊNH CỘT, BẬT THANH CUỘN NGANG VÀ DỌC (ĐỒNG BỘ CHUẨN STAYLYCARD) ================= -->
+                <Border Grid.Column="0" Style="{StaticResource StaylyCard}" Padding="0" ClipToBounds="True">
+                    <DataGrid x:Name="dgNguoiDung"
+                              ItemsSource="{Binding DanhSachHienThi}"
+                              SelectedItem="{Binding SelectedUser}"
+                              Style="{StaticResource StaylyDataGridStyle}"
+                              IsReadOnly="True"
+                              RowHeight="58"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Auto"
+                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto"
+                              CanUserResizeColumns="True"
+                              CanUserSortColumns="True">
+                        <!-- Thiết lập từng cột kích thước chuẩn mực, chống cắt chữ và kích hoạt thanh cuộn ngang khi màn hình hẹp -->
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Mã" Binding="{Binding MaTaiKhoan, Mode=OneWay}" Width="55"/>
-                            <DataGridTextColumn Header="Tên đăng nhập" Binding="{Binding TenDangNhap, Mode=OneWay}" Width="130"/>
-                            <DataGridTextColumn Header="Họ và Tên" Binding="{Binding HoTen, Mode=OneWay}" Width="160"/>
-                            <DataGridTextColumn Header="Số điện thoại" Binding="{Binding SoDienThoai, Mode=OneWay}" Width="115"/>
-                            <DataGridTextColumn Header="Email liên hệ" Binding="{Binding Email, Mode=OneWay}" Width="180"/>
-                            <DataGridTemplateColumn Header="Vai trò" Width="125">
+                            <!-- Cột 1: MÃ TÀI KHOẢN (Tự động canh theo mã dài nhất) -->
+                            <DataGridTextColumn Header="MÃ TÀI KHOẢN" Binding="{Binding MaTaiKhoanHienThi}" Width="Auto" MinWidth="115">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                        <Setter Property="Foreground" Value="{StaticResource MauStaylyPrimary}"/>
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="Padding" Value="12,0"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <!-- Cột 2: HỌ VÀ TÊN (Mở rộng tối thiểu 200px, họ tên in đậm + Tên đăng nhập @username) -->
+                            <DataGridTemplateColumn Header="HỌ VÀ TÊN" Width="*" MinWidth="200">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border Background="{Binding MauVaiTro, Converter={StaticResource ColorToBrush}}"
-                                                CornerRadius="4" Padding="8,3" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding TenHienThiVaiTro}" Foreground="White" FontSize="11" FontWeight="Bold"/>
-                                        </Border>
+                                        <StackPanel VerticalAlignment="Center" Margin="12,0" Cursor="Hand" ToolTip="{Binding HoTen}">
+                                            <TextBlock Text="{Binding HoTen}" FontWeight="Bold" FontSize="12" Foreground="{StaticResource MauChuTieuDe}" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding TenDangNhap, StringFormat='@{0}'}" FontSize="11" Foreground="{StaticResource MauChuPhu}" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Header="Trạng thái" Width="125">
+
+                            <!-- Cột 3: EMAIL LIÊN HỆ (Tự động canh theo email dài nhất) -->
+                            <DataGridTextColumn Header="EMAIL LIÊN HỆ" Binding="{Binding Email}" Width="Auto" MinWidth="200">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource MauChuPhu}"/>
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="Padding" Value="12,0"/>
+                                        <Setter Property="ToolTip" Value="{Binding Email}"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <!-- Cột 4: SỐ ĐIỆN THOẠI (Tự động canh theo số điện thoại) -->
+                            <DataGridTextColumn Header="SỐ ĐIỆN THOẠI" Binding="{Binding SoDienThoai}" Width="Auto" MinWidth="130">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                        <Setter Property="Foreground" Value="{StaticResource MauStaylyPrimary}"/>
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="Padding" Value="12,0"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <!-- Cột 5: VAI TRÒ (Tự động canh theo vai trò) -->
+                            <DataGridTemplateColumn Header="VAI TRÒ" Width="Auto" MinWidth="135">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border Background="{Binding MauTrangThai, Converter={StaticResource ColorToBrush}}"
-                                                CornerRadius="10" Padding="8,2" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding TenHienThiTrangThai}" Foreground="White" FontSize="10" FontWeight="Bold"/>
+                                        <Border CornerRadius="8" Padding="10,4" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0"
+                                                Background="{Binding VaiTroBackground}">
+                                            <TextBlock Text="{Binding VaiTroText}" FontSize="11" FontWeight="Bold"
+                                                       Foreground="{Binding VaiTroForeground}"/>
                                         </Border>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <!-- Cột Xác thực TERA đối tác -->
-                            <DataGridTemplateColumn Header="Xác thực TERA" Width="145">
+                            <!-- Cột 6: TRẠNG THÁI (Tự động canh theo trạng thái) -->
+                            <DataGridTemplateColumn Header="TRẠNG THÁI" Width="Auto" MinWidth="135">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border Visibility="{Binding VaiTro, Converter={StaticResource StrCompareToVis}, ConverterParameter=ChuHome}"
-                                                Background="{Binding DaXacThucTERA, Converter={StaticResource BoolToTeraBg}}"
-                                                BorderBrush="{Binding DaXacThucTERA, Converter={StaticResource BoolToTeraColor}}"
-                                                BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding DaXacThucTERA, Converter={StaticResource BoolToTeraText}}"
-                                                       Foreground="{Binding DaXacThucTERA, Converter={StaticResource BoolToTeraColor}}"
-                                                       FontSize="10" FontWeight="Bold"/>
+                                        <Border CornerRadius="8" Padding="10,4" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0"
+                                                Background="{Binding TrangThaiBackground}">
+                                            <TextBlock Text="{Binding TrangThaiText}" FontSize="11" FontWeight="Bold"
+                                                       Foreground="{Binding TrangThaiForeground}"/>
                                         </Border>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <DataGridTextColumn Header="CCCD / CMND" Binding="{Binding SoCCCD, Mode=OneWay, FallbackValue='---'}" Width="130"/>
-                            <DataGridTextColumn Header="Mã số thuế (MST)" Binding="{Binding MaSoThue, Mode=OneWay, FallbackValue='---'}" Width="130"/>
-                            <DataGridTextColumn Header="Ngân hàng" Binding="{Binding TenNganHang, Mode=OneWay, FallbackValue='---'}" Width="160"/>
-                            <DataGridTextColumn Header="Số tài khoản" Binding="{Binding SoTaiKhoanNganHang, Mode=OneWay, FallbackValue='---'}" Width="140"/>
-                            <DataGridTextColumn Header="Ngày tham gia" Binding="{Binding NgayTao, Mode=OneWay, StringFormat='{}{0:dd/MM/yyyy}'}" Width="110"/>
+                            <!-- Cột 7: NGÀY TẠO -->
+                            <DataGridTextColumn Header="NGÀY TẠO" Binding="{Binding NgayTaoHienThi}" Width="Auto" MinWidth="120">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource MauChuPhu}"/>
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="Padding" Value="12,0"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <!-- Cột 8: THAO TÁC / HỒ SƠ -->
+                            <DataGridTemplateColumn Header="THAO TÁC" Width="Auto" MinWidth="135">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="👁️ Xem hồ sơ"
+                                                Command="{Binding DataContext.XemHoSoCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource StaylyBtnSmall}"
+                                                Background="{StaticResource MauStaylyPrimaryLight}"
+                                                Foreground="{StaticResource MauStaylyPrimaryDark}"
+                                                BorderThickness="0" FontWeight="Bold" FontSize="11" Padding="12,6"
+                                                HorizontalAlignment="Center" VerticalAlignment="Center" Cursor="Hand"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Border>
 
-                <!-- CHI TIẾT TÀI KHOẢN & HỒ SƠ TERA CHỦ HOME -->
-                <Border Grid.Column="2" Background="White" CornerRadius="12" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                <!-- ================= CỘT 1: HỒ SƠ ĐỊNH DANH CHI TIẾT (CHỈ HIỆN KHI CHỌN 1 TÀI KHOẢN) ================= -->
+                <Border Grid.Column="1" Width="430" Margin="14,0,0,0" Style="{StaticResource StaylyCard}" Padding="18"
+                        Visibility="{Binding SelectedUser, Converter={StaticResource NullToVis}, FallbackValue=Collapsed}">
                     <Grid>
-                        <!-- EMPTY STATE KHI CHƯA CHỌN HOẶC TÌM KIẾM KHÔNG RA -->
-                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="22"
-                                    Visibility="{Binding TaiKhoanDangChon, Converter={StaticResource NullToVis}, ConverterParameter=Inverse}">
-                            <Border Width="76" Height="76" CornerRadius="38" Background="{StaticResource MauHomestayBlueNhat}" Margin="0,0,0,14" HorizontalAlignment="Center">
-                                <TextBlock Text="👤" FontSize="34" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <TextBlock Text="CHƯA CHỌN TÀI KHOẢN" FontSize="15" FontWeight="Bold" Foreground="{StaticResource MauChuChinh}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Chọn một tài khoản từ danh sách bên trái để xem hồ sơ đối tác TERA, thông tin ngân hàng hoặc khóa/mở khóa tài khoản."
-                                       Foreground="{StaticResource MauChuPhu}" FontSize="12" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="320" Margin="0,6,0,0" LineHeight="18"/>
-                        </StackPanel>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/> <!-- Hàng 0: Header Panel Title -->
+                            <RowDefinition Height="*"/>    <!-- Hàng 1: ScrollViewer chứa thông tin chi tiết -->
+                            <RowDefinition Height="Auto"/> <!-- Hàng 2: Sticky Bottom Action Buttons -->
+                        </Grid.RowDefinitions>
 
-                        <!-- CHI TIẾT TÀI KHOẢN KHI ĐÃ CHỌN -->
-                        <Grid Visibility="{Binding TaiKhoanDangChon, Converter={StaticResource NullToVis}}">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-
-                            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Padding="22,22,22,12">
-                                <StackPanel>
-                                    <TextBlock Text="CHI TIẾT ĐỐI TÁC / NGƯỜI DÙNG" FontSize="14" FontWeight="Bold" Foreground="{StaticResource MauChuChinh}" Margin="0,0,0,14"/>
-
-                                    <!-- Avatar & Tên HomestaySystem Profile Header -->
-                                    <Border Background="#F8FAFC" BorderBrush="{StaticResource MauVien}" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,16">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Border Grid.Column="0" Width="48" Height="48" CornerRadius="24" Background="{StaticResource MauHomestayBlue}" VerticalAlignment="Center">
-                                                <TextBlock Text="👤" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
-                                            <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding TaiKhoanDangChon.HoTen}" FontWeight="Bold" FontSize="15" Foreground="{StaticResource MauChuChinh}" TextTrimming="CharacterEllipsis"/>
-                                                <TextBlock Text="{Binding TaiKhoanDangChon.Email}" FontSize="12" Foreground="{StaticResource MauChuPhu}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-
-                                    <!-- Thông tin cơ bản -->
-                                    <Border Background="#FFFFFF" BorderBrush="{StaticResource MauVien}" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,16">
-                                        <StackPanel>
-                                            <Grid Margin="0,0,0,8">
-                                                <TextBlock Text="Số điện thoại:" Foreground="{StaticResource MauChuPhu}" FontSize="12"/>
-                                                <TextBlock Text="{Binding TaiKhoanDangChon.SoDienThoai}" FontWeight="SemiBold" Foreground="{StaticResource MauChuChinh}" HorizontalAlignment="Right" FontSize="12"/>
-                                            </Grid>
-                                            <Grid Margin="0,0,0,8">
-                                                <TextBlock Text="Địa chỉ liên hệ:" Foreground="{StaticResource MauChuPhu}" FontSize="12"/>
-                                                <TextBlock Text="{Binding TaiKhoanDangChon.DiaChi}" FontWeight="Medium" Foreground="{StaticResource MauChuChinh}" HorizontalAlignment="Right" FontSize="12" MaxWidth="220" TextTrimming="CharacterEllipsis"/>
-                                            </Grid>
-                                            <Grid Margin="0,0,0,8">
-                                                <TextBlock Text="Vai trò hệ thống:" Foreground="{StaticResource MauChuPhu}" FontSize="12"/>
-                                                <TextBlock Text="{Binding TaiKhoanDangChon.TenHienThiVaiTro}" FontWeight="Bold" Foreground="#0194F3" HorizontalAlignment="Right" FontSize="12"/>
-                                            </Grid>
-                                            <Grid>
-                                                <TextBlock Text="Trạng thái tài khoản:" Foreground="{StaticResource MauChuPhu}" FontSize="12"/>
-                                                <TextBlock Text="{Binding TaiKhoanDangChon.TenHienThiTrangThai}" FontWeight="Bold" Foreground="{Binding TaiKhoanDangChon.MauTrangThai, Converter={StaticResource ColorToBrush}}" HorizontalAlignment="Right" FontSize="12"/>
-                                            </Grid>
-                                        </StackPanel>
-                                    </Border>
-
-                                    <!-- ================= KHỐI 1: HỒ SƠ XÁC THỰC TERA (DÀNH RIÊNG CHO CHỦ HOMESTAY) ================= -->
-                                    <Border Background="#F0FDF4" BorderBrush="#86EFAC" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,16"
-                                            Visibility="{Binding TaiKhoanDangChon.VaiTro, Converter={StaticResource StrCompareToVis}, ConverterParameter=ChuHome}">
-                                        <StackPanel>
-                                            <Grid Margin="0,0,0,10">
-                                                <TextBlock Text="HỒ SƠ ĐỐI TÁC TERA" FontWeight="Bold" FontSize="12" Foreground="#15803D" VerticalAlignment="Center"/>
-                                                <!-- HUY HIỆU TERA ĐÃ HOÀN THIỆN ĐẦY ĐỦ VĂN BẢN VÀ MÀU SẮC -->
-                                                <Border HorizontalAlignment="Right"
-                                                        Background="{Binding TaiKhoanDangChon.DaXacThucTERA, Converter={StaticResource BoolToTeraBg}}"
-                                                        BorderBrush="{Binding TaiKhoanDangChon.DaXacThucTERA, Converter={StaticResource BoolToTeraColor}}"
-                                                        BorderThickness="1" CornerRadius="4" Padding="8,3">
-                                                    <TextBlock Text="{Binding TaiKhoanDangChon.DaXacThucTERA, Converter={StaticResource BoolToTeraText}}"
-                                                               Foreground="{Binding TaiKhoanDangChon.DaXacThucTERA, Converter={StaticResource BoolToTeraColor}}"
-                                                               FontSize="10" FontWeight="Bold"/>
-                                                </Border>
-                                            </Grid>
-
-                                            <Grid Margin="0,0,0,6">
-                                                <TextBlock Text="Số CCCD / CMND:" Foreground="#475569" FontSize="12"/>
-                                                <TextBlock Text="{Binding TaiKhoanDangChon.SoCCCD, FallbackValue='Chưa cung cấp'}" FontWeight="Bold" Foreground="#0F172A" HorizontalAlignment="Right" FontSize="12"/>
-                                            </Grid>
-                                            <Grid Margin="0,0,0,6">
-                                                <TextBlock Text="Mã số thuế (MST):" Foreground="#475569" FontSize="12"/>
-                                                <TextBlock Text="{Binding TaiKhoanDangChon.MaSoThue, FallbackValue='Chưa cung cấp'}" FontWeight="Bold" Foreground="#0F172A" HorizontalAlignment="Right" FontSize="12"/>
-                                            </Grid>
-                                            <Grid Margin="0,0,0,6">
-                                                <TextBlock Text="Ngân hàng thụ hưởng:" Foreground="#475569" FontSize="12"/>
-                                                <TextBlock Text="{Binding TaiKhoanDangChon.TenNganHang, FallbackValue='Chưa liên kết'}" FontWeight="SemiBold" Foreground="#0F172A" HorizontalAlignment="Right" FontSize="12" MaxWidth="190" TextTrimming="CharacterEllipsis"/>
-                                            </Grid>
-                                            <Grid Margin="0,0,0,6">
-                                                <TextBlock Text="Số tài khoản (STK):" Foreground="#475569" FontSize="12"/>
-                                                <TextBlock Text="{Binding TaiKhoanDangChon.SoTaiKhoanNganHang, FallbackValue='---'}" FontWeight="Bold" Foreground="#0194F3" HorizontalAlignment="Right" FontSize="13"/>
-                                            </Grid>
-                                            <Grid Margin="0,0,0,10">
-                                                <TextBlock Text="Tên chủ tài khoản:" Foreground="#475569" FontSize="12"/>
-                                                <TextBlock Text="{Binding TaiKhoanDangChon.ChuTaiKhoanNganHang, FallbackValue='---'}" FontWeight="Bold" Foreground="#0F172A" HorizontalAlignment="Right" FontSize="12"/>
-                                            </Grid>
-
-                                            <!-- Nút xác thực hồ sơ TERA -->
-                                            <Button Content="✔ Xác nhận / Đổi trạng thái TERA" Command="{Binding XacThucTERACommand}"
-                                                    Background="#0E9F6E" Foreground="White" FontWeight="Bold" Padding="0,11"
-                                                    BorderThickness="0" Cursor="Hand">
-                                                <Button.Resources>
-                                                    <Style TargetType="Border">
-                                                        <Setter Property="CornerRadius" Value="6"/>
-                                                    </Style>
-                                                </Button.Resources>
-                                            </Button>
-                                        </StackPanel>
-                                    </Border>
-
-                                    <!-- ================= KHỐI 2: THÔNG TIN KHÁCH HÀNG (KHI VAI TRÒ LÀ KHÁCH HÀNG) ================= -->
-                                    <Border Background="#F0F9FF" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,16"
-                                            Visibility="{Binding TaiKhoanDangChon.VaiTro, Converter={StaticResource StrCompareToVis}, ConverterParameter=KhachHang}">
-                                        <StackPanel>
-                                            <TextBlock Text="THÔNG TIN THÀNH VIÊN HOMESTAYSYSTEM" FontWeight="Bold" FontSize="12" Foreground="#0284C7" Margin="0,0,0,8"/>
-                                            <Grid Margin="0,0,0,6">
-                                                <TextBlock Text="Hạng hội viên:" Foreground="#64748B" FontSize="12"/>
-                                                <Border HorizontalAlignment="Right" Background="#FEF3C7" CornerRadius="4" Padding="6,2">
-                                                    <TextBlock Text="⭐ HomestaySystem VIP" Foreground="#B45309" FontSize="11" FontWeight="Bold"/>
-                                                </Border>
-                                            </Grid>
-                                            <Grid Margin="0,0,0,6">
-                                                <TextBlock Text="Chính sách ưu đãi:" Foreground="#64748B" FontSize="12"/>
-                                                <TextBlock Text="Áp dụng đầy đủ Voucher &amp; Tích lũy điểm" Foreground="#334155" FontSize="11" HorizontalAlignment="Right"/>
-                                            </Grid>
-                                        </StackPanel>
-                                    </Border>
-
-                                    <!-- ================= KHỐI 3: THÔNG TIN QUẢN TRỊ VIÊN ================= -->
-                                    <Border Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,16"
-                                            Visibility="{Binding TaiKhoanDangChon.VaiTro, Converter={StaticResource StrCompareToVis}, ConverterParameter=QuanTriVien}">
-                                        <StackPanel>
-                                            <TextBlock Text="PHÂN QUYỀN HỆ THỐNG (ADMIN)" FontWeight="Bold" FontSize="12" Foreground="#004394" Margin="0,0,0,6"/>
-                                            <TextBlock Text="Toàn quyền kiểm duyệt hồ sơ homestay, quyết toán dòng tiền 85/15 và quản lý dữ liệu."
-                                                       Foreground="#64748B" FontSize="12" TextWrapping="Wrap" LineHeight="18"/>
-                                        </StackPanel>
-                                    </Border>
-                                </StackPanel>
-                            </ScrollViewer>
-
-                            <!-- ================= NÚT THAO TÁC KHÓA / MỞ KHÓA TÀI KHOẢN (CỐ ĐỊNH Ở CHÂN CARD, RÕ RÀNG 100%) ================= -->
-                            <Border Grid.Row="1" Background="#F8FAFC" Padding="18,14" BorderBrush="{StaticResource MauVien}" BorderThickness="0,1,0,0" CornerRadius="0,0,12,12">
-                                <Button Content="{Binding TaiKhoanDangChon.CoTheKhoa, Converter={StaticResource BoolToKhoaText}}"
-                                        Command="{Binding KhoaMoKhoaCommand}"
-                                        Background="{Binding TaiKhoanDangChon.CoTheKhoa, Converter={StaticResource BoolToKhoaBrush}}"
-                                        Foreground="White" FontWeight="Bold" FontSize="13" Padding="0,12"
-                                        BorderThickness="0" Cursor="Hand" HorizontalAlignment="Stretch">
+                        <!-- Tiêu đề Panel có nút [✕ Đóng] -->
+                        <Border Grid.Row="0" BorderBrush="{StaticResource MauVien}" BorderThickness="0,0,0,1" Padding="0,0,0,12" Margin="0,0,0,14">
+                            <DockPanel LastChildFill="True">
+                                <Button DockPanel.Dock="Right" Command="{Binding DongHoSoCommand}"
+                                        Content="✕ Đóng" ToolTip="Đóng hồ sơ để hiển thị danh sách toàn màn hình"
+                                        Background="#F1F5F9" Foreground="#64748B" BorderThickness="0"
+                                        FontWeight="Bold" FontSize="11" Padding="10,4" Cursor="Hand" Margin="8,0,0,0">
                                     <Button.Resources>
                                         <Style TargetType="Border">
-                                            <Setter Property="CornerRadius" Value="8"/>
+                                            <Setter Property="CornerRadius" Value="6"/>
                                         </Style>
                                     </Button.Resources>
                                 </Button>
-                            </Border>
-                        </Grid>
+                                <Border DockPanel.Dock="Right" Background="#F1F5F9" CornerRadius="8" Padding="8,3" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding SelectedUser.MaDinhDanhText, FallbackValue='#USR-001'}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource MauStaylyPrimary}"/>
+                                </Border>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="📋" FontSize="15" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="HỒ SƠ ĐỊNH DANH CHI TIẾT" FontWeight="Bold" FontSize="13" Foreground="{StaticResource MauChuTieuDe}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <!-- Vùng nội dung chi tiết hiển thị đầy đủ, không bị đè thanh cuộn -->
+                        <ScrollViewer x:Name="svChiTiet" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,6,0">
+                            <StackPanel>
+                                <!-- Avatar & Tên đại diện gọn gàng -->
+                                <Border Width="52" Height="52" CornerRadius="26" Background="{StaticResource MauStaylyPrimaryLight}" HorizontalAlignment="Center" Margin="0,4,0,8">
+                                    <TextBlock Text="👤" FontSize="26" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="{Binding SelectedUser.HoTen, FallbackValue='Chưa chọn người dùng'}" 
+                                           FontWeight="Bold" FontSize="15" HorizontalAlignment="Center" Foreground="{StaticResource MauChuTieuDe}" TextAlignment="Center" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding SelectedUser.TenDangNhap, StringFormat='@{0}', FallbackValue='@username'}" 
+                                           FontSize="12" Foreground="{StaticResource MauChuPhu}" HorizontalAlignment="Center" Margin="0,2,0,8"/>
+
+                                <!-- Các Badge phân loại -->
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,14">
+                                    <Border Background="{Binding SelectedUser.VaiTroBackground, FallbackValue='#E0F2FE'}" CornerRadius="8" Padding="10,4" Margin="0,0,8,0">
+                                        <TextBlock Text="{Binding SelectedUser.VaiTroText, FallbackValue='Khách hàng'}" FontSize="11" Foreground="{Binding SelectedUser.VaiTroForeground, FallbackValue='#0284C7'}" FontWeight="Bold"/>
+                                    </Border>
+                                    <Border Background="{Binding SelectedUser.TrangThaiBackground, FallbackValue='#DCFCE7'}" CornerRadius="8" Padding="10,4">
+                                        <TextBlock Text="{Binding SelectedUser.TrangThaiText, FallbackValue='Đang hoạt động'}" FontSize="11" Foreground="{Binding SelectedUser.TrangThaiForeground, FallbackValue='#16A34A'}" FontWeight="Bold"/>
+                                    </Border>
+                                </StackPanel>
+
+                                <Separator Background="#F1F5F9" Margin="0,0,0,12"/>
+
+                                <!-- Thông tin liên hệ dạng Grid 2 cột: Cột nhãn 110px cố định, cột giá trị tự động co giãn, hỗ trợ Wrap không cắt chữ -->
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="110"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Email:" FontSize="12" Foreground="{StaticResource MauChuPhu}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedUser.EmailHienThi, FallbackValue='Chưa cập nhật'}" 
+                                               FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource MauChuChinh}" TextAlignment="Right" TextWrapping="Wrap" ToolTip="{Binding SelectedUser.EmailHienThi}"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="110"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Số điện thoại:" FontSize="12" Foreground="{StaticResource MauChuPhu}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedUser.SoDienThoaiHienThi, FallbackValue='Chưa cập nhật'}" 
+                                               FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource MauStaylyPrimary}" TextAlignment="Right"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="110"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Ngày sinh:" FontSize="12" Foreground="{StaticResource MauChuPhu}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedUser.NgaySinhHienThi, FallbackValue='Chưa cập nhật'}" 
+                                               FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource MauChuChinh}" TextAlignment="Right"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="110"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Giới tính:" FontSize="12" Foreground="{StaticResource MauChuPhu}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedUser.GioiTinhHienThi, FallbackValue='Chưa cập nhật'}" 
+                                               FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource MauChuChinh}" TextAlignment="Right"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="110"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Số CCCD định danh:" FontSize="12" Foreground="{StaticResource MauChuPhu}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedUser.CCCDHienThi, FallbackValue='Chưa cung cấp'}" 
+                                               FontSize="12" FontWeight="Bold" Foreground="{StaticResource MauChuTieuDe}" TextAlignment="Right"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="110"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Ngân hàng:" FontSize="12" Foreground="{StaticResource MauChuPhu}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedUser.NganHangHienThi, FallbackValue='-'}" 
+                                               FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource MauChuChinh}" TextAlignment="Right" TextWrapping="Wrap" ToolTip="{Binding SelectedUser.NganHangHienThi}"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="110"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Ngày tham gia:" FontSize="12" Foreground="{StaticResource MauChuPhu}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedUser.NgayTaoHienThi, FallbackValue='24/09/2026'}" 
+                                               FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource MauChuPhu}" TextAlignment="Right"/>
+                                </Grid>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <!-- Hàng 2: Thanh thao tác ghim cố định ở đáy (Sticky Bottom), luôn hiển thị rõ ràng không bị che khuất -->
+                        <Border Grid.Row="2" BorderBrush="{StaticResource MauVien}" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,6,0,0">
+                            <StackPanel>
+                                <TextBlock Text="THAO TÁC TÀI KHOẢN" FontSize="11" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,8"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="8"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button Grid.Column="0" Content="🔒 Khóa vi phạm" Height="36" Background="{StaticResource MauStaylyRed}" Foreground="White" 
+                                            FontWeight="SemiBold" FontSize="11" BorderThickness="0"
+                                            Command="{Binding KhoaTaiKhoanCommand}" Cursor="Hand" ToolTip="Khóa tài khoản vi phạm chính sách sàn">
+                                        <Button.Resources>
+                                            <Style TargetType="Border">
+                                                <Setter Property="CornerRadius" Value="8"/>
+                                            </Style>
+                                        </Button.Resources>
+                                    </Button>
+                                    <Button Grid.Column="2" Content="🔓 Mở tài khoản" Height="36" Background="{StaticResource MauStaylyGreen}" Foreground="White" 
+                                            FontWeight="SemiBold" FontSize="11" BorderThickness="0"
+                                            Command="{Binding MoKhoaTaiKhoanCommand}" Cursor="Hand" ToolTip="Mở khóa khôi phục tài khoản hoạt động">
+                                        <Button.Resources>
+                                            <Style TargetType="Border">
+                                                <Setter Property="CornerRadius" Value="8"/>
+                                            </Style>
+                                        </Button.Resources>
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
                     </Grid>
                 </Border>
             </Grid>

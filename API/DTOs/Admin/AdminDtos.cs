@@ -68,6 +68,21 @@ public sealed record AdminPropertyDetailsResponse(
     IReadOnlyList<AdminRoomDetailsResponse> Rooms,
     IReadOnlyList<ApprovalHistoryDto> ApprovalHistory
 );
+
+public sealed class UpdatePropertyAdminRequest
+{
+    [Required, StringLength(200)]
+    public string Name { get; set; } = string.Empty;
+
+    public string? Address { get; set; }
+    public string? Ward { get; set; }
+    public string? City { get; set; }
+    public string? Type { get; set; }
+    public string? Phone { get; set; }
+    public string? Email { get; set; }
+    public string? Policy { get; set; }
+    public bool? IsActive { get; set; }
+}
 #endregion
 
 #region Booking & Refund DTOs
@@ -88,7 +103,12 @@ public sealed record AdminBookingSummaryResponse(
     decimal TotalAmount,
     DateTime BookingDate,
     string PaymentStatus,
-    string? PaymentMethod
+    string? PaymentMethod,
+    string TrangThaiQuyetToan = "ChuaQuyetToan",
+    string? MaGiaoDichQuyetToan = null,
+    DateTime? NgayQuyetToan = null,
+    decimal? SoTienQuyetToan = null,
+    string? GhiChuQuyetToan = null
 );
 
 public sealed record AdminGuestInfo(
@@ -144,7 +164,12 @@ public sealed record AdminBookingDetailsResponse(
     string? PropertyAddress,
     IReadOnlyList<AdminBookingRoomItem> Rooms,
     IReadOnlyList<AdminPhuThuItem> ExtraFees,
-    AdminInvoiceInfo? Invoice
+    AdminInvoiceInfo? Invoice,
+    string TrangThaiQuyetToan = "ChuaQuyetToan",
+    string? MaGiaoDichQuyetToan = null,
+    DateTime? NgayQuyetToan = null,
+    decimal? SoTienQuyetToan = null,
+    string? GhiChuQuyetToan = null
 );
 
 public sealed class ProcessRefundRequest
@@ -176,6 +201,40 @@ public sealed record RefundResponse(
     string Message,
     IReadOnlyList<string> NotifiedEmails
 );
+
+public sealed class RecordPayoutRequest
+{
+    [Required, StringLength(100)]
+    public string TransactionCode { get; set; } = string.Empty;
+
+    [Range(0, 10000000000)]
+    public decimal? Amount { get; set; }
+
+    [StringLength(500)]
+    public string? Note { get; set; }
+}
+
+public sealed record PayoutResponse(
+    int BookingId,
+    string TransactionCode,
+    decimal PayoutAmount,
+    DateTime PayoutDate,
+    string Status,
+    string? Note
+);
+
+public sealed class UpdateBookingAdminRequest
+{
+    public string? Status { get; set; }
+    public string? GuestName { get; set; }
+    public string? GuestPhone { get; set; }
+    public string? GuestEmail { get; set; }
+    public int? Adults { get; set; }
+    public int? Children { get; set; }
+    public DateTime? CheckIn { get; set; }
+    public DateTime? CheckOut { get; set; }
+    public string? AdminNote { get; set; }
+}
 #endregion
 
 #region Promotion DTOs
@@ -240,6 +299,61 @@ public sealed record AdminUserResponse(
 public sealed class UpdateUserStatusRequest
 {
     public bool IsActive { get; set; }
+    public string? Reason { get; set; }
+    public string? Status { get; set; }
+}
+
+public sealed class CreateUserAdminRequest
+{
+    public string? Username { get; set; }
+
+    [Required, StringLength(100, MinimumLength = 6)]
+    public string Password { get; set; } = string.Empty;
+
+    [Required, StringLength(100)]
+    public string FullName { get; set; } = string.Empty;
+
+    [Required, EmailAddress]
+    public string Email { get; set; } = string.Empty;
+
+    [Required, Phone]
+    public string Phone { get; set; } = string.Empty;
+
+    public string Role { get; set; } = "GUEST"; // GUEST, OWNER, ADMIN
+
+    public string? CitizenId { get; set; }
+    public string? TaxId { get; set; }
+    public string? BankName { get; set; }
+    public string? BankAccount { get; set; }
+    public string? BankHolder { get; set; }
+    public string? BankInformation { get; set; }
+    public string? Address { get; set; }
+    public DateTime? DateOfBirth { get; set; }
+    public string? Gender { get; set; }
+}
+
+public sealed class UpdateUserAdminRequest
+{
+    [Required, StringLength(100)]
+    public string FullName { get; set; } = string.Empty;
+
+    [EmailAddress]
+    public string? Email { get; set; }
+
+    [Phone]
+    public string? Phone { get; set; }
+
+    public string? Role { get; set; }
+    public string? CitizenId { get; set; }
+    public string? TaxId { get; set; }
+    public string? BankName { get; set; }
+    public string? BankAccount { get; set; }
+    public string? BankHolder { get; set; }
+    public string? BankInformation { get; set; }
+    public string? Address { get; set; }
+    public DateTime? DateOfBirth { get; set; }
+    public string? Gender { get; set; }
+    public string? Password { get; set; }
 }
 #endregion
 
@@ -267,7 +381,12 @@ public sealed record RevenueBookingItemResponse(
     decimal HostPayout,
     string Status,
     string PaymentStatus,
-    DateTime BookingDate
+    DateTime BookingDate,
+    string TrangThaiQuyetToan = "ChuaQuyetToan",
+    string? MaGiaoDichQuyetToan = null,
+    DateTime? NgayQuyetToan = null,
+    decimal? SoTienQuyetToan = null,
+    string? GhiChuQuyetToan = null
 );
 #endregion
 

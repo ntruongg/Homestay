@@ -20,6 +20,20 @@ public class DonDatPhong
     public int SoNguoi { get; set; } = 1;
     [StringLength(30)]
     public string TrangThai { get; set; } = "Pending";
+
+    [StringLength(30)]
+    public string TrangThaiQuyetToan { get; set; } = "ChuaQuyetToan";
+
+    [StringLength(50)]
+    public string? MaGiaoDichQuyetToan { get; set; }
+
+    public DateTime? NgayQuyetToan { get; set; }
+
+    public decimal? SoTienQuyetToan { get; set; }
+
+    [StringLength(255)]
+    public string? GhiChuQuyetToan { get; set; }
+
     public ICollection<ChiTietDon> ChiTietDons { get; set; } = [];
     public ICollection<PhuThu> PhuThus { get; set; } = [];
     public ThanhToan? ThanhToan { get; set; }

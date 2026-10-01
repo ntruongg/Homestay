@@ -132,6 +132,50 @@ namespace HomestaySystem.ViewModels
             set => SetProperty(ref _ghiChuTuChoiHoanTien, value);
         }
 
+        // ================= TRẠNG THÁI DIALOG CHỈNH SỬA THÔNG TIN ĐƠN =================
+        private bool _hienThiDialogChinhSua;
+        private string _suaTenKhachHang = string.Empty;
+        private string _suaSoDienThoai = string.Empty;
+        private string _suaEmail = string.Empty;
+        private string _suaTrangThai = "ChoXacNhan";
+        private string _suaGhiChu = string.Empty;
+
+        public bool HienThiDialogChinhSua
+        {
+            get => _hienThiDialogChinhSua;
+            set => SetProperty(ref _hienThiDialogChinhSua, value);
+        }
+
+        public string SuaTenKhachHang
+        {
+            get => _suaTenKhachHang;
+            set => SetProperty(ref _suaTenKhachHang, value);
+        }
+
+        public string SuaSoDienThoai
+        {
+            get => _suaSoDienThoai;
+            set => SetProperty(ref _suaSoDienThoai, value);
+        }
+
+        public string SuaEmail
+        {
+            get => _suaEmail;
+            set => SetProperty(ref _suaEmail, value);
+        }
+
+        public string SuaTrangThai
+        {
+            get => _suaTrangThai;
+            set => SetProperty(ref _suaTrangThai, value);
+        }
+
+        public string SuaGhiChu
+        {
+            get => _suaGhiChu;
+            set => SetProperty(ref _suaGhiChu, value);
+        }
+
         // Thống kê nhanh
         public int TongSoDon => _tatCaDon.Count;
         public int SoDonChoXacNhan => _tatCaDon.Count(d => d.TrangThai == "Pending" || d.TrangThai == "ChoXacNhan");
@@ -146,10 +190,21 @@ namespace HomestaySystem.ViewModels
         public ICommand MoDialogTuChoiHoanTienCommand { get; }
         public ICommand XacNhanTuChoiHoanTienCommand { get; }
         public ICommand HuyDialogTuChoiHoanTienCommand { get; }
+        public ICommand MoDialogChinhSuaCommand { get; }
+        public ICommand XacNhanChinhSuaCommand { get; }
+        public ICommand HuyDialogChinhSuaCommand { get; }
+        public ICommand DongHoSoCommand { get; }
+        public ICommand XemHoSoCommand { get; }
 
         public QuanLyDonDatViewModel(IAdminService adminService)
         {
             _adminService = adminService;
+
+            DongHoSoCommand = new RelayCommand(() => DonDangChon = null);
+            XemHoSoCommand = new RelayCommand<DonDatPhong>(d =>
+            {
+                if (d != null) DonDangChon = d;
+            });
 
             TaiDuLieuCommand = new RelayCommand(async () => await TaiDanhSachDonDatAsync());
             MoDialogHoanTienCommand = new RelayCommand(ThucHienMoDialogHoanTien, () => DonDangChon != null && DonDangChon.CoTheHoanTien);
@@ -160,7 +215,49 @@ namespace HomestaySystem.ViewModels
             XacNhanTuChoiHoanTienCommand = new RelayCommand(async () => await ThucHienXacNhanTuChoiHoanTienAsync());
             HuyDialogTuChoiHoanTienCommand = new RelayCommand(() => HienThiDialogTuChoiHoanTien = false);
 
+            MoDialogChinhSuaCommand = new RelayCommand(ThucHienMoDialogChinhSua, () => DonDangChon != null);
+            XacNhanChinhSuaCommand = new RelayCommand(async () => await ThucHienXacNhanChinhSuaAsync());
+            HuyDialogChinhSuaCommand = new RelayCommand(() => HienThiDialogChinhSua = false);
+
             _ = TaiDanhSachDonDatAsync();
+        }
+
+        private void ThucHienMoDialogChinhSua()
+        {
+            if (DonDangChon == null) return;
+            SuaTenKhachHang = DonDangChon.TenKhachHang;
+            SuaSoDienThoai = DonDangChon.SoDienThoaiKhach;
+            SuaEmail = DonDangChon.EmailKhach;
+            SuaTrangThai = DonDangChon.TrangThai;
+            SuaGhiChu = DonDangChon.GhiChu;
+            HienThiDialogChinhSua = true;
+        }
+
+        private async Task ThucHienXacNhanChinhSuaAsync()
+        {
+            if (DonDangChon == null) return;
+            if (string.IsNullOrWhiteSpace(SuaTenKhachHang))
+            {
+                MessageBox.Show("Vui lòng nhập tên khách hàng!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            DonDangChon.TenKhachHang = SuaTenKhachHang.Trim();
+            DonDangChon.SoDienThoaiKhach = SuaSoDienThoai.Trim();
+            DonDangChon.EmailKhach = SuaEmail.Trim();
+            DonDangChon.TrangThai = SuaTrangThai;
+            DonDangChon.GhiChu = SuaGhiChu?.Trim() ?? string.Empty;
+
+            DangTaiDuLieu = true;
+            await _adminService.CapNhatDonDatAsync(DonDangChon);
+            DangTaiDuLieu = false;
+
+            OnPropertyChanged(nameof(DonDangChon));
+            CapNhatThongKe();
+            ApDungBoLoc();
+
+            HienThiDialogChinhSua = false;
+            MessageBox.Show($"Đã cập nhật thông tin đơn đặt {DonDangChon.MaDonHienThi} thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         public async Task TaiDanhSachDonDatAsync()
@@ -218,9 +315,9 @@ namespace HomestaySystem.ViewModels
             }
 
             DanhSachHienThi = new ObservableCollection<DonDatPhong>(query.OrderByDescending(d => d.ThoiGianTao));
-            if (DanhSachHienThi.Count > 0 && (DonDangChon == null || !DanhSachHienThi.Contains(DonDangChon)))
+            if (DonDangChon != null && !DanhSachHienThi.Contains(DonDangChon))
             {
-                DonDangChon = DanhSachHienThi[0];
+                DonDangChon = null;
             }
         }
 

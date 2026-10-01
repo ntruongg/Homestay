@@ -18,7 +18,10 @@ public sealed class CreateBookingRequest : IValidatableObject
     [Range(0, 100)]
     public int Children { get; set; } = 0;
 
-    public IReadOnlyList<CreatePhuThuRequest>? ExtraFees { get; set; }
+    public IReadOnlyList<CreateBookingServiceRequest>? Services { get; set; }
+    
+    [StringLength(50)]
+    public string? PromoCode { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
@@ -31,19 +34,23 @@ public sealed class CreateBookingRequest : IValidatableObject
     }
 }
 
-public sealed class CreatePhuThuRequest
+public sealed class CreateBookingServiceRequest
 {
-    [Required, StringLength(100)]
-    public string Name { get; set; } = string.Empty;
+    public int ServiceId { get; set; }
+    [Range(1, 100, ErrorMessage = "Số lượng dịch vụ phải lớn hơn 0")]
     public int Quantity { get; set; } = 1;
-    public decimal Price { get; set; }
-    public string? Note { get; set; }
 }
 
-public sealed record PhuThuResponse(
-    int Id, string Name, int Quantity, decimal UnitPrice, decimal TotalPrice, string? Note);
+public sealed class RequestRefundRequest
+{
+    [Required, StringLength(500)]
+    public string Reason { get; set; } = string.Empty;
+}
+
+public sealed record BookingServiceResponse(
+    int ServiceId, string Name, int Quantity, decimal UnitPrice, decimal TotalPrice);
 
 public sealed record BookingResponse(
     int Id, IReadOnlyList<int> RoomIds, DateTime CheckIn, DateTime CheckOut,
     int GuestCount, int Adults, int Children, string Status, decimal TotalAmount,
-    IReadOnlyList<PhuThuResponse> ExtraFees);
+    IReadOnlyList<BookingServiceResponse> Services, string? PromoCode, decimal DiscountAmount);

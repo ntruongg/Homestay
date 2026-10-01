@@ -2,25 +2,22 @@
 
 @{
     ViewData["Title"] = $"{Model.Name} - Stayly Homestay & Khách sạn";
-    var defaultImages = new List<string>
+    ViewBag.HideFooter = true;
+    // Chỉ hiển thị đúng hình ảnh thực tế của cơ sở, tuyệt đối không chèn thêm ảnh mẫu
+    var propertyImages = new List<string>();
+    if (Model.Images != null && Model.Images.Count > 0)
     {
-        "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80",
-        "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
-        "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80",
-        "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80"
-    };
-
-    var propertyImages = (Model.Images != null && Model.Images.Count > 0)
-        ? Model.Images.ToList()
-        : defaultImages;
-
-    var mainImage = propertyImages.FirstOrDefault() ?? defaultImages[0];
-    var subImages = propertyImages.Skip(1).Take(4).ToList();
-    if (subImages.Count == 0)
-    {
-        subImages = defaultImages.Skip(1).Take(4).ToList();
+        propertyImages.AddRange(Model.Images.Where(img => !string.IsNullOrWhiteSpace(img)));
     }
+
+    // Fallback duy nhất khi cơ sở hoàn toàn chưa có bất kỳ ảnh nào
+    if (propertyImages.Count == 0)
+    {
+        propertyImages.Add("https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=80");
+    }
+
+    var mainImage = propertyImages[0];
+    var subImages = propertyImages.Skip(1).Take(4).ToList();
 
     var minPrice = Model.Rooms.Any() ? Model.Rooms.Min(r => r.CurrentPrice) : 500000m;
     var reviews = ViewBag.Reviews as IReadOnlyList<ReviewItem> ?? Array.Empty<ReviewItem>();
@@ -79,45 +76,84 @@
             </div>
         </div>
 
-        <!-- Bento Photo Gallery -->
+        <!-- Bento Photo Gallery (Chỉ hiển thị đúng số lượng ảnh thực tế của cơ sở) -->
         <div class="property-gallery-bento mb-5">
-            <div class="row g-2">
-                <!-- Main Feature Photo (Left) -->
-                <div class="col-lg-7 col-12">
-                    <div class="gallery-feature-item" onclick="openPhotoModal(0)">
-                        <img src="@mainImage" alt="@Model.Name" class="gallery-img-large" />
-                        <div class="gallery-overlay-tag">
-                            <i class="bi bi-camera-fill me-1"></i> Hình ảnh thực tế
+            @if (propertyImages.Count == 1)
+            {
+                <!-- 1 ảnh duy nhất: Hiển thị full chiều rộng sang trọng -->
+                <div class="gallery-feature-item" onclick="openPhotoModal(0)" style="height: 450px;">
+                    <img src="@mainImage" alt="@Model.Name" class="gallery-img-large" style="height: 100%; object-fit: cover;" />
+                    <div class="gallery-overlay-tag">
+                        <i class="bi bi-camera-fill me-1"></i> Hình ảnh thực tế cơ sở
+                    </div>
+                </div>
+            }
+            else if (propertyImages.Count == 2)
+            {
+                <!-- 2 ảnh thực tế: Chia 2 cột đều nhau -->
+                <div class="row g-2">
+                    <div class="col-md-6 col-12">
+                        <div class="gallery-feature-item" onclick="openPhotoModal(0)" style="height: 440px;">
+                            <img src="@propertyImages[0]" alt="@Model.Name" class="gallery-img-large" style="height: 100%; object-fit: cover;" />
+                            <div class="gallery-overlay-tag">
+                                <i class="bi bi-camera-fill me-1"></i> Hình ảnh 1
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-12">
+                        <div class="gallery-feature-item" onclick="openPhotoModal(1)" style="height: 440px;">
+                            <img src="@propertyImages[1]" alt="@Model.Name" class="gallery-img-large" style="height: 100%; object-fit: cover;" />
+                            <div class="gallery-overlay-tag">
+                                <i class="bi bi-camera-fill me-1"></i> Hình ảnh 2
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn-view-all-photos" onclick="openPhotoModal(0)">
+                    <i class="bi bi-grid-3x3-gap-fill me-2"></i> Xem tất cả hình ảnh (@propertyImages.Count)
+                </button>
+            }
+            else
+            {
+                <!-- 3 ảnh trở lên: 1 ảnh lớn bên trái + các ảnh thực tế bên phải -->
+                <div class="row g-2">
+                    <!-- Main Feature Photo (Left) -->
+                    <div class="col-lg-7 col-12">
+                        <div class="gallery-feature-item" onclick="openPhotoModal(0)">
+                            <img src="@mainImage" alt="@Model.Name" class="gallery-img-large" />
+                            <div class="gallery-overlay-tag">
+                                <i class="bi bi-camera-fill me-1"></i> Hình ảnh thực tế
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sub Photos Grid (Right - Chỉ in số ảnh thực tế) -->
+                    <div class="col-lg-5 col-12">
+                        <div class="row g-2 h-100">
+                            @for (var i = 0; i < subImages.Count; i++)
+                            {
+                                var imgIndex = i + 1;
+                                var colWidth = subImages.Count == 1 ? "col-12" : "col-6";
+                                <div class="@colWidth">
+                                    <div class="gallery-sub-item position-relative" onclick="openPhotoModal(@imgIndex)">
+                                        <img src="@subImages[i]" alt="@Model.Name photo @imgIndex" class="gallery-img-thumb" />
+                                        @if (i == subImages.Count - 1 && propertyImages.Count > 5)
+                                        {
+                                            <div class="gallery-more-overlay">
+                                                <span>+@(propertyImages.Count - 5) ảnh</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
 
-                <!-- Sub Photos Grid (Right) -->
-                <div class="col-lg-5 col-12">
-                    <div class="row g-2 h-100">
-                        @for (var i = 0; i < subImages.Count; i++)
-                        {
-                            var imgIndex = i + 1;
-                            <div class="col-6">
-                                <div class="gallery-sub-item position-relative" onclick="openPhotoModal(@imgIndex)">
-                                    <img src="@subImages[i]" alt="@Model.Name photo @imgIndex" class="gallery-img-thumb" />
-                                    @if (i == subImages.Count - 1 && propertyImages.Count > 5)
-                                    {
-                                        <div class="gallery-more-overlay">
-                                            <span>+@(propertyImages.Count - 5) ảnh</span>
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
-
-            <!-- View All Button -->
-            <button type="button" class="btn-view-all-photos" onclick="openPhotoModal(0)">
-                <i class="bi bi-grid-3x3-gap-fill me-2"></i> Xem tất cả hình ảnh (@propertyImages.Count)
-            </button>
+                <button type="button" class="btn-view-all-photos" onclick="openPhotoModal(0)">
+                    <i class="bi bi-grid-3x3-gap-fill me-2"></i> Xem tất cả hình ảnh (@propertyImages.Count)
+                </button>
+            }
         </div>
 
         <!-- Main Layout: Content (8 cols) & Sticky Booking Widget (4 cols) -->
@@ -461,13 +497,63 @@
                         </div>
 
                         <!-- Guest Count -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-navy">Người lớn</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light rounded-start-pill border-end-0">
+                                        <i class="bi bi-person-fill text-primary"></i>
+                                    </span>
+                                    <input name="Adults" id="bookingAdultsCount" type="number" min="1" max="10" value="2" class="form-control rounded-end-pill border-start-0" required />
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-navy">Trẻ em</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light rounded-start-pill border-end-0">
+                                        <i class="bi bi-person text-primary"></i>
+                                    </span>
+                                    <input name="Children" id="bookingChildrenCount" type="number" min="0" max="5" value="0" class="form-control rounded-end-pill border-start-0" required />
+                                </div>
+                            </div>
+                            <!-- Hidden GuestCount for backwards compatibility -->
+                            <input name="GuestCount" type="hidden" id="bookingGuestCount" value="2" />
+                        </div>
+
+                        <!-- Extra Services -->
+                        @if (Model.Services != null && Model.Services.Count > 0)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-navy">Dịch vụ bổ sung</label>
+                                <div class="services-list bg-light p-3 rounded-4">
+                                    @for (int i = 0; i < Model.Services.Count; i++)
+                                    {
+                                        var svc = Model.Services[i];
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div>
+                                                <div class="fw-bold small">@svc.Name</div>
+                                                <div class="text-muted small">@svc.Price.ToString("N0") ₫</div>
+                                                <input type="hidden" name="Services[@i].ServiceId" value="@svc.Id" />
+                                            </div>
+                                            <div class="input-group input-group-sm" style="width: 100px;">
+                                                <button type="button" class="btn btn-outline-secondary" onclick="updateServiceQty(@i, -1)">-</button>
+                                                <input type="number" name="Services[@i].Quantity" id="svc_qty_@i" class="form-control text-center service-qty" value="0" min="0" data-price="@svc.Price" onchange="calculateBookingTotal()" readonly />
+                                                <button type="button" class="btn btn-outline-secondary" onclick="updateServiceQty(@i, 1)">+</button>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Promo Code -->
                         <div class="mb-3">
-                            <label class="form-label small fw-bold text-navy">Số lượng khách</label>
+                            <label class="form-label small fw-bold text-navy">Mã giảm giá (Nếu có)</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light rounded-start-pill border-end-0">
-                                    <i class="bi bi-people-fill text-primary"></i>
+                                    <i class="bi bi-ticket-perforated-fill text-primary"></i>
                                 </span>
-                                <input name="GuestCount" id="bookingGuestCount" type="number" min="1" max="10" value="2" class="form-control rounded-end-pill border-start-0" required />
+                                <input name="PromoCode" id="bookingPromoCode" type="text" class="form-control rounded-end-pill border-start-0 text-uppercase" placeholder="Nhập mã giảm giá..." />
                             </div>
                         </div>
 
@@ -478,8 +564,8 @@
                                 <span id="breakdownSubtotal">500,000 ₫</span>
                             </div>
                             <div class="d-flex justify-content-between small text-muted mb-2">
-                                <span>Phí dịch vụ &amp; dọn dẹp</span>
-                                <span class="text-success fw-semibold">Miễn phí</span>
+                                <span>Phí dịch vụ thêm</span>
+                                <span class="text-success fw-semibold" id="breakdownServices">0 ₫</span>
                             </div>
                             <div class="d-flex justify-content-between fw-bold text-navy pt-2 border-top">
                                 <span>Tổng tạm tính</span>
@@ -907,13 +993,24 @@
         }
 
         const guestInput = document.getElementById('bookingGuestCount');
-        if (guestInput) {
-            guestInput.max = capacity;
-            if (Number(guestInput.value) > capacity) {
-                guestInput.value = capacity;
+        const adultsInput = document.getElementById('bookingAdultsCount');
+        if (adultsInput) {
+            adultsInput.max = capacity;
+            if (Number(adultsInput.value) > capacity) {
+                adultsInput.value = capacity;
             }
         }
 
+        calculateBookingTotal();
+    }
+
+    function updateServiceQty(idx, change) {
+        const input = document.getElementById(`svc_qty_${idx}`);
+        if (!input) return;
+        let val = parseInt(input.value) || 0;
+        val += change;
+        if (val < 0) val = 0;
+        input.value = val;
         calculateBookingTotal();
     }
 
@@ -938,13 +1035,24 @@
 
         const total = pricePerNight * nights;
 
+        let servicesTotal = 0;
+        document.querySelectorAll('.service-qty').forEach(input => {
+            const qty = parseInt(input.value) || 0;
+            const p = parseFloat(input.dataset.price) || 0;
+            servicesTotal += qty * p;
+        });
+        
+        const finalTotal = total + servicesTotal;
+
         const nightsText = document.getElementById('breakdownNightsText');
         const subtotal = document.getElementById('breakdownSubtotal');
+        const servicesText = document.getElementById('breakdownServices');
         const grandTotal = document.getElementById('breakdownTotal');
 
         if (nightsText) nightsText.textContent = `${pricePerNight.toLocaleString('vi-VN')} ₫ × ${nights} đêm`;
         if (subtotal) subtotal.textContent = `${total.toLocaleString('vi-VN')} ₫`;
-        if (grandTotal) grandTotal.textContent = `${total.toLocaleString('vi-VN')} ₫`;
+        if (servicesText) servicesText.textContent = servicesTotal > 0 ? `${servicesTotal.toLocaleString('vi-VN')} ₫` : '0 ₫';
+        if (grandTotal) grandTotal.textContent = `${finalTotal.toLocaleString('vi-VN')} ₫`;
     }
 
     function validateBookingSubmit(event) {
@@ -953,29 +1061,25 @@
 
         if (!checkIn || !checkOut) {
             event.preventDefault();
-            alert('Vui lòng chọn ngày nhận phòng và ngày trả phòng.');
+            showStaylyToast('error', 'Vui lòng chọn ngày nhận phòng và ngày trả phòng.');
             return false;
         }
 
         if (new Date(checkOut) <= new Date(checkIn)) {
             event.preventDefault();
-            alert('Ngày trả phòng phải sau ngày nhận phòng.');
+            showStaylyToast('error', 'Ngày trả phòng phải sau ngày nhận phòng.');
             return false;
         }
 
-        // Check if user is logged in
-        const user = localStorage.getItem('guestUser');
-        if (!user) {
-            event.preventDefault();
-            showStaylyToast('info', 'Vui lòng đăng nhập để tiến hành gửi yêu cầu đặt phòng!');
-            const authModalEl = document.getElementById('authModal');
-            if (authModalEl) {
-                const modal = new bootstrap.Modal(authModalEl);
-                modal.show();
-            }
-            return false;
-        }
+        const user = document.cookie.includes('token') || document.cookie.includes('.AspNetCore.Session'); // Better check via backend flow, but we let MVC handle it.
+        // The controller will redirect to login if not authenticated anyway.
+
+        const adults = Number(document.getElementById('bookingAdultsCount')?.value || 0);
+        const children = Number(document.getElementById('bookingChildrenCount')?.value || 0);
+        const guestInput = document.getElementById('bookingGuestCount');
+        if (guestInput) guestInput.value = adults + children;
 
         return true;
     }
+
 </script>

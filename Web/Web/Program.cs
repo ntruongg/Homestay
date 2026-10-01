@@ -19,9 +19,10 @@ builder.Services.AddSession(options =>
 });
 
 var app = builder.Build();
+app.UseExceptionHandler("/Home/Error");
+app.UseStatusCodePagesWithReExecute("/Home/Error", "?statusCode={0}");
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
 app.UseHttpsRedirection();

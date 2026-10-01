@@ -1,0 +1,237 @@
+    <!-- Modal 1: Ðang ký co s? luu trú m?i (Create Property Modal) -->
+    <div class="modal fade" id="createPropertyModal" tabindex="-1" aria-labelledby="createPropModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content stayly-modal">
+                <div class="modal-header-accent"></div>
+                <div class="modal-body stayly-modal-body p-4 position-relative">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="brand-icon" style="width: 36px; height: 36px; font-size: 1.1rem;"><i class="bi bi-house-add-fill"></i></span>
+                        <h4 class="fs-5 fw-bold text-navy mb-0" id="createPropModalLabel">Ðang ký co s? luu trú m?i</h4>
+                    </div>
+
+                    <!-- Wizard Progress -->
+                    <div class="progress mb-4" style="height: 8px;">
+                        <div class="progress-bar bg-primary" id="createPropProgress" role="progressbar" style="width: 20%;" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    
+                    <ul class="nav nav-pills nav-justified mb-4 wizard-tabs" id="createPropTabs" role="tablist" style="gap: 10px;">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active rounded-pill fw-bold" id="step1-tab" data-bs-toggle="pill" data-bs-target="#step1" type="button" role="tab" disabled>1. Thông tin chung</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-pill fw-bold" id="step2-tab" data-bs-toggle="pill" data-bs-target="#step2" type="button" role="tab" disabled>2. H? so pháp lý</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-pill fw-bold" id="step3-tab" data-bs-toggle="pill" data-bs-target="#step3" type="button" role="tab" disabled>3. Ti?n ích & ?nh</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-pill fw-bold" id="step4-tab" data-bs-toggle="pill" data-bs-target="#step4" type="button" role="tab" disabled>4. D?ch v?</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-pill fw-bold" id="step5-tab" data-bs-toggle="pill" data-bs-target="#step5" type="button" role="tab" disabled>5. C?u hình phòng</button>
+                        </li>
+                    </ul>
+
+                    <form asp-action="CreateProperty" method="post" enctype="multipart/form-data" id="createPropertyForm" novalidate>
+                        @Html.AntiForgeryToken()
+                        
+                        <div class="tab-content" id="createPropTabsContent">
+                            <!-- STEP 1: THÔNG TIN CHUNG -->
+                            <div class="tab-pane fade show active" id="step1" role="tabpanel">
+                                <div class="p-4 bg-light rounded-4 mb-3 border">
+                                    <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-info-circle-fill text-primary me-1"></i> Thông tin co s? & Liên h?</h6>
+                                    <div class="row g-3 mb-4">
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Tên co s? luu trú *</label>
+                                            <input name="Name" id="createPropName" class="form-control rounded-pill" placeholder="Ví d?: Stayly Pine Hill Villa" required />
+                                            <div class="invalid-feedback">Vui lòng nh?p tên co s? luu trú.</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Lo?i hình luu trú *</label>
+                                            <select name="Type" id="createPropTypeSelect" class="form-select rounded-pill" onchange="toggleCreatePropertyType(this.value)">
+                                                <option value="Homestay">Homestay (Thuê nguyên can)</option>
+                                                <option value="Hotel">Khách s?n (Hotel - Nhi?u phòng)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">S? di?n tho?i dón khách *</label>
+                                            <input name="Phone" id="createPropPhone" class="form-control rounded-pill" placeholder="Ví d?: 0901234567" required />
+                                            <div class="invalid-feedback">Vui lòng nh?p s? di?n tho?i h?p l?.</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Email liên h? *</label>
+                                            <input name="Email" id="createPropEmail" type="email" class="form-control rounded-pill" placeholder="contact@homestay.com" required />
+                                            <div class="invalid-feedback">Vui lòng nh?p d?a ch? email h?p l?.</div>
+                                        </div>
+                                    </div>
+
+                                    <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-geo-alt-fill text-primary me-1"></i> V? trí & Ð?a ch?</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">T?nh / Thành ph? *</label>
+                                            <input name="City" id="createPropCity" class="form-control rounded-pill" placeholder="Ch?n ho?c nh?p T?nh / Thành ph?" required autocomplete="off" />
+                                            <div class="invalid-feedback">Vui lòng nh?p T?nh / Thành ph?.</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Phu?ng / Xã</label>
+                                            <input name="Ward" id="createPropWard" class="form-control rounded-pill" placeholder="Ch?n ho?c nh?p Phu?ng / Xã" autocomplete="off" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Ð?a ch? s? nhà, tên du?ng *</label>
+                                            <input name="Address" id="createPropAddress" class="form-control rounded-pill" placeholder="Ví d?: 14/2 Kh?i Nghia B?c Son" required />
+                                            <div class="invalid-feedback">Vui lòng nh?p d?a ch? c? th?.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end">
+                                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="nextWizardStep(2)">Ti?p t?c <i class="bi bi-arrow-right"></i></button>
+                                </div>
+                            </div>
+                            
+                            <!-- STEP 2: H? SO PHÁP LÝ -->
+                            <div class="tab-pane fade" id="step2" role="tabpanel">
+                                <div class="p-4 bg-light rounded-4 mb-3 border">
+                                    <h6 class="fw-bold text-navy small mb-2"><i class="bi bi-shield-check text-primary me-1"></i> H? so pháp lý th?m d?nh (WPF Admin ki?m duy?t)</h6>
+                                    <p class="text-muted small mb-3">T?i lên t?p ?nh ho?c PDF rõ nét d? Admin xác th?c pháp lý co s?.</p>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Gi?y phép kinh doanh *</label>
+                                            <input name="BusinessLicenseFile" id="createPropBusinessLicense" type="file" class="form-control rounded-pill" accept="image/*,.pdf" required />
+                                            <div class="invalid-feedback">Vui lòng t?i lên Gi?y phép KD.</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Ch?ng nh?n PCCC *</label>
+                                            <input name="FireSafetyDocumentFile" id="createPropFireSafety" type="file" class="form-control rounded-pill" accept="image/*,.pdf" required />
+                                            <div class="invalid-feedback">Vui lòng t?i lên Ch?ng nh?n PCCC.</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Gi?y t? ANTT *</label>
+                                            <input name="SecurityDocumentFile" id="createPropSecurity" type="file" class="form-control rounded-pill" accept="image/*,.pdf" required />
+                                            <div class="invalid-feedback">Vui lòng t?i lên Gi?y t? ANTT.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" onclick="prevWizardStep(1)"><i class="bi bi-arrow-left"></i> Quay l?i</button>
+                                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="nextWizardStep(3)">Ti?p t?c <i class="bi bi-arrow-right"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- STEP 3: TI?N ÍCH & ?NH -->
+                            <div class="tab-pane fade" id="step3" role="tabpanel">
+                                <div class="p-4 bg-light rounded-4 mb-3 border">
+                                    <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-stars text-primary me-1"></i> Ti?n ích chung c?a co s?</h6>
+                                    <div class="d-flex flex-wrap gap-2 mb-4">
+                                        @foreach (var a in Model.AvailableAmenities)
+                                        {
+                                            <div class="form-check form-check-inline amenity-chip m-0">
+                                                <input class="form-check-input" type="checkbox" name="AmenityIds" value="@a.Id" id="createAmenity_@a.Id">
+                                                <label class="form-check-label small" for="createAmenity_@a.Id">@a.Name</label>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <h6 class="fw-bold text-navy small mb-2"><i class="bi bi-card-checklist text-primary me-1"></i> Chính sách & Quy d?nh</h6>
+                                    <div class="mb-4">
+                                        <textarea name="Policy" id="createPropPolicy" class="form-control rounded-4 p-3" rows="3" placeholder="Th?i gian nh?n/tr? phòng, quy d?nh thú cung, v.v." minlength="20"></textarea>
+                                        <div class="invalid-feedback">Chính sách ph?i dài ít nh?t 20 ký t?.</div>
+                                    </div>
+
+                                    <h6 class="fw-bold text-navy small mb-2"><i class="bi bi-images text-primary me-1"></i> Hình ?nh khuôn viên co s? *</h6>
+                                    <div>
+                                        <input name="PhotoFiles" id="createPropPhotos" type="file" class="form-control rounded-pill" multiple accept="image/*" required />
+                                        <div class="invalid-feedback">Vui lòng t?i lên ít nh?t 1 ?nh khuôn viên.</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" onclick="prevWizardStep(2)"><i class="bi bi-arrow-left"></i> Quay l?i</button>
+                                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="nextWizardStep(4)">Ti?p t?c <i class="bi bi-arrow-right"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- STEP 4: D?CH V? -->
+                            <div class="tab-pane fade" id="step4" role="tabpanel">
+                                <div class="p-4 bg-light rounded-4 mb-3 border">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="fw-bold text-navy small mb-0"><i class="bi bi-box-seam text-primary me-1"></i> Danh sách d?ch v?</h6>
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="addCreatePropertyServiceRow()">
+                                            <i class="bi bi-plus-lg"></i> Thêm d?ch v?
+                                        </button>
+                                    </div>
+                                    <div id="createPropServicesContainer">
+                                        <!-- Service rows will be generated here -->
+                                    </div>
+                                    <div class="text-muted small text-center mt-3" id="createPropNoServiceText">Chua có d?ch v? nào. B?m "Thêm d?ch v?" n?u co s? c?a b?n có cung c?p d?ch v? b? sung.</div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" onclick="prevWizardStep(3)"><i class="bi bi-arrow-left"></i> Quay l?i</button>
+                                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="nextWizardStep(5)">Ti?p t?c <i class="bi bi-arrow-right"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- STEP 5: C?U HÌNH -->
+                            <div class="tab-pane fade" id="step5" role="tabpanel">
+                                <div class="p-4 bg-light rounded-4 mb-3 border">
+                                    <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-gear-fill text-primary me-1"></i> C?u hình phòng</h6>
+                                    
+                                    <!-- Panel Homestay -->
+                                    <div id="createHomestayConfigPanel">
+                                        <div class="alert alert-info py-2 px-3 small rounded-3 mb-3">
+                                            <i class="bi bi-info-circle me-1"></i> <strong>Homestay nguyên can:</strong> B?n s? t?o thông tin cho toàn b? khu nhà.
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold">Giá thuê tr?n gói / dêm (?) *</label>
+                                                <input name="HomestayPrice" id="createPropHomestayPrice" type="number" step="10000" min="50000" value="650000" class="form-control rounded-pill" />
+                                                <div class="invalid-feedback">Giá thuê t?i thi?u t? 50.000 ?/dêm.</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold">Phân lo?i không gian</label>
+                                                <select name="HomestayRoomTypeId" id="createPropHomestayRoomTypeId" class="form-select rounded-pill">
+                                                    @foreach (var rt in Model.AvailableRoomTypes)
+                                                    {
+                                                        <option value="@rt.Id">@rt.Name</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold">S? lu?ng ngu?i l?n t?i da *</label>
+                                                <input name="HomestayAdultCapacity" id="createPropHomestayAdultCap" type="number" min="1" value="2" class="form-control rounded-pill" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold">S? lu?ng tr? em t?i da *</label>
+                                                <input name="HomestayChildCapacity" id="createPropHomestayChildCap" type="number" min="0" value="1" class="form-control rounded-pill" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Panel Hotel -->
+                                    <div id="createHotelConfigPanel" class="d-none">
+                                        <div class="alert alert-primary py-2 px-3 small rounded-3 mb-3">
+                                            <i class="bi bi-building me-1"></i> <strong>Khách s?n (Hotel):</strong> Nh?p s? lu?ng phòng mu?n t?o ban d?u (1 - 3). M?i phòng s? có giá và s?c ch?a riêng.
+                                        </div>
+                                        <div class="mb-4">
+                                            <label class="form-label small fw-bold">S? lu?ng phòng t?o s?n (1-3) *</label>
+                                            <input type="number" id="createPropHotelRoomCount" class="form-control rounded-pill" style="max-width:200px;" min="1" max="3" value="1" onchange="generateHotelRoomForms()" />
+                                        </div>
+                                        
+                                        <div id="createPropHotelRoomsContainer">
+                                            <!-- Hotel room forms generated here -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" onclick="prevWizardStep(4)"><i class="bi bi-arrow-left"></i> Quay l?i</button>
+                                    <button type="button" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" onclick="submitCreatePropertyForm(event)">
+                                        <i class="bi bi-send-fill me-1"></i> Hoàn t?t & G?i h? so
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>

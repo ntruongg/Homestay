@@ -1,0 +1,86 @@
+@model ErrorViewModel
+
+@{
+    ViewData["Title"] = $"{Model.StatusCode} - {Model.Title} | Stayly";
+    var iconClass = Model.StatusCode switch
+    {
+        404 => "bi-compass",
+        403 => "bi-shield-lock-fill",
+        401 => "bi-person-x-fill",
+        400 => "bi-exclamation-octagon-fill",
+        _ => "bi-exclamation-triangle-fill"
+    };
+
+    var accentColor = Model.StatusCode switch
+    {
+        404 => "#0077b6",
+        403 => "#d97706",
+        401 => "#0284c7",
+        _ => "#e11d48"
+    };
+}
+
+<div class="stayly-error-page py-5">
+    <div class="container py-md-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-7 col-md-9 text-center">
+                <!-- Error Card Container -->
+                <div class="card border-0 p-4 p-md-5" style="border-radius: 28px; box-shadow: var(--stayly-shadow-lg); background: #ffffff;">
+                    <!-- Top Icon Bubble -->
+                    <div class="d-inline-flex align-items-center justify-content-center mx-auto mb-4" 
+                         style="width: 96px; height: 96px; border-radius: 24px; background: var(--stayly-light-accent); color: @accentColor; font-size: 2.8rem; box-shadow: 0 10px 24px rgba(0, 119, 182, 0.12);">
+                        <i class="bi @iconClass"></i>
+                    </div>
+
+                    <!-- Status Code Badge -->
+                    <div class="mb-2">
+                        <span class="badge rounded-pill px-3 py-2 fw-bold text-uppercase" 
+                              style="background-color: var(--stayly-light-accent); color: var(--stayly-navy); font-size: 0.85rem; letter-spacing: 0.05em;">
+                            Mã trạng thái: @Model.StatusCode
+                        </span>
+                    </div>
+
+                    <!-- Heading -->
+                    <h1 class="fw-bold mb-3" style="color: var(--stayly-navy); font-size: 2rem;">
+                        @Model.Title
+                    </h1>
+
+                    <!-- Message -->
+                    <p class="text-muted fs-6 mb-4 mx-auto" style="max-width: 480px; line-height: 1.6;">
+                        @Model.Message
+                    </p>
+
+                    @if (Model.ShowRequestId)
+                    {
+                        <div class="p-2 px-3 bg-light rounded-pill d-inline-block mx-auto mb-4 small text-muted font-monospace">
+                            Mã phiên yêu cầu: @Model.RequestId
+                        </div>
+                    }
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap pt-2">
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                            <i class="bi bi-house-door-fill"></i>
+                            <span>Về trang chủ</span>
+                        </a>
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center gap-2" onclick="window.history.back()">
+                            <i class="bi bi-arrow-left"></i>
+                            <span>Quay lại</span>
+                        </button>
+                        <button type="button" class="btn btn-light text-navy rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1 border" onclick="window.location.reload()">
+                            <i class="bi bi-arrow-clockwise"></i>
+                            <span>Thử lại</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Helpful Links Footer -->
+                <div class="mt-4 text-muted small">
+                    Cần hỗ trợ gấp? Liên hệ tổng đài Stayly qua email: 
+                    <a href="mailto:support@stayly.vn" class="text-primary text-decoration-none fw-semibold">support@stayly.vn</a> 
+                    hoặc Hotline: <strong class="text-navy">1900 6868</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -22,7 +22,7 @@
 <body>
     <!-- 1. Navigation Bar (Sticky, Soft Shadow, Monochromatic Ocean Blue) -->
     <header class="site-header">
-        <div class="container">
+        <div class="container-fluid px-3 px-md-4 px-xl-5">
             <nav class="site-navbar">
                 <!-- Left: Brand Logo -->
                 <a class="stayly-brand" asp-controller="Home" asp-action="Index">
@@ -109,81 +109,85 @@
         @RenderBody()
     </main>
 
-    <!-- 5. Footer (Light Accent Background, Dark Typography, 3 Columns) -->
-    <footer class="site-footer">
-        <div class="container">
-            <div class="row g-4">
-                <!-- Cột 1: Giới thiệu -->
-                <div class="col-lg-4 col-md-6">
-                    <div class="footer-col">
-                        <div class="stayly-brand mb-3">
-                            <span class="brand-icon"><i class="bi bi-water"></i></span>
-                            <span>Stayly</span>
+    @{
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+        var hideFooter = ViewBag.HideFooter == true 
+                         || string.Equals(currentAction, "Dashboard", StringComparison.OrdinalIgnoreCase) 
+                         || string.Equals(currentAction, "Details", StringComparison.OrdinalIgnoreCase);
+    }
+    @if (!hideFooter)
+    {
+        <!-- 5. Footer (Light Accent Background, Dark Typography, 3 Columns) -->
+        <footer class="site-footer">
+            <div class="container-fluid px-3 px-md-4 px-xl-5">
+                <div class="row g-4">
+                    <!-- Cột 1: Giới thiệu -->
+                    <div class="col-lg-4 col-md-6">
+                        <div class="footer-col">
+                            <div class="stayly-brand mb-3">
+                                <span class="brand-icon"><i class="bi bi-water"></i></span>
+                                <span>Stayly</span>
+                            </div>
+                            <p class="footer-desc">
+                                Nền tảng kết nối homestay và không gian nghỉ dưỡng độc đáo hàng đầu. Mang đến trải nghiệm nghỉ dưỡng mềm mại, ấm cúng và đáng nhớ cho mọi hành trình của bạn.
+                            </p>
+                            <div class="d-flex flex-column gap-2 text-muted small">
+                                <div><i class="bi bi-geo-alt-fill text-primary me-2"></i> Trụ sở: Tòa nhà Stayly Hub, Quận 1, TP. Hồ Chí Minh</div>
+                                <div><i class="bi bi-envelope-fill text-primary me-2"></i> Email: support@stayly.vn</div>
+                                <div><i class="bi bi-telephone-fill text-primary me-2"></i> Hotline: 1900 6868 (8:00 - 22:00)</div>
+                            </div>
                         </div>
-                        <p class="footer-desc">
-                            Nền tảng kết nối homestay và không gian nghỉ dưỡng độc đáo hàng đầu. Mang đến trải nghiệm nghỉ dưỡng mềm mại, ấm cúng và đáng nhớ cho mọi hành trình của bạn.
-                        </p>
-                        <div class="d-flex flex-column gap-2 text-muted small">
-                            <div><i class="bi bi-geo-alt-fill text-primary me-2"></i> Trụ sở: Tòa nhà Stayly Hub, Quận 1, TP. Hồ Chí Minh</div>
-                            <div><i class="bi bi-envelope-fill text-primary me-2"></i> Email: support@stayly.vn</div>
-                            <div><i class="bi bi-telephone-fill text-primary me-2"></i> Hotline: 1900 6868 (8:00 - 22:00)</div>
+                    </div>
+
+                    <!-- Cột 2: Hỗ trợ khách hàng -->
+                    <div class="col-lg-4 col-md-6">
+                        <div class="footer-col ps-lg-4">
+                            <h5 class="footer-col-title">Hỗ trợ khách hàng</h5>
+                            <ul class="footer-links-list">
+                                <li><a asp-controller="Home" asp-action="GeneralPolicy">Điều khoản & Chính sách chung</a></li>
+                                <li><a asp-controller="Home" asp-action="Register" asp-route-partner="true">Đăng ký trở thành chủ nhà đối tác</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Cột 3: Mạng xã hội & Phương thức thanh toán -->
+                    <div class="col-lg-4 col-md-12">
+                        <div class="footer-col">
+                            <h5 class="footer-col-title">Kết nối &amp; Thanh toán</h5>
+                            <p class="footer-desc mb-3">Theo dõi Stayly trên các kênh truyền thông để cập nhật ưu đãi mới nhất mỗi ngày:</p>
+                            
+                            <!-- Social Icons -->
+                            <div class="social-icons-row">
+                                <a href="https://facebook.com" target="_blank" class="social-circle-btn" title="Facebook"><i class="bi bi-facebook"></i></a>
+                                <a href="https://instagram.com" target="_blank" class="social-circle-btn" title="Instagram"><i class="bi bi-instagram"></i></a>
+                                <a href="https://tiktok.com" target="_blank" class="social-circle-btn" title="TikTok"><i class="bi bi-tiktok"></i></a>
+                                <a href="https://youtube.com" target="_blank" class="social-circle-btn" title="YouTube"><i class="bi bi-youtube"></i></a>
+                            </div>
+
+                            <!-- Payment methods -->
+                            <h6 class="fw-bold mb-2 text-dark small text-uppercase">Phương thức thanh toán an toàn</h6>
+                            <div class="payment-badges-row">
+                                <span class="payment-badge"><i class="bi bi-credit-card-2-front text-primary me-1"></i> Visa / Master</span>
+                                <span class="payment-badge"><i class="bi bi-qr-code text-primary me-1"></i> VNPay-QR</span>
+                                <span class="payment-badge"><i class="bi bi-wallet2 text-primary me-1"></i> MoMo</span>
+                                <span class="payment-badge"><i class="bi bi-bank text-primary me-1"></i> Chuyển khoản</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Cột 2: Hỗ trợ khách hàng -->
-                <div class="col-lg-4 col-md-6">
-                    <div class="footer-col ps-lg-4">
-                        <h5 class="footer-col-title">Hỗ trợ khách hàng</h5>
-                        <ul class="footer-links-list">
-                            <li><a href="javascript:void(0)" onclick="showFeatureNotice('Hướng dẫn đặt phòng')">Hướng dẫn đặt homestay</a></li>
-                            <li><a href="javascript:void(0)" onclick="showFeatureNotice('Chính sách hủy & hoàn tiền')">Chính sách hủy &amp; hoàn tiền</a></li>
-                            <li><a href="javascript:void(0)" onclick="showFeatureNotice('Quy chế hoạt động')">Quy chế hoạt động Stayly</a></li>
-                            <li><a href="javascript:void(0)" onclick="showFeatureNotice('Chính sách bảo mật')">Chính sách bảo mật thông tin</a></li>
-                            <li><a asp-controller="Home" asp-action="Register" asp-route-partner="true">Đăng ký trở thành chủ nhà đối tác</a></li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Cột 3: Mạng xã hội & Phương thức thanh toán -->
-                <div class="col-lg-4 col-md-12">
-                    <div class="footer-col">
-                        <h5 class="footer-col-title">Kết nối &amp; Thanh toán</h5>
-                        <p class="footer-desc mb-3">Theo dõi Stayly trên các kênh truyền thông để cập nhật ưu đãi mới nhất mỗi ngày:</p>
-                        
-                        <!-- Social Icons -->
-                        <div class="social-icons-row">
-                            <a href="https://facebook.com" target="_blank" class="social-circle-btn" title="Facebook"><i class="bi bi-facebook"></i></a>
-                            <a href="https://instagram.com" target="_blank" class="social-circle-btn" title="Instagram"><i class="bi bi-instagram"></i></a>
-                            <a href="https://tiktok.com" target="_blank" class="social-circle-btn" title="TikTok"><i class="bi bi-tiktok"></i></a>
-                            <a href="https://youtube.com" target="_blank" class="social-circle-btn" title="YouTube"><i class="bi bi-youtube"></i></a>
-                        </div>
-
-                        <!-- Payment methods -->
-                        <h6 class="fw-bold mb-2 text-dark small text-uppercase">Phương thức thanh toán an toàn</h6>
-                        <div class="payment-badges-row">
-                            <span class="payment-badge"><i class="bi bi-credit-card-2-front text-primary me-1"></i> Visa / Master</span>
-                            <span class="payment-badge"><i class="bi bi-qr-code text-primary me-1"></i> VNPay-QR</span>
-                            <span class="payment-badge"><i class="bi bi-wallet2 text-primary me-1"></i> MoMo</span>
-                            <span class="payment-badge"><i class="bi bi-bank text-primary me-1"></i> Chuyển khoản</span>
-                        </div>
+                <!-- Bottom Copyright Bar -->
+                <div class="footer-bottom-bar">
+                    <div>&copy; 2026 Stayly. Bản quyền thuộc về Stayly. Thiết kế phong cách Soft &amp; Harmonious.</div>
+                    <div class="d-flex gap-3">
+                        <a asp-controller="Home" asp-action="GeneralPolicy">Điều khoản & Bảo mật</a>
+                        <span>&bull;</span>
+                        <a href="javascript:void(0)" onclick="showFeatureNotice('Sơ đồ trang web')">Sitemap</a>
                     </div>
                 </div>
             </div>
-
-            <!-- Bottom Copyright Bar -->
-            <div class="footer-bottom-bar">
-                <div>&copy; 2026 Stayly. Bản quyền thuộc về Stayly. Thiết kế phong cách Soft &amp; Harmonious.</div>
-                <div class="d-flex gap-3">
-                    <a href="javascript:void(0)" onclick="showFeatureNotice('Điều khoản dịch vụ')">Điều khoản</a>
-                    <span>&bull;</span>
-                    <a href="javascript:void(0)" onclick="showFeatureNotice('Bảo mật')">Bảo mật</a>
-                    <span>&bull;</span>
-                    <a href="javascript:void(0)" onclick="showFeatureNotice('Sơ đồ trang web')">Sitemap</a>
-                </div>
-            </div>
-        </div>
-    </footer>
+        </footer>
+    }
 
     <!-- ==========================================================================
          2. Modal Đăng nhập / Đăng ký (Bo tròn góc 24px, Toggle bằng Vanilla JS)
@@ -250,17 +254,19 @@
                             <p>Đăng ký thành viên nhanh chóng và hoàn toàn miễn phí.</p>
                         </div>
 
-                        <form id="ajaxRegisterForm" onsubmit="handleAjaxRegister(event)">
+                        <form id="ajaxRegisterForm" onsubmit="handleAjaxRegister(event)" novalidate>
                             <div class="modal-form-group">
-                                <label class="modal-form-label" for="regFullName">Họ và tên</label>
-                                <input type="text" id="regFullName" class="modal-input-field" placeholder="Nguyễn Văn A" required>
+                                <label class="modal-form-label" for="regFullName">Họ và tên <span class="text-danger">*</span></label>
+                                <input type="text" id="regFullName" class="modal-input-field" placeholder="Nguyễn Văn A" autocomplete="name">
+                                <div class="field-error-text" id="regFullNameError"></div>
                             </div>
 
                             <div class="row g-2">
                                 <div class="col-7">
                                     <div class="modal-form-group">
-                                        <label class="modal-form-label" for="regPhone">Số điện thoại</label>
-                                        <input type="tel" id="regPhone" class="modal-input-field" placeholder="0912345678" required>
+                                        <label class="modal-form-label" for="regPhone">Số điện thoại <span class="text-danger">*</span></label>
+                                        <input type="tel" id="regPhone" class="modal-input-field" placeholder="0912345678" autocomplete="tel">
+                                        <div class="field-error-text" id="regPhoneError"></div>
                                     </div>
                                 </div>
                                 <div class="col-5">
@@ -275,22 +281,25 @@
                             </div>
 
                             <div class="modal-form-group">
-                                <label class="modal-form-label" for="regDob">Ngày sinh</label>
+                                <label class="modal-form-label" for="regDob">Ngày sinh <span class="text-danger">*</span></label>
                                 <input type="date" id="regDob" class="modal-input-field">
+                                <div class="field-error-text" id="regDobError"></div>
                             </div>
 
                             <div class="modal-form-group">
-                                <label class="modal-form-label" for="regEmail">Email</label>
-                                <input type="email" id="regEmail" class="modal-input-field" placeholder="vidu@gmail.com" required autocomplete="email">
+                                <label class="modal-form-label" for="regEmail">Email <span class="text-danger">*</span></label>
+                                <input type="email" id="regEmail" class="modal-input-field" placeholder="vidu@gmail.com" autocomplete="email">
+                                <div class="field-error-text" id="regEmailError"></div>
                             </div>
 
                             <div class="modal-form-group">
-                                <label class="modal-form-label" for="regPassword">Mật khẩu (tối thiểu 8 ký tự)</label>
-                                <input type="password" id="regPassword" class="modal-input-field" placeholder="Tạo mật khẩu an toàn" minlength="8" required autocomplete="new-password">
+                                <label class="modal-form-label" for="regPassword">Mật khẩu (tối thiểu 8 ký tự) <span class="text-danger">*</span></label>
+                                <input type="password" id="regPassword" class="modal-input-field" placeholder="Tạo mật khẩu an toàn" autocomplete="new-password">
+                                <div class="field-error-text" id="regPasswordError"></div>
                             </div>
 
                             <button type="submit" class="btn-modal-submit" id="registerSubmitBtn">
-                                <span>Đăng ký tài khoản</span>
+                                <span>Tiếp tục &amp; Nhận mã OTP</span>
                             </button>
                         </form>
 
@@ -298,6 +307,52 @@
                         <div class="modal-switch-prompt">
                             Đã có tài khoản Stayly? 
                             <a href="javascript:void(0)" id="toggleToLoginBtn" onclick="toggleAuthModalView('login')">Đăng nhập ngay</a>
+                        </div>
+                    </div>
+
+                    <!-- FORM 3: XÁC THỰC MÃ OTP (Gửi về Email) -->
+                    <div id="registerOtpContainer" class="d-none">
+                        <div class="modal-brand-header">
+                            <span class="brand-icon"><i class="bi bi-shield-lock-fill"></i></span>
+                            <h4>Xác thực mã OTP</h4>
+                            <p>
+                                Chúng tôi đã gửi mã xác thực 6 chữ số đến email:
+                                <br><strong id="guestOtpEmailDisplay" class="text-navy"></strong>
+                            </p>
+                        </div>
+
+                        <div id="modalOtpAlert" class="stayly-alert stayly-alert-error d-none mb-3"></div>
+
+                        <form id="ajaxOtpConfirmForm" onsubmit="handleAjaxOtpConfirm(event)" novalidate>
+                            <div class="modal-form-group text-center">
+                                <label class="modal-form-label mb-2" for="guestOtpInput">Nhập mã 6 chữ số</label>
+                                <input type="text"
+                                       id="guestOtpInput"
+                                       class="modal-input-field text-center fw-bold fs-3"
+                                       maxlength="6"
+                                       inputmode="numeric"
+                                       pattern="[0-9]{6}"
+                                       placeholder="· · · · · ·"
+                                       style="letter-spacing: 10px; font-family: monospace;">
+                                <div class="field-error-text text-center" id="guestOtpInputError"></div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-3 small text-muted">
+                                <span>Hết hạn trong: <strong id="guestOtpCountdown" class="text-primary">10:00</strong></span>
+                                <button type="button" class="btn btn-link p-0 text-decoration-none small" id="guestResendOtpBtn" onclick="resendGuestOtp()" disabled>
+                                    Gửi lại mã (<span id="guestResendCount">60s</span>)
+                                </button>
+                            </div>
+
+                            <button type="submit" class="btn-modal-submit" id="confirmGuestOtpBtn">
+                                <span>Xác nhận &amp; Hoàn tất đăng ký</span>
+                            </button>
+                        </form>
+
+                        <div class="text-center mt-3 pt-2">
+                            <a href="javascript:void(0)" onclick="toggleAuthModalView('register')" class="small text-muted text-decoration-none">
+                                &larr; Quay lại chỉnh sửa thông tin
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -362,6 +417,9 @@
 
     <!-- Bootstrap 5.3 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <!-- Vietnam Address & Autocomplete Service -->
+    <script src="~/js/vn-address-api.js" asp-append-version="true"></script>
 
     <!-- Global Client-side Authentication & Feature Notice Scripts -->
     <script>
@@ -455,36 +513,106 @@
             }
         }
 
-        // Vanilla JS Toggle between Login and Register inside Auth Modal
+        // Vanilla JS Toggle between Login, Register, and OTP views inside Auth Modal
         function toggleAuthModalView(view) {
             const loginBox = document.getElementById('loginFormContainer');
             const registerBox = document.getElementById('registerFormContainer');
+            const otpBox = document.getElementById('registerOtpContainer');
             const alertBox = document.getElementById('modalAuthAlert');
+            const otpAlertBox = document.getElementById('modalOtpAlert');
 
             if (alertBox) {
                 alertBox.classList.add('d-none');
                 alertBox.textContent = '';
             }
+            if (otpAlertBox) {
+                otpAlertBox.classList.add('d-none');
+                otpAlertBox.textContent = '';
+            }
+
+            clearAllValidationErrors();
 
             if (view === 'register') {
                 loginBox.classList.add('d-none');
+                otpBox.classList.add('d-none');
                 registerBox.classList.remove('d-none');
                 const firstInput = registerBox.querySelector('input');
                 if (firstInput) setTimeout(() => firstInput.focus(), 150);
+            } else if (view === 'otp') {
+                loginBox.classList.add('d-none');
+                registerBox.classList.add('d-none');
+                otpBox.classList.remove('d-none');
+                const otpInput = document.getElementById('guestOtpInput');
+                if (otpInput) setTimeout(() => otpInput.focus(), 150);
             } else {
                 registerBox.classList.add('d-none');
+                otpBox.classList.add('d-none');
                 loginBox.classList.remove('d-none');
                 const firstInput = loginBox.querySelector('input');
                 if (firstInput) setTimeout(() => firstInput.focus(), 150);
             }
         }
 
+        function setFieldError(fieldId, errorId, message) {
+            const field = document.getElementById(fieldId);
+            const errEl = document.getElementById(errorId);
+            if (field) {
+                field.classList.add('is-invalid');
+            }
+            if (errEl) {
+                errEl.textContent = message;
+                errEl.classList.add('show');
+            }
+        }
+
+        function clearFieldError(fieldId, errorId) {
+            const field = document.getElementById(fieldId);
+            const errEl = document.getElementById(errorId);
+            if (field) {
+                field.classList.remove('is-invalid');
+            }
+            if (errEl) {
+                errEl.textContent = '';
+                errEl.classList.remove('show');
+            }
+        }
+
+        function clearAllValidationErrors() {
+            ['regFullName', 'regPhone', 'regEmail', 'regPassword', 'guestOtpInput'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('is-invalid');
+                const err = document.getElementById(id + 'Error');
+                if (err) {
+                    err.textContent = '';
+                    err.classList.remove('show');
+                }
+            });
+        }
+
+        // Setup real-time error clearing when user types
+        document.addEventListener('DOMContentLoaded', function () {
+            ['regFullName', 'regPhone', 'regEmail', 'regPassword', 'guestOtpInput'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', () => clearFieldError(id, id + 'Error'));
+                    el.addEventListener('change', () => clearFieldError(id, id + 'Error'));
+                }
+            });
+        });
+
         // Check localStorage.getItem('guestUser') on page load to dynamically adapt Navbar
         document.addEventListener('DOMContentLoaded', function () {
             syncNavbarAuth();
         });
 
-        function syncNavbarAuth() {
+        function syncNavbarAuth(isAfterLogin = false) {
+            const serverUserStr = '@Html.Raw(Context.Session.GetString("userName") ?? "")';
+            if (!serverUserStr && !isAfterLogin) {
+                // Server session is dead or expired, clear local storage to stay in sync
+                localStorage.removeItem('guestUser');
+                localStorage.removeItem('guestToken');
+            }
+
             const navAuthArea = document.getElementById('navAuthArea');
             if (!navAuthArea) return;
 
@@ -554,7 +682,7 @@
                     if (modal) modal.hide();
 
                     // Update Navbar immediately
-                    syncNavbarAuth();
+                    syncNavbarAuth(true);
                     showStaylyToast('success', `Chào mừng ${data.user.fullName || 'bạn'} đã đăng nhập thành công!`);
 
                     // If on details or specific page, reload to sync server context
@@ -574,40 +702,187 @@
             }
         }
 
-        // AJAX Register Handler
+        // State for pending guest registration and OTP timers
+        let pendingGuestData = null;
+        let guestOtpCountdownTimer = null;
+        let guestResendCooldownTimer = null;
+
+        // AJAX Register Handler - Step 1: Client Validation & OTP Send
         async function handleAjaxRegister(event) {
             event.preventDefault();
-            const fullName = document.getElementById('regFullName').value.trim();
-            const phone = document.getElementById('regPhone').value.trim();
-            const email = document.getElementById('regEmail').value.trim();
-            const password = document.getElementById('regPassword').value;
-            const dob = document.getElementById('regDob').value || null;
-            const gender = document.getElementById('regGender').value || 'M';
+            clearAllValidationErrors();
+
+            const fullNameInput = document.getElementById('regFullName');
+            const phoneInput = document.getElementById('regPhone');
+            const emailInput = document.getElementById('regEmail');
+            const passwordInput = document.getElementById('regPassword');
+            const dobInput = document.getElementById('regDob');
+            const genderInput = document.getElementById('regGender');
             const submitBtn = document.getElementById('registerSubmitBtn');
             const alertBox = document.getElementById('modalAuthAlert');
 
-            alertBox.classList.add('d-none');
+            if (alertBox) alertBox.classList.add('d-none');
+
+            const fullName = fullNameInput ? fullNameInput.value.trim() : '';
+            const phone = phoneInput ? phoneInput.value.trim() : '';
+            const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+            const password = passwordInput ? passwordInput.value : '';
+            const dob = dobInput ? dobInput.value || null : null;
+            const gender = genderInput ? genderInput.value || 'M' : 'M';
+
+            let hasError = false;
+
+            // 1. Validate FullName
+            const nameRegex = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂưăạảấầẩẫậắằẳẵặẹẻẽềềểỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ\s]+$/;
+            if (!fullName || !nameRegex.test(fullName)) {
+                setFieldError('regFullName', 'regFullNameError', 'Họ tên bắt buộc và chỉ chứa chữ cái, khoảng trắng.');
+                hasError = true;
+            }
+
+            // 1.5 Validate DateOfBirth
+            if (!dob) {
+                setFieldError('regDob', 'regDobError', 'Vui lòng chọn ngày sinh.');
+                hasError = true;
+            }
+
+            // 2. Validate Phone (VN 10 digits starting with 0)
+            const phoneRegex = /^(0[35789])[0-9]{8}$/;
+            if (!phone || !phoneRegex.test(phone)) {
+                setFieldError('regPhone', 'regPhoneError', 'Số điện thoại không hợp lệ (10 chữ số, bắt đầu bằng 03, 05, 07, 08 hoặc 09).');
+                hasError = true;
+            }
+
+            // 3. Validate Email
+            const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+            if (!email || !emailRegex.test(email)) {
+                setFieldError('regEmail', 'regEmailError', 'Địa chỉ email không đúng định dạng.');
+                hasError = true;
+            }
+
+            // 4. Validate Password
+            if (!password || password.length < 8) {
+                setFieldError('regPassword', 'regPasswordError', 'Mật khẩu phải có tối thiểu 8 ký tự.');
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            // 5. Check duplicate Email & Phone with database
             const originalText = submitBtn.innerHTML;
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang tạo tài khoản...';
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang kiểm tra thông tin...';
+
+            try {
+                const availRes = await fetch(`/Home/CheckContactAvailability?email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}`);
+                if (availRes.ok) {
+                    const availData = await availRes.json();
+                    if (availData.emailExists) {
+                        setFieldError('regEmail', 'regEmailError', 'Địa chỉ email này đã được sử dụng trên hệ thống.');
+                        hasError = true;
+                    }
+                    if (availData.phoneExists) {
+                        setFieldError('regPhone', 'regPhoneError', 'Số điện thoại này đã được sử dụng trên hệ thống.');
+                        hasError = true;
+                    }
+                }
+            } catch (e) {
+                // If availability check fails to connect, fallback to proceeding
+            }
+
+            if (hasError) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+                return;
+            }
+
+            // 6. Send OTP to Guest Email
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang gửi mã OTP...';
+
+            try {
+                const otpRes = await fetch('/Home/RequestRegisterOtp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, fullName: fullName, purpose: 'Register' })
+                });
+
+                const otpData = await otpRes.json();
+
+                if (otpRes.ok) {
+                    // Save pending data
+                    pendingGuestData = { fullName, phone, email, password, dateOfBirth: dob, gender };
+
+                    // Switch to OTP view
+                    toggleAuthModalView('otp');
+                    document.getElementById('guestOtpEmailDisplay').textContent = email;
+
+                    // Start OTP Timers
+                    startGuestOtpTimers();
+                    showStaylyToast('info', `Mã OTP đã được gửi đến email ${email}. Vui lòng kiểm tra hộp thư!`);
+                } else {
+                    if (alertBox) {
+                        alertBox.textContent = otpData.message || 'Không thể gửi mã xác thực OTP. Vui lòng thử lại sau.';
+                        alertBox.classList.remove('d-none');
+                    }
+                }
+            } catch (err) {
+                if (alertBox) {
+                    alertBox.textContent = 'Lỗi kết nối khi gửi mã OTP. Vui lòng kiểm tra lại mạng.';
+                    alertBox.classList.remove('d-none');
+                }
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        }
+
+        // AJAX Register Handler - Step 2: Confirm OTP & Complete Account Creation
+        async function handleAjaxOtpConfirm(event) {
+            event.preventDefault();
+            clearFieldError('guestOtpInput', 'guestOtpInputError');
+
+            const otpInput = document.getElementById('guestOtpInput');
+            const submitBtn = document.getElementById('confirmGuestOtpBtn');
+            const alertBox = document.getElementById('modalOtpAlert');
+            if (alertBox) alertBox.classList.add('d-none');
+
+            const code = otpInput ? otpInput.value.trim() : '';
+
+            if (!code || code.length !== 6 || !/^\d{6}$/.test(code)) {
+                setFieldError('guestOtpInput', 'guestOtpInputError', 'Vui lòng nhập đủ 6 chữ số của mã OTP.');
+                return;
+            }
+
+            if (!pendingGuestData) {
+                toggleAuthModalView('register');
+                return;
+            }
+
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xác thực...';
 
             try {
                 const response = await fetch('/Home/AjaxRegisterGuest', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        fullName,
-                        phone,
-                        email,
-                        password,
-                        dateOfBirth: dob,
-                        gender
+                        fullName: pendingGuestData.fullName,
+                        phone: pendingGuestData.phone,
+                        email: pendingGuestData.email,
+                        password: pendingGuestData.password,
+                        dateOfBirth: pendingGuestData.dateOfBirth,
+                        gender: pendingGuestData.gender,
+                        otpCode: code
                     })
                 });
 
                 const data = await response.json();
 
                 if (response.ok && data.success) {
+                    // Stop timers
+                    clearInterval(guestOtpCountdownTimer);
+                    clearInterval(guestResendCooldownTimer);
+
                     // Save to localStorage
                     localStorage.setItem('guestUser', JSON.stringify(data.user));
                     if (data.token) {
@@ -620,19 +895,88 @@
                     if (modal) modal.hide();
 
                     // Update Navbar
-                    syncNavbarAuth();
-                    showStaylyToast('success', `Tài khoản ${data.user.fullName} đã được tạo thành công! Chúc bạn có kỳ nghỉ tuyệt vời.`);
+                    syncNavbarAuth(true);
+                    showStaylyToast('success', `Tài khoản ${data.user.fullName} đã được kích hoạt thành công!`);
+
+                    // Reset state
+                    pendingGuestData = null;
                 } else {
-                    alertBox.textContent = data.message || 'Đăng ký không thành công. Vui lòng kiểm tra lại thông tin.';
-                    alertBox.classList.remove('d-none');
+                    setFieldError('guestOtpInput', 'guestOtpInputError', data.message || 'Mã xác thực OTP không chính xác hoặc đã hết hiệu lực.');
                 }
             } catch (err) {
-                alertBox.textContent = 'Lỗi kết nối máy chủ khi đăng ký. Vui lòng thử lại sau.';
-                alertBox.classList.remove('d-none');
+                setFieldError('guestOtpInput', 'guestOtpInputError', 'Lỗi kết nối máy chủ khi xác thực OTP.');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             }
+        }
+
+        // Resend OTP for Guest
+        async function resendGuestOtp() {
+            if (!pendingGuestData) return;
+
+            const resendBtn = document.getElementById('guestResendOtpBtn');
+            resendBtn.disabled = true;
+
+            try {
+                const res = await fetch('/Home/RequestRegisterOtp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: pendingGuestData.email, fullName: pendingGuestData.fullName, purpose: 'Register' })
+                });
+
+                if (res.ok) {
+                    startGuestOtpTimers();
+                    showStaylyToast('info', 'Mã OTP mới đã được gửi lại vào email của bạn!');
+                    clearFieldError('guestOtpInput', 'guestOtpInputError');
+                    const otpInput = document.getElementById('guestOtpInput');
+                    if (otpInput) {
+                        otpInput.value = '';
+                        otpInput.focus();
+                    }
+                } else {
+                    const data = await res.json();
+                    showStaylyToast('info', data.message || 'Không thể gửi lại mã OTP.');
+                }
+            } catch (e) {
+                showStaylyToast('info', 'Lỗi kết nối khi gửi lại mã OTP.');
+            }
+        }
+
+        function startGuestOtpTimers() {
+            clearInterval(guestOtpCountdownTimer);
+            clearInterval(guestResendCooldownTimer);
+
+            let expireSeconds = 600; // 10 minutes
+            const countdownEl = document.getElementById('guestOtpCountdown');
+
+            guestOtpCountdownTimer = setInterval(() => {
+                expireSeconds--;
+                if (expireSeconds <= 0) {
+                    clearInterval(guestOtpCountdownTimer);
+                    if (countdownEl) countdownEl.textContent = '00:00 (Đã hết hạn)';
+                } else {
+                    const mins = String(Math.floor(expireSeconds / 60)).padStart(2, '0');
+                    const secs = String(expireSeconds % 60).padStart(2, '0');
+                    if (countdownEl) countdownEl.textContent = `${mins}:${secs}`;
+                }
+            }, 1000);
+
+            let cooldownSeconds = 60;
+            const resendBtn = document.getElementById('guestResendOtpBtn');
+            const resendCount = document.getElementById('guestResendCount');
+            if (resendBtn) resendBtn.disabled = true;
+
+            guestResendCooldownTimer = setInterval(() => {
+                cooldownSeconds--;
+                if (cooldownSeconds <= 0) {
+                    clearInterval(guestResendCooldownTimer);
+                    if (resendBtn) resendBtn.disabled = false;
+                    if (resendCount) resendCount.textContent = 'Gửi lại ngay';
+                } else {
+                    if (resendCount) resendCount.textContent = `${cooldownSeconds}s`;
+                }
+            }, 1000);
         }
 
         // Client-side Logout Handler

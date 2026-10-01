@@ -4,9 +4,13 @@
     Layout = null;
     ViewData["Title"] = "Bảng điều khiển chủ nhà - Stayly";
 
-    var approvedProps = Model.Properties.Where(p => (p.ApprovalStatus ?? "").Equals("Approved", StringComparison.OrdinalIgnoreCase)).ToList();
-    var pendingProps = Model.Properties.Where(p => (p.ApprovalStatus ?? "").Equals("Pending", StringComparison.OrdinalIgnoreCase)).ToList();
-    var rejectedProps = Model.Properties.Where(p => (p.ApprovalStatus ?? "").Equals("Rejected", StringComparison.OrdinalIgnoreCase)).ToList();
+    Func<string?, bool> isAppr = s => (s ?? "").Equals("Approved", StringComparison.OrdinalIgnoreCase) || (s ?? "").Equals("DaDuyet", StringComparison.OrdinalIgnoreCase);
+    Func<string?, bool> isPend = s => (s ?? "").Equals("Pending", StringComparison.OrdinalIgnoreCase) || (s ?? "").Equals("ChoDuyet", StringComparison.OrdinalIgnoreCase);
+    Func<string?, bool> isRej = s => (s ?? "").Equals("Rejected", StringComparison.OrdinalIgnoreCase) || (s ?? "").Equals("TuChoi", StringComparison.OrdinalIgnoreCase);
+
+    var approvedProps = Model.Properties.Where(p => isAppr(p.ApprovalStatus)).ToList();
+    var pendingProps = Model.Properties.Where(p => isPend(p.ApprovalStatus)).ToList();
+    var rejectedProps = Model.Properties.Where(p => isRej(p.ApprovalStatus)).ToList();
 }
 
 <!doctype html>
@@ -46,22 +50,28 @@
 
             <!-- 3 Tabs dạng menu dọc -->
             <nav class="dashboard-nav-tabs">
-                <!-- Tab 1: Quản lý cơ sở (Mặc định active) -->
+                <!-- Tab 1: Cơ sở (Mặc định active) -->
                 <button type="button" class="dashboard-tab-link @(Model.ActiveTab == "properties" ? "active" : "")" data-tab-target="tabProperties" id="tabBtnProperties" onclick="switchDashboardTab('tabProperties', this)">
                     <i class="bi bi-houses-fill"></i>
-                    <span>Quản lý cơ sở</span>
+                    <span>Cơ sở</span>
                 </button>
 
-                <!-- Tab 2: Quản lý đơn đặt phòng -->
+                <!-- Tab 2: Đơn đặt phòng -->
                 <button type="button" class="dashboard-tab-link @(Model.ActiveTab == "bookings" ? "active" : "")" data-tab-target="tabBookings" id="tabBtnBookings" onclick="switchDashboardTab('tabBookings', this)">
                     <i class="bi bi-calendar2-check-fill"></i>
-                    <span>Quản lý đơn đặt phòng</span>
+                    <span>Đơn đặt phòng</span>
                 </button>
 
-                <!-- Tab 3: Quản lý đánh giá -->
+                <!-- Tab 3: Dịch vụ -->
+                <button type="button" class="dashboard-tab-link @(Model.ActiveTab == "services" ? "active" : "")" data-tab-target="tabServices" id="tabBtnServices" onclick="switchDashboardTab('tabServices', this)">
+                    <i class="bi bi-box2-heart-fill"></i>
+                    <span>Dịch vụ</span>
+                </button>
+
+                <!-- Tab 4: Đánh giá -->
                 <button type="button" class="dashboard-tab-link @(Model.ActiveTab == "reviews" ? "active" : "")" data-tab-target="tabReviews" id="tabBtnReviews" onclick="switchDashboardTab('tabReviews', this)">
                     <i class="bi bi-chat-square-quote-fill"></i>
-                    <span>Quản lý đánh giá</span>
+                    <span>Đánh giá</span>
                 </button>
             </nav>
         </div>
@@ -98,9 +108,10 @@
                     <div class="fw-bold text-dark small">Chủ cơ sở lưu trú</div>
                     <div class="text-muted small">@DateTime.Now.ToString("dd/MM/yyyy")</div>
                 </div>
-                <div class="user-avatar-circle" style="width: 42px; height: 42px; font-size: 1.05rem;">
-                    H
-                </div>
+                <a href="/Home/Profile" class="user-profile-badge" id="navUserProfileLink" title="Xem hồ sơ cá nhân"> 
+                    <span class="user-avatar-circle" style="width: 42px; height: 42px; font-size: 1.05rem;"></span> 
+                </a>
+                
             </div>
         </div>
 
@@ -130,7 +141,7 @@
                 <div class="col-md-4">
                     <div class="stat-card-harmonious">
                         <div class="stat-number-prominent">@approvedProps.Count</div>
-                        <p class="stat-label-text">Cơ sở đang hoạt động</p>
+                        <p class="stat-label-text">Đang hoạt động</p>
                     </div>
                 </div>
 
@@ -181,20 +192,28 @@
                 {
                     @foreach (var prop in Model.Properties)
                     {
-                        var status = prop.ApprovalStatus ?? "Approved";
-                        var isApproved = status.Equals("Approved", StringComparison.OrdinalIgnoreCase);
-                        var isPending = status.Equals("Pending", StringComparison.OrdinalIgnoreCase);
-                        var isRejected = status.Equals("Rejected", StringComparison.OrdinalIgnoreCase);
-                        var thumbUrl = !string.IsNullOrWhiteSpace(prop.CoverImageUrl)
-                            ? prop.CoverImageUrl
-                            : "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80";
+                        var status = prop.ApprovalStatus ?? "ChoDuyet";
+                        var isApproved = isAppr(status);
+                        var isPending = isPend(status);
+                        var isRejected = isRej(status);
+                        var thumbUrl = prop.CoverImageUrl;
 
                         <article class="property-card-host">
                             <div class="row g-0">
-                                <!-- Thumbnail bo góc 16px bên trái -->
+                                <!-- Thumbnail bo góc 16px bên trái (Chỉ hiển thị ảnh thực tế) -->
                                 <div class="col-md-4 col-lg-3">
-                                    <div class="property-thumb-container">
-                                        <img src="@thumbUrl" alt="@prop.Name" class="property-thumb-img" loading="lazy">
+                                    <div class="property-thumb-container d-flex align-items-center justify-content-center" style="background: #f1f5f9; min-height: 180px; border-radius: 16px 0 0 16px; overflow: hidden;">
+                                        @if (!string.IsNullOrWhiteSpace(thumbUrl))
+                                        {
+                                            <img src="@thumbUrl" alt="@prop.Name" class="property-thumb-img" loading="lazy">
+                                        }
+                                        else
+                                        {
+                                            <div class="text-center text-muted p-3">
+                                                <i class="bi bi-image fs-1 opacity-50 text-primary"></i>
+                                                <div class="small fw-semibold mt-1">Chưa có ảnh bìa</div>
+                                            </div>
+                                        }
                                     </div>
                                 </div>
 
@@ -218,20 +237,20 @@
                                                 @(prop.Address ?? $"{prop.Ward}, {prop.City}")
                                             </p>
 
-                                            @if (!string.IsNullOrWhiteSpace(prop.RejectionReason))
+                                            @if (isRejected)
                                             {
                                                 <div class="alert alert-danger py-2 px-3 small rounded-3 mb-2">
                                                     <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                                                    <strong>Lý do từ chối:</strong> @prop.RejectionReason
+                                                    <strong>Lý do từ chối:</strong> @(string.IsNullOrWhiteSpace(prop.RejectionReason) ? "Hồ sơ chưa đạt tiêu chuẩn. Vui lòng bấm Sửa & Gửi lại." : prop.RejectionReason)
                                                 </div>
                                             }
-                                            else if (!string.IsNullOrWhiteSpace(prop.Policy))
+                                            else if (isPending)
                                             {
-                                                <p class="text-muted small mb-2 text-truncate" style="max-width: 600px;">
-                                                    <i class="bi bi-info-circle text-primary me-1"></i> @prop.Policy
-                                                </p>
+                                                <div class="alert alert-warning py-2 px-3 small rounded-3 mb-2 d-flex align-items-center gap-2" style="background: #fffbeb; border: 1px solid #fde68a; color: #92400e;">
+                                                    <i class="bi bi-hourglass-split fs-6 text-warning"></i>
+                                                    <span><strong>Đang chờ duyệt</strong></span>
+                                                </div>
                                             }
-
                                             <div class="d-flex align-items-center gap-3 text-muted small">
                                                 <span><i class="bi bi-door-open me-1 text-primary"></i> @prop.RoomsCount phòng</span>
                                                 <span><i class="bi bi-telephone me-1 text-primary"></i> @(prop.Phone ?? "Chưa có SĐT")</span>
@@ -272,7 +291,6 @@
                 <!-- Dropdown 1: Lọc theo Cơ sở -->
                 <div class="d-flex align-items-center gap-2">
                     <label for="filterBookingProperty">
-                        <i class="bi bi-building"></i>
                         <span>Cơ sở:</span>
                     </label>
                     <select id="filterBookingProperty" class="filter-select-round" onchange="filterBookingsList()">
@@ -287,7 +305,6 @@
                 <!-- Dropdown 2: Lọc theo Trạng thái -->
                 <div class="d-flex align-items-center gap-2">
                     <label for="filterBookingStatus">
-                        <i class="bi bi-funnel"></i>
                         <span>Trạng thái:</span>
                     </label>
                     <select id="filterBookingStatus" class="filter-select-round" onchange="filterBookingsList()">
@@ -301,12 +318,16 @@
                 </div>
             </div>
 
-            <!-- Indicator số lượng đơn -->
+            <!-- Indicator số lượng đơn & Nút xuất file -->
             <div class="d-flex align-items-center justify-content-between mb-3 px-2">
                 <span class="text-muted small" id="bookingCountIndicator">
-                    Hiển thị: <strong>@Model.Bookings.Count</strong> đơn đặt phòng
+                    Hiển thị <strong class="text-dark">@Model.Bookings.Count</strong> đơn đặt phòng
                 </span>
+                <a asp-action="ExportDashboardBookings" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold shadow-sm">
+                    <i class="bi bi-file-earmark-excel me-1"></i> Xuất Excel
+                </a>
             </div>
+
 
             <!-- Bottom row (Danh sách đơn): Thẻ nằm ngang (Card bo tròn 16px) -->
             <div class="bookings-list-container" id="bookingCardsContainer">
@@ -457,7 +478,54 @@
         </section>
 
         <!-- ==========================================================================
-             TAB 3: QUẢN LÝ ĐÁNH GIÁ (Review Management)
+             TAB 3: QUẢN LÝ DỊCH VỤ (Services Management)
+             ========================================================================== -->
+        <section class="dashboard-tab-view @(Model.ActiveTab == "services" ? "active" : "")" id="tabServices">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="filter-bar-pill-card m-0" style="flex:1; margin-right: 1rem !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <label for="filterServiceProperty">
+                            <span>Cơ sở:</span>
+                        </label>
+                        <select id="filterServiceProperty" class="filter-select-round" onchange="loadServicesList()">
+                            <option value="">Chọn một cơ sở</option>
+                            @foreach (var p in Model.Properties)
+                            {
+                                <option value="@p.Id">@p.Name</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-primary px-4 py-2" style="border-radius:24px;" onclick="openServiceModal()">
+                    <i class="bi bi-plus-lg"></i> Thêm dịch vụ mới
+                </button>
+            </div>
+
+            <!-- List Services -->
+            <div class="prop-detail-card" style="min-height: 400px;">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle custom-dashboard-table">
+                        <thead>
+                            <tr>
+                                <th>Tên Dịch Vụ</th>
+                                <th>Mô tả</th>
+                                <th>Giá (VNĐ)</th>
+                                <th>Trạng Thái</th>
+                                <th class="text-end">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="servicesTableBody">
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">Vui lòng chọn cơ sở để xem dịch vụ</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================================================
+             TAB 4: QUẢN LÝ ĐÁNH GIÁ (Review Management)
              ========================================================================== -->
         <section class="dashboard-tab-view @(Model.ActiveTab == "reviews" ? "active" : "")" id="tabReviews">
             <!-- Top row (Bộ lọc): Lọc theo cơ sở & ngày tháng -->
@@ -547,13 +615,50 @@
         </section>
     </main>
 
+    <!-- ==================== SERVICE MODAL ==================== -->
+    <div class="modal fade auth-modal" id="serviceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius:24px;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="serviceModalTitle">Thêm dịch vụ mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 pt-3">
+                    <div id="serviceAlertBox" class="alert alert-danger d-none small rounded-pill py-2 text-center mb-3"></div>
+                    <input type="hidden" id="serviceId" value="0">
+                    <input type="hidden" id="servicePropId" value="0">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control auth-input" id="serviceName" placeholder="Tên dịch vụ">
+                        <label for="serviceName">Tên dịch vụ <span class="text-danger">*</span></label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="number" class="form-control auth-input" id="servicePrice" placeholder="Giá (VNĐ)">
+                        <label for="servicePrice">Giá (VNĐ) <span class="text-danger">*</span></label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <textarea class="form-control auth-input" id="serviceDesc" placeholder="Mô tả" style="height: 100px;"></textarea>
+                        <label for="serviceDesc">Mô tả chi tiết</label>
+                    </div>
+                    <div class="form-check form-switch mb-4 ms-1">
+                        <input class="form-check-input" type="checkbox" role="switch" id="serviceActive" checked>
+                        <label class="form-check-label text-muted small ms-2" for="serviceActive">Trạng thái hoạt động</label>
+                    </div>
+                    <button class="btn btn-primary w-100 fw-bold auth-btn-primary" id="btnSaveService" onclick="saveService()">
+                        Lưu dịch vụ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ==================== END SERVICE MODAL ==================== -->
+
     <!-- ==========================================================================
          3. MODALS HỆ THỐNG
          ========================================================================== -->
 
     <!-- Modal 1: Đăng ký cơ sở lưu trú mới (Create Property Modal) -->
-    <div class="modal fade" id="createPropertyModal" tabindex="-1" aria-labelledby="createPropModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal fade" id="createPropertyModal" tabindex="-1" aria-labelledby="createPropModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content stayly-modal">
                 <div class="modal-header-accent"></div>
                 <div class="modal-body stayly-modal-body p-4 position-relative">
@@ -563,151 +668,225 @@
                         <span class="brand-icon" style="width: 36px; height: 36px; font-size: 1.1rem;"><i class="bi bi-house-add-fill"></i></span>
                         <h4 class="fs-5 fw-bold text-navy mb-0" id="createPropModalLabel">Đăng ký cơ sở lưu trú mới</h4>
                     </div>
-                    <p class="text-muted small mb-4">Điền đầy đủ thông tin và tải lên hồ sơ pháp lý để Quản trị viên (Admin WPF) thẩm định kích hoạt.</p>
+
+                    <!-- Wizard Progress -->
+                    <div class="progress mb-4" style="height: 8px;">
+                        <div class="progress-bar bg-primary" id="createPropProgress" role="progressbar" style="width: 20%;" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    
+                    <ul class="nav nav-pills nav-justified mb-4 wizard-tabs" id="createPropTabs" role="tablist" style="gap: 10px;">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active rounded-pill fw-bold" id="step1-tab" data-bs-toggle="pill" data-bs-target="#step1" type="button" role="tab" disabled>1. Thông tin chung</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-pill fw-bold" id="step2-tab" data-bs-toggle="pill" data-bs-target="#step2" type="button" role="tab" disabled>2. Hồ sơ pháp lý</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-pill fw-bold" id="step3-tab" data-bs-toggle="pill" data-bs-target="#step3" type="button" role="tab" disabled>3. Tiện ích & Ảnh</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-pill fw-bold" id="step4-tab" data-bs-toggle="pill" data-bs-target="#step4" type="button" role="tab" disabled>4. Dịch vụ</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-pill fw-bold" id="step5-tab" data-bs-toggle="pill" data-bs-target="#step5" type="button" role="tab" disabled>5. Cấu hình phòng</button>
+                        </li>
+                    </ul>
 
                     <form asp-action="CreateProperty" method="post" enctype="multipart/form-data" id="createPropertyForm" novalidate>
                         @Html.AntiForgeryToken()
-
-                        <!-- 1. Thông tin cơ bản -->
-                        <div class="p-3 bg-light rounded-4 mb-3">
-                            <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-info-circle-fill text-primary me-1"></i> 1. Thông tin chung &amp; Liên hệ</h6>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Tên cơ sở lưu trú *</label>
-                                    <input name="Name" id="createPropName" class="form-control rounded-pill" placeholder="Ví dụ: Stayly Pine Hill Villa" required />
-                                    <div class="invalid-feedback">Vui lòng nhập tên cơ sở lưu trú.</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Loại hình lưu trú *</label>
-                                    <select name="Type" id="createPropTypeSelect" class="form-select rounded-pill" onchange="toggleCreatePropertyType(this.value)">
-                                        <option value="Homestay">Homestay (Thuê nguyên căn)</option>
-                                        <option value="Hotel">Hotel (Khách sạn nhiều phòng)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Số điện thoại đón khách *</label>
-                                    <input name="Phone" id="createPropPhone" class="form-control rounded-pill" placeholder="Ví dụ: 0901234567" required />
-                                    <div class="invalid-feedback">Vui lòng nhập số điện thoại hợp lệ (9 - 11 chữ số).</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Email liên hệ *</label>
-                                    <input name="Email" id="createPropEmail" type="email" class="form-control rounded-pill" placeholder="contact@homestay.com" required />
-                                    <div class="invalid-feedback">Vui lòng nhập địa chỉ email hợp lệ.</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 2. Vị trí & Địa chỉ -->
-                        <div class="p-3 bg-light rounded-4 mb-3">
-                            <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-geo-alt-fill text-primary me-1"></i> 2. Vị trí &amp; Địa chỉ</h6>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Địa chỉ số nhà, tên đường *</label>
-                                    <input name="Address" id="createPropAddress" class="form-control rounded-pill" placeholder="Ví dụ: 14/2 Khởi Nghĩa Bắc Sơn" required />
-                                    <div class="invalid-feedback">Vui lòng nhập địa chỉ cụ thể (số nhà, tên đường).</div>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small fw-bold">Phường / Xã</label>
-                                    <input name="Ward" id="createPropWard" class="form-control rounded-pill" placeholder="Phường 10" />
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small fw-bold">Tỉnh / Thành phố *</label>
-                                    <input name="City" id="createPropCity" class="form-control rounded-pill" placeholder="Đà Lạt" required />
-                                    <div class="invalid-feedback">Vui lòng nhập hoặc chọn Tỉnh / Thành phố.</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 3. Cấu hình phòng Homestay / Hotel -->
-                        <div class="p-3 bg-light rounded-4 mb-3">
-                            <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-door-open-fill text-primary me-1"></i> 3. Cấu hình đặt phòng</h6>
-
-                            <!-- Panel Homestay -->
-                            <div id="createHomestayConfigPanel">
-                                <div class="alert alert-info py-2 px-3 small rounded-3 mb-3">
-                                    <i class="bi bi-info-circle me-1"></i> <strong>Quy chuẩn Homestay nguyên căn:</strong> Khách sẽ đặt trọn gói toàn bộ homestay. Khi được Admin duyệt, hệ thống sẽ tự động tạo một phòng "Nguyên căn" theo giá và sức chứa bạn nhập bên dưới.
-                                </div>
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold">Giá thuê trọn gói / đêm (₫) *</label>
-                                        <input name="HomestayPrice" id="createPropHomestayPrice" type="number" step="10000" min="50000" value="650000" class="form-control rounded-pill" />
-                                        <div class="invalid-feedback">Giá thuê tối thiểu từ 50.000 ₫/đêm.</div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold">Sức chứa tối đa (người) *</label>
-                                        <input name="HomestayCapacity" id="createPropHomestayCapacity" type="number" min="1" max="50" value="4" class="form-control rounded-pill" />
-                                        <div class="invalid-feedback">Sức chứa tối thiểu 1 người.</div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold">Phân loại không gian</label>
-                                        <select name="HomestayRoomTypeId" id="createPropHomestayRoomTypeId" class="form-select rounded-pill">
-                                            @foreach (var rt in Model.AvailableRoomTypes)
-                                            {
-                                                <option value="@rt.Id">@rt.Name</option>
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Panel Hotel -->
-                            <div id="createHotelConfigPanel" class="d-none">
-                                <div class="alert alert-primary py-2 px-3 small rounded-3 mb-0">
-                                    <i class="bi bi-building me-1"></i> <strong>Quy chuẩn Khách sạn (Hotel):</strong> Khách sạn quản lý nhiều phòng độc lập. Sau khi hồ sơ khách sạn được Admin duyệt thành công, bạn có thể tạo thêm không giới hạn các phòng đón khách qua nút <strong>"+ Thêm phòng mới"</strong> trong chi tiết cơ sở.
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 4. Hồ sơ pháp lý thẩm định (WPF Admin) -->
-                        <div class="p-3 bg-light rounded-4 mb-3">
-                            <h6 class="fw-bold text-navy small mb-2"><i class="bi bi-shield-check text-primary me-1"></i> 4. Hồ sơ pháp lý thẩm định (WPF Admin kiểm duyệt)</h6>
-                            <p class="text-muted small mb-3">Tải lên tệp ảnh hoặc PDF rõ nét để Admin xác thực pháp lý cơ sở.</p>
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label class="form-label small fw-bold">Giấy phép kinh doanh</label>
-                                    <input name="BusinessLicenseFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label small fw-bold">Chứng nhận an toàn PCCC</label>
-                                    <input name="FireSafetyDocumentFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label small fw-bold">Giấy tờ An ninh trật tự</label>
-                                    <input name="SecurityDocumentFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 5. Tiện ích & Quy định & Ảnh -->
-                        <div class="p-3 bg-light rounded-4 mb-3">
-                            <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-card-checklist text-primary me-1"></i> 5. Tiện ích &amp; Hình ảnh khuôn viên</h6>
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold d-block mb-2">Tiện ích có sẵn</label>
-                                <div class="d-flex flex-wrap gap-2">
-                                    @foreach (var a in Model.AvailableAmenities)
-                                    {
-                                        <div class="form-check form-check-inline amenity-chip m-0">
-                                            <input class="form-check-input" type="checkbox" name="AmenityIds" value="@a.Id" id="createAmenity_@a.Id">
-                                            <label class="form-check-label small" for="createAmenity_@a.Id">@a.Name</label>
+                        
+                        <div class="tab-content" id="createPropTabsContent">
+                            <!-- STEP 1: THÔNG TIN CHUNG -->
+                            <div class="tab-pane fade show active" id="step1" role="tabpanel">
+                                <div class="p-4 bg-light rounded-4 mb-3 border">
+                                    <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-info-circle-fill text-primary me-1"></i> Thông tin cơ sở & Liên hệ</h6>
+                                    <div class="row g-3 mb-4">
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Tên cơ sở lưu trú *</label>
+                                            <input name="Name" id="createPropName" class="form-control rounded-pill" placeholder="Ví dụ: Stayly Pine Hill Villa" required />
+                                            <div class="invalid-feedback">Vui lòng nhập tên cơ sở lưu trú.</div>
                                         </div>
-                                    }
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Loại hình lưu trú *</label>
+                                            <select name="Type" id="createPropTypeSelect" class="form-select rounded-pill" onchange="toggleCreatePropertyType(this.value)">
+                                                <option value="Homestay">Homestay (Thuê nguyên căn)</option>
+                                                <option value="Hotel">Khách sạn (Hotel - Nhiều phòng)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Số điện thoại đón khách *</label>
+                                            <input name="Phone" id="createPropPhone" class="form-control rounded-pill" placeholder="Ví dụ: 0901234567" required />
+                                            <div class="invalid-feedback">Vui lòng nhập số điện thoại hợp lệ.</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Email liên hệ *</label>
+                                            <input name="Email" id="createPropEmail" type="email" class="form-control rounded-pill" placeholder="contact@homestay.com" required />
+                                            <div class="invalid-feedback">Vui lòng nhập địa chỉ email hợp lệ.</div>
+                                        </div>
+                                    </div>
+
+                                    <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-geo-alt-fill text-primary me-1"></i> Vị trí & Địa chỉ</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Tỉnh / Thành phố *</label>
+                                            <input name="City" id="createPropCity" class="form-control rounded-pill" placeholder="Chọn hoặc nhập Tỉnh / Thành phố" required autocomplete="off" />
+                                            <div class="invalid-feedback">Vui lòng nhập Tỉnh / Thành phố.</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Phường / Xã</label>
+                                            <input name="Ward" id="createPropWard" class="form-control rounded-pill" placeholder="Chọn hoặc nhập Phường / Xã" autocomplete="off" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Địa chỉ số nhà, tên đường *</label>
+                                            <input name="Address" id="createPropAddress" class="form-control rounded-pill" placeholder="Ví dụ: 14/2 Khởi Nghĩa Bắc Sơn" required />
+                                            <div class="invalid-feedback">Vui lòng nhập địa chỉ cụ thể.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end">
+                                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="nextWizardStep(2)">Tiếp tục <i class="bi bi-arrow-right"></i></button>
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Chính sách &amp; Quy định nhận/trả phòng</label>
-                                <textarea name="Policy" class="form-control rounded-4 p-3" rows="2" placeholder="Ví dụ: Nhận phòng từ 14:00, trả phòng trước 12:00. Không mang giày dép vào nhà."></textarea>
+                            
+                            <!-- STEP 2: HỒ SƠ PHÁP LÝ -->
+                            <div class="tab-pane fade" id="step2" role="tabpanel">
+                                <div class="p-4 bg-light rounded-4 mb-3 border">
+                                    <h6 class="fw-bold text-navy small mb-2"><i class="bi bi-shield-check text-primary me-1"></i> Hồ sơ pháp lý thẩm định (WPF Admin kiểm duyệt)</h6>
+                                    <p class="text-muted small mb-3">Tải lên tệp ảnh hoặc PDF rõ nét để Admin xác thực pháp lý cơ sở.</p>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Giấy phép kinh doanh *</label>
+                                            <input name="BusinessLicenseFile" id="createPropBusinessLicense" type="file" class="form-control rounded-pill" accept="image/*,.pdf" required />
+                                            <div class="invalid-feedback">Vui lòng tải lên Giấy phép KD.</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Chứng nhận PCCC *</label>
+                                            <input name="FireSafetyFile" id="createPropFireSafety" type="file" class="form-control rounded-pill" accept="image/*,.pdf" required />
+                                            <div class="invalid-feedback">Vui lòng tải lên Chứng nhận PCCC.</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Giấy tờ ANTT *</label>
+                                            <input name="SecurityFile" id="createPropSecurity" type="file" class="form-control rounded-pill" accept="image/*,.pdf" required />
+                                            <div class="invalid-feedback">Vui lòng tải lên Giấy tờ ANTT.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" onclick="prevWizardStep(1)"><i class="bi bi-arrow-left"></i> Quay lại</button>
+                                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="nextWizardStep(3)">Tiếp tục <i class="bi bi-arrow-right"></i></button>
+                                </div>
                             </div>
-                            <div>
-                                <label class="form-label small fw-bold">Hình ảnh khuôn viên cơ sở</label>
-                                <input name="PhotoFiles" type="file" class="form-control rounded-pill" multiple accept="image/*" />
-                            </div>
-                        </div>
 
-                        <div class="d-flex justify-content-end gap-2 pt-2">
-                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
-                                <i class="bi bi-send-fill me-1"></i> Gửi hồ sơ duyệt
-                            </button>
+                            <!-- STEP 3: TIỆN ÍCH & ẢNH -->
+                            <div class="tab-pane fade" id="step3" role="tabpanel">
+                                <div class="p-4 bg-light rounded-4 mb-3 border">
+                                    <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-stars text-primary me-1"></i> Tiện ích chung của cơ sở</h6>
+                                    <div class="d-flex flex-wrap gap-2 mb-4">
+                                        @foreach (var a in Model.AvailableAmenities)
+                                        {
+                                            <div class="form-check form-check-inline amenity-chip m-0">
+                                                <input class="form-check-input" type="checkbox" name="AmenityIds" value="@a.Id" id="createAmenity_@a.Id">
+                                                <label class="form-check-label small" for="createAmenity_@a.Id">@a.Name</label>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <h6 class="fw-bold text-navy small mb-2"><i class="bi bi-card-checklist text-primary me-1"></i> Chính sách & Quy định</h6>
+                                    <div class="mb-4">
+                                        <textarea name="Policy" id="createPropPolicy" class="form-control rounded-4 p-3" rows="3" placeholder="Thời gian nhận/trả phòng, quy định thú cưng, v.v." minlength="20"></textarea>
+                                        <div class="invalid-feedback">Chính sách phải dài ít nhất 20 ký tự.</div>
+                                    </div>
+
+                                    <h6 class="fw-bold text-navy small mb-2"><i class="bi bi-images text-primary me-1"></i> Hình ảnh khuôn viên cơ sở *</h6>
+                                    <div>
+                                        <input name="PhotoFiles" id="createPropPhotos" type="file" class="form-control rounded-pill" multiple accept="image/*" required />
+                                        <div class="invalid-feedback">Vui lòng tải lên ít nhất 1 ảnh khuôn viên.</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" onclick="prevWizardStep(2)"><i class="bi bi-arrow-left"></i> Quay lại</button>
+                                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="nextWizardStep(4)">Tiếp tục <i class="bi bi-arrow-right"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- STEP 4: DỊCH VỤ -->
+                            <div class="tab-pane fade" id="step4" role="tabpanel">
+                                <div class="p-4 bg-light rounded-4 mb-3 border">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="fw-bold text-navy small mb-0"><i class="bi bi-box-seam text-primary me-1"></i> Danh sách dịch vụ</h6>
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="addCreatePropertyServiceRow()">
+                                            <i class="bi bi-plus-lg"></i> Thêm dịch vụ
+                                        </button>
+                                    </div>
+                                    <div id="createPropServicesContainer">
+                                        <!-- Service rows will be generated here -->
+                                    </div>
+                                    <div class="text-muted small text-center mt-3" id="createPropNoServiceText">Chưa có dịch vụ nào. Bấm "Thêm dịch vụ" nếu cơ sở của bạn có cung cấp dịch vụ bổ sung.</div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" onclick="prevWizardStep(3)"><i class="bi bi-arrow-left"></i> Quay lại</button>
+                                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="nextWizardStep(5)">Tiếp tục <i class="bi bi-arrow-right"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- STEP 5: CẤU HÌNH -->
+                            <div class="tab-pane fade" id="step5" role="tabpanel">
+                                <div class="p-4 bg-light rounded-4 mb-3 border">
+                                    <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-gear-fill text-primary me-1"></i> Cấu hình phòng</h6>
+                                    
+                                    <!-- Panel Homestay -->
+                                    <div id="createHomestayConfigPanel">
+                                        <div class="alert alert-info py-2 px-3 small rounded-3 mb-3">
+                                            <i class="bi bi-info-circle me-1"></i> <strong>Homestay nguyên căn:</strong> Bạn sẽ tạo thông tin cho toàn bộ khu nhà.
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold">Giá thuê trọn gói / đêm (₫) *</label>
+                                                <input name="HomestayPrice" id="createPropHomestayPrice" type="number" step="10000" min="50000" value="650000" class="form-control rounded-pill" />
+                                                <div class="invalid-feedback">Giá thuê tối thiểu từ 50.000 ₫/đêm.</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold">Phân loại không gian</label>
+                                                <select name="HomestayRoomTypeId" id="createPropHomestayRoomTypeId" class="form-select rounded-pill">
+                                                    @foreach (var rt in Model.AvailableRoomTypes)
+                                                    {
+                                                        <option value="@rt.Id">@rt.Name</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold">Số lượng người lớn tối đa *</label>
+                                                <input name="HomestayAdultCapacity" id="createPropHomestayAdultCap" type="number" min="1" value="2" class="form-control rounded-pill" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-bold">Số lượng trẻ em tối đa *</label>
+                                                <input name="HomestayChildCapacity" id="createPropHomestayChildCap" type="number" min="0" value="1" class="form-control rounded-pill" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Panel Hotel -->
+                                    <div id="createHotelConfigPanel" class="d-none">
+                                        <div class="alert alert-primary py-2 px-3 small rounded-3 mb-3">
+                                            <i class="bi bi-building me-1"></i> <strong>Khách sạn (Hotel):</strong> Nhập số lượng phòng muốn tạo ban đầu (1 - 3). Mỗi phòng sẽ có giá và sức chứa riêng.
+                                        </div>
+                                        <div class="mb-4">
+                                            <label class="form-label small fw-bold">Số lượng phòng tạo sẵn (1-3) *</label>
+                                            <input type="number" id="createPropHotelRoomCount" class="form-control rounded-pill" style="max-width:200px;" min="1" max="3" value="1" onchange="generateHotelRoomForms()" />
+                                        </div>
+                                        
+                                        <div id="createPropHotelRoomsContainer">
+                                            <!-- Hotel room forms generated here -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" onclick="prevWizardStep(4)"><i class="bi bi-arrow-left"></i> Quay lại</button>
+                                    <button type="button" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" onclick="submitCreatePropertyForm(event)">
+                                        <i class="bi bi-send-fill me-1"></i> Hoàn tất & Gửi hồ sơ
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -780,17 +959,17 @@
                             <div class="p-3 bg-light rounded-4 mb-3">
                                 <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-geo-alt-fill text-primary me-1"></i> 2. Vị trí &amp; Địa chỉ</h6>
                                 <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label small fw-bold">Địa chỉ cụ thể *</label>
-                                        <input name="Address" id="opdEditAddress" class="form-control rounded-pill" required />
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label small fw-bold">Phường / Xã</label>
-                                        <input name="Ward" id="opdEditWard" class="form-control rounded-pill" />
-                                    </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <label class="form-label small fw-bold">Tỉnh / Thành phố *</label>
-                                        <input name="City" id="opdEditCity" class="form-control rounded-pill" required />
+                                        <input name="City" id="opdEditCity" class="form-control rounded-pill" required autocomplete="off" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Phường / Xã</label>
+                                        <input name="Ward" id="opdEditWard" class="form-control rounded-pill" autocomplete="off" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Địa chỉ cụ thể (Số nhà, tên đường) *</label>
+                                        <input name="Address" id="opdEditAddress" class="form-control rounded-pill" required />
                                     </div>
                                 </div>
                             </div>
@@ -852,12 +1031,12 @@
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold">Chứng nhận PCCC mới</label>
                                         <div class="small text-muted mb-1" id="opdEditOldFireSafety"></div>
-                                        <input name="FireSafetyDocumentFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
+                                        <input name="FireSafetyFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold">Giấy tờ ANTT mới</label>
                                         <div class="small text-muted mb-1" id="opdEditOldSecurity"></div>
-                                        <input name="SecurityDocumentFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
+                                        <input name="SecurityFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
                                     </div>
                                 </div>
                             </div>
@@ -931,17 +1110,17 @@
                         <div class="p-3 bg-light rounded-4 mb-3">
                             <h6 class="fw-bold text-navy small mb-3">2. Vị trí &amp; Địa chỉ</h6>
                             <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Địa chỉ *</label>
-                                    <input name="Address" id="resubmitAddress" class="form-control rounded-pill" required />
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small fw-bold">Phường / Xã</label>
-                                    <input name="Ward" id="resubmitWard" class="form-control rounded-pill" />
-                                </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <label class="form-label small fw-bold">Tỉnh / Thành phố *</label>
-                                    <input name="City" id="resubmitCity" class="form-control rounded-pill" required />
+                                    <input name="City" id="resubmitCity" class="form-control rounded-pill" required autocomplete="off" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Phường / Xã</label>
+                                    <input name="Ward" id="resubmitWard" class="form-control rounded-pill" autocomplete="off" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Địa chỉ số nhà, tên đường *</label>
+                                    <input name="Address" id="resubmitAddress" class="form-control rounded-pill" required />
                                 </div>
                             </div>
                         </div>
@@ -982,12 +1161,12 @@
                                 <div class="col-md-4">
                                     <label class="form-label small fw-bold">Chứng nhận PCCC mới</label>
                                     <div class="small text-muted mb-1" id="resubmitOldFireSafetyLink"></div>
-                                    <input name="FireSafetyDocumentFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
+                                    <input name="FireSafetyFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label small fw-bold">Giấy tờ ANTT mới</label>
                                     <div class="small text-muted mb-1" id="resubmitOldSecurityLink"></div>
-                                    <input name="SecurityDocumentFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
+                                    <input name="SecurityFile" type="file" class="form-control rounded-pill" accept="image/*,.pdf" />
                                 </div>
                             </div>
                         </div>
@@ -1079,8 +1258,9 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small fw-bold">Hình ảnh phòng</label>
-                            <input name="PhotoFiles" type="file" class="form-control rounded-pill" multiple accept="image/*" />
+                            <label class="form-label small fw-bold">Hình ảnh phòng *</label>
+                            <input name="PhotoFiles" type="file" class="form-control rounded-pill" multiple accept="image/*" required />
+                            <div class="invalid-feedback">Vui lòng tải lên ít nhất 1 ảnh phòng.</div>
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 pt-2">
@@ -1232,6 +1412,10 @@
     <!-- Bootstrap 5.3 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- Vietnam Administrative Address Autocomplete -->
+    <script src="/js/vn-address-api.js" asp-append-version="true"></script>
+    <script src="/js/property_wizard.js" asp-append-version="true"></script>
+
     <!-- ==========================================================================
          Client-side Vanilla JS Logic
          ========================================================================== -->
@@ -1259,153 +1443,28 @@
             }
 
             // Kích hoạt bộ kiểm tra hợp lệ và highlight đỏ khi thiếu thông tin
-            setupCreatePropertyValidation();
+            // Validation is now handled in property_wizard.js            // Khởi tạo autocomplete địa chỉ Việt Nam (Tỉnh/Thành phố -> Phường/Xã -> Địa chỉ)
+            if (window.StaylyAddress) {
+                StaylyAddress.initPropertyAddressAutocomplete(
+                    document.getElementById('createPropCity'),
+                    document.getElementById('createPropWard'),
+                    document.getElementById('createPropAddress')
+                );
+                StaylyAddress.initPropertyAddressAutocomplete(
+                    document.getElementById('opdEditCity'),
+                    document.getElementById('opdEditWard'),
+                    document.getElementById('opdEditAddress')
+                );
+                StaylyAddress.initPropertyAddressAutocomplete(
+                    document.getElementById('resubmitCity'),
+                    document.getElementById('resubmitWard'),
+                    document.getElementById('resubmitAddress')
+                );
+            }
         });
 
         // ==================== VALIDATION & HIGHLIGHT FORM TẠO CƠ SỞ ====================
-        function setupCreatePropertyValidation() {
-            const form = document.getElementById('createPropertyForm');
-            if (!form) return;
-
-            function markInvalid(inputEl, message) {
-                if (!inputEl) return;
-                inputEl.classList.add('is-invalid');
-                let feedback = inputEl.parentNode.querySelector('.invalid-feedback');
-                if (!feedback) {
-                    feedback = document.createElement('div');
-                    feedback.className = 'invalid-feedback';
-                    inputEl.parentNode.appendChild(feedback);
-                }
-                if (message) feedback.textContent = message;
-            }
-
-            function markValid(inputEl) {
-                if (!inputEl) return;
-                inputEl.classList.remove('is-invalid');
-            }
-
-            // Tự động xóa highlight đỏ ngay khi người dùng nhập liệu vào ô bị lỗi
-            form.querySelectorAll('input, select, textarea').forEach(field => {
-                field.addEventListener('input', () => {
-                    if (field.value.trim() !== '') {
-                        markValid(field);
-                    }
-                });
-                field.addEventListener('change', () => {
-                    if (field.value.trim() !== '') {
-                        markValid(field);
-                    }
-                });
-            });
-
-            form.addEventListener('submit', function(e) {
-                let hasError = false;
-                let firstInvalid = null;
-
-                // 1. Tên cơ sở lưu trú
-                const nameInput = document.getElementById('createPropName');
-                if (!nameInput || !nameInput.value.trim()) {
-                    markInvalid(nameInput, 'Vui lòng nhập tên cơ sở lưu trú.');
-                    hasError = true;
-                    if (!firstInvalid) firstInvalid = nameInput;
-                } else {
-                    markValid(nameInput);
-                }
-
-                // 2. Số điện thoại đón khách
-                const phoneInput = document.getElementById('createPropPhone');
-                const cleanPhone = phoneInput ? phoneInput.value.trim().replace(/[\s\.-]/g, '') : '';
-                if (!phoneInput || !phoneInput.value.trim()) {
-                    markInvalid(phoneInput, 'Vui lòng nhập số điện thoại đón khách.');
-                    hasError = true;
-                    if (!firstInvalid) firstInvalid = phoneInput;
-                } else if (cleanPhone.length < 9 || cleanPhone.length > 11 || isNaN(cleanPhone)) {
-                    markInvalid(phoneInput, 'Số điện thoại không hợp lệ (từ 9 đến 11 chữ số).');
-                    hasError = true;
-                    if (!firstInvalid) firstInvalid = phoneInput;
-                } else {
-                    markValid(phoneInput);
-                }
-
-                // 3. Email liên hệ
-                const emailInput = document.getElementById('createPropEmail');
-                const emailVal = emailInput ? emailInput.value.trim() : '';
-                const atIdx = emailVal.indexOf('@@');
-                const dotIdx = emailVal.lastIndexOf('.');
-                const isValidEmail = atIdx > 0 && dotIdx > atIdx + 1 && dotIdx < emailVal.length - 1;
-                if (!emailInput || !emailVal) {
-                    markInvalid(emailInput, 'Vui lòng nhập email liên hệ.');
-                    hasError = true;
-                    if (!firstInvalid) firstInvalid = emailInput;
-                } else if (!isValidEmail) {
-                    markInvalid(emailInput, 'Địa chỉ email không đúng định dạng.');
-                    hasError = true;
-                    if (!firstInvalid) firstInvalid = emailInput;
-                } else {
-                    markValid(emailInput);
-                }
-
-                // 4. Địa chỉ cụ thể
-                const addressInput = document.getElementById('createPropAddress');
-                if (!addressInput || !addressInput.value.trim()) {
-                    markInvalid(addressInput, 'Vui lòng nhập địa chỉ cụ thể (số nhà, tên đường).');
-                    hasError = true;
-                    if (!firstInvalid) firstInvalid = addressInput;
-                } else {
-                    markValid(addressInput);
-                }
-
-                // 5. Tỉnh / Thành phố
-                const cityInput = document.getElementById('createPropCity');
-                if (!cityInput || !cityInput.value.trim()) {
-                    markInvalid(cityInput, 'Vui lòng nhập hoặc chọn Tỉnh / Thành phố.');
-                    hasError = true;
-                    if (!firstInvalid) firstInvalid = cityInput;
-                } else {
-                    markValid(cityInput);
-                }
-
-                // 6. Cấu hình Homestay nếu loại hình là Homestay
-                const typeSelect = document.getElementById('createPropTypeSelect');
-                const isHomestay = !typeSelect || typeSelect.value === 'Homestay';
-                if (isHomestay) {
-                    const priceInput = document.getElementById('createPropHomestayPrice');
-                    if (priceInput && (!priceInput.value || Number(priceInput.value) < 50000)) {
-                        markInvalid(priceInput, 'Giá thuê trọn gói tối thiểu từ 50.000 ₫/đêm.');
-                        hasError = true;
-                        if (!firstInvalid) firstInvalid = priceInput;
-                    } else if (priceInput) {
-                        markValid(priceInput);
-                    }
-
-                    const capInput = document.getElementById('createPropHomestayCapacity');
-                    if (capInput && (!capInput.value || Number(capInput.value) < 1)) {
-                        markInvalid(capInput, 'Sức chứa tối thiểu 1 người.');
-                        hasError = true;
-                        if (!firstInvalid) firstInvalid = capInput;
-                    } else if (capInput) {
-                        markValid(capInput);
-                    }
-                }
-
-                if (hasError) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (firstInvalid) {
-                        firstInvalid.focus();
-                        firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                    return false;
-                }
-
-                // Form hợp lệ -> chuyển nút submit sang trạng thái loading
-                const submitBtn = form.querySelector('button[type="submit"]');
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Đang gửi hồ sơ...';
-                }
-            });
-        }
+        // Implementation moved to property_wizard.js
 
         // Tab Switching
         function switchDashboardTab(tabId, element) {
@@ -1523,7 +1582,10 @@
                 const data = await res.json();
                 currentOpdData = data;
 
-                const status = (data.approvalStatus || 'Approved').toLowerCase();
+                const rawStatus = (data.approvalStatus || 'Approved').toLowerCase();
+                const status = (rawStatus === 'choduyet' || rawStatus === 'pending') ? 'pending'
+                    : (rawStatus === 'tuchoi' || rawStatus === 'rejected') ? 'rejected'
+                    : 'approved';
 
                 // NẾU BỊ TỪ CHỐI -> Mở form tạo/sửa cơ sở cùng với các thông tin cũ đã nhập từ request trước
                 if (status === 'rejected') {
@@ -1818,8 +1880,8 @@
 
                 let html = '<div class="d-flex flex-column gap-3">';
                 history.forEach(item => {
-                    const isApproved = item.action === 'Approved' || item.status === 'Approved';
-                    const isRejected = item.action === 'Rejected' || item.status === 'Rejected';
+                    const isApproved = item.action === 'Approved' || item.status === 'Approved' || item.action === 'DaDuyet' || item.status === 'DaDuyet';
+                    const isRejected = item.action === 'Rejected' || item.status === 'Rejected' || item.action === 'TuChoi' || item.status === 'TuChoi';
                     const badgeClass = isApproved ? 'bg-success' : isRejected ? 'bg-danger' : 'bg-warning text-dark';
 
                     html += `
@@ -1993,6 +2055,116 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="bi bi-send-fill me-1"></i> Gửi phản hồi';
+            }
+        }
+
+        // ==================== SERVICE MANAGEMENT ====================
+        function loadServicesList() {
+            const propId = document.getElementById('filterServiceProperty').value;
+            const tbody = document.getElementById('servicesTableBody');
+            if (!propId) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">Vui lòng chọn cơ sở để xem dịch vụ</td></tr>';
+                return;
+            }
+            
+            fetch(`/Home/GetServicesList?propertyId=${propId}`)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success && res.data && res.data.length > 0) {
+                        tbody.innerHTML = res.data.map(s => `
+                            <tr>
+                                <td class="fw-medium text-dark">${escapeJs(s.name)}</td>
+                                <td class="text-muted small">${escapeJs(s.description || '')}</td>
+                                <td class="text-primary fw-bold">${Number(s.price).toLocaleString('vi-VN')} ₫</td>
+                                <td>
+                                    <span class="badge ${s.isActive ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} rounded-pill">
+                                        ${s.isActive ? 'Đang hoạt động' : 'Tạm ngưng'}
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary rounded-circle" onclick="editService(${s.id}, '${escapeJs(s.name)}', ${s.price}, '${escapeJs(s.description || '')}', ${s.isActive})">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">Cơ sở này chưa có dịch vụ nào</td></tr>';
+                    }
+                })
+                .catch(err => {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-danger">Lỗi tải danh sách dịch vụ</td></tr>';
+                });
+        }
+
+        function openServiceModal() {
+            const propId = document.getElementById('filterServiceProperty').value;
+            if (!propId) {
+                alert('Vui lòng chọn cơ sở lưu trú trước khi thêm dịch vụ.');
+                return;
+            }
+            document.getElementById('serviceModalTitle').textContent = 'Thêm dịch vụ mới';
+            document.getElementById('serviceId').value = '0';
+            document.getElementById('servicePropId').value = propId;
+            document.getElementById('serviceName').value = '';
+            document.getElementById('servicePrice').value = '';
+            document.getElementById('serviceDesc').value = '';
+            document.getElementById('serviceActive').checked = true;
+            document.getElementById('serviceAlertBox').classList.add('d-none');
+            new bootstrap.Modal(document.getElementById('serviceModal')).show();
+        }
+
+        function editService(id, name, price, desc, isActive) {
+            const propId = document.getElementById('filterServiceProperty').value;
+            document.getElementById('serviceModalTitle').textContent = 'Chỉnh sửa dịch vụ';
+            document.getElementById('serviceId').value = id;
+            document.getElementById('servicePropId').value = propId;
+            document.getElementById('serviceName').value = name;
+            document.getElementById('servicePrice').value = price;
+            document.getElementById('serviceDesc').value = desc;
+            document.getElementById('serviceActive').checked = isActive;
+            document.getElementById('serviceAlertBox').classList.add('d-none');
+            new bootstrap.Modal(document.getElementById('serviceModal')).show();
+        }
+
+        async function saveService() {
+            const id = document.getElementById('serviceId').value;
+            const propId = document.getElementById('servicePropId').value;
+            const name = document.getElementById('serviceName').value.trim();
+            const price = document.getElementById('servicePrice').value;
+            const desc = document.getElementById('serviceDesc').value.trim();
+            const isActive = document.getElementById('serviceActive').checked;
+            const alertBox = document.getElementById('serviceAlertBox');
+            const btn = document.getElementById('btnSaveService');
+
+            if (!name || !price) {
+                alertBox.textContent = 'Vui lòng nhập tên và giá dịch vụ.';
+                alertBox.classList.remove('d-none');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang lưu...';
+            try {
+                const res = await fetch('/Home/SaveServiceJson', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: Number(id), propertyId: Number(propId), name, price: Number(price), description: desc, isActive })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('serviceModal')).hide();
+                    loadServicesList();
+                } else {
+                    alertBox.textContent = data.message || 'Lỗi khi lưu dịch vụ.';
+                    alertBox.classList.remove('d-none');
+                }
+            } catch (err) {
+                alertBox.textContent = 'Lỗi kết nối máy chủ.';
+                alertBox.classList.remove('d-none');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Lưu dịch vụ';
             }
         }
 

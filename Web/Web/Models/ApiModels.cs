@@ -200,7 +200,8 @@ public sealed record OwnerProperty(
     string? Policy,
     string? RejectionReason,
     int RoomsCount,
-    string? CoverImageUrl
+    string? CoverImageUrl,
+    bool IsActive = true
 );
 
 public sealed record ApprovalHistoryItem(
@@ -319,7 +320,8 @@ public sealed class CreatePropertyInput
 
     // Homestay Whole-unit Configuration
     public decimal? HomestayPrice { get; set; }
-    public int? HomestayCapacity { get; set; }
+    public int? HomestayAdultCapacity { get; set; }
+    public int? HomestayChildCapacity { get; set; }
     public int? HomestayRoomTypeId { get; set; }
 
     // Hotel Multi-room Configuration
@@ -372,7 +374,8 @@ public sealed class UpdatePropertyInput
 
     // Homestay whole-unit setup (for updating price/capacity on resubmit)
     public decimal? HomestayPrice { get; set; }
-    public int? HomestayCapacity { get; set; }
+    public int? HomestayAdultCapacity { get; set; }
+    public int? HomestayChildCapacity { get; set; }
     public int? HomestayRoomTypeId { get; set; }
     public bool Resubmit { get; set; } = false;
 }
@@ -406,7 +409,9 @@ public sealed record RoomDetailItem(
     decimal OriginalPrice,
     string? RoomStatus,
     string? RoomType,
-    IReadOnlyList<string> Images
+    IReadOnlyList<string> Images,
+    int AdultCapacity = 2,
+    int ChildCapacity = 1
 );
 
 public sealed class CreateRoomInput

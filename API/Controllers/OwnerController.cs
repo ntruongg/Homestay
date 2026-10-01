@@ -69,7 +69,8 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
                 p.ChinhSach,
                 rejectionReason,
                 p.Phongs.Count,
-                coverImages.FirstOrDefault(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru)?.UrlHinhAnh
+                coverImages.FirstOrDefault(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru)?.UrlHinhAnh,
+                p.TrangThaiHoatDong
             );
         }).ToList();
 

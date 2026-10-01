@@ -25,7 +25,8 @@ public sealed record OwnerPropertyDto(
     string? Policy,
     string? RejectionReason,
     int RoomsCount,
-    string? CoverImageUrl
+    string? CoverImageUrl,
+    bool IsActive = true
 );
 
 public sealed record OwnerRoomDto(

@@ -259,7 +259,15 @@
 
                                         <!-- Action: Nút Xem chi tiết & Sửa lại -->
                                         <div class="d-flex align-items-center justify-content-between pt-3 mt-3 border-top flex-wrap gap-2">
-                                            <span class="text-muted small">Mã cơ sở: <strong>#CS-@prop.Id</strong></span>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <span class="text-muted small">Mã cơ sở: <strong>#CS-@prop.Id</strong></span>
+                                                @if (isApproved)
+                                                {
+                                                    <div class="form-check form-switch m-0" title="Bật/tắt trạng thái hoạt động">
+                                                        <input class="form-check-input" type="checkbox" role="switch" id="propToggle_@prop.Id" @(prop.IsActive ? "checked" : "") onchange="togglePropertyStatus(@prop.Id, this.checked)">
+                                                    </div>
+                                                }
+                                            </div>
                                             <div class="d-flex align-items-center gap-2">
                                                 @if (isRejected)
                                                 {
@@ -927,6 +935,9 @@
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="Id" id="opdEditPropId" value="" />
                             <input type="hidden" name="Resubmit" value="false" />
+                            <input type="hidden" name="BusinessLicenseUrl" id="opdEditBusinessLicenseUrl" value="" />
+                            <input type="hidden" name="FireSafetyDocumentUrl" id="opdEditFireSafetyDocumentUrl" value="" />
+                            <input type="hidden" name="SecurityDocumentUrl" id="opdEditSecurityDocumentUrl" value="" />
 
                             <div class="alert alert-info py-2 px-3 small rounded-3 mb-3">
                                 <i class="bi bi-info-circle me-1"></i> <strong>Chế độ chỉnh sửa thông tin:</strong> Cập nhật thông tin liên hệ, địa chỉ, tiện ích và chính sách hoạt động của cơ sở.
@@ -983,8 +994,12 @@
                                         <input name="HomestayPrice" id="opdEditHomestayPrice" type="number" step="10000" min="50000" class="form-control rounded-pill" />
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small fw-bold">Sức chứa tối đa (người)</label>
-                                        <input name="HomestayCapacity" id="opdEditHomestayCapacity" type="number" min="1" max="50" class="form-control rounded-pill" />
+                                        <label class="form-label small fw-bold">Người lớn tối đa</label>
+                                        <input name="HomestayAdultCapacity" id="opdEditHomestayAdultCapacity" type="number" min="1" max="50" class="form-control rounded-pill" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Trẻ em tối đa</label>
+                                        <input name="HomestayChildCapacity" id="opdEditHomestayChildCapacity" type="number" min="0" max="50" class="form-control rounded-pill" />
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold">Phân loại không gian</label>
@@ -1082,6 +1097,9 @@
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="Id" id="resubmitPropId" value="" />
                         <input type="hidden" name="Resubmit" value="true" />
+                        <input type="hidden" name="BusinessLicenseUrl" id="resubmitBusinessLicenseUrl" value="" />
+                        <input type="hidden" name="FireSafetyDocumentUrl" id="resubmitFireSafetyDocumentUrl" value="" />
+                        <input type="hidden" name="SecurityDocumentUrl" id="resubmitSecurityDocumentUrl" value="" />
 
                         <!-- 1. Thông tin chung -->
                         <div class="p-3 bg-light rounded-4 mb-3">
@@ -1134,8 +1152,12 @@
                                     <input name="HomestayPrice" id="resubmitHomestayPrice" type="number" class="form-control rounded-pill" />
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label small fw-bold">Sức chứa tối đa (người)</label>
-                                    <input name="HomestayCapacity" id="resubmitHomestayCapacity" type="number" class="form-control rounded-pill" />
+                                    <label class="form-label small fw-bold">Người lớn tối đa</label>
+                                    <input name="HomestayAdultCapacity" id="resubmitHomestayAdultCapacity" type="number" min="1" max="50" class="form-control rounded-pill" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Trẻ em tối đa</label>
+                                    <input name="HomestayChildCapacity" id="resubmitHomestayChildCapacity" type="number" min="0" max="50" class="form-control rounded-pill" />
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label small fw-bold">Phân loại không gian</label>
@@ -1548,31 +1570,71 @@
             document.getElementById('opdEditCity').value = data.city || '';
             document.getElementById('opdEditPolicy').value = data.policy || '';
 
+            const opdCityEl = document.getElementById('opdEditCity');
+            const opdWardEl = document.getElementById('opdEditWard');
+            const opdAddrEl = document.getElementById('opdEditAddress');
+            if (opdCityEl && opdCityEl.value) {
+                if (opdWardEl) opdWardEl.disabled = false;
+                if (opdAddrEl) opdAddrEl.disabled = false;
+            }
+
             const isHotel = (data.type || '').toLowerCase() === 'hotel' || (data.type || '').toLowerCase() === 'khách sạn';
             const isHomestay = !isHotel;
             const homestayPanel = document.getElementById('opdEditHomestayPanel');
             if (isHomestay) {
                 if (homestayPanel) homestayPanel.classList.remove('d-none');
-                if (data.homestayPrice) document.getElementById('opdEditHomestayPrice').value = data.homestayPrice;
-                if (data.homestayCapacity) document.getElementById('opdEditHomestayCapacity').value = data.homestayCapacity;
-                if (data.homestayRoomTypeId) document.getElementById('opdEditHomestayRoomTypeId').value = data.homestayRoomTypeId;
+                const room = data.rooms && data.rooms.length > 0 ? data.rooms[0] : null;
+                if (room) {
+                    if (room.originalPrice !== undefined) document.getElementById('opdEditHomestayPrice').value = room.originalPrice;
+                    if (room.adultCapacity !== undefined) document.getElementById('opdEditHomestayAdultCapacity').value = room.adultCapacity;
+                    if (room.childCapacity !== undefined) document.getElementById('opdEditHomestayChildCapacity').value = room.childCapacity;
+                }
             } else {
                 if (homestayPanel) homestayPanel.classList.add('d-none');
             }
 
             const docBL = document.getElementById('opdEditOldBusinessLicense');
             if (docBL) docBL.innerHTML = data.businessLicenseUrl ? `<a href="${data.businessLicenseUrl}" target="_blank" class="text-primary text-decoration-underline"><i class="bi bi-file-earmark-check me-1"></i>Tệp hiện tại</a>` : 'Chưa có tệp';
+            if (data.businessLicenseUrl) document.getElementById('opdEditBusinessLicenseUrl').value = data.businessLicenseUrl;
 
             const docFS = document.getElementById('opdEditOldFireSafety');
             if (docFS) docFS.innerHTML = data.fireSafetyDocumentUrl ? `<a href="${data.fireSafetyDocumentUrl}" target="_blank" class="text-primary text-decoration-underline"><i class="bi bi-file-earmark-check me-1"></i>Tệp hiện tại</a>` : 'Chưa có tệp';
+            if (data.fireSafetyDocumentUrl) document.getElementById('opdEditFireSafetyDocumentUrl').value = data.fireSafetyDocumentUrl;
 
             const docSEC = document.getElementById('opdEditOldSecurity');
             if (docSEC) docSEC.innerHTML = data.securityDocumentUrl ? `<a href="${data.securityDocumentUrl}" target="_blank" class="text-primary text-decoration-underline"><i class="bi bi-file-earmark-check me-1"></i>Tệp hiện tại</a>` : 'Chưa có tệp';
+            if (data.securityDocumentUrl) document.getElementById('opdEditSecurityDocumentUrl').value = data.securityDocumentUrl;
 
+            // Checkboxes amenities
             const activeIds = (data.amenities || []).map(a => a.id);
             document.querySelectorAll('.opd-edit-amenity-cb').forEach(cb => {
                 cb.checked = activeIds.includes(Number(cb.value));
             });
+        }
+
+        async function togglePropertyStatus(propId, isActive) {
+            try {
+                const res = await fetch(`/Home/TogglePropertyActive?id=${propId}`, {
+                    method: 'PUT'
+                });
+                
+                if (!res.ok) {
+                    const text = await res.text();
+                    alert("Lỗi: " + text);
+                    // Revert UI toggle
+                    const toggle = document.getElementById(`propToggle_${propId}`);
+                    if (toggle) toggle.checked = !isActive;
+                    return;
+                }
+                
+                const data = await res.json();
+                alert(data.message);
+            } catch (err) {
+                console.error(err);
+                alert("Lỗi hệ thống khi đổi trạng thái cơ sở.");
+                const toggle = document.getElementById(`propToggle_${propId}`);
+                if (toggle) toggle.checked = !isActive;
+            }
         }
 
         async function openOwnerPropertyDetails(propId) {
@@ -1679,7 +1741,7 @@
                         <div class="mb-3">
                             <h6 class="fw-bold text-navy small mb-2"><i class="bi bi-stars text-primary me-1"></i> Tiện ích có sẵn (${data.amenities.length}):</h6>
                             <div class="d-flex flex-wrap gap-2">
-                                ${data.amenities.map(a => `<span class="badge bg-light text-navy rounded-pill px-3 py-2 border">${a.name}</span>`).join('')}
+                                ${data.amenities.map(a => `<span class="badge bg-light text-dark rounded-pill px-3 py-2 border">${a.name}</span>`).join('')}
                             </div>
                         </div>
                     `;
@@ -1744,7 +1806,7 @@
                                         <tr>
                                             <td><strong>${r.roomNumber}</strong></td>
                                             <td><span class="badge bg-light text-primary border rounded-pill px-2 py-1">${r.roomType || 'Tiêu chuẩn'}</span></td>
-                                            <td>${r.capacity} khách</td>
+                                            <td>${r.adultCapacity} Lớn, ${r.childCapacity} Trẻ em</td>
                                             <td><strong class="text-primary">${Number(r.originalPrice).toLocaleString('vi-VN')} ₫</strong></td>
                                             <td><span class="badge ${r.roomStatus === 'Trống' ? 'bg-success' : 'bg-secondary'} rounded-pill px-2 py-1">${r.roomStatus || 'Trống'}</span></td>
                                             ${(isHotel && status === 'approved') ? `
@@ -1814,13 +1876,24 @@
             document.getElementById('resubmitCity').value = data.city || '';
             document.getElementById('resubmitPolicy').value = data.policy || '';
 
+            const resubmitCityEl = document.getElementById('resubmitCity');
+            const resubmitWardEl = document.getElementById('resubmitWard');
+            const resubmitAddrEl = document.getElementById('resubmitAddress');
+            if (resubmitCityEl && resubmitCityEl.value) {
+                if (resubmitWardEl) resubmitWardEl.disabled = false;
+                if (resubmitAddrEl) resubmitAddrEl.disabled = false;
+            }
+
             const isHomestay = (data.type || '').toLowerCase() === 'homestay';
             const homestayPanel = document.getElementById('resubmitHomestayPanel');
             if (isHomestay) {
                 if (homestayPanel) homestayPanel.classList.remove('d-none');
-                if (data.homestayPrice) document.getElementById('resubmitHomestayPrice').value = data.homestayPrice;
-                if (data.homestayCapacity) document.getElementById('resubmitHomestayCapacity').value = data.homestayCapacity;
-                if (data.homestayRoomTypeId) document.getElementById('resubmitHomestayRoomTypeId').value = data.homestayRoomTypeId;
+                const room = data.rooms && data.rooms.length > 0 ? data.rooms[0] : null;
+                if (room) {
+                    if (room.originalPrice !== undefined) document.getElementById('resubmitHomestayPrice').value = room.originalPrice;
+                    if (room.adultCapacity !== undefined) document.getElementById('resubmitHomestayAdultCapacity').value = room.adultCapacity;
+                    if (room.childCapacity !== undefined) document.getElementById('resubmitHomestayChildCapacity').value = room.childCapacity;
+                }
             } else {
                 if (homestayPanel) homestayPanel.classList.add('d-none');
             }
@@ -1828,12 +1901,15 @@
             // Old document links
             const docBL = document.getElementById('resubmitOldBusinessLicenseLink');
             if (docBL) docBL.innerHTML = data.businessLicenseUrl ? `<a href="${data.businessLicenseUrl}" target="_blank" class="text-primary text-decoration-underline"><i class="bi bi-file-earmark-check me-1"></i>Tệp đã nộp</a>` : 'Chưa có tệp';
+            if (data.businessLicenseUrl) document.getElementById('resubmitBusinessLicenseUrl').value = data.businessLicenseUrl;
 
             const docFS = document.getElementById('resubmitOldFireSafetyLink');
             if (docFS) docFS.innerHTML = data.fireSafetyDocumentUrl ? `<a href="${data.fireSafetyDocumentUrl}" target="_blank" class="text-primary text-decoration-underline"><i class="bi bi-file-earmark-check me-1"></i>Tệp đã nộp</a>` : 'Chưa có tệp';
+            if (data.fireSafetyDocumentUrl) document.getElementById('resubmitFireSafetyDocumentUrl').value = data.fireSafetyDocumentUrl;
 
             const docSEC = document.getElementById('resubmitOldSecurityLink');
             if (docSEC) docSEC.innerHTML = data.securityDocumentUrl ? `<a href="${data.securityDocumentUrl}" target="_blank" class="text-primary text-decoration-underline"><i class="bi bi-file-earmark-check me-1"></i>Tệp đã nộp</a>` : 'Chưa có tệp';
+            if (data.securityDocumentUrl) document.getElementById('resubmitSecurityDocumentUrl').value = data.securityDocumentUrl;
 
             // Checkboxes amenities
             const activeIds = (data.amenities || []).map(a => a.id);

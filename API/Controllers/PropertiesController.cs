@@ -584,6 +584,23 @@ public sealed class PropertiesController(
     }
 
     [Authorize(Roles = "OWNER")]
+    [HttpPut("{id:int}/toggle-active")]
+    public async Task<IActionResult> TogglePropertyActive(int id, CancellationToken cancellationToken)
+    {
+        var ownerId = GetAccountId();
+        var property = await db.CoSoLuuTrus
+            .FirstOrDefaultAsync(p => p.MaCoSoLuuTru == id && p.MaChuCoSoLuuTru == ownerId, cancellationToken);
+
+        if (property is null)
+            return NotFound("Cơ sở không tồn tại hoặc bạn không có quyền sở hữu.");
+
+        property.TrangThaiHoatDong = !property.TrangThaiHoatDong;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { message = $"Đã {(property.TrangThaiHoatDong ? "bật" : "tắt")} hoạt động cơ sở.", isActive = property.TrangThaiHoatDong });
+    }
+
+    [Authorize(Roles = "OWNER")]
     [HttpPost("{propertyId:int}/rooms")]
     public async Task<ActionResult> CreateRoom(int propertyId, CreateRoomRequest request, CancellationToken cancellationToken)
     {

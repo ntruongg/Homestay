@@ -14,7 +14,7 @@ namespace API.Controllers;
 [Route("api/auth")]
 public sealed class AuthController(
     HomestayDbContext db,
-    IPasswordHasher<TaiKhoan> passwordHasher,
+    IPasswordHasher<NguoiDung> passwordHasher,
     JwtTokenService tokenService,
     IOtpService otpService,
     IConfiguration configuration) : ControllerBase
@@ -28,7 +28,7 @@ public sealed class AuthController(
 
         if (string.Equals(request.Purpose, "Register", StringComparison.OrdinalIgnoreCase))
         {
-            var alreadyRegistered = await db.TaiKhoans.AnyAsync(a => a.Email == email, cancellationToken);
+            var alreadyRegistered = await db.NguoiDungs.AnyAsync(a => a.Email == email, cancellationToken);
             if (alreadyRegistered)
                 return Conflict("Email này đã được sử dụng cho một tài khoản khác.");
         }
@@ -42,6 +42,35 @@ public sealed class AuthController(
         return Ok(new { message = $"Mã xác thực OTP đã được gửi đến {email}. Mã có hiệu lực trong 10 phút." });
     }
 
+    [HttpGet("check-availability")]
+    public async Task<IActionResult> CheckAvailability(
+        [FromQuery] string? email,
+        [FromQuery] string? phone,
+        CancellationToken cancellationToken)
+    {
+        bool emailExists = false;
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+            emailExists = await db.NguoiDungs.AnyAsync(a => a.Email == normalizedEmail, cancellationToken);
+        }
+
+        bool phoneExists = false;
+        if (!string.IsNullOrWhiteSpace(phone))
+        {
+            var normalizedPhone = phone.Trim();
+            phoneExists = await db.NguoiDungs.AnyAsync(a => a.DienThoai == normalizedPhone, cancellationToken);
+        }
+
+        return Ok(new
+        {
+            emailExists,
+            phoneExists,
+            isAvailable = !emailExists && !phoneExists,
+            message = emailExists ? "Email này đã được sử dụng." : (phoneExists ? "Số điện thoại này đã được sử dụng." : "Thông tin hợp lệ.")
+        });
+    }
+
     [HttpPost("verify-otp")]
     public IActionResult VerifyOtp([FromBody] VerifyOtpRequest request)
     {
@@ -51,6 +80,7 @@ public sealed class AuthController(
 
         return Ok(new { message = "Mã OTP hợp lệ." });
     }
+
     [HttpPost("register/guest")]
     public async Task<ActionResult<AuthResponse>> RegisterGuest(
         RegisterGuestRequest request,
@@ -59,21 +89,26 @@ public sealed class AuthController(
         var email = request.Email.Trim().ToLowerInvariant();
         var phone = request.Phone.Trim();
 
-        if (await IsContactAlreadyRegistered(email, phone, cancellationToken))
-            return Conflict("Email or phone number is already registered.");
+        var emailExists = await db.NguoiDungs.AnyAsync(a => a.Email == email, cancellationToken);
+        if (emailExists)
+            return Conflict(new { field = "Email", message = "Địa chỉ email này đã được sử dụng trên hệ thống." });
 
-        var requireOtp = configuration.GetValue("Auth:RequireOtp", false);
+        var phoneExists = await db.NguoiDungs.AnyAsync(a => a.DienThoai == phone, cancellationToken);
+        if (phoneExists)
+            return Conflict(new { field = "Phone", message = "Số điện thoại này đã được sử dụng trên hệ thống." });
+
+        var requireOtp = configuration.GetValue("Auth:RequireOtp", true);
         if (requireOtp && string.IsNullOrWhiteSpace(request.OtpCode))
         {
-            return BadRequest("Vui lòng nhập mã xác thực OTP gửi về email của bạn để hoàn tất đăng ký.");
+            return BadRequest(new { field = "OtpCode", message = "Vui lòng nhập mã xác thực OTP gửi về email của bạn để hoàn tất đăng ký." });
         }
 
-        if (!string.IsNullOrWhiteSpace(request.OtpCode) && !otpService.VerifyOtp(email, request.OtpCode, "Register"))
+        if (requireOtp && !otpService.VerifyOtp(email, request.OtpCode!, "Register"))
         {
-            return BadRequest("Mã xác thực OTP không chính xác hoặc đã hết hiệu lực. Vui lòng thử lại.");
+            return BadRequest(new { field = "OtpCode", message = "Mã xác thực OTP không chính xác hoặc đã hết hiệu lực. Vui lòng thử lại." });
         }
 
-        var account = new TaiKhoan
+        var account = new NguoiDung
         {
             Email = email,
             HoTen = request.FullName.Trim(),
@@ -81,7 +116,9 @@ public sealed class AuthController(
             GioiTinh = request.Gender,
             DienThoai = phone,
             MaVaiTro = VaiTro.GUEST,
-            ThongTinNganHang = null,
+            NganHang = null,
+            SoTaiKhoan = null,
+            TenNguoiThuHuong = null,
             CCCD = null,
             TrangThai = true,
             NgayTao = DateTime.UtcNow
@@ -89,7 +126,7 @@ public sealed class AuthController(
 
         account.MatKhau = passwordHasher.HashPassword(account, request.Password);
 
-        db.TaiKhoans.Add(account);
+        db.NguoiDungs.Add(account);
         await db.SaveChangesAsync(cancellationToken);
 
         return Ok(CreateAuthResponse(account));
@@ -103,21 +140,52 @@ public sealed class AuthController(
         var email = request.Email.Trim().ToLowerInvariant();
         var phone = request.Phone.Trim();
 
-        if (await IsContactAlreadyRegistered(email, phone, cancellationToken))
-            return Conflict("Email or phone number is already registered.");
+        var emailExists = await db.NguoiDungs.AnyAsync(a => a.Email == email, cancellationToken);
+        if (emailExists)
+            return Conflict(new { field = "Email", message = "Địa chỉ email này đã được sử dụng trên hệ thống." });
 
-        var requireOtp = configuration.GetValue("Auth:RequireOtp", false);
+        var phoneExists = await db.NguoiDungs.AnyAsync(a => a.DienThoai == phone, cancellationToken);
+        if (phoneExists)
+            return Conflict(new { field = "Phone", message = "Số điện thoại này đã được sử dụng trên hệ thống." });
+
+        var requireOtp = configuration.GetValue("Auth:RequireOtp", true);
         if (requireOtp && string.IsNullOrWhiteSpace(request.OtpCode))
         {
-            return BadRequest("Vui lòng nhập mã xác thực OTP gửi về email của bạn để hoàn tất đăng ký.");
+            return BadRequest(new { field = "OtpCode", message = "Vui lòng nhập mã xác thực OTP gửi về email của bạn để hoàn tất đăng ký." });
         }
 
-        if (!string.IsNullOrWhiteSpace(request.OtpCode) && !otpService.VerifyOtp(email, request.OtpCode, "Register"))
+        if (requireOtp && !otpService.VerifyOtp(email, request.OtpCode!, "Register"))
         {
-            return BadRequest("Mã xác thực OTP không chính xác hoặc đã hết hiệu lực. Vui lòng thử lại.");
+            return BadRequest(new { field = "OtpCode", message = "Mã xác thực OTP không chính xác hoặc đã hết hiệu lực. Vui lòng thử lại." });
         }
 
-        var account = new TaiKhoan
+        // Tách thông tin ngân hàng
+        string? bankName = request.BankName?.Trim();
+        string? accountNo = request.AccountNumber?.Trim();
+        string? accountHolder = request.AccountHolder?.Trim();
+
+        if (string.IsNullOrWhiteSpace(bankName) && !string.IsNullOrWhiteSpace(request.BankInformation))
+        {
+            var parts = request.BankInformation.Split('-', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 3)
+            {
+                bankName = parts[0];
+                accountNo = parts[1];
+                accountHolder = parts[2];
+            }
+            else if (parts.Length == 2)
+            {
+                bankName = parts[0];
+                accountNo = parts[1];
+                accountHolder = request.FullName.Trim().ToUpperInvariant();
+            }
+            else
+            {
+                bankName = request.BankInformation.Trim();
+            }
+        }
+
+        var account = new NguoiDung
         {
             Email = email,
             HoTen = request.FullName.Trim(),
@@ -125,7 +193,9 @@ public sealed class AuthController(
             GioiTinh = request.Gender,
             DienThoai = phone,
             MaVaiTro = VaiTro.OWNER,
-            ThongTinNganHang = request.BankInformation.Trim(),
+            NganHang = bankName,
+            SoTaiKhoan = accountNo,
+            TenNguoiThuHuong = accountHolder?.ToUpperInvariant(),
             CCCD = request.CitizenId.Trim(),
             TrangThai = true,
             NgayTao = DateTime.UtcNow
@@ -133,7 +203,7 @@ public sealed class AuthController(
 
         account.MatKhau = passwordHasher.HashPassword(account, request.Password);
 
-        db.TaiKhoans.Add(account);
+        db.NguoiDungs.Add(account);
         await db.SaveChangesAsync(cancellationToken);
 
         return Ok(CreateAuthResponse(account));
@@ -146,7 +216,7 @@ public sealed class AuthController(
     {
         var email = request.Email.Trim().ToLowerInvariant();
 
-        var account = await db.TaiKhoans
+        var account = await db.NguoiDungs
             .Include(a => a.VaiTro)
             .SingleOrDefaultAsync(a => a.Email == email, cancellationToken);
 
@@ -168,12 +238,12 @@ public sealed class AuthController(
         string phone,
         CancellationToken cancellationToken)
     {
-        return await db.TaiKhoans.AnyAsync(
+        return await db.NguoiDungs.AnyAsync(
             account => account.Email == email || account.DienThoai == phone,
             cancellationToken);
     }
 
-    private AuthResponse CreateAuthResponse(TaiKhoan account)
+    private AuthResponse CreateAuthResponse(NguoiDung account)
     {
         var token = tokenService.CreateToken(account);
         var roleName = account.VaiTro?.TenVaiTro ?? (account.MaVaiTro switch
@@ -187,7 +257,7 @@ public sealed class AuthController(
             token.Token,
             token.ExpiresAt,
             new UserResponse(
-                account.MaTaiKhoan,
+                account.MaNguoiDung,
                 account.Email,
                 account.HoTen,
                 roleName));

@@ -3,17 +3,16 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace API.Models;
 
-public class PhuThu
+[Table("DonDatPhongDichVu")]
+public class DonDatPhongDichVu
 {
-    [Key]
-    public int MaPhuThu { get; set; }
-
     public int MaDonDatPhong { get; set; }
     [ForeignKey(nameof(MaDonDatPhong))]
     public DonDatPhong DonDatPhong { get; set; } = null!;
 
-    [Required, StringLength(100)]
-    public string TenPhuThu { get; set; } = string.Empty;
+    public int MaDichVu { get; set; }
+    [ForeignKey(nameof(MaDichVu))]
+    public DichVu DichVu { get; set; } = null!;
 
     public int SoLuong { get; set; } = 1;
 
@@ -22,7 +21,4 @@ public class PhuThu
 
     [Column(TypeName = "decimal(12,2)")]
     public decimal ThanhTien { get; set; }
-
-    [StringLength(200)]
-    public string? GhiChu { get; set; }
 }

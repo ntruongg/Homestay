@@ -2,37 +2,44 @@
 
 <input type="hidden" asp-for="OtpCode" id="OtpCodeInput" />
 
-<label>
-    Full name
-    <input asp-for="FullName" id="FullNameInput" required>
-</label>
-
-<div class="form-row">
-    <label>
-        Date of birth
-        <input asp-for="DateOfBirth" type="date">
-    </label>
-
-    <label>
-        Gender
-        <select asp-for="Gender">
-            <option value="F">Female</option>
-            <option value="M">Male</option>
-        </select>
-    </label>
+<div class="form-group mb-3">
+    <label class="form-label fw-semibold">Họ và tên <span class="text-danger">*</span></label>
+    <input asp-for="FullName" id="FullNameInput" class="form-control rounded-pill px-3 py-2" placeholder="Ví dụ: Nguyễn Văn A" required>
+    <span asp-validation-for="FullName" class="text-danger small"></span>
+    <div class="field-error-text" id="FullNameInputError"></div>
 </div>
 
-<label>
-    Phone
-    <input asp-for="Phone" type="tel" required>
-</label>
+<div class="row g-2 mb-3">
+    <div class="col-md-7">
+        <label class="form-label fw-semibold">Ngày sinh</label>
+        <input asp-for="DateOfBirth" id="DateOfBirthInput" type="date" class="form-control rounded-pill px-3 py-2">
+    </div>
+    <div class="col-md-5">
+        <label class="form-label fw-semibold">Giới tính</label>
+        <select asp-for="Gender" id="GenderInput" class="form-select rounded-pill px-3 py-2">
+            <option value="M">Nam</option>
+            <option value="F">Nữ</option>
+        </select>
+    </div>
+</div>
 
-<label>
-    Email
-    <input asp-for="Email" id="EmailInput" type="email" required>
-</label>
+<div class="form-group mb-3">
+    <label class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
+    <input asp-for="Phone" id="PhoneInput" type="tel" class="form-control rounded-pill px-3 py-2" placeholder="Ví dụ: 0912345678" required>
+    <span asp-validation-for="Phone" class="text-danger small"></span>
+    <div class="field-error-text" id="PhoneInputError"></div>
+</div>
 
-<label>
-    Password
-    <input asp-for="Password" type="password" minlength="8" required>
-</label>
+<div class="form-group mb-3">
+    <label class="form-label fw-semibold">Địa chỉ Email <span class="text-danger">*</span></label>
+    <input asp-for="Email" id="EmailInput" type="email" class="form-control rounded-pill px-3 py-2" placeholder="vidu@gmail.com" required>
+    <span asp-validation-for="Email" class="text-danger small"></span>
+    <div class="field-error-text" id="EmailInputError"></div>
+</div>
+
+<div class="form-group mb-3">
+    <label class="form-label fw-semibold">Mật khẩu (tối thiểu 8 ký tự) <span class="text-danger">*</span></label>
+    <input asp-for="Password" id="PasswordInput" type="password" minlength="8" class="form-control rounded-pill px-3 py-2" placeholder="Nhập mật khẩu an toàn" required>
+    <span asp-validation-for="Password" class="text-danger small"></span>
+    <div class="field-error-text" id="PasswordInputError"></div>
+</div>

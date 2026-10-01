@@ -1,0 +1,53 @@
+@{
+    ViewData["Title"] = "Chính sách dành cho Đối tác - Stayly";
+}
+
+<section class="py-5 bg-light" style="min-height: calc(100vh - 200px);">
+    <div class="container" style="max-width: 900px;">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+            <h2 class="fw-bold text-navy mb-4 text-center">CHÍNH SÁCH DÀNH CHO ĐỐI TÁC</h2>
+            <p class="text-muted text-center mb-5">Cập nhật lần cuối: @DateTime.Now.ToString("dd/MM/yyyy")</p>
+
+            <h4 class="fw-bold text-primary mb-3"><i class="bi bi-briefcase-fill me-2"></i>PHẦN 3: CHÍNH SÁCH DÀNH CHO CHỦ CƠ SỞ LƯU TRÚ (Đối tác)</h4>
+
+            <div class="mb-4">
+                <h5 class="fw-bold text-navy">1. Hợp tác & Phí Hoa hồng</h5>
+                <ul class="text-muted" style="line-height: 1.8;">
+                    <li><strong>Quyền lợi:</strong> Khi tạo tài khoản đối tác, cơ sở sẽ được cấp quyền truy cập Dashboard chuyên nghiệp để quản lý đơn đặt, lịch trống và được Stayly hỗ trợ quảng bá hình ảnh đến khách hàng.</li>
+                    <li><strong>Phí hoa hồng (Commission):</strong> Nền tảng thu mức phí cố định 15% trên tổng giá trị của mỗi đơn đặt phòng thành công.</li>
+                </ul>
+            </div>
+
+            <div class="mb-4">
+                <h5 class="fw-bold text-navy">2. Chính sách Đối soát & Thanh toán (Payout)</h5>
+                <ul class="text-muted" style="line-height: 1.8;">
+                    <li>Doanh thu hợp lệ (85% còn lại sau khi trừ hoa hồng) sẽ được Stayly chuyển khoản vào thông tin Ngân hàng mà chủ cơ sở đã cung cấp.</li>
+                    <li><strong>Lưu ý:</strong> Tiền sẽ được đối soát và chuyển khoản trong vòng 24h - 48h sau khi khách hàng Check-out thành công (hoặc chốt theo chu kỳ ngày 15 và 30 hàng tháng).</li>
+                </ul>
+            </div>
+
+            <div class="mb-4">
+                <h5 class="fw-bold text-navy">3. Quy định về Hình ảnh & Thông tin niêm yết</h5>
+                <p class="text-muted" style="line-height: 1.8;">
+                    Chủ nhà cam kết đăng tải hình ảnh chụp thực tế và thông tin chính xác về tình trạng phòng, giấy phép kinh doanh. Stayly có quyền tạm khóa hoặc gỡ bỏ cơ sở lưu trú nếu phát hiện hình ảnh sao chép hoặc thông tin sai lệch lừa dối khách hàng.
+                </p>
+            </div>
+
+            <div class="mb-5">
+                <h5 class="fw-bold text-navy">4. Chế tài xử phạt khi Hủy đơn ngang</h5>
+                <p class="text-muted" style="line-height: 1.8;">
+                    Chủ nhà có trách nhiệm đảm bảo giữ phòng khi đã bấm "Duyệt đơn". Nếu chủ nhà tự ý hủy đơn của khách không có lý do chính đáng (bất khả kháng), cơ sở sẽ bị hạ thứ hạng tìm kiếm. Vi phạm nhiều lần sẽ bị khóa tài khoản đối tác vĩnh viễn và trừ khoản tiền bồi thường vào kỳ đối soát tiếp theo.
+                </p>
+            </div>
+
+            <div class="mt-5 text-center">
+                <a asp-action="Register" asp-route-partner="true" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm me-2" style="background-color: var(--stayly-primary); border: none;">
+                    Quay lại Đăng ký Đối tác
+                </a>
+                <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-bold shadow-sm">
+                    Trang chủ
+                </a>
+            </div>
+        </div>
+    </div>
+</section>

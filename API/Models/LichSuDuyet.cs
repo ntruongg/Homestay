@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace API.Models;
 
+[Table("LichSuDuyet")]
 public class LichSuDuyet
 {
     [Key]
@@ -14,7 +15,7 @@ public class LichSuDuyet
 
     public int? MaNguoiDuyet { get; set; }
     [ForeignKey(nameof(MaNguoiDuyet))]
-    public TaiKhoan? NguoiDuyet { get; set; }
+    public NguoiDung? NguoiDuyet { get; set; }
 
     [Required, StringLength(30)]
     public string TrangThaiDuyet { get; set; } = string.Empty;

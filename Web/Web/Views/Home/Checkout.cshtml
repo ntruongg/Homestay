@@ -1,0 +1,110 @@
+@model Web.Models.Booking
+
+@{
+    ViewData["Title"] = "Thanh toán QR Code";
+}
+
+<div class="container py-5">
+    <div class="row g-4 justify-content-center">
+        <div class="col-lg-10">
+            <h1 class="h3 fw-bold text-navy mb-4"><i class="bi bi-qr-code-scan me-2 text-primary"></i>Thanh toán đơn đặt phòng</h1>
+
+            <div class="row g-4">
+                <!-- Left: QR Code -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 h-100">
+                        <div class="card-body p-4 text-center d-flex flex-column justify-content-center align-items-center">
+                            <h4 class="fw-bold mb-3">Quét mã để thanh toán</h4>
+                            <p class="text-muted small mb-4">Vui lòng sử dụng Ứng dụng Ngân hàng hoặc Ví điện tử (VNPay, Momo) để quét mã QR này.</p>
+                            
+                            <div class="qr-code-wrapper bg-light p-3 rounded-4 mb-4" style="display: inline-block;">
+                                <!-- Dùng api tạo QR code giả định từ dữ liệu mã đơn -->
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=Stayly_Payment_@(Model.Id)_@(Model.TotalAmount)" alt="QR Code" class="img-fluid rounded" />
+                            </div>
+
+                            <div class="timer-box mb-4">
+                                <span class="text-danger fw-bold"><i class="bi bi-clock-history me-1"></i> Mã hết hạn sau: <span id="countdownTimer">30:00</span></span>
+                            </div>
+
+                            <form asp-action="CompletePayment" method="post">
+                                <input type="hidden" name="bookingId" value="@Model.Id" />
+                                <button type="submit" class="btn btn-primary rounded-pill px-5 py-2 fw-semibold">
+                                    <i class="bi bi-check-circle me-1"></i> Tôi đã thanh toán xong
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Booking Details -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 bg-light h-100">
+                        <div class="card-body p-4">
+                            <h4 class="fw-bold mb-4">Thông tin chi tiết</h4>
+                            
+                            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                                <span class="text-muted">Mã đơn:</span>
+                                <span class="fw-semibold">#@Model.Id</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                                <span class="text-muted">Phòng:</span>
+                                <span class="fw-semibold">@string.Join(", ", Model.RoomIds)</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                                <span class="text-muted">Ngày nhận phòng:</span>
+                                <span class="fw-semibold">@Model.CheckIn.ToString("dd/MM/yyyy")</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                                <span class="text-muted">Ngày trả phòng:</span>
+                                <span class="fw-semibold">@Model.CheckOut.ToString("dd/MM/yyyy")</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                                <span class="text-muted">Khách:</span>
+                                <span class="fw-semibold">@Model.Adults người lớn, @Model.Children trẻ em</span>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(Model.PromoCode))
+                            {
+                                <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                                    <span class="text-muted">Mã giảm giá áp dụng:</span>
+                                    <span class="badge bg-success text-white">@Model.PromoCode</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-3 border-bottom pb-2 text-success">
+                                    <span>Được giảm:</span>
+                                    <span class="fw-bold">-@Model.DiscountAmount.ToString("N0") ₫</span>
+                                </div>
+                            }
+
+                            <div class="d-flex justify-content-between mt-4">
+                                <span class="fs-5 fw-bold text-navy">Tổng thanh toán:</span>
+                                <span class="fs-4 fw-bold text-primary">@Model.TotalAmount.ToString("N0") ₫</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Countdown timer for 30 minutes
+        let timeInSecs = 30 * 60;
+        const display = document.getElementById('countdownTimer');
+
+        const timer = setInterval(function () {
+            timeInSecs--;
+            if (timeInSecs <= 0) {
+                clearInterval(timer);
+                display.textContent = "00:00";
+                alert("Mã QR đã hết hạn! Vui lòng tạo lại yêu cầu đặt phòng.");
+                window.location.href = '/Home/Trips';
+            } else {
+                let m = Math.floor(timeInSecs / 60);
+                let s = timeInSecs % 60;
+                display.textContent = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+            }
+        }, 1000);
+    </script>
+}

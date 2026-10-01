@@ -8,7 +8,7 @@ namespace API.Services;
 
 public sealed class JwtTokenService(IConfiguration configuration)
 {
-    public (string Token, DateTime ExpiresAt) CreateToken(TaiKhoan account)
+    public (string Token, DateTime ExpiresAt) CreateToken(NguoiDung account)
     {
         var expiresAt = DateTime.UtcNow.AddHours(2);
         var key = configuration["Jwt:Key"]
@@ -23,7 +23,7 @@ public sealed class JwtTokenService(IConfiguration configuration)
 
         var claims = new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, account.MaTaiKhoan.ToString()),
+            new Claim(JwtRegisteredClaimNames.Sub, account.MaNguoiDung.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, account.Email),
             new Claim("role", role)
         };
@@ -35,5 +35,3 @@ public sealed class JwtTokenService(IConfiguration configuration)
         return (new JwtSecurityTokenHandler().WriteToken(token), expiresAt);
     }
 }
-
-

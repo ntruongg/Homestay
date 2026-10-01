@@ -4,6 +4,7 @@ using API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace API.Migrations
 {
     [DbContext(typeof(HomestayDbContext))]
-    partial class HomestayDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260927084643_AddExclusiveOwnerConstraint")]
+    partial class AddExclusiveOwnerConstraint
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -164,39 +167,6 @@ namespace API.Migrations
                     b.ToTable("DanhGia", (string)null);
                 });
 
-            modelBuilder.Entity("API.Models.DichVu", b =>
-                {
-                    b.Property<int>("MaDichVu")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaDichVu"));
-
-                    b.Property<decimal>("GiaDichVu")
-                        .HasColumnType("decimal(12,2)");
-
-                    b.Property<int>("MaCoSoLuuTru")
-                        .HasColumnType("int");
-
-                    b.Property<string>("MoTa")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("TenDichVu")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<bool>("TrangThaiHoatDong")
-                        .HasColumnType("bit");
-
-                    b.HasKey("MaDichVu");
-
-                    b.HasIndex("MaCoSoLuuTru");
-
-                    b.ToTable("DichVu", (string)null);
-                });
-
             modelBuilder.Entity("API.Models.DonDatPhong", b =>
                 {
                     b.Property<int>("MaDonDatPhong")
@@ -245,30 +215,6 @@ namespace API.Migrations
                     b.HasIndex("MaKhachHang");
 
                     b.ToTable("DonDatPhong", (string)null);
-                });
-
-            modelBuilder.Entity("API.Models.DonDatPhongDichVu", b =>
-                {
-                    b.Property<int>("MaDonDatPhong")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MaDichVu")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("DonGia")
-                        .HasColumnType("decimal(12,2)");
-
-                    b.Property<int>("SoLuong")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("ThanhTien")
-                        .HasColumnType("decimal(12,2)");
-
-                    b.HasKey("MaDonDatPhong", "MaDichVu");
-
-                    b.HasIndex("MaDichVu");
-
-                    b.ToTable("DonDatPhongDichVu", (string)null);
                 });
 
             modelBuilder.Entity("API.Models.GiamGia", b =>
@@ -603,6 +549,42 @@ namespace API.Migrations
                     b.ToTable("Phong_TienNghi", (string)null);
                 });
 
+            modelBuilder.Entity("API.Models.PhuThu", b =>
+                {
+                    b.Property<int>("MaPhuThu")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaPhuThu"));
+
+                    b.Property<decimal>("DonGia")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<string>("GhiChu")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("MaDonDatPhong")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SoLuong")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TenPhuThu")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("ThanhTien")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.HasKey("MaPhuThu");
+
+                    b.HasIndex("MaDonDatPhong");
+
+                    b.ToTable("PhuThu", (string)null);
+                });
+
             modelBuilder.Entity("API.Models.ThanhToan", b =>
                 {
                     b.Property<int>("MaHoaDon")
@@ -763,17 +745,6 @@ namespace API.Migrations
                     b.Navigation("DonDatPhong");
                 });
 
-            modelBuilder.Entity("API.Models.DichVu", b =>
-                {
-                    b.HasOne("API.Models.CoSoLuuTru", "CoSoLuuTru")
-                        .WithMany()
-                        .HasForeignKey("MaCoSoLuuTru")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CoSoLuuTru");
-                });
-
             modelBuilder.Entity("API.Models.DonDatPhong", b =>
                 {
                     b.HasOne("API.Models.GiamGia", "GiamGia")
@@ -790,25 +761,6 @@ namespace API.Migrations
                     b.Navigation("GiamGia");
 
                     b.Navigation("KhachHang");
-                });
-
-            modelBuilder.Entity("API.Models.DonDatPhongDichVu", b =>
-                {
-                    b.HasOne("API.Models.DichVu", "DichVu")
-                        .WithMany("DonDatPhongDichVus")
-                        .HasForeignKey("MaDichVu")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("API.Models.DonDatPhong", "DonDatPhong")
-                        .WithMany("DonDatPhongDichVus")
-                        .HasForeignKey("MaDonDatPhong")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("DichVu");
-
-                    b.Navigation("DonDatPhong");
                 });
 
             modelBuilder.Entity("API.Models.HinhAnh", b =>
@@ -914,6 +866,17 @@ namespace API.Migrations
                     b.Navigation("TienNghiPhong");
                 });
 
+            modelBuilder.Entity("API.Models.PhuThu", b =>
+                {
+                    b.HasOne("API.Models.DonDatPhong", "DonDatPhong")
+                        .WithMany("PhuThus")
+                        .HasForeignKey("MaDonDatPhong")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DonDatPhong");
+                });
+
             modelBuilder.Entity("API.Models.ThanhToan", b =>
                 {
                     b.HasOne("API.Models.DonDatPhong", "DonDatPhong")
@@ -936,18 +899,13 @@ namespace API.Migrations
                     b.Navigation("TienNghis");
                 });
 
-            modelBuilder.Entity("API.Models.DichVu", b =>
-                {
-                    b.Navigation("DonDatPhongDichVus");
-                });
-
             modelBuilder.Entity("API.Models.DonDatPhong", b =>
                 {
                     b.Navigation("ChiTietDons");
 
                     b.Navigation("DanhGia");
 
-                    b.Navigation("DonDatPhongDichVus");
+                    b.Navigation("PhuThus");
 
                     b.Navigation("ThanhToan");
                 });

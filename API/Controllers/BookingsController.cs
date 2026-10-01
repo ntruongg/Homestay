@@ -24,38 +24,80 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
 
         var rooms = await db.Phongs.Where(r => request.RoomIds.Contains(r.MaPhong)).ToListAsync(cancellationToken);
         if (rooms.Count != request.RoomIds.Count)
-            return NotFound("One or more rooms were not found.");
-        if (rooms.Any(r => r.SucChua < request.GuestCount))
-            return BadRequest("Guest count exceeds room capacity.");
-
-        var hasBooking = await db.ChiTietDons.AnyAsync(d => request.RoomIds.Contains(d.MaPhong) &&
-            (d.DonDatPhong.TrangThai == "Pending" || d.DonDatPhong.TrangThai == "Confirmed") &&
-            d.DonDatPhong.NgayDen < request.CheckOut && d.DonDatPhong.NgayDi > request.CheckIn,
-            cancellationToken);
-        var hasUnavailableDate = await db.LichLuuTrus.AnyAsync(d => request.RoomIds.Contains(d.MaPhong) &&
-            d.Ngay >= request.CheckIn.Date && d.Ngay < request.CheckOut.Date && d.TrangThai != "Trống",
-            cancellationToken);
-
-        if (hasBooking || hasUnavailableDate)
-            return Conflict("One or more rooms are not available for the selected dates.");
+            return NotFound("Một hoặc nhiều phòng không tồn tại.");
 
         var adults = request.Adults > 0 ? request.Adults : Math.Max(1, request.GuestCount);
         var children = request.Children;
         var guestCount = adults + children;
 
-        var extraFees = request.ExtraFees?.Select(f => new PhuThu
+        if (rooms.Any(r => r.SucChua < guestCount && r.SucChuaNguoiLon < adults))
+            return BadRequest("Số lượng khách vượt quá sức chứa tối đa của phòng.");
+
+        var hasBooking = await db.ChiTietDons.AnyAsync(d => request.RoomIds.Contains(d.MaPhong) &&
+            (d.DonDatPhong.TrangThai == "ChoDuyet" || d.DonDatPhong.TrangThai == "DaDuyet" ||
+             d.DonDatPhong.TrangThai == "Pending" || d.DonDatPhong.TrangThai == "Confirmed") &&
+            d.DonDatPhong.NgayDen < request.CheckOut && d.DonDatPhong.NgayDi > request.CheckIn,
+            cancellationToken);
+
+        var hasUnavailableDate = await db.LichLuuTrus.AnyAsync(d => request.RoomIds.Contains(d.MaPhong) &&
+            d.Ngay >= request.CheckIn.Date && d.Ngay < request.CheckOut.Date && d.TrangThai != "Trống",
+            cancellationToken);
+
+        if (hasBooking || hasUnavailableDate)
+            return Conflict("Một hoặc nhiều phòng đã có khách đặt hoặc không khả dụng trong thời gian này.");
+
+        var selectedServices = (request.Services ?? []).Where(s => s.Quantity > 0).ToList();
+        var serviceIds = selectedServices.Select(s => s.ServiceId).ToList();
+        var dbServices = serviceIds.Any() ? await db.DichVus.Where(s => serviceIds.Contains(s.MaDichVu)).ToDictionaryAsync(s => s.MaDichVu, cancellationToken) : new Dictionary<int, DichVu>();
+
+        var bookingServices = new List<DonDatPhongDichVu>();
+        foreach (var svcReq in selectedServices)
         {
-            TenPhuThu = f.Name.Trim(),
-            SoLuong = Math.Max(1, f.Quantity),
-            DonGia = f.Price,
-            ThanhTien = Math.Max(1, f.Quantity) * f.Price,
-            GhiChu = f.Note?.Trim()
-        }).ToList() ?? [];
+            if (dbServices.TryGetValue(svcReq.ServiceId, out var dbSvc))
+            {
+                int qty = svcReq.Quantity;
+                bookingServices.Add(new DonDatPhongDichVu
+                {
+                    MaDichVu = dbSvc.MaDichVu,
+                    SoLuong = qty,
+                    DonGia = dbSvc.GiaDichVu,
+                    ThanhTien = qty * dbSvc.GiaDichVu
+                });
+            }
+            else
+            {
+                return BadRequest($"Dịch vụ với ID {svcReq.ServiceId} không tồn tại.");
+            }
+        }
 
         var nights = (request.CheckOut.Date - request.CheckIn.Date).Days;
         var roomTotal = rooms.Sum(r => r.GiaGoc) * nights;
-        var extraFeesTotal = extraFees.Sum(f => f.ThanhTien);
-        var total = roomTotal + extraFeesTotal;
+        var servicesTotal = bookingServices.Sum(f => f.ThanhTien);
+        var total = roomTotal + servicesTotal;
+
+        int? maGiamGiaId = null;
+        decimal discountAmount = 0;
+
+        if (!string.IsNullOrEmpty(request.PromoCode))
+        {
+            var coupon = await db.GiamGias.FirstOrDefaultAsync(x => x.TenMa == request.PromoCode, cancellationToken);
+            if (coupon == null)
+                return BadRequest("Mã giảm giá không tồn tại.");
+            if (DateTime.UtcNow.Date < coupon.NgayBatDau || DateTime.UtcNow.Date > coupon.NgayHetHan)
+                return BadRequest("Mã giảm giá đã hết hạn hoặc chưa bắt đầu.");
+
+            maGiamGiaId = coupon.MaGiamGia;
+            
+            // Calculate discount amount based on PhanTram and ToiDa
+            discountAmount = total * (coupon.PhanTram / 100m);
+            if (coupon.ToiDa.HasValue && discountAmount > coupon.ToiDa.Value)
+            {
+                discountAmount = coupon.ToiDa.Value;
+            }
+            
+            total -= discountAmount;
+            if (total < 0) total = 0;
+        }
 
         var booking = new DonDatPhong
         {
@@ -65,11 +107,29 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
             NgayDi = request.CheckOut,
             SoNguoiLon = adults,
             SoTreEm = children,
-            SoNguoi = guestCount,
-            TrangThai = "Pending",
-            ChiTietDons = rooms.Select(r => new ChiTietDon { MaPhong = r.MaPhong }).ToList(),
-            PhuThus = extraFees
+            TrangThai = "ChoDuyet",
+            MaGiamGia = maGiamGiaId,
+            ChiTietDons = rooms.Select(r => new ChiTietDon { MaPhong = r.MaPhong, DonGia = r.GiaGoc }).ToList(),
+            DonDatPhongDichVus = bookingServices
         };
+
+        // Tạo bản ghi thanh toán tự động với 15% hoa hồng
+        decimal hoaHongRate = 15.00m;
+        decimal tienHoaHong = Math.Round(total * (hoaHongRate / 100m), 2);
+        decimal tienThucNhanChu = total - tienHoaHong;
+
+        var thanhToan = new ThanhToan
+        {
+            DonDatPhong = booking,
+            TongTien = total,
+            TienGoc = roomTotal + servicesTotal,
+            PTTT = "VNPay",
+            NgayThanhToan = DateTime.UtcNow,
+            PhanTramHoaHong = hoaHongRate,
+            TienHoaHong = tienHoaHong,
+            TienThucNhanChu = tienThucNhanChu
+        };
+        booking.ThanhToan = thanhToan;
 
         db.DonDatPhongs.Add(booking);
         await db.SaveChangesAsync(cancellationToken);
@@ -86,11 +146,12 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
         var bookings = await db.DonDatPhongs.AsNoTracking()
             .Where(b => b.MaKhachHang == accountId)
             .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong)
-            .Include(b => b.PhuThus)
+            .Include(b => b.DonDatPhongDichVus).ThenInclude(d => d.DichVu)
+            .Include(b => b.ThanhToan)
+            .Include(b => b.GiamGia)
             .OrderByDescending(b => b.NgayDat).ToListAsync(cancellationToken);
 
-        return Ok(bookings.Select(b => ToResponse(b, b.ChiTietDons.Select(d => d.MaPhong),
-            b.ChiTietDons.Sum(d => d.Phong.GiaGoc) * (b.NgayDi.Date - b.NgayDen.Date).Days + b.PhuThus.Sum(f => f.ThanhTien))));
+        return Ok(bookings.Select(b => ToResponse(b, b.ChiTietDons.Select(d => d.MaPhong), b.ThanhToan?.TongTien ?? 0)));
     }
 
     [HttpGet("{id:int}")]
@@ -99,13 +160,14 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
         var booking = await db.DonDatPhongs.AsNoTracking()
             .Where(b => b.MaDonDatPhong == id && b.MaKhachHang == GetAccountId())
             .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong)
-            .Include(b => b.PhuThus)
+            .Include(b => b.DonDatPhongDichVus).ThenInclude(d => d.DichVu)
+            .Include(b => b.ThanhToan)
+            .Include(b => b.GiamGia)
             .SingleOrDefaultAsync(cancellationToken);
 
         return booking is null
             ? NotFound()
-            : Ok(ToResponse(booking, booking.ChiTietDons.Select(d => d.MaPhong),
-                booking.ChiTietDons.Sum(d => d.Phong.GiaGoc) * (booking.NgayDi.Date - booking.NgayDen.Date).Days + booking.PhuThus.Sum(f => f.ThanhTien)));
+            : Ok(ToResponse(booking, booking.ChiTietDons.Select(d => d.MaPhong), booking.ThanhToan?.TongTien ?? 0));
     }
 
     [HttpPut("{id:int}/cancel")]
@@ -115,12 +177,42 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
             b => b.MaDonDatPhong == id && b.MaKhachHang == GetAccountId(), cancellationToken);
         if (booking is null)
             return NotFound();
-        if (booking.TrangThai is not ("Pending" or "Confirmed"))
-            return Conflict("Only pending or confirmed bookings can be cancelled.");
 
-        booking.TrangThai = "Cancelled";
+        if (booking.TrangThai is not ("Pending" or "Confirmed" or "ChoDuyet" or "DaDuyet"))
+            return Conflict("Chỉ có thể tự hủy đơn khi đơn đang chờ duyệt hoặc đã duyệt trước thời điểm nhận phòng.");
+
+        booking.TrangThai = "DaHuy";
         await db.SaveChangesAsync(cancellationToken);
         return NoContent();
+    }
+
+    [HttpPost("{id:int}/request-refund")]
+    public async Task<IActionResult> RequestRefund(
+        int id, [FromBody] RequestRefundRequest request, CancellationToken cancellationToken)
+    {
+        var booking = await db.DonDatPhongs.SingleOrDefaultAsync(
+            b => b.MaDonDatPhong == id && b.MaKhachHang == GetAccountId(), cancellationToken);
+
+        if (booking is null)
+            return NotFound("Không tìm thấy đơn đặt phòng.");
+
+        if (booking.TrangThai is "DaHoanTat" or "DaHoanTien" or "DaHuy" or "TuChoi")
+            return BadRequest("Không thể yêu cầu hoàn tiền cho đơn đã hoàn tất, đã hủy hoặc đã hoàn tiền.");
+
+        // Kiểm tra thời hạn: Ngày yêu cầu phải cách ngày đến tối thiểu 2 ngày
+        var minAllowedDate = booking.NgayDen.Date.AddDays(-2);
+        if (DateTime.UtcNow.Date > minAllowedDate)
+        {
+            return BadRequest($"Chính sách quy định yêu cầu hoàn tiền chỉ được chấp nhận trước ngày nhận phòng tối thiểu 2 ngày (hạn chót: {minAllowedDate:dd/MM/yyyy}). Hiện tại đã quá hạn quy định.");
+        }
+
+        booking.TrangThai = "YeuCauHoanTien";
+        booking.ThoiGianYeuCauHoan = DateTime.UtcNow;
+        booking.LyDoHoanTien = request.Reason.Trim();
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { message = "Yêu cầu hoàn tiền đã được gửi tới Quản trị viên để xét duyệt.", bookingId = booking.MaDonDatPhong });
     }
 
     private int GetAccountId()
@@ -133,8 +225,18 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
 
     private static BookingResponse ToResponse(DonDatPhong booking, IEnumerable<int> roomIds, decimal total)
     {
-        var extraFeeDtos = (booking.PhuThus ?? []).Select(f => new PhuThuResponse(
-            f.MaPhuThu, f.TenPhuThu, f.SoLuong, f.DonGia, f.ThanhTien, f.GhiChu)).ToList();
+        var extraFeeDtos = (booking.DonDatPhongDichVus ?? []).Select(f => new BookingServiceResponse(
+            f.MaDichVu, f.DichVu?.TenDichVu ?? "Dịch vụ", f.SoLuong, f.DonGia, f.ThanhTien)).ToList();
+
+        decimal discountAmount = 0;
+        if (booking.GiamGia != null)
+        {
+            var roomTotal = booking.ChiTietDons.Sum(d => d.DonGia) * (booking.NgayDi.Date - booking.NgayDen.Date).Days;
+            var rawTotal = roomTotal + (booking.DonDatPhongDichVus?.Sum(f => f.ThanhTien) ?? 0);
+            discountAmount = rawTotal * (booking.GiamGia.PhanTram / 100m);
+            if (booking.GiamGia.ToiDa.HasValue && discountAmount > booking.GiamGia.ToiDa.Value)
+                discountAmount = booking.GiamGia.ToiDa.Value;
+        }
 
         return new BookingResponse(
             booking.MaDonDatPhong,
@@ -146,6 +248,8 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
             booking.SoTreEm,
             booking.TrangThai,
             total,
-            extraFeeDtos);
+            extraFeeDtos,
+            booking.GiamGia?.TenMa,
+            discountAmount);
     }
 }

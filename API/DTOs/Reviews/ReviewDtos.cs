@@ -11,7 +11,9 @@ public sealed record ReviewDto(
     string GuestName,
     int Rating,
     string? Comment,
-    DateTime ReviewDate
+    DateTime ReviewDate,
+    string? OwnerReply = null,
+    DateTime? ReplyDate = null
 );
 
 public sealed record CreateReviewRequest(

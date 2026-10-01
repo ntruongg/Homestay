@@ -38,6 +38,19 @@ public sealed class OtpService(
         );
 
         var subject = $"[Stayly] Mã xác thực OTP: {code}";
+
+        // Ghi đè mã OTP vào file txt duy nhất để phục vụ auto-testing
+        try
+        {
+            const string otpFilePath = @"d:\Homestay\latest_otp.txt";
+            await File.WriteAllTextAsync(otpFilePath, code, cancellationToken);
+            logger.LogInformation("Saved latest OTP [{Code}] to {FilePath}", code, otpFilePath);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning("Không thể lưu mã OTP vào file txt: {Message}", ex.Message);
+        }
+
         await emailService.SendTemplateEmailAsync(normalizedEmail, subject, "AccountOtp", model, cancellationToken);
 
         return code;

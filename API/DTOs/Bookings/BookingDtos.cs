@@ -53,4 +53,5 @@ public sealed record BookingServiceResponse(
 public sealed record BookingResponse(
     int Id, IReadOnlyList<int> RoomIds, DateTime CheckIn, DateTime CheckOut,
     int GuestCount, int Adults, int Children, string Status, decimal TotalAmount,
-    IReadOnlyList<BookingServiceResponse> Services, string? PromoCode, decimal DiscountAmount);
+    IReadOnlyList<BookingServiceResponse> Services, string? PromoCode, decimal DiscountAmount,
+    string? PropertyName = null, IReadOnlyList<string>? RoomNumbers = null, string? PropertyImage = null);

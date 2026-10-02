@@ -29,7 +29,7 @@
     }
 
     <div class="row g-4 justify-content-center">
-        <div class="col-lg-8">
+        <div class="col-lg-9">
             @if (!Model.Any())
             {
                 <div class="text-center py-5 bg-light rounded-4 border-0 shadow-sm">
@@ -50,47 +50,90 @@
                         "CheckedIn" or "DangLuuTru" => "bg-primary",
                         "Completed" or "DaHoanTat" => "bg-success",
                         "Cancelled" or "DaHuy" => "bg-danger",
+                        "RefundRequested" or "YeuCauHoanTien" => "bg-warning text-dark",
+                        "Refunded" or "DaHoanTien" => "bg-secondary",
                         _ => "bg-secondary"
                     };
 
                     string statusText = booking.Status switch
                     {
-                        "Pending" or "ChoDuyet" => "Chờ duyệt",
+                        "Pending" or "ChoDuyet" => "Chờ chủ duyệt",
                         "Confirmed" or "DaDuyet" => "Đã xác nhận",
                         "CheckedIn" or "DangLuuTru" => "Đang lưu trú",
                         "Completed" or "DaHoanTat" => "Đã hoàn tất",
                         "Cancelled" or "DaHuy" => "Đã huỷ",
+                        "RefundRequested" or "YeuCauHoanTien" => "Chờ duyệt hoàn tiền",
+                        "Refunded" or "DaHoanTien" => "Đã hoàn tiền",
                         _ => booking.Status
                     };
 
-                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    bool canCancel = booking.Status is "Pending" or "ChoDuyet" or "Confirmed" or "DaDuyet";
+                    bool canRequestRefund = booking.Status is "Confirmed" or "DaDuyet" && (DateTime.UtcNow.Date <= booking.CheckIn.Date.AddDays(-2));
+                    bool canReview = booking.Status is "Completed" or "DaHoanTat";
+
+                    var propTitle = !string.IsNullOrWhiteSpace(booking.PropertyName) ? booking.PropertyName : "Homestay nghỉ dưỡng";
+                    var roomsText = booking.RoomNumbers != null && booking.RoomNumbers.Any() 
+                        ? string.Join(", ", booking.RoomNumbers.Select(r => "Phòng " + r)) 
+                        : "Phòng: " + string.Join(", ", booking.RoomIds);
+                    var imageUrl = !string.IsNullOrWhiteSpace(booking.PropertyImage) 
+                        ? booking.PropertyImage 
+                        : "https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=600&q=80";
+
+                    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
                         <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-muted small">Mã đơn: #@booking.Id</span>
+                            <span class="fw-bold text-muted small"><i class="bi bi-receipt me-1"></i> Mã đơn: #@booking.Id</span>
                             <span class="badge @badgeClass rounded-pill px-3 py-2 fw-semibold">@statusText</span>
                         </div>
                         <div class="card-body p-4">
                             <div class="row align-items-center">
-                                <div class="col-md-8 mb-3 mb-md-0">
-                                    <h4 class="fw-bold text-navy mb-2">Phòng: @string.Join(", ", booking.RoomIds)</h4>
-                                    <div class="d-flex align-items-center text-muted mb-2">
-                                        <i class="bi bi-calendar2-check me-2"></i>
+                                <div class="col-md-3 mb-3 mb-md-0">
+                                    <img src="@imageUrl" alt="@propTitle" class="img-fluid rounded-4 shadow-sm w-100 object-fit-cover" style="aspect-ratio: 16 / 10; height: auto; object-fit: cover;" />
+                                </div>
+                                <div class="col-md-5 mb-3 mb-md-0">
+                                    <h5 class="fw-bold text-navy mb-1">@propTitle</h5>
+                                    <div class="text-primary small fw-semibold mb-2"><i class="bi bi-door-open-fill me-1"></i>@roomsText</div>
+                                    <div class="d-flex align-items-center text-muted small mb-1">
+                                        <i class="bi bi-calendar2-check me-2 text-primary"></i>
                                         <span>@booking.CheckIn.ToString("dd/MM/yyyy") - @booking.CheckOut.ToString("dd/MM/yyyy")</span>
                                     </div>
-                                    <div class="d-flex align-items-center text-muted mb-3">
-                                        <i class="bi bi-people me-2"></i>
+                                    <div class="d-flex align-items-center text-muted small mb-2">
+                                        <i class="bi bi-people me-2 text-primary"></i>
                                         <span>@booking.Adults người lớn, @booking.Children trẻ em</span>
                                     </div>
                                     
                                     @if (!string.IsNullOrEmpty(booking.PromoCode))
                                     {
                                         <div class="d-inline-flex align-items-center bg-light text-success rounded-pill px-3 py-1 fw-semibold small">
-                                            <i class="bi bi-tag-fill me-2"></i> Mã @booking.PromoCode (-@booking.DiscountAmount.ToString("N0") ₫)
+                                            <i class="bi bi-tag-fill me-1"></i> Mã @booking.PromoCode (-@booking.DiscountAmount.ToString("N0") ₫)
                                         </div>
                                     }
                                 </div>
                                 <div class="col-md-4 text-md-end">
                                     <div class="text-muted small mb-1">Tổng thanh toán</div>
-                                    <h3 class="fw-bold text-primary mb-0">@booking.TotalAmount.ToString("N0") ₫</h3>
+                                    <h4 class="fw-bold text-primary mb-3">@booking.TotalAmount.ToString("N0") ₫</h4>
+                                    
+                                    <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                                        @if (canCancel)
+                                        {
+                                            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="confirmCancelBooking(@booking.Id)">
+                                                <i class="bi bi-x-circle me-1"></i> Hủy đơn
+                                            </button>
+                                        }
+
+                                        @if (canRequestRefund)
+                                        {
+                                            <button type="button" class="btn btn-outline-warning text-dark btn-sm rounded-pill px-3" onclick="openRefundModal(@booking.Id, '@propTitle')">
+                                                <i class="bi bi-arrow-counterclockwise me-1"></i> Hoàn tiền
+                                            </button>
+                                        }
+
+                                        @if (canReview)
+                                        {
+                                            <button type="button" class="btn btn-warning text-dark btn-sm rounded-pill px-3 fw-semibold shadow-sm" onclick="openReviewModal(@booking.Id, '@propTitle')">
+                                                <i class="bi bi-star-fill me-1"></i> Đánh giá
+                                            </button>
+                                        }
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -100,3 +143,169 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Hủy đơn đặt phòng -->
+<div class="modal fade" id="cancelBookingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Xác nhận hủy đơn</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="CancelBooking" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="bookingId" id="cancelBookingId" value="" />
+                <div class="modal-body py-3">
+                    <p class="text-muted mb-0">Bạn có chắc chắn muốn hủy đơn đặt phòng này? Hành động này không thể hoàn tác.</p>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-semibold">Xác nhận hủy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Yêu cầu hoàn tiền -->
+<div class="modal fade" id="refundBookingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-navy"><i class="bi bi-cash-stack me-2 text-warning"></i>Yêu cầu hoàn tiền</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="RequestRefund" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="bookingId" id="refundBookingId" value="" />
+                <div class="modal-body py-3">
+                    <p class="text-muted small mb-2">Đơn đặt phòng: <strong id="refundPropTitle" class="text-navy"></strong></p>
+                    <div class="alert alert-info py-2 px-3 small rounded-3 mb-3">
+                        <i class="bi bi-info-circle me-1"></i> Chính sách: Yêu cầu hoàn tiền chỉ được chấp nhận trước ngày nhận phòng tối thiểu 2 ngày. Quản trị viên sẽ xét duyệt trong 24 giờ.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-navy">Lý do yêu cầu hoàn tiền <span class="text-danger">*</span></label>
+                        <textarea name="reason" class="form-control rounded-3" rows="3" required placeholder="Nhập chi tiết lý do (thay đổi lịch trình, lý do sức khỏe,...)"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-warning rounded-pill px-4 fw-semibold">Gửi yêu cầu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Đánh giá kỳ nghỉ -->
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-navy"><i class="bi bi-star-half me-2 text-warning"></i>Đánh giá kỳ nghỉ của bạn</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="submitReviewForm" onsubmit="submitGuestReview(event)">
+                <input type="hidden" id="reviewBookingId" value="" />
+                <div class="modal-body py-3">
+                    <p class="text-muted small mb-2">Kỳ nghỉ tại: <strong id="reviewPropTitle" class="text-navy"></strong></p>
+                    <div class="mb-3 text-center">
+                        <label class="form-label small fw-bold text-navy d-block">Mức độ hài lòng</label>
+                        <div class="d-inline-flex gap-2 fs-3 text-warning cursor-pointer" id="starRatingContainer">
+                            <i class="bi bi-star-fill star-item" data-val="1" onclick="setRating(1)"></i>
+                            <i class="bi bi-star-fill star-item" data-val="2" onclick="setRating(2)"></i>
+                            <i class="bi bi-star-fill star-item" data-val="3" onclick="setRating(3)"></i>
+                            <i class="bi bi-star-fill star-item" data-val="4" onclick="setRating(4)"></i>
+                            <i class="bi bi-star-fill star-item" data-val="5" onclick="setRating(5)"></i>
+                        </div>
+                        <input type="hidden" id="reviewRatingVal" value="5" />
+                        <div class="text-muted small mt-1" id="ratingTextDesc">5/5 - Rất hài lòng</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-navy">Nhận xét chi tiết</label>
+                        <textarea id="reviewComment" class="form-control rounded-3" rows="3" required placeholder="Chia sẻ cảm nhận về phòng ở, dịch vụ, thái độ của chủ nhà..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" id="btnSubmitReview" class="btn btn-primary rounded-pill px-4 fw-semibold">Gửi đánh giá</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function confirmCancelBooking(bookingId) {
+        document.getElementById('cancelBookingId').value = bookingId;
+        new bootstrap.Modal(document.getElementById('cancelBookingModal')).show();
+    }
+
+    function openRefundModal(bookingId, propTitle) {
+        document.getElementById('refundBookingId').value = bookingId;
+        document.getElementById('refundPropTitle').textContent = propTitle;
+        new bootstrap.Modal(document.getElementById('refundBookingModal')).show();
+    }
+
+    function openReviewModal(bookingId, propTitle) {
+        document.getElementById('reviewBookingId').value = bookingId;
+        document.getElementById('reviewPropTitle').textContent = propTitle;
+        setRating(5);
+        document.getElementById('reviewComment').value = '';
+        new bootstrap.Modal(document.getElementById('reviewModal')).show();
+    }
+
+    function setRating(val) {
+        document.getElementById('reviewRatingVal').value = val;
+        const stars = document.querySelectorAll('#starRatingContainer .star-item');
+        stars.forEach((s, idx) => {
+            if (idx < val) {
+                s.classList.remove('bi-star');
+                s.classList.add('bi-star-fill');
+            } else {
+                s.classList.remove('bi-star-fill');
+                s.classList.add('bi-star');
+            }
+        });
+        const descs = ['1/5 - Kém', '2/5 - Tạm được', '3/5 - Bình thường', '4/5 - Hài lòng', '5/5 - Rất hài lòng'];
+        document.getElementById('ratingTextDesc').textContent = descs[val - 1];
+    }
+
+    async function submitGuestReview(e) {
+        e.preventDefault();
+        const bookingId = parseInt(document.getElementById('reviewBookingId').value);
+        const rating = parseInt(document.getElementById('reviewRatingVal').value);
+        const comment = document.getElementById('reviewComment').value.trim();
+
+        const btn = document.getElementById('btnSubmitReview');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang gửi...';
+
+        try {
+            const res = await fetch('/Home/CreateReviewAjax', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    bookingId: bookingId,
+                    rating: rating,
+                    comment: comment
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message || 'Cảm ơn bạn đã gửi đánh giá!');
+                bootstrap.Modal.getInstance(document.getElementById('reviewModal')).hide();
+                window.location.reload();
+            } else {
+                alert(data.error || 'Không thể gửi đánh giá.');
+            }
+        } catch (err) {
+            alert('Lỗi kết nối: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Gửi đánh giá';
+        }
+    }
+</script>
+

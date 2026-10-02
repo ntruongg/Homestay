@@ -112,6 +112,25 @@ public static class DbInitializer
             context.SaveChanges();
         }
 
+        // Tài khoản admin hệ thống stayly (admin@stayly.com)
+        const string staylyAdminEmail = "admin@stayly.com";
+        var existingStaylyAdmin = context.NguoiDungs.FirstOrDefault(t => t.Email == staylyAdminEmail);
+        if (existingStaylyAdmin == null)
+        {
+            var staylyAdmin = new NguoiDung
+            {
+                Email = staylyAdminEmail,
+                HoTen = "Admin Stayly Hệ Thống",
+                DienThoai = "0999888777",
+                MaVaiTro = VaiTro.ADMIN,
+                TrangThai = true,
+                NgayTao = DateTime.UtcNow
+            };
+            staylyAdmin.MatKhau = hasher.HashPassword(staylyAdmin, "Admin@123456");
+            context.NguoiDungs.Add(staylyAdmin);
+            context.SaveChanges();
+        }
+
         // Chủ nhà 1
         var ownerUser1 = context.NguoiDungs.FirstOrDefault(t => t.Email == "an.nguyen@homestay.com");
         if (ownerUser1 == null)
@@ -252,6 +271,305 @@ public static class DbInitializer
                     NgayHetHan = DateTime.UtcNow.Date.AddDays(180)
                 }
             );
+            context.SaveChanges();
+        }
+
+        // 7. Cơ sở lưu trú mẫu (CoSoLuuTru), Phòng (Phong), Hình ảnh (HinhAnh), Tiện nghi, Dịch vụ
+        if (!context.CoSoLuuTrus.Any())
+        {
+            var singleRoomType = context.LoaiPhongs.FirstOrDefault(l => l.TenLoaiPhong.Contains("đơn")) ?? context.LoaiPhongs.First();
+            var doubleRoomType = context.LoaiPhongs.FirstOrDefault(l => l.TenLoaiPhong.Contains("đôi")) ?? context.LoaiPhongs.First();
+            var villaRoomType = context.LoaiPhongs.FirstOrDefault(l => l.TenLoaiPhong.Contains("Villa")) ?? context.LoaiPhongs.Last();
+
+            var allCoSoAmenities = context.TienNghiCoSos.ToList();
+            var allPhongAmenities = context.TienNghiPhongs.ToList();
+
+            // Cơ sở 1: An Nhiên Homestay Đà Lạt (Đã duyệt, Đang hoạt động, Thuộc testOwner: owner@gmail.com)
+            var p1 = new CoSoLuuTru
+            {
+                MaChuCoSoLuuTru = testOwner.MaNguoiDung,
+                TenCoSoLuuTru = "An Nhiên Homestay Đà Lạt",
+                DiaChi = "123 Đường Ba Tháng Tư, Phường 3",
+                PhuongXa = "Phường 3",
+                ThanhPho = "Đà Lạt",
+                DienThoai = "0911223344",
+                Email = "annhien.dalat@gmail.com",
+                LoaiHinh = "Homestay",
+                ChinhSach = "Check-in từ 14:00, Check-out trước 12:00. Không hút thuốc trong phòng nghỉ. Giữ trật tự chung sau 22:00.",
+                TrangThaiDuyet = "DaDuyet",
+                TrangThaiHoatDong = true
+            };
+            context.CoSoLuuTrus.Add(p1);
+            context.SaveChanges();
+
+            foreach (var a in allCoSoAmenities.Take(4))
+            {
+                context.CoSoLuuTru_TienNghis.Add(new CoSoLuuTru_TienNghi { MaCoSoLuuTru = p1.MaCoSoLuuTru, MaTienNghi = a.MaTienNghi });
+            }
+
+            context.HinhAnhs.AddRange(
+                new HinhAnh { MaCoSoLuuTru = p1.MaCoSoLuuTru, UrlHinhAnh = "https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=1200&q=80" },
+                new HinhAnh { MaCoSoLuuTru = p1.MaCoSoLuuTru, UrlHinhAnh = "https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=80" }
+            );
+
+            context.DichVus.AddRange(
+                new DichVu { MaCoSoLuuTru = p1.MaCoSoLuuTru, TenDichVu = "Thuê xe máy tay ga", GiaDichVu = 150000, MoTa = "Xe Honda AirBlade / Vision đời mới, có sẵn 2 mũ bảo hiểm.", TrangThaiHoatDong = true },
+                new DichVu { MaCoSoLuuTru = p1.MaCoSoLuuTru, TenDichVu = "Set tiệc nướng BBQ ngoài trời", GiaDichVu = 350000, MoTa = "Bao gồm than, bếp nướng, gia vị và hỗ trợ chuẩn bị.", TrangThaiHoatDong = true }
+            );
+
+            var r101 = new Phong
+            {
+                MaCoSoLuuTru = p1.MaCoSoLuuTru,
+                SoPhong = "101",
+                MaLoaiPhong = singleRoomType.MaLoaiPhong,
+                SucChuaNguoiLon = 2,
+                SucChuaTreEm = 1,
+                GiaGoc = 450000,
+                MoTaPhong = "Phòng view thung lũng thông reo, đón nắng sớm ấm áp, nội thất gỗ tự nhiên.",
+                TinhTrang = "DangTrong",
+                TrangThaiHoatDong = true
+            };
+            var r102 = new Phong
+            {
+                MaCoSoLuuTru = p1.MaCoSoLuuTru,
+                SoPhong = "102",
+                MaLoaiPhong = doubleRoomType.MaLoaiPhong,
+                SucChuaNguoiLon = 4,
+                SucChuaTreEm = 2,
+                GiaGoc = 850000,
+                MoTaPhong = "Phòng gia đình có ban công riêng nhìn ra vườn hoa, bồn tắm nằm ngâm mình thư giãn.",
+                TinhTrang = "DangTrong",
+                TrangThaiHoatDong = true
+            };
+            context.Phongs.AddRange(r101, r102);
+            context.SaveChanges();
+
+            context.HinhAnhs.AddRange(
+                new HinhAnh { MaPhong = r101.MaPhong, UrlHinhAnh = "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80" },
+                new HinhAnh { MaPhong = r102.MaPhong, UrlHinhAnh = "https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=800&q=80" }
+            );
+
+            foreach (var a in allPhongAmenities.Take(5))
+            {
+                context.Phong_TienNghis.Add(new Phong_TienNghi { MaPhong = r101.MaPhong, MaTienNghi = a.MaTienNghi, SoLuong = 1 });
+                context.Phong_TienNghis.Add(new Phong_TienNghi { MaPhong = r102.MaPhong, MaTienNghi = a.MaTienNghi, SoLuong = 1 });
+            }
+
+            // Cơ sở 2: Sơn Trà Sea View Villa Đà Nẵng (Đã duyệt, Đang hoạt động, Thuộc ownerUser1: an.nguyen@homestay.com)
+            var p2 = new CoSoLuuTru
+            {
+                MaChuCoSoLuuTru = ownerUser1.MaNguoiDung,
+                TenCoSoLuuTru = "Sơn Trà Sea View Villa Đà Nẵng",
+                DiaChi = "88 Hoàng Sa, Thọ Quang, Sơn Trà",
+                PhuongXa = "Thọ Quang",
+                ThanhPho = "Đà Nẵng",
+                DienThoai = "0912345678",
+                Email = "sontra.villa@gmail.com",
+                LoaiHinh = "Homestay",
+                ChinhSach = "Check-in từ 14:00, Check-out trước 12:00. Miễn phí nước suối, trà và cà phê mỗi ngày.",
+                TrangThaiDuyet = "DaDuyet",
+                TrangThaiHoatDong = true
+            };
+            context.CoSoLuuTrus.Add(p2);
+            context.SaveChanges();
+
+            foreach (var a in allCoSoAmenities.Take(5))
+            {
+                context.CoSoLuuTru_TienNghis.Add(new CoSoLuuTru_TienNghi { MaCoSoLuuTru = p2.MaCoSoLuuTru, MaTienNghi = a.MaTienNghi });
+            }
+
+            context.HinhAnhs.AddRange(
+                new HinhAnh { MaCoSoLuuTru = p2.MaCoSoLuuTru, UrlHinhAnh = "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80" },
+                new HinhAnh { MaCoSoLuuTru = p2.MaCoSoLuuTru, UrlHinhAnh = "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80" }
+            );
+
+            context.DichVus.AddRange(
+                new DichVu { MaCoSoLuuTru = p2.MaCoSoLuuTru, TenDichVu = "Đưa đón sân bay Đà Nẵng", GiaDichVu = 200000, MoTa = "Xe ô tô 7 chỗ máy lạnh đón tiễn sân bay quốc tế Đà Nẵng.", TrangThaiHoatDong = true },
+                new DichVu { MaCoSoLuuTru = p2.MaCoSoLuuTru, TenDichVu = "Bữa sáng theo phong cách Á - Âu", GiaDichVu = 80000, MoTa = "Phục vụ tận phòng từ 06:30 đến 09:30 mỗi ngày.", TrangThaiHoatDong = true }
+            );
+
+            var r201 = new Phong
+            {
+                MaCoSoLuuTru = p2.MaCoSoLuuTru,
+                SoPhong = "V201",
+                MaLoaiPhong = doubleRoomType.MaLoaiPhong,
+                SucChuaNguoiLon = 2,
+                SucChuaTreEm = 1,
+                GiaGoc = 650000,
+                MoTaPhong = "Phòng view trực diện vịnh Đà Nẵng, ngắm hoàng hôn biển lãng mạn.",
+                TinhTrang = "DangTrong",
+                TrangThaiHoatDong = true
+            };
+            var r202 = new Phong
+            {
+                MaCoSoLuuTru = p2.MaCoSoLuuTru,
+                SoPhong = "V202",
+                MaLoaiPhong = villaRoomType.MaLoaiPhong,
+                SucChuaNguoiLon = 8,
+                SucChuaTreEm = 4,
+                GiaGoc = 2500000,
+                MoTaPhong = "Villa nguyên căn 3 phòng ngủ, hồ bơi vô cực riêng, phòng bếp đầy đủ dụng cụ nấu ăn.",
+                TinhTrang = "DangTrong",
+                TrangThaiHoatDong = true
+            };
+            context.Phongs.AddRange(r201, r202);
+            context.SaveChanges();
+
+            context.HinhAnhs.AddRange(
+                new HinhAnh { MaPhong = r201.MaPhong, UrlHinhAnh = "https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80" },
+                new HinhAnh { MaPhong = r202.MaPhong, UrlHinhAnh = "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80" }
+            );
+
+            foreach (var a in allPhongAmenities.Take(6))
+            {
+                context.Phong_TienNghis.Add(new Phong_TienNghi { MaPhong = r201.MaPhong, MaTienNghi = a.MaTienNghi, SoLuong = 1 });
+                context.Phong_TienNghis.Add(new Phong_TienNghi { MaPhong = r202.MaPhong, MaTienNghi = a.MaTienNghi, SoLuong = 1 });
+            }
+
+            // Cơ sở 3: Phố Cổ Ancient Retreat Hà Nội (Chờ duyệt: ChoDuyet, Thuộc testOwner: owner@gmail.com)
+            var p3 = new CoSoLuuTru
+            {
+                MaChuCoSoLuuTru = testOwner.MaNguoiDung,
+                TenCoSoLuuTru = "Phố Cổ Ancient Retreat Hà Nội",
+                DiaChi = "15 Hàng Bè, Hàng Bạc, Hoàn Kiếm",
+                PhuongXa = "Hàng Bạc",
+                ThanhPho = "Hà Nội",
+                DienThoai = "0911223344",
+                Email = "phoco.retreat@gmail.com",
+                LoaiHinh = "Homestay",
+                ChinhSach = "Check-in từ 14:00, Check-out 12:00. Tôn trọng không gian văn hóa phố cổ.",
+                TrangThaiDuyet = "ChoDuyet",
+                TrangThaiHoatDong = true
+            };
+            context.CoSoLuuTrus.Add(p3);
+            context.SaveChanges();
+
+            context.HinhAnhs.Add(new HinhAnh
+            {
+                MaCoSoLuuTru = p3.MaCoSoLuuTru,
+                UrlHinhAnh = "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80"
+            });
+
+            var r301 = new Phong
+            {
+                MaCoSoLuuTru = p3.MaCoSoLuuTru,
+                SoPhong = "301",
+                MaLoaiPhong = singleRoomType.MaLoaiPhong,
+                SucChuaNguoiLon = 2,
+                SucChuaTreEm = 0,
+                GiaGoc = 550000,
+                MoTaPhong = "Phòng phong cách kiến trúc Đông Dương hoài niệm, cách Hồ Gươm 3 phút đi bộ.",
+                TinhTrang = "DangTrong",
+                TrangThaiHoatDong = true
+            };
+            context.Phongs.Add(r301);
+            context.SaveChanges();
+
+            // 8. Đơn đặt phòng & Thanh toán & Đánh giá mẫu cho testGuest (guest@gmail.com)
+            // Đơn 1: Đã hoàn tất và có đánh giá sao
+            var booking1 = new DonDatPhong
+            {
+                MaKhachHang = testGuest.MaNguoiDung,
+                NgayDat = DateTime.UtcNow.AddDays(-10),
+                NgayDen = DateTime.UtcNow.AddDays(-8),
+                NgayDi = DateTime.UtcNow.AddDays(-5),
+                SoNguoiLon = 2,
+                SoTreEm = 1,
+                TrangThai = "DaHoanTat",
+                ChiTietDons = new List<ChiTietDon>
+                {
+                    new ChiTietDon { MaPhong = r101.MaPhong, DonGia = r101.GiaGoc }
+                }
+            };
+            decimal total1 = r101.GiaGoc * 3;
+            decimal hoaHong1 = Math.Round(total1 * 0.15m, 2);
+            var thanhToan1 = new ThanhToan
+            {
+                DonDatPhong = booking1,
+                TongTien = total1,
+                TienGoc = total1,
+                PTTT = "VNPay",
+                NgayThanhToan = DateTime.UtcNow.AddDays(-10),
+                PhanTramHoaHong = 15.00m,
+                TienHoaHong = hoaHong1,
+                TienThucNhanChu = total1 - hoaHong1
+            };
+            booking1.ThanhToan = thanhToan1;
+
+            var danhGia1 = new DanhGia
+            {
+                DonDatPhong = booking1,
+                DiemSo = 5,
+                NoiDungDanhGia = "Homestay tuyệt vời ngoài mong đợi! Phòng sạch sẽ, view đồi thông săn mây cực đẹp. Anh chủ rất nhiệt tình hỗ trợ chỉ đường.",
+                NgayDanhGia = DateTime.UtcNow.AddDays(-4),
+                PhanHoiChu = "Cảm ơn bạn và gia đình đã tin tưởng lựa chọn An Nhiên Homestay. Hẹn gặp lại bạn vào kỳ nghỉ tới tại Đà Lạt nhé!",
+                NgayPhanHoi = DateTime.UtcNow.AddDays(-3)
+            };
+            booking1.DanhGia = danhGia1;
+            context.DonDatPhongs.Add(booking1);
+
+            // Đơn 2: Đã duyệt cho chuyến đi sắp tới
+            var booking2 = new DonDatPhong
+            {
+                MaKhachHang = testGuest.MaNguoiDung,
+                NgayDat = DateTime.UtcNow.AddDays(-1),
+                NgayDen = DateTime.UtcNow.AddDays(5),
+                NgayDi = DateTime.UtcNow.AddDays(7),
+                SoNguoiLon = 2,
+                SoTreEm = 0,
+                TrangThai = "DaDuyet",
+                ChiTietDons = new List<ChiTietDon>
+                {
+                    new ChiTietDon { MaPhong = r102.MaPhong, DonGia = r102.GiaGoc }
+                }
+            };
+            decimal total2 = r102.GiaGoc * 2;
+            decimal hoaHong2 = Math.Round(total2 * 0.15m, 2);
+            var thanhToan2 = new ThanhToan
+            {
+                DonDatPhong = booking2,
+                TongTien = total2,
+                TienGoc = total2,
+                PTTT = "VNPay",
+                NgayThanhToan = DateTime.UtcNow.AddDays(-1),
+                PhanTramHoaHong = 15.00m,
+                TienHoaHong = hoaHong2,
+                TienThucNhanChu = total2 - hoaHong2
+            };
+            booking2.ThanhToan = thanhToan2;
+            context.DonDatPhongs.Add(booking2);
+
+            // Đơn 3: Đang chờ duyệt
+            var booking3 = new DonDatPhong
+            {
+                MaKhachHang = testGuest.MaNguoiDung,
+                NgayDat = DateTime.UtcNow,
+                NgayDen = DateTime.UtcNow.AddDays(10),
+                NgayDi = DateTime.UtcNow.AddDays(12),
+                SoNguoiLon = 2,
+                SoTreEm = 0,
+                TrangThai = "ChoDuyet",
+                ChiTietDons = new List<ChiTietDon>
+                {
+                    new ChiTietDon { MaPhong = r201.MaPhong, DonGia = r201.GiaGoc }
+                }
+            };
+            decimal total3 = r201.GiaGoc * 2;
+            decimal hoaHong3 = Math.Round(total3 * 0.15m, 2);
+            var thanhToan3 = new ThanhToan
+            {
+                DonDatPhong = booking3,
+                TongTien = total3,
+                TienGoc = total3,
+                PTTT = "VNPay",
+                NgayThanhToan = DateTime.UtcNow,
+                PhanTramHoaHong = 15.00m,
+                TienHoaHong = hoaHong3,
+                TienThucNhanChu = total3 - hoaHong3
+            };
+            booking3.ThanhToan = thanhToan3;
+            context.DonDatPhongs.Add(booking3);
+
             context.SaveChanges();
         }
 

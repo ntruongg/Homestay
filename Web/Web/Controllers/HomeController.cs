@@ -925,6 +925,7 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         CancellationToken cancellationToken)
     {
         var token = HttpContext.Session.GetString("token");
+        var targetPropertyId = input.PropertyId > 0 ? input.PropertyId : input.RoomId;
 
         if (token is null)
         {
@@ -934,7 +935,7 @@ public sealed class HomeController(HomestayApiClient api) : Controller
                 {
                     returnUrl = Url.Action(
                         nameof(Details),
-                        new { id = input.RoomId })
+                        new { id = targetPropertyId })
                 });
         }
 
@@ -946,7 +947,7 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         if (!result.Success || result.Booking == null)
         {
             TempData["Error"] = result.Error ?? "Không thể tạo đơn đặt phòng.";
-            return RedirectToAction(nameof(Details), new { id = input.RoomId });
+            return RedirectToAction(nameof(Details), new { id = targetPropertyId });
         }
 
         return RedirectToAction(nameof(Checkout), new { bookingId = result.Booking.Id });
@@ -970,8 +971,6 @@ public sealed class HomeController(HomestayApiClient api) : Controller
     [ValidateAntiForgeryToken]
     public IActionResult CompletePayment(int bookingId, CancellationToken cancellationToken)
     {
-        // For demonstration, simply redirect to Trips with success message.
-        // In a real application, this would verify payment status with VNPay.
         TempData["Success"] = "Thanh toán và đặt phòng thành công! Đơn của bạn đang chờ chủ cơ sở duyệt.";
         return RedirectToAction(nameof(Trips));
     }
@@ -990,9 +989,55 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         }
         catch
         {
-            TempData["Error"] = "Could not load your bookings.";
+            TempData["Error"] = "Không thể tải danh sách đơn đặt phòng của bạn.";
             return View(Array.Empty<Booking>());
         }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CancelBooking(int bookingId, CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (token is null) return RedirectToAction(nameof(Login));
+
+        var result = await api.CancelBookingAsync(bookingId, token, cancellationToken);
+        if (!result.Success)
+        {
+            TempData["Error"] = result.Error ?? "Không thể hủy đơn đặt phòng.";
+        }
+        else
+        {
+            TempData["Success"] = $"Đơn đặt phòng #{bookingId} đã được hủy thành công.";
+        }
+
+        return RedirectToAction(nameof(Trips));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RequestRefund(int bookingId, string reason, CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (token is null) return RedirectToAction(nameof(Login));
+
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            TempData["Error"] = "Vui lòng cung cấp lý do yêu cầu hoàn tiền.";
+            return RedirectToAction(nameof(Trips));
+        }
+
+        var result = await api.RequestRefundAsync(bookingId, reason.Trim(), token, cancellationToken);
+        if (!result.Success)
+        {
+            TempData["Error"] = result.Error ?? "Không thể gửi yêu cầu hoàn tiền.";
+        }
+        else
+        {
+            TempData["Success"] = result.Message ?? "Yêu cầu hoàn tiền đã được gửi tới Quản trị viên để xét duyệt.";
+        }
+
+        return RedirectToAction(nameof(Trips));
     }
 
     private void SaveAuth(AuthResult result)

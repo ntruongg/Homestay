@@ -38,6 +38,13 @@ public sealed record Room(
     public decimal OriginalPrice => CurrentPrice;
 }
 
+public sealed record BookingServiceItem(
+    int ServiceId,
+    string Name,
+    int Quantity,
+    decimal UnitPrice,
+    decimal TotalPrice);
+
 public sealed record Booking(
     int Id,
     IReadOnlyList<int> RoomIds,
@@ -48,8 +55,12 @@ public sealed record Booking(
     int Children,
     string Status,
     decimal TotalAmount,
-    string? PromoCode,
-    decimal DiscountAmount);
+    IReadOnlyList<BookingServiceItem>? Services = null,
+    string? PromoCode = null,
+    decimal DiscountAmount = 0,
+    string? PropertyName = null,
+    IReadOnlyList<string>? RoomNumbers = null,
+    string? PropertyImage = null);
 
 public sealed record AuthResult(
     string AccessToken,
@@ -160,6 +171,7 @@ public sealed class ProfileViewModel
 
 public sealed class BookingInput
 {
+    public int PropertyId { get; set; }
     public int RoomId { get; set; }
     public DateTime CheckIn { get; set; }
     public DateTime CheckOut { get; set; }

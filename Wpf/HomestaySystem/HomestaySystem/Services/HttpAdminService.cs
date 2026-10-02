@@ -49,7 +49,7 @@ namespace HomestaySystem.Services
                 return;
             }
 
-            var candidateEmails = new[] { _adminEmail, "temp_admin@stayly.com", "admin@homestayviet.vn" };
+            var candidateEmails = new[] { _adminEmail, "admin@stayly.com", "admin@gmail.com", "temp_admin@stayly.com", "admin@homestayviet.vn" };
             HttpResponseMessage? lastResponse = null;
 
             foreach (var email in candidateEmails)
@@ -97,7 +97,7 @@ namespace HomestaySystem.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var dtos = await response.Content.ReadFromJsonAsync<List<ApiPropertySummaryDto>>(JsonOptions);
-                    if (dtos != null && dtos.Count > 0)
+                    if (dtos != null)
                     {
                         return dtos.Select(MapToCoSoLuuTru).ToList();
                     }
@@ -108,7 +108,7 @@ namespace HomestaySystem.Services
                 if (responsePending.IsSuccessStatusCode)
                 {
                     var pendingDtos = await responsePending.Content.ReadFromJsonAsync<List<ApiPropertySummaryDto>>(JsonOptions);
-                    if (pendingDtos != null && pendingDtos.Count > 0)
+                    if (pendingDtos != null)
                     {
                         return pendingDtos.Select(MapToCoSoLuuTru).ToList();
                     }
@@ -238,12 +238,14 @@ namespace HomestaySystem.Services
 
                 var responseHomestay = await _http.PostAsync($"api/admin/homestays/{maCoSo}/approve", null);
                 if (responseHomestay.IsSuccessStatusCode) return true;
+
+                return false;
             }
-            catch
+            catch (Exception ex)
             {
-                // Mô phỏng thành công khi chạy độc lập ngoại tuyến
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] PheDuyetCoSoAsync error: {ex.Message}");
+                return false;
             }
-            return true;
         }
 
         public async Task<bool> TuChoiCoSoAsync(int maCoSo, string lyDoTuChoi)
@@ -257,12 +259,14 @@ namespace HomestaySystem.Services
 
                 var responseHomestay = await _http.PostAsJsonAsync($"api/admin/homestays/{maCoSo}/reject", payload, JsonOptions);
                 if (responseHomestay.IsSuccessStatusCode) return true;
+
+                return false;
             }
-            catch
+            catch (Exception ex)
             {
-                // Mô phỏng thành công khi chạy độc lập ngoại tuyến
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] TuChoiCoSoAsync error: {ex.Message}");
+                return false;
             }
-            return true;
         }
 
         public async Task<bool> CapNhatCoSoAsync(CoSoLuuTru coSo)
@@ -313,7 +317,7 @@ namespace HomestaySystem.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var dtos = await response.Content.ReadFromJsonAsync<List<ApiUserDto>>(JsonOptions);
-                    if (dtos != null && dtos.Count > 0)
+                    if (dtos != null)
                     {
                         return dtos.Select(u => new TaiKhoan
                         {
@@ -480,7 +484,7 @@ namespace HomestaySystem.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var dtos = await response.Content.ReadFromJsonAsync<List<ApiBookingSummaryDto>>(JsonOptions);
-                    if (dtos != null && dtos.Count > 0)
+                    if (dtos != null)
                     {
                         return dtos.Select(b => new DonDatPhong
                         {
@@ -781,7 +785,7 @@ namespace HomestaySystem.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var dtos = await response.Content.ReadFromJsonAsync<List<ApiPromotionDto>>(JsonOptions);
-                    if (dtos != null && dtos.Count > 0)
+                    if (dtos != null)
                     {
                         return dtos.Select(p => new KhuyenMai
                         {
@@ -906,8 +910,8 @@ namespace HomestaySystem.Services
                 LoaiHinh = string.Equals(dto.Type, "Hotel", StringComparison.OrdinalIgnoreCase) ? "Khách sạn" : "Homestay nguyên căn",
                 TrangThai = dto.ApprovalStatus switch
                 {
-                    "Approved" => "DaDuyet",
-                    "Rejected" => "TuChoi",
+                    "Approved" or "DaDuyet" => "DaDuyet",
+                    "Rejected" or "TuChoi" => "TuChoi",
                     _ => "ChoDuyet"
                 },
                 HinhAnhDaiDien = NormalizeImageUrl(dto.CoverImageUrl),
@@ -930,7 +934,14 @@ namespace HomestaySystem.Services
         private record ApiPropertyDetailsDto(int Id, string Name, string? Phone, string? Email, string? Address, string? Ward, string? City, string? Type, string? Policy, bool IsActive, string ApprovalStatus, string? RejectionReason, string? BusinessLicenseUrl, string? FireSafetyDocumentUrl, string? SecurityDocumentUrl, ApiOwnerContactDto? Owner, List<string>? Photos, List<ApiRoomDetailsDto>? Rooms, List<ApiApprovalHistoryDto>? ApprovalHistory);
         private record ApiOwnerContactDto(int Id, string FullName, string Email, string Phone, string? CitizenId, string? BankInformation);
         private record ApiRoomDetailsDto(int RoomId, string RoomNumber, int Capacity, decimal BasePrice, string Status, string? RoomType, List<string>? Photos);
-        private record ApiApprovalHistoryDto(int HistoryId, int PropertyId, string Status, string? Reason, int? ReviewerId, string? ReviewerName, DateTime ReviewDate);
+        private record ApiApprovalHistoryDto(
+            [property: JsonPropertyName("id")] int HistoryId,
+            [property: JsonPropertyName("propertyId")] int PropertyId,
+            [property: JsonPropertyName("status")] string Status,
+            [property: JsonPropertyName("rejectionReason")] string? Reason,
+            [property: JsonPropertyName("reviewerId")] int? ReviewerId,
+            [property: JsonPropertyName("reviewerName")] string? ReviewerName,
+            [property: JsonPropertyName("reviewedAt")] DateTime? ReviewDate);
         private record ApiUserDto(int Id, string Email, string FullName, string Phone, string Role, int RoleId, bool IsActive, DateTime CreatedAt, string? CitizenId, string? BankInformation, int PropertyCount, int BookingCount);
         private record ApiBookingSummaryDto(int BookingId, string HomestayName, List<string>? RoomNumbers, int GuestId, string GuestName, string GuestEmail, string GuestPhone, DateTime CheckIn, DateTime CheckOut, int Adults, int Children, int TotalGuests, string Status, decimal TotalAmount, DateTime BookingDate, string PaymentStatus, string? PaymentMethod, string? TrangThaiQuyetToan, string? MaGiaoDichQuyetToan, DateTime? NgayQuyetToan, decimal? SoTienQuyetToan, string? GhiChuQuyetToan);
         private record ApiBookingDetailsDto(int BookingId, DateTime BookingDate, DateTime CheckIn, DateTime CheckOut, int Adults, int Children, int TotalGuests, string Status, decimal TotalAmount, ApiGuestContactDto? Guest, ApiOwnerContactDto? Owner, int PropertyId, string PropertyName, string? PropertyAddress, List<ApiBookingRoomItemDto>? Rooms, ApiInvoiceDto? Invoice, string? TrangThaiQuyetToan, string? MaGiaoDichQuyetToan, DateTime? NgayQuyetToan, decimal? SoTienQuyetToan, string? GhiChuQuyetToan);

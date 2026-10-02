@@ -213,6 +213,52 @@ public sealed class HomestayApiClient(HttpClient http)
             cancellationToken: cancellationToken) ?? [];
     }
 
+    public async Task<(bool Success, string? Error)> CancelBookingAsync(
+        int bookingId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = CreateAuthorizedRequest(HttpMethod.Put, $"bookings/{bookingId}/cancel", token);
+            using var response = await http.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                return (false, string.IsNullOrWhiteSpace(err) ? "Không thể hủy đơn đặt phòng." : err);
+            }
+            return (true, null);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
+    }
+
+    public async Task<(bool Success, string? Message, string? Error)> RequestRefundAsync(
+        int bookingId,
+        string reason,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = CreateAuthorizedRequest(HttpMethod.Post, $"bookings/{bookingId}/request-refund", token);
+            request.Content = JsonContent.Create(new { Reason = reason });
+            using var response = await http.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                return (false, null, string.IsNullOrWhiteSpace(err) ? "Không thể gửi yêu cầu hoàn tiền." : err);
+            }
+            return (true, "Yêu cầu hoàn tiền đã được gửi thành công đến Quản trị viên để xét duyệt.", null);
+        }
+        catch (Exception ex)
+        {
+            return (false, null, ex.Message);
+        }
+    }
+
     public async Task<(bool Success, string? Error)> ChangePasswordAsync(
         ChangePasswordInput input,
         string token,

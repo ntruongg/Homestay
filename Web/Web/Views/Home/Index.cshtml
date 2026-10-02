@@ -565,7 +565,7 @@
 
                     const carouselSlides = room.images.map((img, i) => `
                         <div class="carousel-item ${i === 0 ? 'active' : ''} h-100">
-                            <img src="${img}" class="room-carousel-img" alt="${escapeHtml(room.name)}" loading="lazy">
+                            <img src="${img}" class="room-carousel-img" alt="${escapeHtml(room.name)}" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80';">
                         </div>
                     `).join('');
 
@@ -591,7 +591,7 @@
                     const singleImg = room.images[0] || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80';
                     imageBlockHtml = `
                         <div class="room-carousel-wrapper">
-                            <img src="${singleImg}" class="room-carousel-img" alt="${escapeHtml(room.name)}" loading="lazy">
+                            <img src="${singleImg}" class="room-carousel-img" alt="${escapeHtml(room.name)}" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80';">
                         </div>
                     `;
                 }
@@ -603,8 +603,8 @@
 
                 return `
                     <article class="room-card-horizontal">
-                        <div class="row g-0 h-100">
-                            <!-- Khối Ảnh (Col-md-5): Ảnh vừa vặn với card -->
+                        <div class="row g-0 align-items-stretch">
+                            <!-- Khối Ảnh (Col-md-5): Ảnh tỉ lệ cố định 16:10 -->
                             <div class="col-md-5 position-relative">
                                 <span class="room-badge-type">${escapeHtml(room.type)}</span>
                                 ${imageBlockHtml}

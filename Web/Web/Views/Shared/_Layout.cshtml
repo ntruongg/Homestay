@@ -685,8 +685,10 @@
                     syncNavbarAuth(true);
                     showStaylyToast('success', `Chào mừng ${data.user.fullName || 'bạn'} đã đăng nhập thành công!`);
 
-                    // If on details or specific page, reload to sync server context
-                    if (window.location.pathname.includes('/Details') || window.location.pathname.includes('/Trips')) {
+                    // If owner, redirect to Dashboard, otherwise reload context if needed
+                    if (data.user && data.user.role === 'OWNER') {
+                        setTimeout(() => window.location.href = '/Home/Dashboard', 800);
+                    } else if (window.location.pathname.includes('/Details') || window.location.pathname.includes('/Trips')) {
                         setTimeout(() => window.location.reload(), 800);
                     }
                 } else {

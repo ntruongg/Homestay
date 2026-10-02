@@ -214,11 +214,12 @@ public sealed class AuthController(
         LoginRequest request,
         CancellationToken cancellationToken)
     {
-        var email = request.Email.Trim().ToLowerInvariant();
+        var input = request.Email.Trim();
+        var email = input.ToLowerInvariant();
 
         var account = await db.NguoiDungs
             .Include(a => a.VaiTro)
-            .SingleOrDefaultAsync(a => a.Email == email, cancellationToken);
+            .SingleOrDefaultAsync(a => a.Email == email || a.DienThoai == input, cancellationToken);
 
         if (account is null ||
             !account.TrangThai ||

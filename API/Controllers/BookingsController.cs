@@ -145,7 +145,7 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
         var accountId = GetAccountId();
         var bookings = await db.DonDatPhongs.AsNoTracking()
             .Where(b => b.MaKhachHang == accountId)
-            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong)
+            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru).ThenInclude(c => c.HinhAnhs)
             .Include(b => b.DonDatPhongDichVus).ThenInclude(d => d.DichVu)
             .Include(b => b.ThanhToan)
             .Include(b => b.GiamGia)
@@ -159,7 +159,7 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
     {
         var booking = await db.DonDatPhongs.AsNoTracking()
             .Where(b => b.MaDonDatPhong == id && b.MaKhachHang == GetAccountId())
-            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong)
+            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru).ThenInclude(c => c.HinhAnhs)
             .Include(b => b.DonDatPhongDichVus).ThenInclude(d => d.DichVu)
             .Include(b => b.ThanhToan)
             .Include(b => b.GiamGia)
@@ -173,8 +173,10 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
     [HttpPut("{id:int}/cancel")]
     public async Task<IActionResult> Cancel(int id, CancellationToken cancellationToken)
     {
-        var booking = await db.DonDatPhongs.SingleOrDefaultAsync(
-            b => b.MaDonDatPhong == id && b.MaKhachHang == GetAccountId(), cancellationToken);
+        var booking = await db.DonDatPhongs
+            .Include(b => b.ChiTietDons)
+            .SingleOrDefaultAsync(
+                b => b.MaDonDatPhong == id && b.MaKhachHang == GetAccountId(), cancellationToken);
         if (booking is null)
             return NotFound();
 
@@ -182,6 +184,16 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
             return Conflict("Chỉ có thể tự hủy đơn khi đơn đang chờ duyệt hoặc đã duyệt trước thời điểm nhận phòng.");
 
         booking.TrangThai = "DaHuy";
+
+        var roomIds = booking.ChiTietDons.Select(d => d.MaPhong).ToList();
+        var schedules = await db.LichLuuTrus
+            .Where(l => roomIds.Contains(l.MaPhong) && l.Ngay >= booking.NgayDen.Date && l.Ngay < booking.NgayDi.Date)
+            .ToListAsync(cancellationToken);
+        foreach (var sch in schedules)
+        {
+            sch.TrangThai = "Trống";
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return NoContent();
     }
@@ -238,6 +250,11 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
                 discountAmount = booking.GiamGia.ToiDa.Value;
         }
 
+        var prop = booking.ChiTietDons.FirstOrDefault()?.Phong?.CoSoLuuTru;
+        var propName = prop?.TenCoSoLuuTru ?? "Homestay";
+        var roomNos = booking.ChiTietDons.Select(d => d.Phong?.SoPhong ?? d.MaPhong.ToString()).ToList();
+        var propImage = prop?.HinhAnhs?.FirstOrDefault()?.UrlHinhAnh;
+
         return new BookingResponse(
             booking.MaDonDatPhong,
             roomIds.ToArray(),
@@ -250,6 +267,9 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
             total,
             extraFeeDtos,
             booking.GiamGia?.TenMa,
-            discountAmount);
+            discountAmount,
+            propName,
+            roomNos,
+            propImage);
     }
 }

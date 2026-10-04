@@ -41,6 +41,7 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
             entity.HasKey(x => x.MaNguoiDung);
             entity.HasIndex(x => x.Email).IsUnique();
             entity.HasIndex(x => x.DienThoai).IsUnique();
+            entity.HasIndex(x => x.CCCD).IsUnique().HasFilter("[CCCD] IS NOT NULL");
             entity.Property(x => x.GioiTinh).HasColumnType("char(1)");
             entity.Property(x => x.NgaySinh).HasColumnType("date");
             entity.Property(x => x.NgayTao).HasColumnType("datetime");
@@ -141,6 +142,7 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
             entity.Property(x => x.NgayDat).HasColumnType("datetime");
             entity.Property(x => x.NgayDen).HasColumnType("date");
             entity.Property(x => x.NgayDi).HasColumnType("date");
+            entity.Property(x => x.TrangThai).HasDefaultValue("ChoThanhToan");
             entity.HasOne(x => x.KhachHang).WithMany(x => x.DonDatPhongs)
                 .HasForeignKey(x => x.MaKhachHang).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.GiamGia).WithMany(x => x.DonDatPhongs)

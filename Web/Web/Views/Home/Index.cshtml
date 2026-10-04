@@ -247,7 +247,7 @@
                         </div>
                     </div>
 
-                    <!-- 4. Đánh giá sao -->
+                    <!-- 4. Đánh giá sao (5 mục từ 1-5 sao) -->
                     <div class="filter-group mb-0">
                         <div class="filter-group-title">
                             <i class="bi bi-star-fill text-warning"></i>
@@ -255,11 +255,20 @@
                         </div>
                         <div class="toggle-pills-wrap">
                             <button type="button" class="filter-pill-btn active" data-filter="rating" data-value="0" onclick="setRatingFilter(this, 0)">Tất cả</button>
-                            <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="4.9" onclick="setRatingFilter(this, 4.9)">
-                                <i class="bi bi-star-fill star-icon"></i> 4.9+
+                            <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="5" onclick="setRatingFilter(this, 5)">
+                                <i class="bi bi-star-fill text-warning"></i> 5 sao
                             </button>
-                            <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="4.8" onclick="setRatingFilter(this, 4.8)">
-                                <i class="bi bi-star-fill star-icon"></i> 4.8+
+                            <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="4" onclick="setRatingFilter(this, 4)">
+                                <i class="bi bi-star-fill text-warning"></i> 4 sao
+                            </button>
+                            <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="3" onclick="setRatingFilter(this, 3)">
+                                <i class="bi bi-star-fill text-warning"></i> 3 sao
+                            </button>
+                            <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="2" onclick="setRatingFilter(this, 2)">
+                                <i class="bi bi-star-fill text-warning"></i> 2 sao
+                            </button>
+                            <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="1" onclick="setRatingFilter(this, 1)">
+                                <i class="bi bi-star-fill text-warning"></i> 1 sao
                             </button>
                         </div>
                     </div>
@@ -443,7 +452,7 @@
             priceRange: 'all',
             propertyType: 'all',
             amenities: [],
-            minRating: 0,
+            selectedRating: 0,
             sortBy: 'featured'
         };
 
@@ -489,8 +498,8 @@
                 const address = item.address || item.Address || 'Việt Nam';
                 const type = item.type || item.Type || 'Homestay';
                 const price = Number(item.price || item.minimumPrice || item.MinimumPrice || 0);
-                const rating = 4.9;
-                const reviewsCount = 12;
+                const rawRating = item.rating !== undefined && item.rating !== null ? item.rating : (item.Rating !== undefined && item.Rating !== null ? item.Rating : 5.0);
+                const rating = Number(rawRating) > 0 ? Number(Number(rawRating).toFixed(1)) : 5.0;
                 const description = item.description || `Không gian lưu trú ${type.toLowerCase()} thanh bình, trang bị đầy đủ tiện nghi tại ${address}.`;
                 const amenities = ['Wifi miễn phí', 'Điều hòa', 'Chỗ đỗ xe'];
 
@@ -512,7 +521,6 @@
                     type,
                     price,
                     rating,
-                    reviewsCount,
                     description,
                     amenities,
                     images
@@ -625,9 +633,8 @@
 
                                         <div class="room-rating-row">
                                             <span class="rating-badge">
-                                                <i class="bi bi-star-fill text-warning"></i> ${room.rating}
+                                                <i class="bi bi-star-fill text-warning"></i> ${Number(room.rating).toFixed(1)}
                                             </span>
-                                            <span class="review-count">(${room.reviewsCount} đánh giá tích cực)</span>
                                         </div>
 
                                         <p class="room-description">${escapeHtml(room.description)}</p>
@@ -712,9 +719,17 @@
                 });
             }
 
-            // 5. Rating
-            if (activeFilters.minRating > 0) {
-                filtered = filtered.filter(r => r.rating >= activeFilters.minRating);
+            // 5. Đánh giá sao (5 mục từ 1-5 sao)
+            if (activeFilters.selectedRating > 0) {
+                const star = activeFilters.selectedRating;
+                filtered = filtered.filter(r => {
+                    if (star === 5) return r.rating >= 4.5;
+                    if (star === 4) return r.rating >= 3.5 && r.rating < 4.5;
+                    if (star === 3) return r.rating >= 2.5 && r.rating < 3.5;
+                    if (star === 2) return r.rating >= 1.5 && r.rating < 2.5;
+                    if (star === 1) return r.rating < 1.5;
+                    return true;
+                });
             }
 
             // 6. Sort
@@ -761,9 +776,16 @@
         };
 
         window.setRatingFilter = function (btn, rating) {
-            document.querySelectorAll('[data-filter="rating"]').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            activeFilters.minRating = Number(rating);
+            const numRating = Number(rating);
+            if (btn.classList.contains('active') && numRating !== 0) {
+                document.querySelectorAll('[data-filter="rating"]').forEach(b => b.classList.remove('active'));
+                document.querySelector('[data-filter="rating"][data-value="0"]')?.classList.add('active');
+                activeFilters.selectedRating = 0;
+            } else {
+                document.querySelectorAll('[data-filter="rating"]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activeFilters.selectedRating = numRating;
+            }
             applyFiltersAndRender();
         };
 
@@ -778,7 +800,7 @@
                 priceRange: 'all',
                 propertyType: 'all',
                 amenities: [],
-                minRating: 0,
+                selectedRating: 0,
                 sortBy: 'featured'
             };
 

@@ -18,8 +18,30 @@
     </div>
     <div class="row g-2">
         <div class="col-md-6">
-            <label class="form-label small text-muted mb-1">Tên ngân hàng <span class="text-danger">*</span></label>
-            <input asp-for="BankName" id="BankNameInput" class="form-control rounded-pill px-3 py-2" placeholder="Ví dụ: Vietcombank, MB Bank, Techcombank" required />
+            <label class="form-label small text-muted mb-1">Tên ngân hàng thụ hưởng <span class="text-danger">*</span></label>
+            <select asp-for="BankName" id="BankNameInput" class="form-select rounded-pill px-3 py-2" required>
+                <option value="">-- Chọn ngân hàng hỗ trợ --</option>
+                <option value="Vietcombank (VCB)">Vietcombank (Ngân hàng Ngoại thương)</option>
+                <option value="VietinBank (CTG)">VietinBank (Ngân hàng Công thương)</option>
+                <option value="BIDV">BIDV (Đầu tư và Phát triển)</option>
+                <option value="Agribank">Agribank (Nông nghiệp &amp; PTNT)</option>
+                <option value="MB Bank (Ngân hàng Quân Đội)">MB Bank (Ngân hàng Quân Đội)</option>
+                <option value="Techcombank (TCB)">Techcombank (Kỹ thương)</option>
+                <option value="ACB (Ngân hàng Á Châu)">ACB (Ngân hàng Á Châu)</option>
+                <option value="VPBank">VPBank (Việt Nam Thịnh Vượng)</option>
+                <option value="TPBank (Tiên Phong)">TPBank (Tiên Phong)</option>
+                <option value="Sacombank">Sacombank (Sài Gòn Thương Tín)</option>
+                <option value="HDBank">HDBank (Phát triển TP.HCM)</option>
+                <option value="VIB (Quốc Tế)">VIB (Quốc tế Việt Nam)</option>
+                <option value="SHB">SHB (Sài Gòn - Hà Nội)</option>
+                <option value="SeABank">SeABank (Đông Nam Á)</option>
+                <option value="OCB (Phương Đông)">OCB (Phương Đông)</option>
+                <option value="MSB (Hàng Hải)">MSB (Hàng Hải)</option>
+                <option value="Eximbank">Eximbank (Xuất Nhập Khẩu)</option>
+                <option value="Nam A Bank">Nam A Bank (Nam Á)</option>
+                <option value="LPBank (Lộc Phát VN)">LPBank (Lộc Phát Việt Nam)</option>
+                <option value="BaoViet Bank">BaoViet Bank (Bảo Việt)</option>
+            </select>
             <div class="field-error-text" id="BankNameInputError"></div>
         </div>
         <div class="col-md-6">

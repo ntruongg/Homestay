@@ -4,7 +4,7 @@ using Web.Services;
 
 namespace Web.Controllers;
 
-public sealed class HomeController(HomestayApiClient api) : Controller
+public sealed class HomeController(HomestayApiClient api, IConfiguration configuration) : Controller
 {
     public async Task<IActionResult> Index(
         string? location,
@@ -939,6 +939,11 @@ public sealed class HomeController(HomestayApiClient api) : Controller
                 });
         }
 
+        if (input.Services != null)
+        {
+            input.Services = input.Services.Where(s => s.Quantity > 0).ToList();
+        }
+
         var result = await api.CreateBookingAsync(
             input,
             token,
@@ -964,15 +969,129 @@ public sealed class HomeController(HomestayApiClient api) : Controller
 
         if (booking == null) return NotFound();
 
+        // Tạo VNPay Payment URL
+        var tmnCode = configuration["VnPay:TmnCode"] ?? "YOUR_VNP_TMNCODE";
+        var hashSecret = configuration["VnPay:HashSecret"] ?? "YOUR_VNP_HASHSECRET";
+        var baseUrl = configuration["VnPay:BaseUrl"] ?? "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+        var returnUrl = configuration["VnPay:ReturnUrl"] ?? $"{Request.Scheme}://{Request.Host}/Home/VNPayReturn";
+
+        var vnpay = new VnPayLibrary();
+        vnpay.AddRequestData("vnp_Version", configuration["VnPay:Version"] ?? "2.1.0");
+        vnpay.AddRequestData("vnp_Command", configuration["VnPay:Command"] ?? "pay");
+        vnpay.AddRequestData("vnp_TmnCode", tmnCode);
+        vnpay.AddRequestData("vnp_Amount", ((long)(booking.TotalAmount * 100)).ToString());
+        vnpay.AddRequestData("vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss"));
+        vnpay.AddRequestData("vnp_CurrCode", configuration["VnPay:CurrCode"] ?? "VND");
+        var clientIp = HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString();
+        if (string.IsNullOrWhiteSpace(clientIp) || clientIp.Contains(':')) clientIp = "127.0.0.1";
+        vnpay.AddRequestData("vnp_IpAddr", clientIp);
+        vnpay.AddRequestData("vnp_Locale", configuration["VnPay:Locale"] ?? "vn");
+        vnpay.AddRequestData("vnp_OrderInfo", $"Thanh toan don dat phong #{booking.Id} tai Stayly");
+        vnpay.AddRequestData("vnp_OrderType", "other");
+        vnpay.AddRequestData("vnp_ReturnUrl", returnUrl);
+        vnpay.AddRequestData("vnp_TxnRef", booking.Id.ToString());
+
+        var vnpayPaymentUrl = vnpay.CreateRequestUrl(baseUrl, hashSecret);
+        ViewBag.VnPayPaymentUrl = vnpayPaymentUrl;
+        ViewBag.HasVnPayConfig = !string.IsNullOrWhiteSpace(tmnCode) && tmnCode != "YOUR_VNP_TMNCODE";
+
         return View(booking);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult CompletePayment(int bookingId, CancellationToken cancellationToken)
+    public async Task<IActionResult> CompletePayment(int bookingId, CancellationToken cancellationToken)
     {
-        TempData["Success"] = "Thanh toán và đặt phòng thành công! Đơn của bạn đang chờ chủ cơ sở duyệt.";
+        var token = HttpContext.Session.GetString("token");
+        if (token is null) return RedirectToAction(nameof(Login));
+
+        var confirmRes = await api.ConfirmPaymentAsync(bookingId, "VNPay", token, cancellationToken);
+        if (!confirmRes.Success)
+        {
+            TempData["Error"] = confirmRes.Error ?? "Không thể xác nhận thanh toán.";
+            return RedirectToAction(nameof(Checkout), new { bookingId });
+        }
+
+        TempData["Success"] = $"Thanh toán VNPay thành công cho đơn #{bookingId}! Đơn đặt phòng đã được tự động chuyển sang trạng thái Chờ chủ cơ sở duyệt.";
         return RedirectToAction(nameof(Trips));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> VNPayReturn(CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (token is null) return RedirectToAction(nameof(Login));
+
+        var vnpayData = Request.Query;
+        var vnpay = new VnPayLibrary();
+
+        foreach (var (key, value) in vnpayData)
+        {
+            if (!string.IsNullOrEmpty(key) && key.StartsWith("vnp_"))
+            {
+                vnpay.AddResponseData(key, value.ToString());
+            }
+        }
+
+        var txnRef = vnpay.GetResponseData("vnp_TxnRef");
+        var responseCode = vnpay.GetResponseData("vnp_ResponseCode");
+        var vnpSecureHash = Request.Query["vnp_SecureHash"].ToString();
+
+        var hashSecret = configuration["VnPay:HashSecret"] ?? "YOUR_VNP_HASHSECRET";
+        bool checkSignature = vnpay.ValidateSignature(vnpSecureHash, hashSecret);
+
+        if (!int.TryParse(txnRef, out int bookingId))
+        {
+            TempData["Error"] = "Mã đơn hàng phản hồi từ VNPay không hợp lệ.";
+            return RedirectToAction(nameof(Trips));
+        }
+
+        bool isPlaceholder = string.IsNullOrWhiteSpace(hashSecret) || hashSecret == "YOUR_VNP_HASHSECRET";
+        if (!isPlaceholder && !checkSignature)
+        {
+            TempData["Error"] = "Chữ ký bảo mật VNPay không hợp lệ (Có dấu hiệu giả mạo).";
+            return RedirectToAction(nameof(Checkout), new { bookingId });
+        }
+
+        if (responseCode == "00")
+        {
+            var confirmRes = await api.ConfirmPaymentAsync(bookingId, "VNPay", token, cancellationToken);
+            if (confirmRes.Success)
+            {
+                TempData["Success"] = $"Thanh toán VNPay thành công cho đơn #{bookingId}! Đơn đặt phòng đã được tự động chuyển sang trạng thái Chờ chủ cơ sở duyệt.";
+            }
+            else
+            {
+                TempData["Error"] = confirmRes.Error ?? "Không thể cập nhật trạng thái đơn sau khi thanh toán.";
+            }
+            return RedirectToAction(nameof(Trips));
+        }
+        else
+        {
+            TempData["Error"] = $"Giao dịch VNPay không thành công hoặc đã bị hủy (Mã phản hồi: {responseCode}).";
+            return RedirectToAction(nameof(Checkout), new { bookingId });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> CheckPaymentStatus(int bookingId, CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (token is null) return Unauthorized();
+
+        try
+        {
+            var bookings = await api.GetBookingsAsync(token, cancellationToken);
+            var booking = bookings.FirstOrDefault(b => b.Id == bookingId);
+            if (booking == null) return NotFound();
+
+            bool isPaid = booking.Status is "ChoDuyet" or "DaDuyet" or "Confirmed" or "Completed" or "DaHoanTat";
+            return Ok(new { isPaid, status = booking.Status });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { isPaid = false, error = ex.Message });
+        }
     }
 
     public async Task<IActionResult> Trips(
@@ -985,6 +1104,14 @@ public sealed class HomeController(HomestayApiClient api) : Controller
 
         try
         {
+            var profileRes = await api.GetProfileAsync(token, cancellationToken);
+            if (profileRes.Success && profileRes.Result != null)
+            {
+                ViewBag.GuestBankName = profileRes.Result.BankName;
+                ViewBag.GuestAccountNumber = profileRes.Result.AccountNumber;
+                ViewBag.GuestAccountHolder = profileRes.Result.AccountHolder;
+            }
+
             return View(await api.GetBookingsAsync(token, cancellationToken));
         }
         catch
@@ -1016,25 +1143,37 @@ public sealed class HomeController(HomestayApiClient api) : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> RequestRefund(int bookingId, string reason, CancellationToken cancellationToken)
+    public async Task<IActionResult> RequestRefund(
+        int bookingId,
+        string reason,
+        string? bankName,
+        string? accountNumber,
+        string? accountHolder,
+        CancellationToken cancellationToken)
     {
         var token = HttpContext.Session.GetString("token");
         if (token is null) return RedirectToAction(nameof(Login));
 
         if (string.IsNullOrWhiteSpace(reason))
         {
-            TempData["Error"] = "Vui lòng cung cấp lý do yêu cầu hoàn tiền.";
+            TempData["Error"] = "Vui lòng cung cấp lý do yêu cầu hủy / hoàn tiền.";
             return RedirectToAction(nameof(Trips));
         }
 
-        var result = await api.RequestRefundAsync(bookingId, reason.Trim(), token, cancellationToken);
+        if (string.IsNullOrWhiteSpace(accountNumber))
+        {
+            TempData["Error"] = "Vui lòng cung cấp số tài khoản ngân hàng để nhận tiền hoàn.";
+            return RedirectToAction(nameof(Trips));
+        }
+
+        var result = await api.RequestRefundAsync(bookingId, reason.Trim(), bankName, accountNumber, accountHolder, token, cancellationToken);
         if (!result.Success)
         {
             TempData["Error"] = result.Error ?? "Không thể gửi yêu cầu hoàn tiền.";
         }
         else
         {
-            TempData["Success"] = result.Message ?? "Yêu cầu hoàn tiền đã được gửi tới Quản trị viên để xét duyệt.";
+            TempData["Success"] = result.Message ?? $"Yêu cầu hủy & hoàn tiền cho đơn #{bookingId} đã được gửi thành công. Quản trị viên sẽ xử lý chuyển tiền về tài khoản ngân hàng của bạn.";
         }
 
         return RedirectToAction(nameof(Trips));
@@ -1094,7 +1233,8 @@ public sealed class HomeController(HomestayApiClient api) : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> ReplyReviewAjax([FromBody] ReplyReviewAjaxInput input, CancellationToken cancellationToken)
+    [ActionName("ReplyReview")]
+    public async Task<IActionResult> ReplyReview([FromBody] ReplyReviewAjaxInput input, CancellationToken cancellationToken)
     {
         if (input == null || input.ReviewId <= 0 || string.IsNullOrWhiteSpace(input.Message))
             return BadRequest(new { success = false, message = "Nội dung phản hồi không được để trống." });
@@ -1103,12 +1243,16 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         if (string.IsNullOrWhiteSpace(token))
             return Unauthorized(new { success = false, message = "Vui lòng đăng nhập với tài khoản chủ nhà để phản hồi đánh giá." });
 
-        var result = await api.ReplyReviewAsync(input.ReviewId, new ReplyReviewInput(input.Message), token, cancellationToken);
+        var result = await api.ReplyReviewAsync(input.ReviewId, new ReplyReviewInput(input.Message.Trim()), token, cancellationToken);
         if (!result.Success)
             return BadRequest(new { success = false, message = result.Error ?? "Không thể gửi phản hồi đánh giá." });
 
         return Ok(new { success = true, message = "Phản hồi đánh giá đã được gửi thành công!" });
     }
+
+    [HttpPost]
+    public Task<IActionResult> ReplyReviewAjax([FromBody] ReplyReviewAjaxInput input, CancellationToken cancellationToken)
+        => ReplyReview(input, cancellationToken);
 
     [HttpGet]
     public async Task<IActionResult> GetPromotionsJson(CancellationToken cancellationToken)
@@ -1122,6 +1266,51 @@ public sealed class HomeController(HomestayApiClient api) : Controller
         {
             return StatusCode(500, new { success = false, message = ex.Message });
         }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> CheckPromoCode(string code, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return BadRequest(new { success = false, message = "Vui lòng nhập mã giảm giá." });
+        }
+
+        var promo = await api.GetPromotionByCodeAsync(code.Trim().ToUpperInvariant(), cancellationToken);
+        if (promo is null)
+        {
+            return NotFound(new { success = false, message = "Mã giảm giá không tồn tại hoặc đã hết hạn." });
+        }
+
+        return Ok(new
+        {
+            success = true,
+            data = new
+            {
+                code = promo.Code,
+                percentage = promo.Percentage,
+                maxAmount = promo.MaxAmount
+            },
+            message = $"Áp dụng mã {promo.Code} thành công: Giảm {promo.Percentage}%" + (promo.MaxAmount.HasValue ? $" (Tối đa {promo.MaxAmount.Value:N0} ₫)" : "")
+        });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ExpireBooking(int bookingId, CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (token is null)
+        {
+            return Unauthorized(new { success = false, message = "Phiên đăng nhập đã hết hạn." });
+        }
+
+        var result = await api.ExpireBookingAsync(bookingId, token, cancellationToken);
+        if (!result.Success)
+        {
+            return BadRequest(new { success = false, message = result.Error ?? "Không thể hủy đơn đặt phòng quá hạn." });
+        }
+
+        return Ok(new { success = true, message = "Đơn đặt phòng quá hạn đã được hủy và giải phóng phòng thành công." });
     }
 
     [HttpPost]

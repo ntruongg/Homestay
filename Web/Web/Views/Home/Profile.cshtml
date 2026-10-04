@@ -230,7 +230,29 @@
 
                                         <div class="col-md-6">
                                             <label class="form-label small fw-bold">Ngân hàng thụ hưởng *</label>
-                                            <input asp-for="Input.BankName" class="form-control rounded-pill px-3 py-2" required placeholder="Ví dụ: Vietcombank" />
+                                            <select asp-for="Input.BankName" class="form-select rounded-pill px-3 py-2" required>
+                                                <option value="">-- Chọn ngân hàng hỗ trợ --</option>
+                                                <option value="Vietcombank (VCB)">Vietcombank (Ngân hàng Ngoại thương)</option>
+                                                <option value="VietinBank (CTG)">VietinBank (Ngân hàng Công thương)</option>
+                                                <option value="BIDV">BIDV (Đầu tư và Phát triển)</option>
+                                                <option value="Agribank">Agribank (Nông nghiệp &amp; PTNT)</option>
+                                                <option value="MB Bank (Ngân hàng Quân Đội)">MB Bank (Ngân hàng Quân Đội)</option>
+                                                <option value="Techcombank (TCB)">Techcombank (Kỹ thương)</option>
+                                                <option value="ACB (Ngân hàng Á Châu)">ACB (Ngân hàng Á Châu)</option>
+                                                <option value="VPBank">VPBank (Việt Nam Thịnh Vượng)</option>
+                                                <option value="TPBank (Tiên Phong)">TPBank (Tiên Phong)</option>
+                                                <option value="Sacombank">Sacombank (Sài Gòn Thương Tín)</option>
+                                                <option value="HDBank">HDBank (Phát triển TP.HCM)</option>
+                                                <option value="VIB (Quốc Tế)">VIB (Quốc tế Việt Nam)</option>
+                                                <option value="SHB">SHB (Sài Gòn - Hà Nội)</option>
+                                                <option value="SeABank">SeABank (Đông Nam Á)</option>
+                                                <option value="OCB (Phương Đông)">OCB (Phương Đông)</option>
+                                                <option value="MSB (Hàng Hải)">MSB (Hàng Hải)</option>
+                                                <option value="Eximbank">Eximbank (Xuất Nhập Khẩu)</option>
+                                                <option value="Nam A Bank">Nam A Bank (Nam Á)</option>
+                                                <option value="LPBank (Lộc Phát VN)">LPBank (Lộc Phát Việt Nam)</option>
+                                                <option value="BaoViet Bank">BaoViet Bank (Bảo Việt)</option>
+                                            </select>
                                             <span asp-validation-for="Input.BankName" class="text-danger small"></span>
                                         </div>
 
@@ -244,6 +266,51 @@
                                             <label class="form-label small fw-bold">Tên chủ tài khoản *</label>
                                             <input asp-for="Input.AccountHolder" class="form-control rounded-pill px-3 py-2" required placeholder="Ví dụ: NGUYEN VAN AN" pattern="^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂưăạảấầẩẫậắằẳẵặẹẻẽềềểỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ\s]+$" />
                                             <span asp-validation-for="Input.AccountHolder" class="text-danger small"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="p-3 bg-light rounded-4 mb-4">
+                                    <h6 class="fw-bold text-navy small mb-1">
+                                        <i class="bi bi-bank2 text-primary me-1"></i> Tài khoản ngân hàng nhận hoàn tiền (Tùy chọn)
+                                    </h6>
+                                    <p class="text-muted small mb-3">Lưu sẵn thông tin ngân hàng để tự động điền khi bạn hủy đơn hoặc yêu cầu hoàn tiền.</p>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Ngân hàng thụ hưởng</label>
+                                            <select asp-for="Input.BankName" class="form-select rounded-pill px-3 py-2">
+                                                <option value="">-- Chọn ngân hàng hỗ trợ --</option>
+                                                <option value="Vietcombank (VCB)">Vietcombank (Ngân hàng Ngoại thương)</option>
+                                                <option value="VietinBank (CTG)">VietinBank (Ngân hàng Công thương)</option>
+                                                <option value="BIDV">BIDV (Đầu tư và Phát triển)</option>
+                                                <option value="Agribank">Agribank (Nông nghiệp &amp; PTNT)</option>
+                                                <option value="MB Bank (Ngân hàng Quân Đội)">MB Bank (Ngân hàng Quân Đội)</option>
+                                                <option value="Techcombank (TCB)">Techcombank (Kỹ thương)</option>
+                                                <option value="ACB (Ngân hàng Á Châu)">ACB (Ngân hàng Á Châu)</option>
+                                                <option value="VPBank">VPBank (Việt Nam Thịnh Vượng)</option>
+                                                <option value="TPBank (Tiên Phong)">TPBank (Tiên Phong)</option>
+                                                <option value="Sacombank">Sacombank (Sài Gòn Thương Tín)</option>
+                                                <option value="HDBank">HDBank (Phát triển TP.HCM)</option>
+                                                <option value="VIB (Quốc Tế)">VIB (Quốc tế Việt Nam)</option>
+                                                <option value="SHB">SHB (Sài Gòn - Hà Nội)</option>
+                                                <option value="SeABank">SeABank (Đông Nam Á)</option>
+                                                <option value="OCB (Phương Đông)">OCB (Phương Đông)</option>
+                                                <option value="MSB (Hàng Hải)">MSB (Hàng Hải)</option>
+                                                <option value="Eximbank">Eximbank (Xuất Nhập Khẩu)</option>
+                                                <option value="Nam A Bank">Nam A Bank (Nam Á)</option>
+                                                <option value="LPBank (Lộc Phát VN)">LPBank (Lộc Phát Việt Nam)</option>
+                                                <option value="BaoViet Bank">BaoViet Bank (Bảo Việt)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Số tài khoản</label>
+                                            <input asp-for="Input.AccountNumber" class="form-control rounded-pill px-3 py-2" placeholder="Nhập số tài khoản" />
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label small fw-bold">Tên chủ tài khoản</label>
+                                            <input asp-for="Input.AccountHolder" class="form-control rounded-pill px-3 py-2" placeholder="Ví dụ: NGUYEN VAN AN" />
                                         </div>
                                     </div>
                                 </div>

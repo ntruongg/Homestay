@@ -10,7 +10,8 @@ public sealed record PropertySummary(
     string? Address,
     string? Type,
     decimal MinimumPrice,
-    string? CoverImageUrl);
+    string? CoverImageUrl,
+    double Rating = 5.0);
 
 public sealed record PropertyDetails(
     int Id,
@@ -60,7 +61,10 @@ public sealed record Booking(
     decimal DiscountAmount = 0,
     string? PropertyName = null,
     IReadOnlyList<string>? RoomNumbers = null,
-    string? PropertyImage = null);
+    string? PropertyImage = null,
+    bool HasReviewed = false,
+    int? ReviewRating = null,
+    string? ReviewComment = null);
 
 public sealed record AuthResult(
     string AccessToken,
@@ -472,7 +476,9 @@ public sealed record ReviewItem(
     string GuestName,
     int Rating,
     string? Comment,
-    DateTime ReviewDate
+    DateTime ReviewDate,
+    string? OwnerReply = null,
+    DateTime? ReplyDate = null
 );
 
 public sealed record CreateReviewInput(
@@ -492,6 +498,15 @@ public sealed record PromotionItem(
     decimal? MaxAmount,
     DateTime? StartDate,
     DateTime? EndDate
+);
+
+public sealed record CheckPromoResult(
+    [property: JsonPropertyName("maGiamGia")] int Id,
+    [property: JsonPropertyName("tenMa")] string Code,
+    [property: JsonPropertyName("phanTram")] int Percentage,
+    [property: JsonPropertyName("toiDa")] decimal? MaxAmount,
+    [property: JsonPropertyName("ngayBatDau")] DateTime? StartDate,
+    [property: JsonPropertyName("ngayHetHan")] DateTime? EndDate
 );
 
 public sealed record BookingDetailResponse(

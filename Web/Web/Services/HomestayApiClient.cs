@@ -177,6 +177,11 @@ public sealed class HomestayApiClient(HttpClient http)
         string token,
         CancellationToken cancellationToken = default)
     {
+        var selectedServices = input.Services?
+            .Where(s => s.Quantity > 0)
+            .Select(s => new { s.ServiceId, s.Quantity })
+            .ToList();
+
         using var request = CreateAuthorizedRequest(HttpMethod.Post, "bookings", token);
         request.Content = JsonContent.Create(new
         {
@@ -187,7 +192,7 @@ public sealed class HomestayApiClient(HttpClient http)
             Adults = input.Adults,
             Children = input.Children,
             PromoCode = input.PromoCode,
-            Services = input.Services
+            Services = selectedServices
         });
 
         using var response = await http.SendAsync(request, cancellationToken);
@@ -197,7 +202,8 @@ public sealed class HomestayApiClient(HttpClient http)
             var booking = await response.Content.ReadFromJsonAsync<Booking>(cancellationToken: cancellationToken);
             return (true, booking, null);
         }
-        return (false, null, await response.Content.ReadAsStringAsync(cancellationToken));
+        var rawError = await response.Content.ReadAsStringAsync(cancellationToken);
+        return (false, null, ParseErrorMessage(rawError));
     }
 
     public async Task<IReadOnlyList<Booking>> GetBookingsAsync(
@@ -238,18 +244,27 @@ public sealed class HomestayApiClient(HttpClient http)
     public async Task<(bool Success, string? Message, string? Error)> RequestRefundAsync(
         int bookingId,
         string reason,
+        string? bankName,
+        string? accountNumber,
+        string? accountHolder,
         string token,
         CancellationToken cancellationToken = default)
     {
         try
         {
             using var request = CreateAuthorizedRequest(HttpMethod.Post, $"bookings/{bookingId}/request-refund", token);
-            request.Content = JsonContent.Create(new { Reason = reason });
+            request.Content = JsonContent.Create(new
+            {
+                Reason = reason,
+                BankName = bankName,
+                AccountNumber = accountNumber,
+                AccountHolder = accountHolder
+            });
             using var response = await http.SendAsync(request, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
                 var err = await response.Content.ReadAsStringAsync(cancellationToken);
-                return (false, null, string.IsNullOrWhiteSpace(err) ? "Không thể gửi yêu cầu hoàn tiền." : err);
+                return (false, null, ParseErrorMessage(err));
             }
             return (true, "Yêu cầu hoàn tiền đã được gửi thành công đến Quản trị viên để xét duyệt.", null);
         }
@@ -826,7 +841,7 @@ public sealed class HomestayApiClient(HttpClient http)
             if (!response.IsSuccessStatusCode)
             {
                 var err = await response.Content.ReadAsStringAsync(cancellationToken);
-                return (false, string.IsNullOrWhiteSpace(err) ? "Không thể gửi đánh giá." : err);
+                return (false, string.IsNullOrWhiteSpace(err) ? "Không thể gửi đánh giá." : ParseErrorMessage(err));
             }
             return (true, null);
         }
@@ -850,7 +865,7 @@ public sealed class HomestayApiClient(HttpClient http)
             if (!response.IsSuccessStatusCode)
             {
                 var err = await response.Content.ReadAsStringAsync(cancellationToken);
-                return (false, string.IsNullOrWhiteSpace(err) ? "Không thể phản hồi đánh giá." : err);
+                return (false, string.IsNullOrWhiteSpace(err) ? "Không thể phản hồi đánh giá." : ParseErrorMessage(err));
             }
             return (true, null);
         }
@@ -893,6 +908,68 @@ public sealed class HomestayApiClient(HttpClient http)
         catch
         {
             return [];
+        }
+    }
+
+    public async Task<CheckPromoResult?> GetPromotionByCodeAsync(
+        string code,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await http.GetAsync($"promotions/{Uri.EscapeDataString(code)}", cancellationToken);
+            if (!response.IsSuccessStatusCode) return null;
+            return await response.Content.ReadFromJsonAsync<CheckPromoResult>(cancellationToken: cancellationToken);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<(bool Success, string? Error)> ExpireBookingAsync(
+        int bookingId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = CreateAuthorizedRequest(HttpMethod.Delete, $"bookings/{bookingId}/expire", token);
+            using var response = await http.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                // Fallback to cancel if expire endpoint not found
+                return await CancelBookingAsync(bookingId, token, cancellationToken);
+            }
+            return (true, null);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
+    }
+
+    public async Task<(bool Success, string? Error)> ConfirmPaymentAsync(
+        int bookingId,
+        string paymentMethod,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = CreateAuthorizedRequest(HttpMethod.Post, $"bookings/{bookingId}/confirm-payment", token);
+            request.Content = JsonContent.Create(new { PaymentMethod = paymentMethod });
+            using var response = await http.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                return (false, string.IsNullOrWhiteSpace(err) ? "Không thể xác nhận thanh toán." : err);
+            }
+            return (true, null);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
         }
     }
 
@@ -946,5 +1023,38 @@ public sealed class HomestayApiClient(HttpClient http)
         var request = new HttpRequestMessage(method, path);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return request;
+    }
+
+    private static string ParseErrorMessage(string rawError)
+    {
+        if (string.IsNullOrWhiteSpace(rawError)) return "Đã xảy ra lỗi không xác định.";
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(rawError);
+            if (doc.RootElement.TryGetProperty("errors", out var errorsProp) && errorsProp.ValueKind == System.Text.Json.JsonValueKind.Object)
+            {
+                foreach (var prop in errorsProp.EnumerateObject())
+                {
+                    if (prop.Value.ValueKind == System.Text.Json.JsonValueKind.Array && prop.Value.GetArrayLength() > 0)
+                    {
+                        var firstErr = prop.Value[0].GetString();
+                        if (!string.IsNullOrWhiteSpace(firstErr)) return firstErr;
+                    }
+                }
+            }
+            if (doc.RootElement.TryGetProperty("message", out var mProp))
+            {
+                return mProp.GetString() ?? rawError;
+            }
+            if (doc.RootElement.TryGetProperty("title", out var tProp))
+            {
+                return tProp.GetString() ?? rawError;
+            }
+        }
+        catch
+        {
+            // Not JSON
+        }
+        return rawError;
     }
 }

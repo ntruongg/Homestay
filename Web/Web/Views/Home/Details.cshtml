@@ -21,6 +21,10 @@
 
     var minPrice = Model.Rooms.Any() ? Model.Rooms.Min(r => r.CurrentPrice) : 500000m;
     var reviews = ViewBag.Reviews as IReadOnlyList<ReviewItem> ?? Array.Empty<ReviewItem>();
+    var reviewCount = reviews.Count;
+    var avgRating = reviewCount > 0 ? Math.Round(reviews.Average(r => r.Rating), 1) : 5.0;
+    var reviewPageSize = 5;
+    var totalReviewPages = (int)Math.Ceiling((double)reviewCount / reviewPageSize);
     var amenities = ViewBag.Amenities as IReadOnlyList<AmenityItem> ?? Array.Empty<AmenityItem>();
 }
 
@@ -48,9 +52,18 @@
                     <i class="bi @(Model.Type == "Hotel" ? "bi-building" : "bi-house-heart") me-1"></i>
                     @(Model.Type ?? "Homestay")
                 </span>
-                <span class="stayly-tag-rating">
-                    <i class="bi bi-star-fill text-warning me-1"></i> 4.9 (128 đánh giá)
-                </span>
+                @if (reviewCount > 0)
+                {
+                    <span class="stayly-tag-rating">
+                        <i class="bi bi-star-fill text-warning me-1"></i> @avgRating.ToString("0.0") (@reviewCount đánh giá)
+                    </span>
+                }
+                else
+                {
+                    <span class="stayly-tag-rating">
+                        <i class="bi bi-star-fill text-warning me-1"></i> 5.0 (Chưa có đánh giá)
+                    </span>
+                }
                 <span class="stayly-tag-badge">
                     <i class="bi bi-shield-check text-success me-1"></i> Đối tác đã xác thực
                 </span>
@@ -354,32 +367,56 @@
                 </div>
 
                 <!-- 5. Customer Reviews Section -->
-                <div class="stayly-card-box mb-4">
+                <div class="stayly-card-box mb-4" id="customerReviewsSection">
                     <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
                         <div>
                             <h3 class="box-section-title mb-1">
                                 <i class="bi bi-chat-heart-fill text-primary me-2"></i> Đánh giá từ khách hàng
                             </h3>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="rating-stars text-warning fs-5">
-                                    <i class="bi bi-star-fill"></i>
-                                    <i class="bi bi-star-fill"></i>
-                                    <i class="bi bi-star-fill"></i>
-                                    <i class="bi bi-star-fill"></i>
-                                    <i class="bi bi-star-fill"></i>
+                            @if (reviewCount > 0)
+                            {
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rating-stars text-warning fs-5">
+                                        @for (var s = 1; s <= 5; s++)
+                                        {
+                                            if (s <= Math.Round(avgRating))
+                                            {
+                                                <i class="bi bi-star-fill"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-star"></i>
+                                            }
+                                        }
+                                    </div>
+                                    <span class="fw-bold text-navy fs-5">@avgRating.ToString("0.0") / 5</span>
+                                    <span class="text-muted small">• @reviewCount đánh giá thực tế từ khách đã lưu trú</span>
                                 </div>
-                                <span class="fw-bold text-navy fs-5">4.92 / 5</span>
-                                <span class="text-muted small">• 100% đánh giá thực tế từ khách đã lưu trú</span>
-                            </div>
+                            }
+                            else
+                            {
+                                <div class="d-flex align-items-center gap-2 text-muted small">
+                                    <div class="rating-stars text-warning fs-5">
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                    </div>
+                                    <span>• Chưa có đánh giá nào từ khách hàng</span>
+                                </div>
+                            }
                         </div>
                     </div>
 
-                    @if (reviews != null && reviews.Count > 0)
+                    @if (reviewCount > 0)
                     {
-                        <div class="reviews-list d-flex flex-column gap-3">
-                            @foreach (var rev in reviews)
+                        <div class="reviews-list d-flex flex-column gap-3" id="reviewsContainer">
+                            @for (int i = 0; i < reviews.Count; i++)
                             {
-                                <div class="review-item-card p-3 rounded-4 bg-light border-0">
+                                var rev = reviews[i];
+                                var pageNum = (i / reviewPageSize) + 1;
+                                <div class="review-item-card p-3 rounded-4 bg-light border-0 review-page-item" data-page="@pageNum" style="@(pageNum > 1 ? "display: none;" : "")">
                                     <div class="d-flex align-items-center justify-content-between mb-2">
                                         <div class="d-flex align-items-center gap-2">
                                             <div class="reviewer-avatar">
@@ -395,52 +432,65 @@
                                             {
                                                 <i class="bi bi-star-fill"></i>
                                             }
+                                            @for (var s = rev.Rating; s < 5; s++)
+                                            {
+                                                <i class="bi bi-star text-muted opacity-25"></i>
+                                            }
                                         </div>
                                     </div>
-                                    <p class="review-comment text-muted mb-0">@rev.Comment</p>
+                                    <p class="review-comment text-muted mb-0">@(string.IsNullOrWhiteSpace(rev.Comment) ? "Khách không để lại nhận xét văn bản." : rev.Comment)</p>
+                                    @if (!string.IsNullOrWhiteSpace(rev.OwnerReply))
+                                    {
+                                        <div class="mt-3 p-3 rounded-3 bg-white border-start border-primary border-3">
+                                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                                <span class="fw-bold text-navy small">
+                                                    <i class="bi bi-reply-fill text-primary me-1"></i> Phản hồi từ chủ nhà
+                                                </span>
+                                                @if (rev.ReplyDate.HasValue)
+                                                {
+                                                    <small class="text-muted">@rev.ReplyDate.Value.ToString("dd/MM/yyyy")</small>
+                                                }
+                                            </div>
+                                            <p class="text-muted small mb-0">@rev.OwnerReply</p>
+                                        </div>
+                                    }
                                 </div>
                             }
                         </div>
+
+                        @if (totalReviewPages > 1)
+                        {
+                            <div class="reviews-pagination mt-4 d-flex align-items-center justify-content-between flex-wrap gap-2 pt-3 border-top">
+                                <span class="text-muted small">
+                                    Trang <strong id="currentReviewPageDisplay">1</strong> / <strong>@totalReviewPages</strong> (Tổng cộng @reviewCount đánh giá)
+                                </span>
+                                <div class="pagination-buttons d-flex align-items-center gap-1">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="btnPrevReviewPage" onclick="changeReviewPage(-1)" disabled>
+                                        <i class="bi bi-chevron-left me-1"></i> Trước
+                                    </button>
+                                    <div class="d-flex align-items-center gap-1" id="reviewPageNumbers">
+                                        @for (int p = 1; p <= totalReviewPages; p++)
+                                        {
+                                            <button type="button" class="btn btn-sm @(p == 1 ? "btn-primary" : "btn-outline-secondary") rounded-circle btn-review-page-btn" style="width: 34px; height: 34px; padding: 0;" data-page="@p" onclick="goToReviewPage(@p)">
+                                                @p
+                                            </button>
+                                        }
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="btnNextReviewPage" onclick="changeReviewPage(1)">
+                                        Sau <i class="bi bi-chevron-right ms-1"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        }
                     }
                     else
                     {
-                        <!-- Sample Curated Reviews -->
-                        <div class="reviews-list d-flex flex-column gap-3">
-                            <div class="review-item-card p-3 rounded-4 bg-light border-0">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="reviewer-avatar">H</div>
-                                        <div>
-                                            <div class="fw-bold text-navy">Hoàng Nam Anh</div>
-                                            <small class="text-muted">Đã ở 3 đêm • Tháng 8/2026</small>
-                                        </div>
-                                    </div>
-                                    <div class="text-warning">
-                                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                                    </div>
-                                </div>
-                                <p class="review-comment text-muted mb-0">
-                                    "Homestay rất đẹp và sạch sẽ, view ngắm cảnh cực kỳ chill. Chủ nhà nhiệt tình hướng dẫn các địa điểm ăn uống ngon bổ rẻ quanh khu vực. Nhất định sẽ quay lại lần tới!"
-                                </p>
+                        <div class="text-center py-5 px-3 rounded-4 bg-light border-0">
+                            <div class="mb-3 text-warning" style="font-size: 2.5rem;">
+                                <i class="bi bi-chat-square-heart"></i>
                             </div>
-
-                            <div class="review-item-card p-3 rounded-4 bg-light border-0">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="reviewer-avatar">M</div>
-                                        <div>
-                                            <div class="fw-bold text-navy">Mai Thanh Thảo</div>
-                                            <small class="text-muted">Đã ở 2 đêm • Tháng 9/2026</small>
-                                        </div>
-                                    </div>
-                                    <div class="text-warning">
-                                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                                    </div>
-                                </div>
-                                <p class="review-comment text-muted mb-0">
-                                    "Giường nệm rất êm, phòng thơm tho, nước nóng đầy đủ. Điểm cộng lớn là wifi nhanh mượt mà nên làm việc từ xa rất tiện lợi. 10/10 điểm!"
-                                </p>
-                            </div>
+                            <h5 class="fw-bold text-navy mb-1">Chưa có đánh giá nào</h5>
+                            <p class="text-muted small mb-0">Cơ sở lưu trú này hiện chưa có đánh giá nào từ khách hàng thực tế.</p>
                         </div>
                     }
                 </div>
@@ -457,7 +507,7 @@
                         </div>
                         <div class="d-flex align-items-center gap-1 text-warning small">
                             <i class="bi bi-star-fill"></i>
-                            <span class="fw-bold text-dark">4.9</span>
+                            <span class="fw-bold text-dark">@(reviewCount > 0 ? avgRating.ToString("0.0") : "5.0")</span>
                         </div>
                     </div>
 
@@ -549,13 +599,22 @@
 
                         <!-- Promo Code -->
                         <div class="mb-3">
-                            <label class="form-label small fw-bold text-navy">Mã giảm giá (Nếu có)</label>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label small fw-bold text-navy mb-0">Mã giảm giá (Nếu có)</label>
+                                <button type="button" class="btn btn-link p-0 text-primary small text-decoration-none fw-semibold" onclick="openPromotionsModal()">
+                                    <i class="bi bi-gift-fill me-1 text-warning"></i> Xem ưu đãi
+                                </button>
+                            </div>
                             <div class="input-group">
                                 <span class="input-group-text bg-light rounded-start-pill border-end-0">
                                     <i class="bi bi-ticket-perforated-fill text-primary"></i>
                                 </span>
-                                <input name="PromoCode" id="bookingPromoCode" type="text" class="form-control rounded-end-pill border-start-0 text-uppercase" placeholder="Nhập mã giảm giá..." />
+                                <input name="PromoCode" id="bookingPromoCode" type="text" class="form-control border-start-0 text-uppercase" placeholder="Nhập mã giảm giá..." />
+                                <button type="button" class="btn btn-primary rounded-end-pill px-3 fw-semibold" id="btnApplyPromo" onclick="applyPromoCode()">
+                                    Áp dụng
+                                </button>
                             </div>
+                            <div id="promoFeedback" class="small mt-1 d-none"></div>
                         </div>
 
                         <!-- Price Breakdown -->
@@ -564,12 +623,16 @@
                                 <span id="breakdownNightsText">500,000 ₫ × 1 đêm</span>
                                 <span id="breakdownSubtotal">500,000 ₫</span>
                             </div>
-                            <div class="d-flex justify-content-between small text-muted mb-2">
+                            <div class="d-flex justify-content-between small text-muted mb-1">
                                 <span>Phí dịch vụ thêm</span>
                                 <span class="text-success fw-semibold" id="breakdownServices">0 ₫</span>
                             </div>
+                            <div class="d-flex justify-content-between small text-success mb-2 d-none" id="breakdownDiscountRow">
+                                <span id="breakdownDiscountLabel"><i class="bi bi-tag-fill me-1"></i> Giảm giá khuyến mãi</span>
+                                <span class="fw-bold" id="breakdownDiscount">-0 ₫</span>
+                            </div>
                             <div class="d-flex justify-content-between fw-bold text-navy pt-2 border-top">
-                                <span>Tổng tạm tính</span>
+                                <span>Tổng thành tiền</span>
                                 <span class="text-primary fs-5" id="breakdownTotal">500,000 ₫</span>
                             </div>
                         </div>
@@ -1029,6 +1092,82 @@
         calculateBookingTotal();
     }
 
+    let currentAppliedPromo = null;
+
+    async function applyPromoCode() {
+        const input = document.getElementById('bookingPromoCode');
+        const feedback = document.getElementById('promoFeedback');
+        const btn = document.getElementById('btnApplyPromo');
+        if (!input || !feedback) return;
+
+        const code = input.value.trim().toUpperCase();
+        if (!code) {
+            currentAppliedPromo = null;
+            feedback.className = 'small mt-1 text-danger';
+            feedback.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i> Vui lòng nhập mã giảm giá.';
+            feedback.classList.remove('d-none');
+            calculateBookingTotal();
+            return;
+        }
+
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        try {
+            const res = await fetch(`/Home/CheckPromoCode?code=${encodeURIComponent(code)}`);
+            const json = await res.json();
+
+            if (res.ok && json.success && json.data) {
+                currentAppliedPromo = json.data;
+                feedback.className = 'small mt-1 text-success fw-semibold';
+                const maxTxt = json.data.maxAmount ? ` (Tối đa ${Number(json.data.maxAmount).toLocaleString('vi-VN')} ₫)` : '';
+                feedback.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> Đã áp dụng mã <strong>${json.data.code}</strong>: Giảm ${json.data.percentage}%${maxTxt}`;
+                feedback.classList.remove('d-none');
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-success');
+                btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+                showStaylyToast('success', `Đã áp dụng mã ${json.data.code} thành công!`);
+            } else {
+                currentAppliedPromo = null;
+                feedback.className = 'small mt-1 text-danger';
+                feedback.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i> ${json.message || 'Mã giảm giá không hợp lệ hoặc đã hết hạn.'}`;
+                feedback.classList.remove('d-none');
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-primary');
+                btn.innerHTML = 'Áp dụng';
+                showStaylyToast('info', json.message || 'Mã giảm giá không hợp lệ.');
+            }
+        } catch (e) {
+            currentAppliedPromo = null;
+            feedback.className = 'small mt-1 text-danger';
+            feedback.innerHTML = '<i class="bi bi-x-circle-fill me-1"></i> Lỗi kết nối khi kiểm tra mã.';
+            feedback.classList.remove('d-none');
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-primary');
+            btn.innerHTML = 'Áp dụng';
+        } finally {
+            btn.disabled = false;
+            calculateBookingTotal();
+        }
+    }
+
+    document.getElementById('bookingPromoCode')?.addEventListener('input', function() {
+        const btn = document.getElementById('btnApplyPromo');
+        if (btn) {
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-primary');
+            btn.innerHTML = 'Áp dụng';
+        }
+    });
+
+    document.getElementById('bookingPromoCode')?.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            applyPromoCode();
+        }
+    });
+
     function calculateBookingTotal() {
         const roomSelect = document.getElementById('bookingRoomSelect');
         const checkIn = document.getElementById('bookingCheckIn');
@@ -1056,8 +1195,27 @@
             const p = parseFloat(input.dataset.price) || 0;
             servicesTotal += qty * p;
         });
-        
-        const finalTotal = total + servicesTotal;
+
+        const rawTotal = total + servicesTotal;
+        let discountAmount = 0;
+
+        const discountRow = document.getElementById('breakdownDiscountRow');
+        const discountText = document.getElementById('breakdownDiscount');
+        const discountLabel = document.getElementById('breakdownDiscountLabel');
+
+        if (currentAppliedPromo) {
+            discountAmount = rawTotal * (currentAppliedPromo.percentage / 100);
+            if (currentAppliedPromo.maxAmount && discountAmount > currentAppliedPromo.maxAmount) {
+                discountAmount = currentAppliedPromo.maxAmount;
+            }
+            if (discountRow) discountRow.classList.remove('d-none');
+            if (discountLabel) discountLabel.innerHTML = `<i class="bi bi-tag-fill me-1"></i> Mã <strong>${currentAppliedPromo.code}</strong> (-${currentAppliedPromo.percentage}%)`;
+            if (discountText) discountText.textContent = `-${Math.round(discountAmount).toLocaleString('vi-VN')} ₫`;
+        } else {
+            if (discountRow) discountRow.classList.add('d-none');
+        }
+
+        const finalTotal = Math.max(0, rawTotal - discountAmount);
 
         const nightsText = document.getElementById('breakdownNightsText');
         const subtotal = document.getElementById('breakdownSubtotal');
@@ -1067,7 +1225,7 @@
         if (nightsText) nightsText.textContent = `${pricePerNight.toLocaleString('vi-VN')} ₫ × ${nights} đêm`;
         if (subtotal) subtotal.textContent = `${total.toLocaleString('vi-VN')} ₫`;
         if (servicesText) servicesText.textContent = servicesTotal > 0 ? `${servicesTotal.toLocaleString('vi-VN')} ₫` : '0 ₫';
-        if (grandTotal) grandTotal.textContent = `${finalTotal.toLocaleString('vi-VN')} ₫`;
+        if (grandTotal) grandTotal.textContent = `${Math.round(finalTotal).toLocaleString('vi-VN')} ₫`;
     }
 
     function validateBookingSubmit(event) {
@@ -1094,7 +1252,58 @@
         const guestInput = document.getElementById('bookingGuestCount');
         if (guestInput) guestInput.value = adults + children;
 
+        // Bỏ qua các dịch vụ không chọn (số lượng = 0) để không gửi lên form
+        document.querySelectorAll('.service-qty').forEach((qtyInput, idx) => {
+            if (parseInt(qtyInput.value || 0) <= 0) {
+                qtyInput.disabled = true;
+                const idInput = document.querySelector(`input[name="Services[${idx}].ServiceId"]`);
+                if (idInput) idInput.disabled = true;
+            }
+        });
+
         return true;
+    }
+
+    // Review Pagination Logic (tối đa 5 đánh giá / 1 trang)
+    let currentReviewPage = 1;
+    const totalReviewPages = @totalReviewPages;
+
+    function goToReviewPage(pageNum) {
+        if (pageNum < 1 || pageNum > totalReviewPages) return;
+        currentReviewPage = pageNum;
+
+        document.querySelectorAll('#reviewsContainer .review-page-item').forEach(item => {
+            const itemPage = parseInt(item.getAttribute('data-page'));
+            item.style.display = itemPage === currentReviewPage ? 'block' : 'none';
+        });
+
+        const displayEl = document.getElementById('currentReviewPageDisplay');
+        if (displayEl) displayEl.textContent = currentReviewPage;
+
+        const prevBtn = document.getElementById('btnPrevReviewPage');
+        const nextBtn = document.getElementById('btnNextReviewPage');
+        if (prevBtn) prevBtn.disabled = currentReviewPage <= 1;
+        if (nextBtn) nextBtn.disabled = currentReviewPage >= totalReviewPages;
+
+        document.querySelectorAll('#reviewPageNumbers .btn-review-page-btn').forEach(btn => {
+            const btnPage = parseInt(btn.getAttribute('data-page'));
+            if (btnPage === currentReviewPage) {
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-primary');
+            } else {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline-secondary');
+            }
+        });
+
+        const section = document.getElementById('customerReviewsSection');
+        if (section) {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    function changeReviewPage(delta) {
+        goToReviewPage(currentReviewPage + delta);
     }
 
 </script>

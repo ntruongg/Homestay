@@ -29,7 +29,7 @@ public class DonDatPhong
     public int SoNguoi => SoNguoiLon + SoTreEm;
 
     [Required, StringLength(30)]
-    public string TrangThai { get; set; } = "ChoDuyet";
+    public string TrangThai { get; set; } = "ChoThanhToan";
 
     public DateTime? ThoiGianYeuCauHoan { get; set; }
 

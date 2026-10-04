@@ -28,7 +28,8 @@ CREATE TABLE [__EFMigrationsHistory] (
 INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES
 ('20260925114954_InitialNormalizedV2', '8.0.31'),
 ('20260927084643_AddExclusiveOwnerConstraint', '8.0.31'),
-('20260930074019_UpdateDichVuModel', '8.0.31');
+('20260930074019_UpdateDichVuModel', '8.0.31'),
+('20261004080250_AddRefundAndBankAccountFields', '8.0.31');
 GO
 
 -- 1. BẢNG PHÂN QUYỀN VAI TRÒ
@@ -61,8 +62,10 @@ CREATE TABLE NguoiDung (
     NganHang NVARCHAR(100) NULL,
     SoTaiKhoan VARCHAR(30) NULL,
     TenNguoiThuHuong NVARCHAR(100) NULL,
-    CCCD VARCHAR(20) NULL UNIQUE
+    CCCD VARCHAR(20) NULL
 );
+CREATE UNIQUE NONCLUSTERED INDEX UQ_NguoiDung_CCCD ON NguoiDung(CCCD) WHERE CCCD IS NOT NULL;
+GO
 
 SET IDENTITY_INSERT NguoiDung ON;
 INSERT INTO NguoiDung (MaNguoiDung, Email, HoTen, NgaySinh, GioiTinh, DienThoai, MatKhau, MaVaiTro, TrangThai, NgayTao, NganHang, SoTaiKhoan, TenNguoiThuHuong, CCCD) VALUES

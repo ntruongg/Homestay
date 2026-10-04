@@ -15,6 +15,16 @@ namespace HomestaySystem.Models
         public string TenKhachHang { get; set; } = string.Empty;
         public string SoDienThoaiKhach { get; set; } = string.Empty;
         public string EmailKhach { get; set; } = string.Empty;
+        public string? TenNganHangKhach { get; set; }
+        public string? SoTaiKhoanKhach { get; set; }
+        public string? TenChuTaiKhoanKhach { get; set; }
+        public string? LyDoHoanTien { get; set; }
+        public DateTime? ThoiGianYeuCauHoan { get; set; }
+
+        public string ThongTinNganHangKhachHienThi =>
+            !string.IsNullOrWhiteSpace(SoTaiKhoanKhach)
+                ? $"{TenNganHangKhach} - {SoTaiKhoanKhach} - {TenChuTaiKhoanKhach}"
+                : "Chưa cung cấp";
 
         // Thông tin phòng & homestay
         public int MaPhong { get; set; }

@@ -277,6 +277,30 @@ namespace HomestaySystem.ViewModels
             set => SetProperty(ref _themXacThucTERANgay, value);
         }
 
+        public IReadOnlyList<string> DanhSachNganHangHoTro { get; } = new List<string>
+        {
+            "Vietcombank (VCB)",
+            "VietinBank (CTG)",
+            "BIDV",
+            "Agribank",
+            "MB Bank (Ngân hàng Quân Đội)",
+            "Techcombank (TCB)",
+            "ACB (Ngân hàng Á Châu)",
+            "VPBank",
+            "TPBank (Tiên Phong)",
+            "Sacombank",
+            "HDBank",
+            "VIB (Quốc Tế)",
+            "SHB",
+            "SeABank",
+            "OCB (Phương Đông)",
+            "MSB (Hàng Hải)",
+            "Eximbank",
+            "Nam A Bank",
+            "LPBank (Lộc Phát VN)",
+            "BaoViet Bank"
+        };
+
         // ================= THỐNG KÊ KPI CHO ĐỐI TÁC =================
         public int TongSoDoiTac => _tatCaDoiTac.Count;
         public int SoDoiTacDaXacThucTERA => _tatCaDoiTac.Count(t => t.DaXacThucTERA);

@@ -796,8 +796,9 @@
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Text="Ngân hàng thụ hưởng:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                                     <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                        <TextBox Text="{Binding SuaNganHang, UpdateSourceTrigger=PropertyChanged}"
-                                                 BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
+                                        <ComboBox ItemsSource="{Binding DanhSachNganHangHoTro}"
+                                                  SelectedItem="{Binding SuaNganHang, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  BorderThickness="0" Background="Transparent" FontSize="13" Foreground="{StaticResource MauChuChinh}"/>
                                     </Border>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
@@ -963,8 +964,9 @@
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Text="Ngân hàng thụ hưởng:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                                     <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                        <TextBox Text="{Binding ThemNganHang, UpdateSourceTrigger=PropertyChanged}"
-                                                 BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
+                                        <ComboBox ItemsSource="{Binding DanhSachNganHangHoTro}"
+                                                  SelectedItem="{Binding ThemNganHang, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  BorderThickness="0" Background="Transparent" FontSize="13" Foreground="{StaticResource MauChuChinh}"/>
                                     </Border>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">

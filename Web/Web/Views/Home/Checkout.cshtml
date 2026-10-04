@@ -1,37 +1,87 @@
 @model Web.Models.Booking
 
 @{
-    ViewData["Title"] = "Thanh toán QR Code";
+    ViewData["Title"] = "Thanh toán đơn đặt phòng #" + Model.Id;
+    bool hasVnPayConfig = ViewBag.HasVnPayConfig is true;
+    string? vnPayUrl = ViewBag.VnPayPaymentUrl as string;
 }
 
 <div class="container py-5">
     <div class="row g-4 justify-content-center">
         <div class="col-lg-10">
-            <h1 class="h3 fw-bold text-navy mb-4"><i class="bi bi-qr-code-scan me-2 text-primary"></i>Thanh toán đơn đặt phòng</h1>
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <h1 class="h3 fw-bold text-navy mb-1"><i class="bi bi-credit-card-2-front me-2 text-primary"></i>Thanh toán đơn đặt phòng #@Model.Id</h1>
+                    <p class="text-muted mb-0">Hoàn tất thanh toán để chuyển đơn sang trạng thái chờ chủ cơ sở duyệt</p>
+                </div>
+                <a href="/Home/Trips" class="btn btn-outline-secondary rounded-pill px-3 py-1 small">
+                    <i class="bi bi-arrow-left me-1"></i> Quay lại chuyến đi
+                </a>
+            </div>
 
             <div class="row g-4">
-                <!-- Left: QR Code -->
+                <!-- Left: VNPay Payment & Real QR Code -->
                 <div class="col-md-6">
                     <div class="card border-0 shadow-sm rounded-4 h-100">
-                        <div class="card-body p-4 text-center d-flex flex-column justify-content-center align-items-center">
-                            <h4 class="fw-bold mb-3">Quét mã để thanh toán</h4>
-                            <p class="text-muted small mb-4">Vui lòng sử dụng Ứng dụng Ngân hàng hoặc Ví điện tử (VNPay, Momo) để quét mã QR này.</p>
-                            
-                            <div class="qr-code-wrapper bg-light p-3 rounded-4 mb-4" style="display: inline-block;">
-                                <!-- Dùng api tạo QR code giả định từ dữ liệu mã đơn -->
-                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=Stayly_Payment_@(Model.Id)_@(Model.TotalAmount)" alt="QR Code" class="img-fluid rounded" />
+                        <div class="card-body p-4 text-center d-flex flex-column justify-content-between align-items-center">
+                            <div class="w-100">
+                                <h4 class="fw-bold mb-2 text-navy"><i class="bi bi-wallet2 text-primary me-2"></i>Thanh toán qua Cổng VNPAY</h4>
+                                <p class="text-muted small mb-3">Quét mã QR bằng ứng dụng Ngân hàng / Ví điện tử hoặc mở Cổng VNPay</p>
+
+                                @if (!string.IsNullOrEmpty(vnPayUrl))
+                                {
+                                    <div class="mb-3">
+                                        <a href="@vnPayUrl" class="btn btn-danger btn-lg w-100 rounded-pill py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 mb-2">
+                                            <i class="bi bi-box-arrow-up-right fs-5"></i> Mở Cổng Thanh Toán VNPay
+                                        </a>
+                                        <div class="text-muted small">
+                                            <i class="bi bi-shield-check text-success me-1"></i> Hỗ trợ quét VNPAY-QR trực tiếp từ App Ngân hàng, Thẻ ATM/Nội địa, Visa/Mastercard &amp; Ví VNPay
+                                        </div>
+                                    </div>
+                                }
+
+                                <div class="border-top pt-3 mb-2 w-100">
+                                    <span class="text-muted small fw-semibold text-uppercase">MÃ QR THANH TOÁN VNPAY THỰC TẾ</span>
+                                </div>
+
+                                <!-- Vùng hiển thị mã QR thật -->
+                                <div id="realQrContainer" class="qr-code-wrapper bg-white border p-3 rounded-4 mb-3 position-relative d-inline-flex justify-content-center align-items-center" style="min-width: 270px; min-height: 270px;">
+                                    @if (!string.IsNullOrEmpty(vnPayUrl))
+                                    {
+                                        <img id="vnpayRealQrImage" 
+                                             src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=@System.Net.WebUtility.UrlEncode(vnPayUrl)" 
+                                             alt="VNPAY Real QR Code" 
+                                             class="img-fluid rounded" 
+                                             style="width: 250px; height: 250px; object-fit: contain;"
+                                             onerror="showQrLoadError()" 
+                                             onload="hideQrLoadError()" />
+                                    }
+
+                                    <!-- Dòng báo lỗi và giải thích nếu không load được mã thật -->
+                                    <div id="qrErrorBox" class="alert alert-danger p-3 rounded-3 text-start m-2 @(!string.IsNullOrEmpty(vnPayUrl) ? "d-none" : "")" style="max-width: 320px;">
+                                        <div class="d-flex align-items-center gap-2 mb-2 text-danger fw-bold">
+                                            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                                            <span>Không load được mã QR thanh toán</span>
+                                        </div>
+                                        <p class="small text-secondary mb-2">
+                                            <strong>Giải thích:</strong> Phiên thanh toán VNPay yêu cầu chữ ký số bảo mật SHA512 với độ dài URL lớn, khiến máy chủ tạo ảnh QR không thể render hoặc trình duyệt chặn kết nối tải ảnh từ xa.
+                                        </p>
+                                        <p class="small text-dark mb-0 fw-semibold">
+                                            <strong>Cách xử lý:</strong> Vui lòng bấm trực tiếp vào nút <span class="text-danger">"Mở Cổng Thanh Toán VNPay"</span> ở trên để thanh toán trực tiếp trên hệ thống an toàn của VNPay.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="timer-box mb-2">
+                                    <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill fw-bold">
+                                        <i class="bi bi-clock-history me-1"></i> Mã hết hạn sau: <span id="countdownTimer">30:00</span>
+                                    </span>
+                                </div>
                             </div>
 
-                            <div class="timer-box mb-4">
-                                <span class="text-danger fw-bold"><i class="bi bi-clock-history me-1"></i> Mã hết hạn sau: <span id="countdownTimer">30:00</span></span>
+                            <div class="w-100 pt-3 border-top text-muted small">
+                                <i class="bi bi-arrow-repeat text-primary me-1"></i> Hệ thống tự động đồng bộ và chuyển sang trạng thái <strong>Chờ duyệt</strong> ngay khi giao dịch VNPay hoàn tất.
                             </div>
-
-                            <form asp-action="CompletePayment" method="post">
-                                <input type="hidden" name="bookingId" value="@Model.Id" />
-                                <button type="submit" class="btn btn-primary rounded-pill px-5 py-2 fw-semibold">
-                                    <i class="bi bi-check-circle me-1"></i> Tôi đã thanh toán xong
-                                </button>
-                            </form>
                         </div>
                     </div>
                 </div>
@@ -40,44 +90,52 @@
                 <div class="col-md-6">
                     <div class="card border-0 shadow-sm rounded-4 bg-light h-100">
                         <div class="card-body p-4">
-                            <h4 class="fw-bold mb-4">Thông tin chi tiết</h4>
+                            <h4 class="fw-bold mb-4">Chi tiết thanh toán</h4>
                             
                             <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                                <span class="text-muted">Mã đơn:</span>
+                                <span class="text-muted">Mã đơn đặt phòng:</span>
                                 <span class="fw-semibold">#@Model.Id</span>
                             </div>
                             <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                                <span class="text-muted">Phòng:</span>
-                                <span class="fw-semibold">@string.Join(", ", Model.RoomIds)</span>
+                                <span class="text-muted">Trạng thái:</span>
+                                <span class="badge bg-warning text-dark rounded-pill px-3 py-1">Chờ thanh toán</span>
                             </div>
                             <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                                <span class="text-muted">Ngày nhận phòng:</span>
+                                <span class="text-muted">Danh sách phòng:</span>
+                                <span class="fw-semibold">
+                                    @(Model.RoomNumbers != null && Model.RoomNumbers.Any() 
+                                        ? string.Join(", ", Model.RoomNumbers.Select(r => "Phòng " + r)) 
+                                        : string.Join(", ", Model.RoomIds))
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                                <span class="text-muted">Thời gian nhận phòng:</span>
                                 <span class="fw-semibold">@Model.CheckIn.ToString("dd/MM/yyyy")</span>
                             </div>
                             <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                                <span class="text-muted">Ngày trả phòng:</span>
+                                <span class="text-muted">Thời gian trả phòng:</span>
                                 <span class="fw-semibold">@Model.CheckOut.ToString("dd/MM/yyyy")</span>
                             </div>
                             <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                                <span class="text-muted">Khách:</span>
+                                <span class="text-muted">Số lượng khách:</span>
                                 <span class="fw-semibold">@Model.Adults người lớn, @Model.Children trẻ em</span>
                             </div>
 
                             @if (!string.IsNullOrEmpty(Model.PromoCode))
                             {
                                 <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                                    <span class="text-muted">Mã giảm giá áp dụng:</span>
+                                    <span class="text-muted">Mã giảm giá đã áp dụng:</span>
                                     <span class="badge bg-success text-white">@Model.PromoCode</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-3 border-bottom pb-2 text-success">
-                                    <span>Được giảm:</span>
+                                    <span>Số tiền được giảm:</span>
                                     <span class="fw-bold">-@Model.DiscountAmount.ToString("N0") ₫</span>
                                 </div>
                             }
 
-                            <div class="d-flex justify-content-between mt-4">
-                                <span class="fs-5 fw-bold text-navy">Tổng thanh toán:</span>
-                                <span class="fs-4 fw-bold text-primary">@Model.TotalAmount.ToString("N0") ₫</span>
+                            <div class="d-flex justify-content-between align-items-center mt-4 p-3 bg-white rounded-3 shadow-sm">
+                                <span class="fs-5 fw-bold text-navy">Số tiền cần thanh toán:</span>
+                                <span class="fs-3 fw-bold text-danger">@Model.TotalAmount.ToString("N0") ₫</span>
                             </div>
                         </div>
                     </div>
@@ -89,22 +147,68 @@
 
 @section Scripts {
     <script>
-        // Countdown timer for 30 minutes
+        // Xử lý báo lỗi load mã QR
+        function showQrLoadError() {
+            const qrImg = document.getElementById('vnpayRealQrImage');
+            const errBox = document.getElementById('qrErrorBox');
+            if (qrImg) qrImg.style.display = 'none';
+            if (errBox) errBox.classList.remove('d-none');
+        }
+
+        function hideQrLoadError() {
+            const errBox = document.getElementById('qrErrorBox');
+            if (errBox && '@(!string.IsNullOrEmpty(vnPayUrl))' === 'True') {
+                errBox.classList.add('d-none');
+            }
+        }
+
+        // 1. Countdown timer for 30 minutes
         let timeInSecs = 30 * 60;
         const display = document.getElementById('countdownTimer');
 
-        const timer = setInterval(function () {
+        const timer = setInterval(async function () {
             timeInSecs--;
             if (timeInSecs <= 0) {
                 clearInterval(timer);
-                display.textContent = "00:00";
-                alert("Mã QR đã hết hạn! Vui lòng tạo lại yêu cầu đặt phòng.");
+                clearInterval(pollInterval);
+                if (display) display.textContent = "00:00";
+
+                try {
+                    await fetch('/Home/ExpireBooking?bookingId=@Model.Id', {
+                        method: 'POST',
+                        headers: {
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                        }
+                    });
+                } catch (e) {
+                    console.error('Lỗi khi hủy đơn quá hạn:', e);
+                }
+
+                alert("Thời hạn thanh toán (30 phút) đã kết thúc! Đơn đặt phòng của bạn đã tự động được hủy và giải phóng phòng.");
                 window.location.href = '/Home/Trips';
             } else {
                 let m = Math.floor(timeInSecs / 60);
                 let s = timeInSecs % 60;
-                display.textContent = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+                if (display) display.textContent = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
             }
         }, 1000);
+
+        // 2. Real-time status polling (tự động phát hiện khi khách quét QR hoặc thanh toán xong trên VNPay)
+        const pollInterval = setInterval(async function () {
+            try {
+                const response = await fetch('/Home/CheckPaymentStatus?bookingId=@Model.Id');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.isPaid) {
+                        clearInterval(pollInterval);
+                        clearInterval(timer);
+                        alert("Thanh toán VNPay thành công! Đơn đặt phòng đã được tự động chuyển sang trạng thái 'Chờ chủ cơ sở duyệt'.");
+                        window.location.href = '/Home/Trips';
+                    }
+                }
+            } catch (err) {
+                console.error("Lỗi khi kiểm tra trạng thái thanh toán:", err);
+            }
+        }, 2500);
     </script>
 }

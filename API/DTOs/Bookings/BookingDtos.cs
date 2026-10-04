@@ -37,7 +37,7 @@ public sealed class CreateBookingRequest : IValidatableObject
 public sealed class CreateBookingServiceRequest
 {
     public int ServiceId { get; set; }
-    [Range(1, 100, ErrorMessage = "Số lượng dịch vụ phải lớn hơn 0")]
+    [Range(0, 100, ErrorMessage = "Số lượng dịch vụ phải từ 0 đến 100")]
     public int Quantity { get; set; } = 1;
 }
 
@@ -45,6 +45,21 @@ public sealed class RequestRefundRequest
 {
     [Required, StringLength(500)]
     public string Reason { get; set; } = string.Empty;
+
+    [StringLength(100)]
+    public string? BankName { get; set; }
+
+    [StringLength(50)]
+    public string? AccountNumber { get; set; }
+
+    [StringLength(100)]
+    public string? AccountHolder { get; set; }
+}
+
+public sealed class ConfirmPaymentRequest
+{
+    public string? PaymentMethod { get; set; } = "VNPay";
+    public string? TransactionNo { get; set; }
 }
 
 public sealed record BookingServiceResponse(
@@ -54,4 +69,5 @@ public sealed record BookingResponse(
     int Id, IReadOnlyList<int> RoomIds, DateTime CheckIn, DateTime CheckOut,
     int GuestCount, int Adults, int Children, string Status, decimal TotalAmount,
     IReadOnlyList<BookingServiceResponse> Services, string? PromoCode, decimal DiscountAmount,
-    string? PropertyName = null, IReadOnlyList<string>? RoomNumbers = null, string? PropertyImage = null);
+    string? PropertyName = null, IReadOnlyList<string>? RoomNumbers = null, string? PropertyImage = null,
+    bool HasReviewed = false, int? ReviewRating = null, string? ReviewComment = null);

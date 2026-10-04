@@ -183,7 +183,8 @@ public sealed record AmenityDto(int Id, string Name);
 public sealed record RoomTypeDto(int Id, string Name, string? Description);
 
 public sealed record PropertySummaryResponse(
-    int Id, string Name, string? Address, string? Type, decimal MinimumPrice, string? CoverImageUrl);
+    int Id, string Name, string? Address, string? Type, decimal MinimumPrice, string? CoverImageUrl,
+    double Rating = 5.0);
 
 public sealed record PropertyDetailsResponse(
     int Id, string Name, string? Phone, string? Email, string? Address, string? Type,

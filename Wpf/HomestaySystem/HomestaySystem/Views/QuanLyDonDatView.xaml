@@ -456,6 +456,15 @@
                                 </Grid>
                             </Border>
 
+                            <!-- Thông tin tài khoản ngân hàng của khách để hoàn tiền -->
+                            <Border Background="#F0FDF4" BorderBrush="#BBF7D0" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <TextBlock Text="TÀI KHOẢN NGÂN HÀNG HOÀN TIỀN (KHÁCH):" FontSize="11.5" FontWeight="Bold" Foreground="#15803D" Margin="0,0,0,4"/>
+                                    <TextBlock Text="{Binding DonDangChon.ThongTinNganHangKhachHienThi, FallbackValue='Chưa cung cấp'}" FontSize="13" FontWeight="Bold" Foreground="#1E293B"/>
+                                    <TextBlock Text="{Binding DonDangChon.LyDoHoanTien, StringFormat='Lý do: {0}'}" FontSize="12" Foreground="#64748B" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+
                             <!-- Đối soát chính sách hủy phòng -->
                             <Border Background="#F1F5F9" CornerRadius="12" Padding="14,12" Margin="0,0,0,14">
                                 <StackPanel>
@@ -594,9 +603,33 @@
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0" Text="XÁC NHẬN PHÊ DUYỆT HOÀN TIỀN" FontSize="16" FontWeight="Bold" Foreground="{StaticResource MauStaylyGreen}" Margin="0,0,0,8"/>
-                    <TextBlock Grid.Row="1" Text="Lệnh hoàn tiền tự động sẽ được gửi tới Cổng thanh toán trực tuyến:" FontSize="13" Foreground="{StaticResource MauChuChinh}" Margin="0,0,0,14"/>
+                    <TextBlock Grid.Row="1" Text="Lệnh hoàn tiền chuyển khoản trực tiếp về tài khoản khách hàng:" FontSize="13" Foreground="{StaticResource MauChuChinh}" Margin="0,0,0,14"/>
 
                     <StackPanel Grid.Row="2" Margin="0,0,0,18">
+                        <!-- Thông tin tài khoản ngân hàng thụ hưởng của khách -->
+                        <Border Background="#F0FDF4" BorderBrush="#86EFAC" BorderThickness="1" CornerRadius="10" Padding="14,10" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="THÔNG TIN TÀI KHOẢN NHẬN TIỀN CỦA KHÁCH:" FontSize="11.5" FontWeight="Bold" Foreground="#15803D" Margin="0,0,0,6"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Ngân hàng:" Foreground="#64748B" FontSize="12.5" Margin="0,0,8,3"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DonDangChon.TenNganHangKhach, FallbackValue='Chưa cung cấp'}" FontWeight="Bold" Foreground="#1E293B" FontSize="12.5"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Số tài khoản:" Foreground="#64748B" FontSize="12.5" Margin="0,0,8,3"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DonDangChon.SoTaiKhoanKhach, FallbackValue='Chưa cung cấp'}" FontWeight="Bold" Foreground="#2563EB" FontSize="13.5"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Chủ tài khoản:" Foreground="#64748B" FontSize="12.5"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DonDangChon.TenChuTaiKhoanKhach, FallbackValue='Chưa cung cấp'}" FontWeight="Bold" Foreground="#1E293B" FontSize="12.5"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
                         <TextBlock Text="Số tiền hoàn (VNĐ):" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
                         <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" Margin="0,0,0,12" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                             <TextBox Text="{Binding SoTienHoan, UpdateSourceTrigger=PropertyChanged}"

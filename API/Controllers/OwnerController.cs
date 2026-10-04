@@ -244,7 +244,30 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
         if (!ownsRoom)
             return Forbid();
 
-        booking.TrangThai = request.Status;
+        var normalizedStatus = request.Status switch
+        {
+            "Confirmed" or "DaDuyet" => "DaDuyet",
+            "CheckedIn" => "DaDuyet",
+            "Completed" or "DaHoanTat" => "DaHoanTat",
+            "Cancelled" or "DaHuy" => "DaHuy",
+            "Rejected" or "TuChoi" => "TuChoi",
+            _ => request.Status
+        };
+
+        booking.TrangThai = normalizedStatus;
+
+        if (normalizedStatus is "DaHuy" or "TuChoi")
+        {
+            var roomIds = booking.ChiTietDons.Select(d => d.MaPhong).ToList();
+            var schedules = await db.LichLuuTrus
+                .Where(l => roomIds.Contains(l.MaPhong) && l.Ngay >= booking.NgayDen.Date && l.Ngay < booking.NgayDi.Date)
+                .ToListAsync(cancellationToken);
+            foreach (var sch in schedules)
+            {
+                sch.TrangThai = "Trống";
+            }
+        }
+
         await db.SaveChangesAsync(cancellationToken);
 
         return NoContent();

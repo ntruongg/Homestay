@@ -435,45 +435,34 @@
                                 </button>
 
                                 <div class="d-flex align-items-center gap-2">
-                                    @if (b.Status == "Pending")
+                                    @if (b.Status is "Pending" or "ChoDuyet")
                                     {
                                         <form asp-action="UpdateBookingStatus" method="post" class="d-inline">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="bookingId" value="@b.Id">
-                                            <input type="hidden" name="status" value="Confirmed">
+                                            <input type="hidden" name="status" value="DaDuyet">
                                             <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
                                                 <i class="bi bi-check2-circle me-1"></i> Xác nhận đơn
                                             </button>
                                         </form>
 
-                                        <form asp-action="UpdateBookingStatus" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn đặt phòng này?');">
+                                        <form asp-action="UpdateBookingStatus" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn từ chối đơn đặt phòng này?');">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="bookingId" value="@b.Id">
-                                            <input type="hidden" name="status" value="Cancelled">
+                                            <input type="hidden" name="status" value="TuChoi">
                                             <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
                                                 Từ chối
                                             </button>
                                         </form>
                                     }
-                                    else if (b.Status == "Confirmed")
+                                    else if (b.Status is "Confirmed" or "DaDuyet" or "CheckedIn" or "DangLuuTru")
                                     {
                                         <form asp-action="UpdateBookingStatus" method="post" class="d-inline">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="bookingId" value="@b.Id">
-                                            <input type="hidden" name="status" value="CheckedIn">
-                                            <button type="submit" class="btn btn-sm btn-info text-white rounded-pill px-3">
-                                                Nhận phòng (Check-in)
-                                            </button>
-                                        </form>
-                                    }
-                                    else if (b.Status == "CheckedIn")
-                                    {
-                                        <form asp-action="UpdateBookingStatus" method="post" class="d-inline">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="bookingId" value="@b.Id">
-                                            <input type="hidden" name="status" value="Completed">
-                                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3">
-                                                Trả phòng (Check-out)
+                                            <input type="hidden" name="status" value="DaHoanTat">
+                                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-bold">
+                                                <i class="bi bi-check-all me-1"></i> Hoàn tất kỳ nghỉ (Trả phòng)
                                             </button>
                                         </form>
                                     }
@@ -611,9 +600,31 @@
 
                             <p class="review-content-text mb-3">@rev.Comment</p>
 
+                            @if (!string.IsNullOrWhiteSpace(rev.OwnerReply))
+                            {
+                                <div class="p-3 rounded-3 bg-light border-start border-primary border-3 mb-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="fw-bold text-navy small">
+                                            <i class="bi bi-reply-fill text-primary me-1"></i> Phản hồi của bạn:
+                                        </span>
+                                        @if (rev.ReplyDate.HasValue)
+                                        {
+                                            <small class="text-muted">@rev.ReplyDate.Value.ToString("dd/MM/yyyy")</small>
+                                        }
+                                    </div>
+                                    <p class="text-muted small mb-0">@rev.OwnerReply</p>
+                                </div>
+                            }
+
                             <div class="d-flex justify-content-end pt-2 border-top">
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openReplyReviewModal(@rev.Id, '@rev.GuestName', '@rev.PropertyName')">
-                                    <i class="bi bi-reply-fill me-1"></i> Phản hồi đánh giá
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                        data-review-id="@rev.Id"
+                                        data-guest-name="@(rev.GuestName ?? "Khách lưu trú")"
+                                        data-prop-name="@(rev.PropertyName ?? "Homestay")"
+                                        data-existing-reply="@(rev.OwnerReply ?? "")"
+                                        onclick="openReplyReviewModalFromBtn(this)">
+                                    <i class="bi bi-reply-fill me-1"></i> @(string.IsNullOrWhiteSpace(rev.OwnerReply) ? "Phản hồi đánh giá" : "Chỉnh sửa phản hồi")
                                 </button>
                             </div>
                         </article>
@@ -2079,15 +2090,26 @@
         }
 
         // ==================== REPLY REVIEW ====================
-        function openReplyReviewModal(reviewId, guestName, propName) {
+        function openReplyReviewModalFromBtn(btn) {
+            const reviewId = btn.getAttribute('data-review-id');
+            const guestName = btn.getAttribute('data-guest-name');
+            const propName = btn.getAttribute('data-prop-name');
+            const existingReply = btn.getAttribute('data-existing-reply') || '';
+            openReplyReviewModal(reviewId, guestName, propName, existingReply);
+        }
+
+        function openReplyReviewModal(reviewId, guestName, propName, existingReply = '') {
             document.getElementById('replyReviewId').value = reviewId;
             document.getElementById('replyGuestName').textContent = guestName;
             document.getElementById('replyPropertyName').textContent = propName;
-            document.getElementById('replyReviewMessage').value = '';
+            document.getElementById('replyReviewMessage').value = existingReply;
             document.getElementById('replyAlertBox').classList.add('d-none');
 
-            const modal = new bootstrap.Modal(document.getElementById('replyReviewModal'));
-            modal.show();
+            const modalEl = document.getElementById('replyReviewModal');
+            if (modalEl && window.bootstrap) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            }
         }
 
         async function submitReviewReply() {

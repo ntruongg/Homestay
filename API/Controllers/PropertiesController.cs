@@ -72,19 +72,42 @@ public sealed class PropertiesController(
             query = query.Where(p => p.Phongs.Any(r => r.TrangThaiHoatDong && r.SucChuaNguoiLon >= adults));
         }
 
-        var properties = await query.OrderBy(p => p.TenCoSoLuuTru)
+        var rawProperties = await query.OrderBy(p => p.TenCoSoLuuTru)
             .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(p => new PropertySummaryResponse(
+            .Select(p => new
+            {
                 p.MaCoSoLuuTru,
                 p.TenCoSoLuuTru,
                 p.DiaChi,
                 p.LoaiHinh,
-                p.Phongs.Where(r => r.TrangThaiHoatDong).Any()
+                MinPrice = p.Phongs.Where(r => r.TrangThaiHoatDong).Any()
                     ? p.Phongs.Where(r => r.TrangThaiHoatDong).Min(r => r.GiaGoc)
                     : 0,
-                db.HinhAnhs.Where(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru)
-                    .Select(i => i.UrlHinhAnh).FirstOrDefault()))
+                CoverImage = db.HinhAnhs.Where(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru)
+                    .Select(i => i.UrlHinhAnh).FirstOrDefault(),
+                PropRating = db.DanhGias
+                    .Where(d => d.DonDatPhong.ChiTietDons.Any(c => c.Phong.MaCoSoLuuTru == p.MaCoSoLuuTru))
+                    .Select(d => (double?)d.DiemSo)
+                    .Average(),
+                OwnerRating = db.DanhGias
+                    .Where(d => d.DonDatPhong.ChiTietDons.Any(c => c.Phong.CoSoLuuTru.MaChuCoSoLuuTru == p.MaChuCoSoLuuTru))
+                    .Select(d => (double?)d.DiemSo)
+                    .Average()
+            })
             .ToListAsync(cancellationToken);
+
+        var properties = rawProperties.Select(p =>
+        {
+            var rating = p.PropRating ?? p.OwnerRating ?? 5.0;
+            return new PropertySummaryResponse(
+                p.MaCoSoLuuTru,
+                p.TenCoSoLuuTru,
+                p.DiaChi,
+                p.LoaiHinh,
+                p.MinPrice,
+                p.CoverImage,
+                Math.Round(rating, 1));
+        }).ToList();
 
         return Ok(properties);
     }

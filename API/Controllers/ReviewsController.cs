@@ -91,8 +91,23 @@ public sealed class ReviewsController(HomestayDbContext db) : ControllerBase
         if (booking.MaKhachHang != guestId)
             return Forbid("Bạn không có quyền đánh giá đơn đặt phòng của người khác.");
 
-        if (booking.TrangThai != "DaHoanTat" && booking.TrangThai != "Confirmed")
+        bool isStayCompleted = booking.TrangThai is "DaHoanTat" or "Completed"
+            || ((booking.TrangThai is "DaDuyet" or "Confirmed") && DateTime.UtcNow.Date >= booking.NgayDi.Date);
+
+        if (!isStayCompleted)
+        {
+            if (booking.TrangThai is "DaDuyet" or "Confirmed")
+            {
+                return BadRequest($"Chỉ có thể đánh giá sau khi hoàn tất kỳ nghỉ lưu trú (ngày trả phòng: {booking.NgayDi:dd/MM/yyyy}).");
+            }
             return BadRequest("Chỉ có thể đánh giá sau khi hoàn tất kỳ nghỉ lưu trú.");
+        }
+
+        // Tự động cập nhật trạng thái đơn thành DaHoanTat nếu trước đó là DaDuyet và đã qua ngày trả phòng
+        if (booking.TrangThai is "DaDuyet" or "Confirmed")
+        {
+            booking.TrangThai = "DaHoanTat";
+        }
 
         if (booking.DanhGia is not null)
             return Conflict("Đơn đặt phòng này đã được đánh giá trước đó.");
@@ -126,7 +141,7 @@ public sealed class ReviewsController(HomestayDbContext db) : ControllerBase
         ));
     }
 
-    [Authorize(Roles = "OWNER")]
+    [Authorize(Roles = "OWNER,ADMIN")]
     [HttpPost("{id:int}/reply")]
     public async Task<IActionResult> ReplyReview(
         int id,
@@ -136,15 +151,16 @@ public sealed class ReviewsController(HomestayDbContext db) : ControllerBase
         var ownerId = GetAccountId();
 
         var review = await db.DanhGias
-            .Include(d => d.DonDatPhong).ThenInclude(b => b.ChiTietDons).ThenInclude(c => c.Phong).ThenInclude(p => p.CoSoLuuTru)
             .FirstOrDefaultAsync(d => d.MaDanhGia == id, cancellationToken);
 
         if (review is null)
-            return NotFound("Không tìm thấy đánh giá.");
+            return NotFound(new { message = "Không tìm thấy đánh giá." });
 
-        var isOwnerOfProperty = review.DonDatPhong.ChiTietDons.Any(c => c.Phong.CoSoLuuTru.MaChuCoSoLuuTru == ownerId);
+        var isOwnerOfProperty = User.IsInRole("ADMIN") || await db.ChiTietDons
+            .AnyAsync(c => c.MaDonDatPhong == review.MaDonDatPhong && c.Phong.CoSoLuuTru.MaChuCoSoLuuTru == ownerId, cancellationToken);
+
         if (!isOwnerOfProperty)
-            return Forbid("Bạn không sở hữu cơ sở lưu trú được đánh giá này.");
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Bạn không sở hữu cơ sở lưu trú được đánh giá này." });
 
         review.PhanHoiChu = request.ReplyMessage.Trim();
         review.NgayPhanHoi = DateTime.UtcNow;
@@ -164,6 +180,7 @@ public sealed class ReviewsController(HomestayDbContext db) : ControllerBase
     {
         var claim = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
             ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("sub")
             ?? User.FindFirstValue("nameid");
         return int.Parse(claim!);
     }

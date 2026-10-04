@@ -1,4 +1,4 @@
-﻿-- =========================================================================
+-- =========================================================================
 -- DATABASE: HOMESTAY_DB (BẢN CHUẨN HÓA V2 - DỮ LIỆU ĐẦY ĐỦ 55+ KHÁCH SẠN TRAVELOKA)
 -- =========================================================================
 
@@ -256,7 +256,8 @@ CREATE TABLE DonDatPhong (
     NgayDi DATE NOT NULL,
     SoNguoiLon INT NOT NULL DEFAULT 1 CHECK (SoNguoiLon > 0),
     SoTreEm INT NOT NULL DEFAULT 0 CHECK (SoTreEm >= 0),
-    TrangThai NVARCHAR(30) NOT NULL DEFAULT 'ChoDuyet' CHECK (TrangThai IN (
+    TrangThai NVARCHAR(30) NOT NULL DEFAULT 'ChoThanhToan' CHECK (TrangThai IN (
+        'ChoThanhToan',
         'ChoDuyet',
         'TuChoi',
         'DaDuyet',

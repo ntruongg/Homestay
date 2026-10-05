@@ -7,29 +7,19 @@ public sealed record AccountOtpEmailModel(
     string SupportEmail = "support@stayly.com"
 );
 
-public sealed record PropertySubmissionEmailModel(
-    string OwnerName,
+public sealed record BookingConfirmedEmailModel(
+    string GuestName,
+    int BookingId,
     string PropertyName,
     string? PropertyAddress,
-    string PropertyType,
-    DateTime SubmissionDate,
-    int ReferenceId
-);
-
-public sealed record PropertyApprovalEmailModel(
-    string OwnerName,
-    string PropertyName,
-    int PropertyId,
-    string DashboardUrl,
-    DateTime ApprovalDate
-);
-
-public sealed record PropertyRejectionEmailModel(
-    string OwnerName,
-    string PropertyName,
-    int PropertyId,
-    string RejectionReason,
-    DateTime ReviewDate,
+    string? RoomNumbers,
+    DateTime CheckIn,
+    DateTime CheckOut,
+    int TotalGuests,
+    decimal TotalAmount,
+    string PaymentStatus,
+    string? OwnerName,
+    string? OwnerPhone,
     string SupportEmail = "support@stayly.com"
 );
 

@@ -1,0 +1,125 @@
+@model API.DTOs.Email.BookingConfirmedEmailModel
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác nhận đặt phòng thành công - Stayly</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 32px 16px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" style="max-width: 580px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); padding: 32px 32px 28px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 26px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">STAYLY</h1>
+                            <p style="margin: 6px 0 0; color: #bfdbfe; font-size: 14px; font-weight: 500;">Hệ Thống Đặt Phòng Homestay Trực Tuyến</p>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 36px 32px 28px;">
+                            <div style="display: inline-block; background-color: #dbeafe; color: #1e40af; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 700; margin-bottom: 16px; text-transform: uppercase;">
+                                ✓ Đơn đặt phòng đã được xác nhận
+                            </div>
+                            <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 700; color: #0f172a;">Chúc mừng! Chuyến đi của bạn đã sẵn sàng</h2>
+                            <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.6; color: #475569;">
+                                Xin chào <strong>@Model.GuestName</strong>,
+                            </p>
+                            <p style="margin: 0 0 20px; font-size: 15px; line-height: 1.6; color: #475569;">
+                                Chủ cơ sở lưu trú tại <strong>@Model.PropertyName</strong> đã xác nhận đơn đặt phòng <strong>#@Model.BookingId</strong> của bạn. Hãy chuẩn bị hành trang và sẵn sàng cho một kỳ nghỉ tuyệt vời!
+                            </p>
+
+                            <!-- Highlight Box -->
+                            <div style="background-color: #eff6ff; border-radius: 12px; padding: 20px; border: 1px solid #bfdbfe; margin: 20px 0;">
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="6">
+                                    <tr>
+                                        <td width="35%" style="color: #64748b; font-size: 14px; font-weight: 500;">Mã đơn:</td>
+                                        <td width="65%" style="color: #1e40af; font-size: 15px; font-weight: 800;">#@Model.BookingId</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #64748b; font-size: 14px; font-weight: 500;">Homestay:</td>
+                                        <td style="color: #0f172a; font-size: 14px; font-weight: 600;">@Model.PropertyName</td>
+                                    </tr>
+                                    @if (!string.IsNullOrWhiteSpace(Model.PropertyAddress))
+                                    {
+                                        <tr>
+                                            <td style="color: #64748b; font-size: 14px; font-weight: 500;">Địa chỉ:</td>
+                                            <td style="color: #0f172a; font-size: 14px;">@Model.PropertyAddress</td>
+                                        </tr>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(Model.RoomNumbers))
+                                    {
+                                        <tr>
+                                            <td style="color: #64748b; font-size: 14px; font-weight: 500;">Phòng:</td>
+                                            <td style="color: #0f172a; font-size: 14px;">@Model.RoomNumbers</td>
+                                        </tr>
+                                    }
+                                    <tr>
+                                        <td style="color: #64748b; font-size: 14px; font-weight: 500;">Nhận phòng (Check-in):</td>
+                                        <td style="color: #0f172a; font-size: 14px; font-weight: 600;">@Model.CheckIn.ToString("dd/MM/yyyy") (từ 14:00)</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #64748b; font-size: 14px; font-weight: 500;">Trả phòng (Check-out):</td>
+                                        <td style="color: #0f172a; font-size: 14px; font-weight: 600;">@Model.CheckOut.ToString("dd/MM/yyyy") (trước 12:00)</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #64748b; font-size: 14px; font-weight: 500;">Số lượng khách:</td>
+                                        <td style="color: #0f172a; font-size: 14px;">@Model.TotalGuests người</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #64748b; font-size: 14px; font-weight: 500;">Tổng thanh toán:</td>
+                                        <td style="color: #10b981; font-size: 16px; font-weight: 800;">@Model.TotalAmount.ToString("N0") VNĐ <span style="font-size: 12px; color: #047857; font-weight: normal;">(@Model.PaymentStatus)</span></td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Host Contact Box -->
+                            @if (!string.IsNullOrWhiteSpace(Model.OwnerName) || !string.IsNullOrWhiteSpace(Model.OwnerPhone))
+                            {
+                                <div style="background-color: #f8fafc; border-radius: 12px; padding: 16px 20px; border: 1px solid #e2e8f0; margin-bottom: 24px;">
+                                    <h4 style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #0f172a;">Thông tin liên hệ chủ nhà:</h4>
+                                    <p style="margin: 0; font-size: 14px; color: #475569; line-height: 1.5;">
+                                        @if (!string.IsNullOrWhiteSpace(Model.OwnerName))
+                                        {
+                                            <span>Chủ homestay: <strong>@Model.OwnerName</strong></span><br />
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(Model.OwnerPhone))
+                                        {
+                                            <span>Số điện thoại / Zalo: <strong><a href="tel:@Model.OwnerPhone" style="color: #2563eb; text-decoration: none;">@Model.OwnerPhone</a></strong></span>
+                                        }
+                                    </p>
+                                </div>
+                            }
+
+                            <!-- CTA Button -->
+                            <div style="text-align: center; margin: 32px 0 16px;">
+                                <a href="http://localhost:5280/Home/Trips" style="background-color: #2563eb; color: #ffffff; padding: 14px 28px; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 15px; display: inline-block;">
+                                    Quản lý chuyến đi trên Stayly
+                                </a>
+                            </div>
+
+                            <p style="margin: 24px 0 0; font-size: 13px; line-height: 1.5; color: #94a3b8; text-align: center;">
+                                Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ bộ phận hỗ trợ khách hàng qua email <a href="mailto:@Model.SupportEmail" style="color: #2563eb; text-decoration: none;">@Model.SupportEmail</a>.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f1f5f9; padding: 20px 32px; text-align: center; border-top: 1px solid #e2e8f0;">
+                            <p style="margin: 0; font-size: 12px; color: #64748b;">
+                                © @DateTime.UtcNow.Year Stayly Homestay System. Bản quyền thuộc về Stayly.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

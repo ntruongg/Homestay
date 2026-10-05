@@ -2,19 +2,26 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.Data;
 using API.DTOs.Admin;
+using API.DTOs.Email;
 using API.DTOs.Properties;
 using API.Models;
+using API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace API.Controllers;
 
 [ApiController]
 [Authorize(Roles = "ADMIN")]
 [Route("api/admin")]
-public sealed class AdminController(HomestayDbContext db) : ControllerBase
+public sealed class AdminController(
+    HomestayDbContext db,
+    IPasswordHasher<NguoiDung> passwordHasher,
+    IEmailService emailService,
+    ILogger<AdminController> logger) : ControllerBase
 {
     #region 1. Quản lý cơ sở (Property Management)
     [HttpGet("areas")]
@@ -381,6 +388,7 @@ public sealed class AdminController(HomestayDbContext db) : ControllerBase
         var booking = await db.DonDatPhongs
             .Include(b => b.KhachHang)
             .Include(b => b.ThanhToan)
+            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru)
             .FirstOrDefaultAsync(b => b.MaDonDatPhong == id, cancellationToken);
 
         if (booking is null)
@@ -395,13 +403,42 @@ public sealed class AdminController(HomestayDbContext db) : ControllerBase
 
         await db.SaveChangesAsync(cancellationToken);
 
+        // Gửi email chấp thuận hoàn tiền cho khách hàng
+        try
+        {
+            var propName = booking.ChiTietDons?.FirstOrDefault()?.Phong?.CoSoLuuTru?.TenCoSoLuuTru ?? "Stayly Homestay";
+            var emailModel = new RefundAcceptedEmailModel(
+                GuestName: booking.KhachHang?.HoTen ?? "Quý khách",
+                BookingId: booking.MaDonDatPhong,
+                PropertyName: propName,
+                RefundAmount: request.RefundAmount,
+                Reason: request.Reason,
+                DecisionNote: request.DecisionNote,
+                DecisionDate: DateTime.UtcNow
+            );
+
+            if (!string.IsNullOrWhiteSpace(booking.KhachHang?.Email))
+            {
+                await emailService.SendTemplateEmailAsync(
+                    booking.KhachHang.Email,
+                    $"[Stayly] Xác nhận hoàn tiền đơn đặt phòng #{booking.MaDonDatPhong}",
+                    "RefundAccepted",
+                    emailModel,
+                    cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Không thể gửi email chấp thuận hoàn tiền cho đơn #{BookingId}", booking.MaDonDatPhong);
+        }
+
         return Ok(new RefundResponse(
             booking.MaDonDatPhong,
             request.RefundAmount,
             prevStatus,
             "DaHoanTien",
             "Đã xử lý hoàn tiền thành công.",
-            [booking.KhachHang.Email]
+            [booking.KhachHang?.Email ?? ""]
         ));
     }
 
@@ -412,7 +449,10 @@ public sealed class AdminController(HomestayDbContext db) : ControllerBase
         CancellationToken cancellationToken)
     {
         var adminId = GetAccountId();
-        var booking = await db.DonDatPhongs.FirstOrDefaultAsync(b => b.MaDonDatPhong == id, cancellationToken);
+        var booking = await db.DonDatPhongs
+            .Include(b => b.KhachHang)
+            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru)
+            .FirstOrDefaultAsync(b => b.MaDonDatPhong == id, cancellationToken);
         if (booking is null)
             return NotFound("Không tìm thấy đơn đặt phòng.");
 
@@ -423,6 +463,35 @@ public sealed class AdminController(HomestayDbContext db) : ControllerBase
             $"Admin #{adminId} từ chối yêu cầu hoàn tiền đơn #{id}. Lý do: {request.Reason}", cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
+
+        // Gửi email từ chối hoàn tiền cho khách hàng
+        try
+        {
+            var propName = booking.ChiTietDons?.FirstOrDefault()?.Phong?.CoSoLuuTru?.TenCoSoLuuTru ?? "Stayly Homestay";
+            var emailModel = new RefundDeniedEmailModel(
+                GuestName: booking.KhachHang?.HoTen ?? "Quý khách",
+                BookingId: booking.MaDonDatPhong,
+                PropertyName: propName,
+                DenialReason: request.Reason,
+                DecisionNote: request.DecisionNote,
+                DecisionDate: DateTime.UtcNow
+            );
+
+            if (!string.IsNullOrWhiteSpace(booking.KhachHang?.Email))
+            {
+                await emailService.SendTemplateEmailAsync(
+                    booking.KhachHang.Email,
+                    $"[Stayly] Thông báo kết quả xử lý yêu cầu hoàn tiền đơn #{booking.MaDonDatPhong}",
+                    "RefundDenied",
+                    emailModel,
+                    cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Không thể gửi email từ chối hoàn tiền cho đơn #{BookingId}", booking.MaDonDatPhong);
+        }
+
         return Ok(new { message = "Đã từ chối yêu cầu hoàn tiền." });
     }
     #endregion
@@ -507,6 +576,126 @@ public sealed class AdminController(HomestayDbContext db) : ControllerBase
 
         await db.SaveChangesAsync(cancellationToken);
         return Ok(new { message = $"Tài khoản #{id} đã được {(request.IsActive ? "kích hoạt" : "khóa")}.", isActive = user.TrangThai });
+    }
+
+    [HttpPost("users")]
+    public async Task<IActionResult> CreateUser(
+        [FromBody] CreateUserAdminRequest request,
+        CancellationToken cancellationToken)
+    {
+        var adminId = GetAccountId();
+        var email = request.Email.Trim().ToLowerInvariant();
+        var phone = request.Phone.Trim();
+
+        if (await db.NguoiDungs.AnyAsync(u => u.Email == email, cancellationToken))
+            return Conflict(new { field = "Email", message = "Địa chỉ email này đã được sử dụng." });
+
+        if (await db.NguoiDungs.AnyAsync(u => u.DienThoai == phone, cancellationToken))
+            return Conflict(new { field = "Phone", message = "Số điện thoại này đã được sử dụng." });
+
+        var roleId = request.Role?.ToUpperInvariant() switch
+        {
+            "OWNER" or "CHUHOME" => VaiTro.OWNER,
+            "ADMIN" or "QUANTRIVIEN" => VaiTro.ADMIN,
+            _ => VaiTro.GUEST
+        };
+
+        var user = new NguoiDung
+        {
+            Email = email,
+            HoTen = request.FullName.Trim(),
+            DienThoai = phone,
+            MaVaiTro = roleId,
+            CCCD = request.CitizenId?.Trim(),
+            NganHang = request.BankName?.Trim(),
+            SoTaiKhoan = request.BankAccount?.Trim(),
+            TenNguoiThuHuong = request.BankHolder?.Trim()?.ToUpperInvariant(),
+            TrangThai = true,
+            NgayTao = DateTime.UtcNow
+        };
+
+        var rawPassword = string.IsNullOrWhiteSpace(request.Password) ? "123456" : request.Password;
+        user.MatKhau = passwordHasher.HashPassword(user, rawPassword);
+
+        db.NguoiDungs.Add(user);
+        await db.SaveChangesAsync(cancellationToken);
+
+        await LogActionAsync(adminId, "TAO_NGUOI_DUNG", "NguoiDung", user.MaNguoiDung,
+            $"Admin #{adminId} tạo người dùng mới: {user.Email} (Vai trò: {request.Role})", cancellationToken);
+
+        return Ok(new
+        {
+            message = "Tạo người dùng thành công.",
+            id = user.MaNguoiDung,
+            email = user.Email,
+            fullName = user.HoTen,
+            role = request.Role
+        });
+    }
+
+    [HttpPut("users/{id:int}")]
+    public async Task<IActionResult> UpdateUser(
+        int id,
+        [FromBody] UpdateUserAdminRequest request,
+        CancellationToken cancellationToken)
+    {
+        var adminId = GetAccountId();
+        var user = await db.NguoiDungs.FindAsync([id], cancellationToken);
+        if (user is null)
+            return NotFound("Người dùng không tồn tại.");
+
+        if (!string.IsNullOrWhiteSpace(request.FullName))
+            user.HoTen = request.FullName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(request.Phone))
+        {
+            var phone = request.Phone.Trim();
+            if (await db.NguoiDungs.AnyAsync(u => u.DienThoai == phone && u.MaNguoiDung != id, cancellationToken))
+                return Conflict("Số điện thoại này đã được sử dụng bởi người dùng khác.");
+            user.DienThoai = phone;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            var email = request.Email.Trim().ToLowerInvariant();
+            if (await db.NguoiDungs.AnyAsync(u => u.Email == email && u.MaNguoiDung != id, cancellationToken))
+                return Conflict("Email này đã được sử dụng bởi người dùng khác.");
+            user.Email = email;
+        }
+
+        if (request.CitizenId != null)
+            user.CCCD = string.IsNullOrWhiteSpace(request.CitizenId) ? null : request.CitizenId.Trim();
+
+        if (request.BankName != null)
+            user.NganHang = string.IsNullOrWhiteSpace(request.BankName) ? null : request.BankName.Trim();
+
+        if (request.BankAccount != null)
+            user.SoTaiKhoan = string.IsNullOrWhiteSpace(request.BankAccount) ? null : request.BankAccount.Trim();
+
+        if (request.BankHolder != null)
+            user.TenNguoiThuHuong = string.IsNullOrWhiteSpace(request.BankHolder) ? null : request.BankHolder.Trim().ToUpperInvariant();
+
+        if (!string.IsNullOrWhiteSpace(request.Role))
+        {
+            user.MaVaiTro = request.Role.ToUpperInvariant() switch
+            {
+                "OWNER" or "CHUHOME" => VaiTro.OWNER,
+                "ADMIN" or "QUANTRIVIEN" => VaiTro.ADMIN,
+                _ => VaiTro.GUEST
+            };
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Password))
+        {
+            user.MatKhau = passwordHasher.HashPassword(user, request.Password);
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        await LogActionAsync(adminId, "CAP_NHAT_NGUOI_DUNG", "NguoiDung", id,
+            $"Admin #{adminId} cập nhật thông tin người dùng: {user.Email}", cancellationToken);
+
+        return Ok(new { message = $"Cập nhật người dùng #{id} thành công." });
     }
     #endregion
 
@@ -612,12 +801,12 @@ public sealed class AdminController(HomestayDbContext db) : ControllerBase
     public async Task<ActionResult<IReadOnlyList<AmenityManagementItem>>> GetPropertyAmenities(CancellationToken cancellationToken)
     {
         var amenities = await db.TienNghiCoSos.AsNoTracking()
+            .OrderBy(t => t.TenTienNghi)
             .Select(t => new AmenityManagementItem(
                 t.MaTienNghi,
                 t.TenTienNghi,
                 db.CoSoLuuTru_TienNghis.Count(c => c.MaTienNghi == t.MaTienNghi)
             ))
-            .OrderBy(a => a.Name)
             .ToListAsync(cancellationToken);
 
         return Ok(amenities);
@@ -653,12 +842,12 @@ public sealed class AdminController(HomestayDbContext db) : ControllerBase
     public async Task<ActionResult<IReadOnlyList<AmenityManagementItem>>> GetRoomAmenities(CancellationToken cancellationToken)
     {
         var amenities = await db.TienNghiPhongs.AsNoTracking()
+            .OrderBy(t => t.TenTienNghi)
             .Select(t => new AmenityManagementItem(
                 t.MaTienNghi,
                 t.TenTienNghi,
                 db.Phong_TienNghis.Count(c => c.MaTienNghi == t.MaTienNghi)
             ))
-            .OrderBy(a => a.Name)
             .ToListAsync(cancellationToken);
 
         return Ok(amenities);

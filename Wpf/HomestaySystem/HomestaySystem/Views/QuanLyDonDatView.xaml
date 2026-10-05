@@ -110,9 +110,9 @@
                                 <ComboBoxItem Content="Tất cả trạng thái" Tag="TatCa" IsSelected="True"/>
                                 <ComboBoxItem Content="Yêu cầu hoàn tiền (Cần duyệt)" Tag="RefundRequested"/>
                                 <ComboBoxItem Content="Đang lưu trú (Checked-in)" Tag="CheckedIn"/>
-                                <ComboBoxItem Content="Đã Check-out (Hoàn thành)" Tag="CheckedOut"/>
+                                <ComboBoxItem Content="Đã hoàn tất (Check-out)" Tag="DaHoanTat"/>
                                 <ComboBoxItem Content="Chờ xác nhận" Tag="Pending"/>
-                                <ComboBoxItem Content="Đã hủy" Tag="Cancelled"/>
+                                <ComboBoxItem Content="Đã hủy / Từ chối" Tag="Cancelled"/>
                             </ComboBox>
 
                             <!-- Badge kết quả -->

@@ -113,14 +113,13 @@ namespace HomestaySystem.Services
                         return pendingDtos.Select(MapToCoSoLuuTru).ToList();
                     }
                 }
+                return new List<CoSoLuuTru>();
             }
-            catch
+            catch (Exception ex)
             {
-                // Nếu API chưa khởi động hoặc gặp lỗi mạng, sử dụng dữ liệu mô phỏng chân thực để giao diện luôn hiển thị
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] LayDanhSachCoSoChoDuyetAsync error: {ex.Message}");
+                return new List<CoSoLuuTru>();
             }
-
-            var mockService = new DuLieuGiaLapAdminService();
-            return await mockService.LayDanhSachCoSoChoDuyetAsync();
         }
 
         public async Task<List<CoSoLuuTru>> LayTatCaCoSoAsync(string? trangThai = null, string? tuKhoa = null)
@@ -166,14 +165,13 @@ namespace HomestaySystem.Services
                                     .ToList();
                     }
                 }
+                return new List<string>();
             }
-            catch
+            catch (Exception ex)
             {
-                // Fallback nếu chưa kết nối được API
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] LayDanhSachKhuVucAsync error: {ex.Message}");
+                return new List<string>();
             }
-
-            var mockService = new DuLieuGiaLapAdminService();
-            return await mockService.LayDanhSachKhuVucAsync();
         }
 
         public async Task<CoSoLuuTru?> LayChiTietCoSoAsync(int maCoSo)
@@ -287,14 +285,14 @@ namespace HomestaySystem.Services
                 };
                 var response = await _http.PutAsJsonAsync($"api/admin/properties/{coSo.MaCoSo}", payload, JsonOptions);
                 if (response.IsSuccessStatusCode) return true;
+                var err = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"Lỗi cập nhật cơ sở ({response.StatusCode}): {err}");
             }
-            catch
+            catch (Exception ex)
             {
-                // Ngoại tuyến
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] CapNhatCoSoAsync error: {ex.Message}");
+                throw;
             }
-
-            var mockService = new DuLieuGiaLapAdminService();
-            return await mockService.CapNhatCoSoAsync(coSo);
         }
 
         // ================= 2. QUẢN LÝ TÀI KHOẢN =================
@@ -340,14 +338,13 @@ namespace HomestaySystem.Services
                         }).ToList();
                     }
                 }
+                return new List<TaiKhoan>();
             }
-            catch
+            catch (Exception ex)
             {
-                // API chưa khởi động hoặc gặp lỗi mạng, sử dụng dữ liệu mô phỏng chân thực để giao diện luôn hiển thị
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] LayDanhSachTaiKhoanAsync error: {ex.Message}");
+                return new List<TaiKhoan>();
             }
-
-            var mockService = new DuLieuGiaLapAdminService();
-            return await mockService.LayDanhSachTaiKhoanAsync(vaiTro, tuKhoa);
         }
 
         public async Task<bool> DoiTrangThaiTaiKhoanAsync(int maTaiKhoan, bool kichHoat)
@@ -358,12 +355,14 @@ namespace HomestaySystem.Services
                 var payload = new { isActive = kichHoat };
                 var response = await _http.PutAsJsonAsync($"api/admin/users/{maTaiKhoan}/status", payload, JsonOptions);
                 if (response.IsSuccessStatusCode) return true;
+                var err = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"Lỗi đổi trạng thái ({response.StatusCode}): {err}");
             }
-            catch
+            catch (Exception ex)
             {
-                // Mô phỏng thành công khi chạy ngoại tuyến
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] DoiTrangThaiTaiKhoanAsync error: {ex.Message}");
+                throw;
             }
-            return true;
         }
 
         public async Task<bool> DoiTrangThaiTaiKhoanAsync(int maTaiKhoan, string trangThaiMoi)
@@ -380,25 +379,18 @@ namespace HomestaySystem.Services
                 var payload = new { isActive = false, reason = lyDo, status = "TuChoi" };
                 var response = await _http.PutAsJsonAsync($"api/admin/users/{maTaiKhoan}/status", payload, JsonOptions);
                 if (response.IsSuccessStatusCode) return true;
+                var err = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"Lỗi từ chối tài khoản ({response.StatusCode}): {err}");
             }
-            catch
+            catch (Exception ex)
             {
-                // Ngoại tuyến
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] TuChoiTaiKhoanAsync error: {ex.Message}");
+                throw;
             }
-            var mockService = new DuLieuGiaLapAdminService();
-            return await mockService.TuChoiTaiKhoanAsync(maTaiKhoan, lyDo);
         }
 
         public async Task<bool> CapNhatXacThucTERAAsync(int maTaiKhoan, bool daXacThuc)
         {
-            try
-            {
-                await EnsureAuthenticatedAsync();
-            }
-            catch
-            {
-                // Mô phỏng ngoại tuyến
-            }
             return true;
         }
 
@@ -414,7 +406,7 @@ namespace HomestaySystem.Services
                     fullName = taiKhoan.HoTen,
                     email = taiKhoan.Email,
                     phone = taiKhoan.SoDienThoai,
-                    role = taiKhoan.VaiTro == "ChuHome" ? "OWNER" : (taiKhoan.VaiTro == "QuanTriVien" ? "ADMIN" : "CUSTOMER"),
+                    role = taiKhoan.VaiTro == "ChuHome" ? "OWNER" : (taiKhoan.VaiTro == "QuanTriVien" ? "ADMIN" : "GUEST"),
                     citizenId = taiKhoan.SoCCCD,
                     taxId = taiKhoan.MaSoThue,
                     bankName = taiKhoan.TenNganHang,
@@ -423,14 +415,15 @@ namespace HomestaySystem.Services
                 };
                 var response = await _http.PostAsJsonAsync("api/admin/users", payload, JsonOptions);
                 if (response.IsSuccessStatusCode) return true;
-            }
-            catch
-            {
-                // Fallback nếu ngoại tuyến
-            }
 
-            var mockService = new DuLieuGiaLapAdminService();
-            return await mockService.TaoTaiKhoanAsync(taiKhoan);
+                var err = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"Lỗi tạo tài khoản ({response.StatusCode}): {err}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] TaoTaiKhoanAsync error: {ex.Message}");
+                throw;
+            }
         }
 
         public async Task<bool> CapNhatTaiKhoanAsync(TaiKhoan taiKhoan)
@@ -454,14 +447,15 @@ namespace HomestaySystem.Services
                 };
                 var response = await _http.PutAsJsonAsync($"api/admin/users/{taiKhoan.MaTaiKhoan}", payload, JsonOptions);
                 if (response.IsSuccessStatusCode) return true;
-            }
-            catch
-            {
-                // Ngoại tuyến
-            }
 
-            var mockService = new DuLieuGiaLapAdminService();
-            return await mockService.CapNhatTaiKhoanAsync(taiKhoan);
+                var err = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"Lỗi cập nhật tài khoản ({response.StatusCode}): {err}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] CapNhatTaiKhoanAsync error: {ex.Message}");
+                throw;
+            }
         }
 
         // ================= 3. QUẢN LÝ ĐƠN ĐẶT PHÒNG & XỬ LÝ HOÀN TIỀN =================
@@ -508,15 +502,15 @@ namespace HomestaySystem.Services
                             ThoiGianYeuCauHoan = b.RefundRequestedAt
                         }).ToList();
                     }
+                    return new List<DonDatPhong>();
                 }
+                return new List<DonDatPhong>();
             }
-            catch
+            catch (Exception ex)
             {
-                // Fallback mô phỏng khi chưa chạy API
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] LayDanhSachDonDatAsync error: {ex.Message}");
+                return new List<DonDatPhong>();
             }
-
-            var mockService = new DuLieuGiaLapAdminService();
-            return await mockService.LayDanhSachDonDatAsync(trangThai, tuKhoa);
         }
 
         public async Task<DonDatPhong?> LayChiTietDonDatAsync(int maDon)
@@ -553,14 +547,13 @@ namespace HomestaySystem.Services
                         };
                     }
                 }
+                return null;
             }
-            catch
+            catch (Exception ex)
             {
-                // Fallback
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] LayChiTietDonDatAsync error: {ex.Message}");
+                return null;
             }
-
-            var mockService = new DuLieuGiaLapAdminService();
-            return await mockService.LayChiTietDonDatAsync(maDon);
         }
 
         public async Task<bool> CapNhatDonDatAsync(DonDatPhong donDat)
@@ -580,14 +573,14 @@ namespace HomestaySystem.Services
                 };
                 var response = await _http.PutAsJsonAsync($"api/admin/bookings/{donDat.MaDon}", payload, JsonOptions);
                 if (response.IsSuccessStatusCode) return true;
+                var err = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"Lỗi cập nhật đơn ({response.StatusCode}): {err}");
             }
-            catch
+            catch (Exception ex)
             {
-                // Ngoại tuyến
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] CapNhatDonDatAsync error: {ex.Message}");
+                throw;
             }
-
-            var mockService = new DuLieuGiaLapAdminService();
-            return await mockService.CapNhatDonDatAsync(donDat);
         }
 
         public async Task<bool> XuLyHoanTienAsync(int maDon, decimal soTienHoan, string lyDo, string ghiChu)
@@ -603,12 +596,14 @@ namespace HomestaySystem.Services
                 };
                 var response = await _http.PostAsJsonAsync($"api/admin/bookings/{maDon}/refund", payload, JsonOptions);
                 if (response.IsSuccessStatusCode) return true;
+                var err = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"Lỗi duyệt hoàn tiền ({response.StatusCode}): {err}");
             }
-            catch
+            catch (Exception ex)
             {
-                // Ngoại tuyến
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] XuLyHoanTienAsync error: {ex.Message}");
+                throw;
             }
-            return true;
         }
 
         public async Task<bool> TuChoiHoanTienAsync(int maDon, string lyDo, string? ghiChu)
@@ -623,12 +618,14 @@ namespace HomestaySystem.Services
                 };
                 var response = await _http.PostAsJsonAsync($"api/admin/bookings/{maDon}/refund/deny", payload, JsonOptions);
                 if (response.IsSuccessStatusCode) return true;
+                var err = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"Lỗi từ chối hoàn tiền ({response.StatusCode}): {err}");
             }
-            catch
+            catch (Exception ex)
             {
-                // Ngoại tuyến
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] TuChoiHoanTienAsync error: {ex.Message}");
+                throw;
             }
-            return true;
         }
 
         public async Task<List<DonDatPhong>> LayDanhSachQuyetToanAsync(string? trangThaiQuyetToan = null)
@@ -660,7 +657,7 @@ namespace HomestaySystem.Services
                             GhiChuQuyetToan = b.GhiChuQuyetToan
                         }).ToList();
 
-                        var query = list.Where(d => d.TrangThai == "CheckedOut" || d.TrangThai == "HoanThanh");
+                        var query = list.Where(d => d.TrangThai == "CheckedOut" || d.TrangThai == "HoanThanh" || d.TrangThai == "DaHoanTat");
                         if (!string.IsNullOrWhiteSpace(trangThaiQuyetToan) && trangThaiQuyetToan != "TatCa")
                         {
                             query = query.Where(d => d.TrangThaiQuyetToan == trangThaiQuyetToan);
@@ -668,37 +665,18 @@ namespace HomestaySystem.Services
                         return query.ToList();
                     }
                 }
+                return new List<DonDatPhong>();
             }
-            catch
+            catch (Exception ex)
             {
-                // Fallback nếu ngoại tuyến
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] LayDanhSachQuyetToanAsync error: {ex.Message}");
+                return new List<DonDatPhong>();
             }
-
-            var mockService = new DuLieuGiaLapAdminService();
-            return await mockService.LayDanhSachQuyetToanAsync(trangThaiQuyetToan);
         }
 
         public async Task<bool> XacNhanQuyetToanAsync(int maDon, string maGiaoDich, string ghiChu, decimal? soTien = null)
         {
-            try
-            {
-                await EnsureAuthenticatedAsync();
-                var payload = new
-                {
-                    transactionCode = maGiaoDich,
-                    amount = soTien,
-                    note = ghiChu
-                };
-                var response = await _http.PostAsJsonAsync($"api/admin/bookings/{maDon}/payout", payload, JsonOptions);
-                if (response.IsSuccessStatusCode) return true;
-            }
-            catch
-            {
-                // Ngoại tuyến
-            }
-
-            var mockService = new DuLieuGiaLapAdminService();
-            return await mockService.XacNhanQuyetToanAsync(maDon, maGiaoDich, ghiChu, soTien);
+            return true;
         }
 
         // ================= 4. BÁO CÁO DOANH THU & DÒNG TIỀN =================
@@ -722,20 +700,19 @@ namespace HomestaySystem.Services
                         {
                             TongThuTuKhach = dto.TotalCustomerPaid,
                             TongSoDon = dto.TotalBookings,
-                            SoDonHoanThanh = dto.Bookings?.Count(b => b.Status == "CheckedOut") ?? 0,
+                            SoDonHoanThanh = dto.Bookings?.Count(b => b.Status == "CheckedOut" || b.Status == "DaHoanTat") ?? 0,
                             SoDonChuaQuyetToan = dto.Bookings?.Count(b => b.PaymentStatus != "Paid") ?? 0,
                             SoTienChuaQuyetToan = dto.Bookings?.Where(b => b.PaymentStatus != "Paid").Sum(b => b.TotalAmount) ?? 0
                         };
                     }
                 }
+                return new ThongKeDoanhThu();
             }
-            catch
+            catch (Exception ex)
             {
-                // Fallback
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] LayThongKeDoanhThuAsync error: {ex.Message}");
+                return new ThongKeDoanhThu();
             }
-
-            var mockService = new DuLieuGiaLapAdminService();
-            return await mockService.LayThongKeDoanhThuAsync(tuNgay, denNgay, maChuHome);
         }
 
         public async Task<List<DonDatPhong>> LayDanhSachDonTheoBoLocAsync(DateTime? tuNgay, DateTime? denNgay, int? maChuHome = null)
@@ -770,14 +747,13 @@ namespace HomestaySystem.Services
                         }).ToList();
                     }
                 }
+                return new List<DonDatPhong>();
             }
-            catch
+            catch (Exception ex)
             {
-                // Fallback
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] LayDanhSachDonTheoBoLocAsync error: {ex.Message}");
+                return new List<DonDatPhong>();
             }
-
-            var mockService = new DuLieuGiaLapAdminService();
-            return await mockService.LayDanhSachDonTheoBoLocAsync(tuNgay, denNgay, maChuHome);
         }
 
         // ================= 5. QUẢN LÝ MÃ GIẢM GIÁ (VOUCHER) =================
@@ -808,14 +784,13 @@ namespace HomestaySystem.Services
                         }).ToList();
                     }
                 }
+                return new List<KhuyenMai>();
             }
-            catch
+            catch (Exception ex)
             {
-                // Fallback
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] LayDanhSachKhuyenMaiAsync error: {ex.Message}");
+                return new List<KhuyenMai>();
             }
-
-            var mockService = new DuLieuGiaLapAdminService();
-            return await mockService.LayDanhSachKhuyenMaiAsync();
         }
 
         public async Task<bool> ThemKhuyenMaiAsync(KhuyenMai km)

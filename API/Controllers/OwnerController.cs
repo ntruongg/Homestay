@@ -1,21 +1,26 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using ClosedXML.Excel;
-using System.Security.Claims;
 using API.Data;
+using API.DTOs.Email;
 using API.DTOs.Owner;
 using API.DTOs.Reviews;
 using API.Models;
+using API.Services;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace API.Controllers;
 
 [ApiController]
 [Authorize(Roles = "OWNER")]
 [Route("api/owner")]
-public sealed class OwnerController(HomestayDbContext db) : ControllerBase
+public sealed class OwnerController(
+    HomestayDbContext db,
+    IEmailService emailService,
+    ILogger<OwnerController> logger) : ControllerBase
 {
     [HttpGet("dashboard")]
     public async Task<ActionResult<OwnerDashboardResponse>> GetDashboard(CancellationToken cancellationToken)
@@ -230,7 +235,9 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
         var ownerId = GetAccountId();
 
         var booking = await db.DonDatPhongs
-            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong)
+            .Include(b => b.KhachHang)
+            .Include(b => b.ThanhToan)
+            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru).ThenInclude(c => c.ChuCoSoLuuTru)
             .FirstOrDefaultAsync(b => b.MaDonDatPhong == id, cancellationToken);
 
         if (booking is null)
@@ -254,10 +261,65 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
             _ => request.Status
         };
 
-        booking.TrangThai = normalizedStatus;
-
-        if (normalizedStatus is "DaHuy" or "TuChoi")
+        if (normalizedStatus == "DaDuyet")
         {
+            booking.TrangThai = "DaDuyet";
+
+            // Gửi email xác nhận đặt phòng thành công cho khách hàng
+            try
+            {
+                var firstRoom = booking.ChiTietDons.FirstOrDefault()?.Phong;
+                var prop = firstRoom?.CoSoLuuTru;
+                var propName = prop?.TenCoSoLuuTru ?? "Stayly Homestay";
+                var propAddress = !string.IsNullOrWhiteSpace(prop?.DiaChi) 
+                    ? $"{prop.DiaChi}, {prop.PhuongXa}, {prop.ThanhPho}" 
+                    : prop?.ThanhPho;
+                var roomNos = string.Join(", ", booking.ChiTietDons.Select(d => d.Phong?.SoPhong ?? d.MaPhong.ToString()));
+                var owner = prop?.ChuCoSoLuuTru;
+
+                var emailModel = new BookingConfirmedEmailModel(
+                    GuestName: booking.KhachHang?.HoTen ?? "Quý khách",
+                    BookingId: booking.MaDonDatPhong,
+                    PropertyName: propName,
+                    PropertyAddress: propAddress,
+                    RoomNumbers: roomNos,
+                    CheckIn: booking.NgayDen,
+                    CheckOut: booking.NgayDi,
+                    TotalGuests: booking.SoNguoi,
+                    TotalAmount: booking.ThanhToan?.TongTien ?? 0,
+                    PaymentStatus: booking.ThanhToan != null ? "Đã thanh toán qua VNPay" : "Chờ thanh toán",
+                    OwnerName: owner?.HoTen,
+                    OwnerPhone: owner?.DienThoai
+                );
+
+                if (!string.IsNullOrWhiteSpace(booking.KhachHang?.Email))
+                {
+                    await emailService.SendTemplateEmailAsync(
+                        booking.KhachHang.Email,
+                        $"[Stayly] Xác nhận đặt phòng thành công #{booking.MaDonDatPhong} tại {propName}",
+                        "BookingConfirmed",
+                        emailModel,
+                        cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Không thể gửi email xác nhận đặt phòng cho đơn #{BookingId}", booking.MaDonDatPhong);
+            }
+        }
+        else if (normalizedStatus is "DaHuy" or "TuChoi")
+        {
+            if (normalizedStatus is "TuChoi" && booking.ThanhToan != null)
+            {
+                booking.TrangThai = "YeuCauHoanTien";
+                booking.LyDoHoanTien = "Chủ cơ sở từ chối nhận đơn - Hoàn tiền 100%";
+                booking.ThoiGianYeuCauHoan = DateTime.UtcNow;
+            }
+            else
+            {
+                booking.TrangThai = normalizedStatus;
+            }
+
             var roomIds = booking.ChiTietDons.Select(d => d.MaPhong).ToList();
             var schedules = await db.LichLuuTrus
                 .Where(l => roomIds.Contains(l.MaPhong) && l.Ngay >= booking.NgayDen.Date && l.Ngay < booking.NgayDi.Date)
@@ -267,10 +329,95 @@ public sealed class OwnerController(HomestayDbContext db) : ControllerBase
                 sch.TrangThai = "Trống";
             }
         }
+        else
+        {
+            booking.TrangThai = normalizedStatus;
+        }
 
         await db.SaveChangesAsync(cancellationToken);
 
-        return NoContent();
+        return Ok(new { success = true, status = booking.TrangThai });
+    }
+
+    [HttpPost("bookings/{id:int}/approve")]
+    public async Task<IActionResult> ApproveBooking(int id, CancellationToken cancellationToken)
+    {
+        return await UpdateBookingStatus(id, new UpdateBookingStatusRequest { Status = "DaDuyet" }, cancellationToken);
+    }
+
+    [HttpPost("bookings/{id:int}/reject")]
+    public async Task<IActionResult> RejectBooking(int id, CancellationToken cancellationToken)
+    {
+        return await UpdateBookingStatus(id, new UpdateBookingStatusRequest { Status = "TuChoi" }, cancellationToken);
+    }
+
+    [HttpGet("bookings")]
+    public async Task<IActionResult> GetBookings(
+        [FromQuery] string? status,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var ownerId = GetAccountId();
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var myPropertyIds = await db.CoSoLuuTrus.AsNoTracking()
+            .Where(p => p.MaChuCoSoLuuTru == ownerId)
+            .Select(p => p.MaCoSoLuuTru)
+            .ToListAsync(cancellationToken);
+
+        var myRoomIds = await db.Phongs.AsNoTracking()
+            .Where(r => myPropertyIds.Contains(r.MaCoSoLuuTru))
+            .Select(r => r.MaPhong)
+            .ToListAsync(cancellationToken);
+
+        var query = db.DonDatPhongs.AsNoTracking()
+            .Where(b => b.ChiTietDons.Any(d => myRoomIds.Contains(d.MaPhong)))
+            .Include(b => b.KhachHang)
+            .Include(b => b.ThanhToan)
+            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(r => r.CoSoLuuTru)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(status) && !status.Equals("All", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(b => b.TrangThai == status);
+        }
+
+        var total = await query.CountAsync(cancellationToken);
+        var items = await query.OrderByDescending(b => b.NgayDat)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return Ok(new
+        {
+            total,
+            page,
+            pageSize,
+            totalPages = (int)Math.Ceiling((double)total / pageSize),
+            items = items.Select(b =>
+            {
+                var firstRoom = b.ChiTietDons.FirstOrDefault()?.Phong;
+                return new
+                {
+                    id = b.MaDonDatPhong,
+                    guestName = b.KhachHang.HoTen,
+                    guestEmail = b.KhachHang.Email,
+                    guestPhone = b.KhachHang.DienThoai,
+                    propertyName = firstRoom?.CoSoLuuTru?.TenCoSoLuuTru ?? "Homestay",
+                    rooms = b.ChiTietDons.Select(d => d.Phong?.SoPhong ?? d.MaPhong.ToString()).ToList(),
+                    checkIn = b.NgayDen,
+                    checkOut = b.NgayDi,
+                    totalGuests = b.SoNguoi,
+                    totalAmount = b.ThanhToan?.TongTien ?? 0,
+                    payoutAmount = b.ThanhToan?.TienThucNhanChu ?? 0,
+                    status = b.TrangThai,
+                    bookingDate = b.NgayDat,
+                    isPaid = b.ThanhToan != null
+                };
+            })
+        });
     }
 
     [HttpPut("rooms/{id:int}/toggle-active")]

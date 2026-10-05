@@ -469,16 +469,31 @@ namespace HomestaySystem.ViewModels
             TaiKhoanDangChon.SoTaiKhoanNganHang = SuaSoTaiKhoan?.Trim() ?? string.Empty;
             TaiKhoanDangChon.ChuTaiKhoanNganHang = SuaChuTaiKhoan?.Trim() ?? string.Empty;
 
-            DangTaiDuLieu = true;
-            await _adminService.CapNhatTaiKhoanAsync(TaiKhoanDangChon);
-            DangTaiDuLieu = false;
+            try
+            {
+                DangTaiDuLieu = true;
+                bool thanhCong = await _adminService.CapNhatTaiKhoanAsync(TaiKhoanDangChon);
+                if (!thanhCong)
+                {
+                    MessageBox.Show($"Không thể cập nhật hồ sơ đối tác {TaiKhoanDangChon.HoTen}. Vui lòng kiểm tra lại kết nối hoặc thông tin đã nhập!", "Lỗi cập nhật", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
-            OnPropertyChanged(nameof(TaiKhoanDangChon));
-            OnPropertyChanged(nameof(SelectedHost));
-            ApDungBoLoc();
+                OnPropertyChanged(nameof(TaiKhoanDangChon));
+                OnPropertyChanged(nameof(SelectedHost));
+                ApDungBoLoc();
 
-            HienThiDialogChinhSua = false;
-            MessageBox.Show($"Đã cập nhật hồ sơ đối tác {TaiKhoanDangChon.HoTen} ({TaiKhoanDangChon.MaDoiTacHienThi}) thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                HienThiDialogChinhSua = false;
+                MessageBox.Show($"Đã cập nhật hồ sơ đối tác {TaiKhoanDangChon.HoTen} ({TaiKhoanDangChon.MaDoiTacHienThi}) thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi cập nhật đối tác: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                DangTaiDuLieu = false;
+            }
         }
 
         public async Task TaiDanhSachDoiTacAsync()

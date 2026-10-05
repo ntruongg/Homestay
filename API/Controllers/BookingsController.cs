@@ -126,6 +126,7 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
     {
         var accountId = GetAccountId();
         var bookings = await db.DonDatPhongs.AsNoTracking()
+            .AsSplitQuery()
             .Where(b => b.MaKhachHang == accountId)
             .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru).ThenInclude(c => c.HinhAnhs)
             .Include(b => b.DonDatPhongDichVus).ThenInclude(d => d.DichVu)
@@ -141,6 +142,7 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
     public async Task<ActionResult<BookingResponse>> GetById(int id, CancellationToken cancellationToken)
     {
         var booking = await db.DonDatPhongs.AsNoTracking()
+            .AsSplitQuery()
             .Where(b => b.MaDonDatPhong == id && b.MaKhachHang == GetAccountId())
             .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru).ThenInclude(c => c.HinhAnhs)
             .Include(b => b.DonDatPhongDichVus).ThenInclude(d => d.DichVu)

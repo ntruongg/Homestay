@@ -333,9 +333,9 @@
         const bankEl = document.getElementById('refundBankName');
         const accEl = document.getElementById('refundAccountNumber');
         const holderEl = document.getElementById('refundAccountHolder');
-        if (bankEl && defaultBank) bankEl.value = defaultBank;
-        if (accEl && defaultAcc && !accEl.value) accEl.value = defaultAcc;
-        if (holderEl && defaultHolder && !holderEl.value) holderEl.value = defaultHolder;
+        if (bankEl) bankEl.value = defaultBank || '';
+        if (accEl) accEl.value = defaultAcc || '';
+        if (holderEl) holderEl.value = defaultHolder || '';
 
         new bootstrap.Modal(document.getElementById('refundBookingModal')).show();
     }

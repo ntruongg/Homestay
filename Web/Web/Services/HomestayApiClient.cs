@@ -11,7 +11,7 @@ public sealed class HomestayApiClient(HttpClient http)
         string? location = null,
         CancellationToken cancellationToken = default)
     {
-        var path = $"properties?pageSize=50";
+        var path = $"properties?pageSize=150";
 
         if (!string.IsNullOrWhiteSpace(location))
             path += $"&location={Uri.EscapeDataString(location)}";

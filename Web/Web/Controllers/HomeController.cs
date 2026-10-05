@@ -1114,9 +1114,10 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
 
             return View(await api.GetBookingsAsync(token, cancellationToken));
         }
-        catch
+        catch (Exception ex)
         {
-            TempData["Error"] = "Không thể tải danh sách đơn đặt phòng của bạn.";
+            Console.WriteLine($"[Trips Error] {ex}");
+            TempData["Error"] = $"Không thể tải danh sách đơn đặt phòng của bạn: {ex.Message}";
             return View(Array.Empty<Booking>());
         }
     }

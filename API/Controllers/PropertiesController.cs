@@ -45,7 +45,7 @@ public sealed class PropertiesController(
         CancellationToken cancellationToken = default)
     {
         page = Math.Max(1, page);
-        pageSize = Math.Clamp(pageSize, 1, 100);
+        pageSize = Math.Clamp(pageSize, 1, 200);
 
         // Chỉ hiển thị cơ sở đang hoạt động và đã được duyệt
         var query = db.CoSoLuuTrus.AsNoTracking()
@@ -85,12 +85,11 @@ public sealed class PropertiesController(
                     : 0,
                 CoverImage = db.HinhAnhs.Where(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru)
                     .Select(i => i.UrlHinhAnh).FirstOrDefault(),
+                ReviewCount = db.DanhGias
+                    .Where(d => d.DonDatPhong.ChiTietDons.Any(c => c.Phong.MaCoSoLuuTru == p.MaCoSoLuuTru))
+                    .Count(),
                 PropRating = db.DanhGias
                     .Where(d => d.DonDatPhong.ChiTietDons.Any(c => c.Phong.MaCoSoLuuTru == p.MaCoSoLuuTru))
-                    .Select(d => (double?)d.DiemSo)
-                    .Average(),
-                OwnerRating = db.DanhGias
-                    .Where(d => d.DonDatPhong.ChiTietDons.Any(c => c.Phong.CoSoLuuTru.MaChuCoSoLuuTru == p.MaChuCoSoLuuTru))
                     .Select(d => (double?)d.DiemSo)
                     .Average()
             })
@@ -98,7 +97,7 @@ public sealed class PropertiesController(
 
         var properties = rawProperties.Select(p =>
         {
-            var rating = p.PropRating ?? p.OwnerRating ?? 5.0;
+            var rating = p.PropRating.HasValue ? Math.Round(p.PropRating.Value, 1) : 0.0;
             return new PropertySummaryResponse(
                 p.MaCoSoLuuTru,
                 p.TenCoSoLuuTru,
@@ -106,7 +105,8 @@ public sealed class PropertiesController(
                 p.LoaiHinh,
                 p.MinPrice,
                 p.CoverImage,
-                Math.Round(rating, 1));
+                rating,
+                p.ReviewCount);
         }).ToList();
 
         return Ok(properties);

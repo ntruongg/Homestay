@@ -250,15 +250,27 @@ builder.Services.AddHostedService<ExpiredBookingCleanupService>();
 - **[Đã Giải Quyết] Thêm Migration EF Core mới nhất:** Đã sinh migration chính thức `20261004080250_AddRefundAndBankAccountFields` cho project `API` và đồng bộ vào bảng `[__EFMigrationsHistory]` trong `HOMESTAY_DB.sql`.
 - **[Đã Giải Quyết] Đồng bộ giá trị mặc định `TrangThai`:** Trong model `QuanLyDonDat.cs` và `HomestayDbContext.cs` đã đồng bộ `DEFAULT 'ChoThanhToan'` khớp hoàn toàn với cơ sở dữ liệu.
 
+- **[Đã Giải Quyết] Kiểm soát danh sách ngân hàng hợp lệ bằng Dropdown:** Toàn bộ các trường ngân hàng trong hệ thống (Hồ sơ người dùng/Chủ nhà, Modal yêu cầu hoàn tiền trong [Trips.cshtml](file:///d:/Homestay/Web/Web/Views/Home/Trips.cshtml), Đăng ký đối tác, và WPF Admin) đã được ràng buộc thành danh sách chọn Dropdown chứa các ngân hàng chính thức được VNPay hỗ trợ. Khách hàng đã lưu ngân hàng trong hồ sơ sẽ được tự động điền sẵn khi mở modal hoàn tiền; nếu chưa lưu, khách chọn từ danh sách và điền số tài khoản.
+- **[Đã Giải Quyết] Tối ưu và tự động hóa hệ thống Email:**
+  - Đã xóa bỏ 3 mẫu email không sử dụng (`PropertyApproved`, `PropertyRejected`, `PropertySubmissionReceived`).
+  - Đã thêm template email mới [BookingConfirmed.cshtml](file:///d:/Homestay/API/Templates/Emails/BookingConfirmed.cshtml) (Xác nhận đặt phòng thành công) gửi tự động cho khách khi chủ cơ sở bấm phê duyệt đơn.
+  - Tự động kích hoạt gửi mail: OTP đăng ký/đổi mật khẩu/đổi email, Xác nhận đặt phòng thành công (`BookingConfirmed`), Duyệt hoàn tiền (`RefundAccepted`), và Từ chối hoàn tiền (`RefundDenied`).
+- **[Đã Giải Quyết] Loại bỏ hoàn toàn Mock Data & Chuẩn hóa Desktop WPF:**
+  - Đã xóa bỏ hoàn toàn dịch vụ giả lập [DuLieuGiaLapAdminService.cs](file:///d:/Homestay/Wpf/HomestaySystem/HomestaySystem/Services/DuLieuGiaLapAdminService.cs), chuyển 100% sang `HttpAdminService` gọi trực tiếp API Backend.
+  - Bổ sung 2 API endpoint quản trị người dùng: `POST /api/admin/users` (tạo tài khoản với PasswordHasher) và `PUT /api/admin/users/{id}` (cập nhật thông tin).
+  - Thêm hiển thị thông báo lỗi `MessageBox.Show` chi tiết từ máy chủ khi thao tác dữ liệu thất bại.
+  - Hỗ trợ đầy đủ trạng thái `DaHoanTat` (Đã hoàn tất / Check-out) trong bộ lọc đơn đặt phòng.
+- **[Đã Giải Quyết] Bộ lọc Ajax, Phân trang 15 Card/Trang & Nhãn "Chưa có đánh giá":**
+  - Đã tích hợp thanh trượt khoảng giá (Range Slider) kết hợp các nút chọn nhanh cùng bộ lọc sao 1-5 sao và "Chưa có đánh giá", lọc dữ liệu tức thì (Ajax) không tải lại trang.
+  - Cố định phân trang **đúng 15 card phòng / trang** kèm thanh chuyển trang mượt mà.
+  - Homestay chưa có đánh giá thực tế sẽ hiển thị nhãn **`"Chưa có đánh giá"`** thay vì điểm `0.0 ★` hoặc `"Mới"`.
+
 ### ⚠️ Các vấn đề cần cải tiến tiếp theo:
 
-### ⚠️ Vấn đề 1 (Mức độ trung bình): Quy trình Hoàn tiền VNPay hiện là bán tự động (Manual Refund)
-- **Hiện trạng:** Do việc hoàn tiền qua VNPay Sandbox yêu cầu đăng ký API hoàn tiền riêng, cấu hình chứng chỉ số RSA/IP tĩnh và thủ tục đối soát merchant phức tạp, luồng hoàn tiền hiện tại mới chỉ ghi nhận `YeuCauHoanTien` kèm thông tin tài khoản ngân hàng của khách.
-- **Hành vi:** Admin phải xem thông tin số tài khoản của khách trên giao diện WPF/Database, thực hiện chuyển tiền ngân hàng thủ công cho khách, rồi mới bấm đổi trạng thái thành `DaHoanTien`.
-- **Giải pháp cần sửa:** Khi triển khai môi trường Production chính thức, cần tích hợp API `vnpay_refund` tự động gọi sang VNPay khi Admin phê duyệt yêu cầu hoàn tiền.
+### ⚠️ Vấn đề 1 (Mức độ trung bình): Quy trình Hoàn tiền VNPay tự động (Automated VNPay Refund API)
+- **Hiện trạng:** Việc hoàn tiền qua VNPay Sandbox yêu cầu đăng ký API hoàn tiền riêng, cấu hình chứng chỉ số RSA/IP tĩnh và thủ tục đối soát merchant phức tạp. Hệ thống hiện ghi nhận `YeuCauHoanTien` kèm thông tin tài khoản ngân hàng của khách đã được kiểm duyệt hợp lệ.
+- **Hành vi:** Admin kiểm tra số tài khoản đã được chọn đúng ngân hàng VNPay hỗ trợ, duyệt hoàn tiền và hệ thống gửi email thông báo tự động `RefundAccepted` cho khách.
+- **Giải pháp tiếp theo:** Tích hợp API `vnpay_refund` tự động gọi trực tiếp cổng thanh toán khi triển khai môi trường Production chính thức.
 
-### ⚠️ Vấn đề 2 (Mức độ thấp): Kiểm soát danh sách ngân hàng hợp lệ
-- **Hiện trạng:** Trường ngân hàng hiện tại cho phép người dùng nhập tự do, có thể dẫn đến việc nhập sai tên ngân hàng hoặc không khớp với mã định danh VietQR/NAPAS.
-- **Giải pháp cần sửa:** Chuyển input ngân hàng thành danh sách chọn (Dropdown / Select) liên kết với danh sách ngân hàng được hỗ trợ của VietQR/VNPay.
 
 

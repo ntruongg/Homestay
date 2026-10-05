@@ -165,11 +165,23 @@
                         </button>
                     </div>
 
-                    <!-- 1. Mức giá -->
+                    <!-- 1. Mức giá (Range Slider & Quick Filter Pills) -->
                     <div class="filter-group">
                         <div class="filter-group-title">
                             <i class="bi bi-cash-stack text-primary"></i>
                             <span>Mức giá mỗi đêm</span>
+                        </div>
+                        <div class="price-slider-box p-3 mb-2 rounded-3 bg-light border">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small text-muted">Giá tối đa:</span>
+                                <span class="fw-bold text-primary small" id="maxPriceDisplay">Tất cả (Không giới hạn)</span>
+                            </div>
+                            <input type="range" class="form-range" id="priceRangeSlider" min="200000" max="5000000" step="100000" value="5000000" oninput="handlePriceSliderInput(this.value)">
+                            <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+                                <span>200k</span>
+                                <span>2.5tr</span>
+                                <span>5tr+</span>
+                            </div>
                         </div>
                         <div class="toggle-pills-wrap">
                             <button type="button" class="filter-pill-btn active" data-filter="price" data-value="all" onclick="setPriceFilter(this, 'all')">Tất cả</button>
@@ -247,7 +259,7 @@
                         </div>
                     </div>
 
-                    <!-- 4. Đánh giá sao (5 mục từ 1-5 sao) -->
+                    <!-- 4. Đánh giá sao (1 - 5 sao và Chưa có đánh giá) -->
                     <div class="filter-group mb-0">
                         <div class="filter-group-title">
                             <i class="bi bi-star-fill text-warning"></i>
@@ -269,6 +281,9 @@
                             </button>
                             <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="1" onclick="setRatingFilter(this, 1)">
                                 <i class="bi bi-star-fill text-warning"></i> 1 sao
+                            </button>
+                            <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="none" onclick="setRatingFilter(this, 'none')">
+                                <i class="bi bi-star text-muted"></i> Chưa có đánh giá
                             </button>
                         </div>
                     </div>
@@ -303,6 +318,9 @@
                         <p class="text-muted mt-3 small">Đang chuẩn bị danh sách phòng nghỉ dưỡng tốt nhất...</p>
                     </div>
                 </div>
+
+                <!-- Pagination Container (15 cards per page) -->
+                <div id="paginationContainer" class="mt-4 pb-4 d-flex flex-column align-items-center justify-content-center"></div>
             </div>
         </div>
     </div>
@@ -445,11 +463,15 @@
        - Real-time search & filter
        ========================================================================== */
     (function () {
+        const PAGE_SIZE = 15;
+        let currentPage = 1;
+
         // Master room list dataset
         let allRoomsData = [];
         let activeFilters = {
             location: '@(ViewBag.Location ?? "")',
             priceRange: 'all',
+            maxSliderPrice: 5000000,
             propertyType: 'all',
             amenities: [],
             selectedRating: 0,
@@ -483,7 +505,7 @@
             } catch (e) {
                 allRoomsData = [];
             }
-            applyFiltersAndRender();
+            applyFiltersAndRender(true);
         }
 
         // Normalize data format from API
@@ -498,8 +520,9 @@
                 const address = item.address || item.Address || 'Việt Nam';
                 const type = item.type || item.Type || 'Homestay';
                 const price = Number(item.price || item.minimumPrice || item.MinimumPrice || 0);
-                const rawRating = item.rating !== undefined && item.rating !== null ? item.rating : (item.Rating !== undefined && item.Rating !== null ? item.Rating : 5.0);
-                const rating = Number(rawRating) > 0 ? Number(Number(rawRating).toFixed(1)) : 5.0;
+                const reviewCount = Number(item.reviewCount !== undefined ? item.reviewCount : (item.ReviewCount !== undefined ? item.ReviewCount : 0));
+                const rawRating = item.rating !== undefined && item.rating !== null ? item.rating : (item.Rating !== undefined && item.Rating !== null ? item.Rating : 0);
+                const rating = Number(rawRating) > 0 ? Number(Number(rawRating).toFixed(1)) : 0;
                 const description = item.description || `Không gian lưu trú ${type.toLowerCase()} thanh bình, trang bị đầy đủ tiện nghi tại ${address}.`;
                 const amenities = ['Wifi miễn phí', 'Điều hòa', 'Chỗ đỗ xe'];
 
@@ -521,6 +544,7 @@
                     type,
                     price,
                     rating,
+                    reviewCount,
                     description,
                     amenities,
                     images
@@ -530,16 +554,14 @@
 
         /* ==========================================================================
            Hàm renderRooms() bằng Template Literal (``)
-           - Tự động in danh sách phòng vào cột phải
+           - Tự động in danh sách phòng vào cột phải (15 card / trang)
            - Thẻ ngang chuẩn đẹp, bo góc 16px, không ép card giãn theo ảnh
            - Ảnh định dạng vừa vặn với card (object-fit: cover)
-           - Chỉ hiển thị đúng ảnh thực tế (1 ảnh thì không hiển thị carousel navigation)
+           - Chưa có đánh giá hiển thị badge "Chưa có đánh giá" thay vì 5.0 hay "Mới"
            ========================================================================== */
         window.renderRooms = function (rooms) {
             const container = document.getElementById('roomListContainer');
-
             if (!container) return;
-
 
             if (rooms.length === 0) {
                 container.innerHTML = `
@@ -609,6 +631,22 @@
                     <span class="amenity-tag">${escapeHtml(amenity)}</span>
                 `).join('');
 
+                // Rating badge: Chưa có đánh giá thì hiện rõ "Chưa có đánh giá"
+                let ratingBadgeHtml = '';
+                if (room.reviewCount > 0 && room.rating > 0) {
+                    ratingBadgeHtml = `
+                        <span class="rating-badge">
+                            <i class="bi bi-star-fill text-warning"></i> ${Number(room.rating).toFixed(1)} <small class="text-muted">(${room.reviewCount} đánh giá)</small>
+                        </span>
+                    `;
+                } else {
+                    ratingBadgeHtml = `
+                        <span class="rating-badge rating-badge-none" style="background-color: #f1f5f9; color: #64748b; font-weight: 500; font-size: 0.85rem; padding: 4px 10px; border-radius: 20px;">
+                            <i class="bi bi-star text-muted me-1"></i> Chưa có đánh giá
+                        </span>
+                    `;
+                }
+
                 return `
                     <article class="room-card-horizontal">
                         <div class="row g-0 align-items-stretch">
@@ -632,9 +670,7 @@
                                         </h3>
 
                                         <div class="room-rating-row">
-                                            <span class="rating-badge">
-                                                <i class="bi bi-star-fill text-warning"></i> ${Number(room.rating).toFixed(1)}
-                                            </span>
+                                            ${ratingBadgeHtml}
                                         </div>
 
                                         <p class="room-description">${escapeHtml(room.description)}</p>
@@ -678,8 +714,86 @@
             });
         };
 
-        // Filter calculation & rendering
-        function applyFiltersAndRender() {
+        // Render Pagination (15 cards per page)
+        function renderPagination(totalItems, totalPages, curPage) {
+            const container = document.getElementById('paginationContainer');
+            if (!container) return;
+
+            if (totalItems === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            if (totalPages <= 1) {
+                container.innerHTML = `
+                    <div class="text-muted small text-center py-2">
+                        Hiển thị <strong>${totalItems}</strong> homestay phù hợp
+                    </div>
+                `;
+                return;
+            }
+
+            let pagesHtml = '';
+            // Previous button
+            pagesHtml += `
+                <li class="page-item ${curPage === 1 ? 'disabled' : ''}">
+                    <button type="button" class="page-link rounded-pill me-1 px-3 shadow-none" onclick="goToPage(${curPage - 1})" aria-label="Trang trước">
+                        <i class="bi bi-chevron-left"></i> Trước
+                    </button>
+                </li>
+            `;
+
+            for (let p = 1; p <= totalPages; p++) {
+                if (p === 1 || p === totalPages || (p >= curPage - 2 && p <= curPage + 2)) {
+                    pagesHtml += `
+                        <li class="page-item ${p === curPage ? 'active' : ''}">
+                            <button type="button" class="page-link rounded-circle mx-1 shadow-none" style="width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;" onclick="goToPage(${p})">${p}</button>
+                        </li>
+                    `;
+                } else if (p === curPage - 3 || p === curPage + 3) {
+                    pagesHtml += `<li class="page-item disabled"><span class="page-link border-0">...</span></li>`;
+                }
+            }
+
+            // Next button
+            pagesHtml += `
+                <li class="page-item ${curPage === totalPages ? 'disabled' : ''}">
+                    <button type="button" class="page-link rounded-pill ms-1 px-3 shadow-none" onclick="goToPage(${curPage + 1})" aria-label="Trang sau">
+                        Tiếp <i class="bi bi-chevron-right"></i>
+                    </button>
+                </li>
+            `;
+
+            const start = (curPage - 1) * PAGE_SIZE + 1;
+            const end = Math.min(curPage * PAGE_SIZE, totalItems);
+
+            container.innerHTML = `
+                <nav aria-label="Phân trang danh sách phòng">
+                    <ul class="pagination pagination-md align-items-center mb-2 justify-content-center">
+                        ${pagesHtml}
+                    </ul>
+                </nav>
+                <div class="text-muted small text-center">
+                    Hiển thị <strong>${start} - ${end}</strong> trên tổng số <strong>${totalItems}</strong> homestay (15 phòng / trang)
+                </div>
+            `;
+        }
+
+        window.goToPage = function (page) {
+            currentPage = page;
+            applyFiltersAndRender(false);
+            const listEl = document.getElementById('roomListContainer');
+            if (listEl) {
+                listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        };
+
+        // Filter calculation & rendering (Ajax - No page reload)
+        function applyFiltersAndRender(resetPage = true) {
+            if (resetPage) {
+                currentPage = 1;
+            }
+
             let filtered = [...allRoomsData];
 
             // 1. Search Location
@@ -691,8 +805,12 @@
                 );
             }
 
-            // 2. Price Range
-            if (activeFilters.priceRange === 'under500k') {
+            // 2. Price Range (Slider or quick buttons)
+            if (activeFilters.priceRange === 'slider') {
+                if (activeFilters.maxSliderPrice < 5000000) {
+                    filtered = filtered.filter(r => r.price <= activeFilters.maxSliderPrice);
+                }
+            } else if (activeFilters.priceRange === 'under500k') {
                 filtered = filtered.filter(r => r.price < 500000);
             } else if (activeFilters.priceRange === '500k-1m') {
                 filtered = filtered.filter(r => r.price >= 500000 && r.price <= 1000000);
@@ -719,10 +837,13 @@
                 });
             }
 
-            // 5. Đánh giá sao (5 mục từ 1-5 sao)
-            if (activeFilters.selectedRating > 0) {
-                const star = activeFilters.selectedRating;
+            // 5. Đánh giá sao (1-5 sao và Chưa có đánh giá)
+            if (activeFilters.selectedRating === 'none') {
+                filtered = filtered.filter(r => r.reviewCount === 0 || r.rating <= 0);
+            } else if (Number(activeFilters.selectedRating) > 0) {
+                const star = Number(activeFilters.selectedRating);
                 filtered = filtered.filter(r => {
+                    if (r.reviewCount === 0 || r.rating <= 0) return false;
                     if (star === 5) return r.rating >= 4.5;
                     if (star === 4) return r.rating >= 3.5 && r.rating < 4.5;
                     if (star === 3) return r.rating >= 2.5 && r.rating < 3.5;
@@ -741,7 +862,23 @@
                 filtered.sort((a, b) => b.rating - a.rating);
             }
 
-            renderRooms(filtered);
+            // Update Header Count
+            const countEl = document.getElementById('resultsCountDisplay');
+            if (countEl) {
+                countEl.innerHTML = `Tìm thấy <strong>${filtered.length}</strong> homestay phù hợp`;
+            }
+
+            // Calculate Pagination
+            const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * PAGE_SIZE;
+            const endIndex = Math.min(startIndex + PAGE_SIZE, filtered.length);
+            const pageRooms = filtered.slice(startIndex, endIndex);
+
+            renderRooms(pageRooms);
+            renderPagination(filtered.length, totalPages, currentPage);
         }
 
         // Global Event Handlers for Filters
@@ -749,21 +886,62 @@
             e.preventDefault();
             const locInput = document.getElementById('searchInputLocation');
             activeFilters.location = locInput ? locInput.value.trim() : '';
-            applyFiltersAndRender();
+            applyFiltersAndRender(true);
+        };
+
+        window.handlePriceSliderInput = function (val) {
+            const num = Number(val);
+            activeFilters.maxSliderPrice = num;
+            const displayEl = document.getElementById('maxPriceDisplay');
+            if (num >= 5000000) {
+                if (displayEl) displayEl.textContent = 'Tất cả (Không giới hạn)';
+            } else {
+                if (displayEl) displayEl.textContent = `${new Intl.NumberFormat('vi-VN').format(num)} ₫ / đêm`;
+            }
+            // Deactivate price pill buttons when slider moves
+            document.querySelectorAll('[data-filter="price"]').forEach(b => b.classList.remove('active'));
+            activeFilters.priceRange = 'slider';
+            applyFiltersAndRender(true);
         };
 
         window.setPriceFilter = function (btn, range) {
             document.querySelectorAll('[data-filter="price"]').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             activeFilters.priceRange = range;
-            applyFiltersAndRender();
+            
+            // Sync slider display
+            const sliderEl = document.getElementById('priceRangeSlider');
+            const displayEl = document.getElementById('maxPriceDisplay');
+            if (range === 'all') {
+                if (sliderEl) sliderEl.value = 5000000;
+                if (displayEl) displayEl.textContent = 'Tất cả (Không giới hạn)';
+                activeFilters.maxSliderPrice = 5000000;
+            } else if (range === 'under500k') {
+                if (sliderEl) sliderEl.value = 500000;
+                if (displayEl) displayEl.textContent = 'Dưới 500.000 ₫';
+                activeFilters.maxSliderPrice = 500000;
+            } else if (range === '500k-1m') {
+                if (sliderEl) sliderEl.value = 1000000;
+                if (displayEl) displayEl.textContent = '500.000 - 1.000.000 ₫';
+                activeFilters.maxSliderPrice = 1000000;
+            } else if (range === '1m-2m') {
+                if (sliderEl) sliderEl.value = 2000000;
+                if (displayEl) displayEl.textContent = '1.000.000 - 2.000.000 ₫';
+                activeFilters.maxSliderPrice = 2000000;
+            } else if (range === 'over2m') {
+                if (sliderEl) sliderEl.value = 5000000;
+                if (displayEl) displayEl.textContent = 'Trên 2.000.000 ₫';
+                activeFilters.maxSliderPrice = 5000000;
+            }
+
+            applyFiltersAndRender(true);
         };
 
         window.setTypeFilter = function (btn, type) {
             document.querySelectorAll('[data-filter="type"]').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             activeFilters.propertyType = type;
-            applyFiltersAndRender();
+            applyFiltersAndRender(true);
         };
 
         window.handleAmenityChange = function () {
@@ -772,32 +950,45 @@
                 checked.push(cb.value);
             });
             activeFilters.amenities = checked;
-            applyFiltersAndRender();
+            applyFiltersAndRender(true);
         };
 
         window.setRatingFilter = function (btn, rating) {
-            const numRating = Number(rating);
-            if (btn.classList.contains('active') && numRating !== 0) {
-                document.querySelectorAll('[data-filter="rating"]').forEach(b => b.classList.remove('active'));
-                document.querySelector('[data-filter="rating"][data-value="0"]')?.classList.add('active');
-                activeFilters.selectedRating = 0;
+            if (rating === 'none') {
+                if (btn.classList.contains('active')) {
+                    document.querySelectorAll('[data-filter="rating"]').forEach(b => b.classList.remove('active'));
+                    document.querySelector('[data-filter="rating"][data-value="0"]')?.classList.add('active');
+                    activeFilters.selectedRating = 0;
+                } else {
+                    document.querySelectorAll('[data-filter="rating"]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    activeFilters.selectedRating = 'none';
+                }
             } else {
-                document.querySelectorAll('[data-filter="rating"]').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                activeFilters.selectedRating = numRating;
+                const numRating = Number(rating);
+                if (btn.classList.contains('active') && numRating !== 0) {
+                    document.querySelectorAll('[data-filter="rating"]').forEach(b => b.classList.remove('active'));
+                    document.querySelector('[data-filter="rating"][data-value="0"]')?.classList.add('active');
+                    activeFilters.selectedRating = 0;
+                } else {
+                    document.querySelectorAll('[data-filter="rating"]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    activeFilters.selectedRating = numRating;
+                }
             }
-            applyFiltersAndRender();
+            applyFiltersAndRender(true);
         };
 
         window.handleSortChange = function (val) {
             activeFilters.sortBy = val;
-            applyFiltersAndRender();
+            applyFiltersAndRender(false);
         };
 
         window.resetAllFilters = function () {
             activeFilters = {
                 location: '',
                 priceRange: 'all',
+                maxSliderPrice: 5000000,
                 propertyType: 'all',
                 amenities: [],
                 selectedRating: 0,
@@ -806,6 +997,11 @@
 
             const locInput = document.getElementById('searchInputLocation');
             if (locInput) locInput.value = '';
+
+            const sliderEl = document.getElementById('priceRangeSlider');
+            if (sliderEl) sliderEl.value = 5000000;
+            const maxPriceDisplay = document.getElementById('maxPriceDisplay');
+            if (maxPriceDisplay) maxPriceDisplay.textContent = 'Tất cả (Không giới hạn)';
 
             document.querySelectorAll('[data-filter="price"]').forEach(b => b.classList.remove('active'));
             document.querySelector('[data-filter="price"][data-value="all"]')?.classList.add('active');
@@ -821,7 +1017,7 @@
             const sortSelect = document.getElementById('sortOptionSelect');
             if (sortSelect) sortSelect.value = 'featured';
 
-            applyFiltersAndRender();
+            applyFiltersAndRender(true);
         };
 
         // Initialize destination autocomplete with Vietnam cities
@@ -830,7 +1026,7 @@
         if (locInput && locDropdown && window.StaylyAddress) {
             StaylyAddress.initDestinationAutocomplete(locInput, locDropdown, function (selectedCity) {
                 activeFilters.location = selectedCity;
-                applyFiltersAndRender();
+                applyFiltersAndRender(true);
             });
         }
 

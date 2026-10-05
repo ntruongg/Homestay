@@ -322,8 +322,7 @@ public sealed class CreateUserAdminRequest
 {
     public string? Username { get; set; }
 
-    [Required, StringLength(100, MinimumLength = 6)]
-    public string Password { get; set; } = string.Empty;
+    public string? Password { get; set; }
 
     [Required, StringLength(100)]
     public string FullName { get; set; } = string.Empty;

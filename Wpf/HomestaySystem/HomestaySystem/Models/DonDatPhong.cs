@@ -82,12 +82,12 @@ namespace HomestaySystem.Models
             get => TrangThai switch
             {
                 "Pending" or "ChoXacNhan" => "Chờ xác nhận",
-                "Confirmed" or "DaXacNhan" => "Đã xác nhận",
+                "Confirmed" or "DaXacNhan" or "DaDuyet" => "Đã duyệt/xác nhận",
                 "CheckedIn" or "DangO" => "Đang lưu trú",
-                "CheckedOut" or "HoanThanh" => "Đã Check-out",
+                "CheckedOut" or "HoanThanh" or "DaHoanTat" => "Đã hoàn tất",
                 "RefundRequested" or "YeuCauHoanTien" => "Yêu cầu hoàn tiền",
                 "Refunded" or "DaHoanTien" => "Đã hoàn tiền",
-                "Cancelled" or "DaHuy" => "Đã hủy",
+                "Cancelled" or "DaHuy" or "TuChoi" => "Đã hủy/từ chối",
                 _ => TrangThai
             };
             set {}
@@ -97,7 +97,7 @@ namespace HomestaySystem.Models
         {
             get => TrangThai switch
             {
-                "Confirmed" or "DaXacNhan" or "CheckedIn" or "DangO" or "CheckedOut" or "HoanThanh" or "Refunded" or "DaHoanTien" => "#10B981", // Xanh lá: Hoạt động, đã hoàn thành
+                "Confirmed" or "DaXacNhan" or "DaDuyet" or "CheckedIn" or "DangO" or "CheckedOut" or "HoanThanh" or "DaHoanTat" or "Refunded" or "DaHoanTien" => "#10B981", // Xanh lá
                 "Pending" or "ChoXacNhan" or "RefundRequested" or "YeuCauHoanTien" => "#F59E0B", // Vàng: Cảnh báo, chờ duyệt
                 "Cancelled" or "DaHuy" or "TuChoi" or "BiKhoa" => "#EF4444", // Đỏ: Dừng hoạt động, hủy, từ chối
                 _ => "#64748B"
@@ -107,8 +107,8 @@ namespace HomestaySystem.Models
 
         public string TenHienThiQuyetToan { get => TrangThaiQuyetToan == "DaQuyetToan" ? "Đã quyết toán" : "Chưa quyết toán"; set {} }
         public string MauQuyetToan { get => TrangThaiQuyetToan == "DaQuyetToan" ? "#10B981" : "#EF4444"; set {} }
-        public bool CoTheQuyetToan { get => (TrangThai == "HoanThanh" || TrangThai == "CheckedOut") && TrangThaiQuyetToan == "ChuaQuyetToan"; set {} }
-        public bool CoTheHoanTien { get => TrangThai == "RefundRequested" || TrangThai == "Confirmed" || TrangThai == "DaXacNhan"; set {} }
+        public bool CoTheQuyetToan { get => (TrangThai == "HoanThanh" || TrangThai == "CheckedOut" || TrangThai == "DaHoanTat") && TrangThaiQuyetToan == "ChuaQuyetToan"; set {} }
+        public bool CoTheHoanTien { get => TrangThai == "RefundRequested" || TrangThai == "Confirmed" || TrangThai == "DaXacNhan" || TrangThai == "DaDuyet"; set {} }
 
         // Bổ trợ hoàn tiền & cổng thanh toán
         public string CongThanhToan { get; set; } = "VNPay QR";

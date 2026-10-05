@@ -179,7 +179,7 @@ namespace HomestaySystem.ViewModels
         // Thống kê nhanh
         public int TongSoDon => _tatCaDon.Count;
         public int SoDonChoXacNhan => _tatCaDon.Count(d => d.TrangThai == "Pending" || d.TrangThai == "ChoXacNhan");
-        public int SoDonHoanThanh => _tatCaDon.Count(d => d.TrangThai == "CheckedOut" || d.TrangThai == "HoanThanh");
+        public int SoDonHoanThanh => _tatCaDon.Count(d => d.TrangThai == "CheckedOut" || d.TrangThai == "HoanThanh" || d.TrangThai == "DaHoanTat");
         public int SoDonYeuCauHoanTien => _tatCaDon.Count(d => d.TrangThai == "RefundRequested" || d.TrangThai == "YeuCauHoanTien");
 
         // Commands
@@ -248,16 +248,31 @@ namespace HomestaySystem.ViewModels
             DonDangChon.TrangThai = SuaTrangThai;
             DonDangChon.GhiChu = SuaGhiChu?.Trim() ?? string.Empty;
 
-            DangTaiDuLieu = true;
-            await _adminService.CapNhatDonDatAsync(DonDangChon);
-            DangTaiDuLieu = false;
+            try
+            {
+                DangTaiDuLieu = true;
+                bool thanhCong = await _adminService.CapNhatDonDatAsync(DonDangChon);
+                if (!thanhCong)
+                {
+                    MessageBox.Show($"Không thể cập nhật đơn đặt {DonDangChon.MaDonHienThi}. Vui lòng kiểm tra lại kết nối máy chủ!", "Lỗi cập nhật", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
-            OnPropertyChanged(nameof(DonDangChon));
-            CapNhatThongKe();
-            ApDungBoLoc();
+                OnPropertyChanged(nameof(DonDangChon));
+                CapNhatThongKe();
+                ApDungBoLoc();
 
-            HienThiDialogChinhSua = false;
-            MessageBox.Show($"Đã cập nhật thông tin đơn đặt {DonDangChon.MaDonHienThi} thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                HienThiDialogChinhSua = false;
+                MessageBox.Show($"Đã cập nhật thông tin đơn đặt {DonDangChon.MaDonHienThi} thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi cập nhật đơn đặt: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                DangTaiDuLieu = false;
+            }
         }
 
         public async Task TaiDanhSachDonDatAsync()
@@ -299,8 +314,31 @@ namespace HomestaySystem.ViewModels
 
             if (!string.IsNullOrWhiteSpace(BoLocTrangThai) && BoLocTrangThai != "TatCa")
             {
-                query = query.Where(d => d.TrangThai.Equals(BoLocTrangThai, StringComparison.OrdinalIgnoreCase) ||
-                                         d.TenHienThiTrangThai.Equals(BoLocTrangThai, StringComparison.OrdinalIgnoreCase));
+                if (BoLocTrangThai == "CheckedOut" || BoLocTrangThai == "HoanThanh" || BoLocTrangThai == "DaHoanTat")
+                {
+                    query = query.Where(d => d.TrangThai == "CheckedOut" || d.TrangThai == "HoanThanh" || d.TrangThai == "DaHoanTat");
+                }
+                else if (BoLocTrangThai == "Pending" || BoLocTrangThai == "ChoXacNhan")
+                {
+                    query = query.Where(d => d.TrangThai == "Pending" || d.TrangThai == "ChoXacNhan");
+                }
+                else if (BoLocTrangThai == "CheckedIn" || BoLocTrangThai == "DangO")
+                {
+                    query = query.Where(d => d.TrangThai == "CheckedIn" || d.TrangThai == "DangO");
+                }
+                else if (BoLocTrangThai == "RefundRequested" || BoLocTrangThai == "YeuCauHoanTien")
+                {
+                    query = query.Where(d => d.TrangThai == "RefundRequested" || d.TrangThai == "YeuCauHoanTien");
+                }
+                else if (BoLocTrangThai == "Cancelled" || BoLocTrangThai == "DaHuy")
+                {
+                    query = query.Where(d => d.TrangThai == "Cancelled" || d.TrangThai == "DaHuy" || d.TrangThai == "TuChoi");
+                }
+                else
+                {
+                    query = query.Where(d => d.TrangThai.Equals(BoLocTrangThai, StringComparison.OrdinalIgnoreCase) ||
+                                             d.TenHienThiTrangThai.Equals(BoLocTrangThai, StringComparison.OrdinalIgnoreCase));
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(TuKhoaTimKiem))

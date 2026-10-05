@@ -383,19 +383,34 @@ namespace HomestaySystem.ViewModels
                 TaiKhoanDangChon.MatKhau = SuaMatKhau.Trim();
             }
 
-            DangTaiDuLieu = true;
-            await _adminService.CapNhatTaiKhoanAsync(TaiKhoanDangChon);
-            DangTaiDuLieu = false;
+            try
+            {
+                DangTaiDuLieu = true;
+                bool thanhCong = await _adminService.CapNhatTaiKhoanAsync(TaiKhoanDangChon);
+                if (!thanhCong)
+                {
+                    MessageBox.Show($"Không thể cập nhật người dùng '{TaiKhoanDangChon.HoTen}'. Vui lòng kiểm tra lại kết nối hoặc thông tin đã nhập!", "Lỗi cập nhật", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
-            OnPropertyChanged(nameof(TaiKhoanDangChon));
-            OnPropertyChanged(nameof(SelectedUser));
-            ApDungBoLoc();
+                OnPropertyChanged(nameof(TaiKhoanDangChon));
+                OnPropertyChanged(nameof(SelectedUser));
+                ApDungBoLoc();
 
-            HienThiDialogChinhSua = false;
-            string thongBao = doiMatKhau
-                ? $"Đã cập nhật thông tin và đổi mật khẩu mới cho người dùng '{TaiKhoanDangChon.HoTen}' thành công!"
-                : $"Đã cập nhật thông tin người dùng '{TaiKhoanDangChon.HoTen}' thành công!";
-            MessageBox.Show(thongBao, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                HienThiDialogChinhSua = false;
+                string thongBao = doiMatKhau
+                    ? $"Đã cập nhật thông tin và đổi mật khẩu mới cho người dùng '{TaiKhoanDangChon.HoTen}' thành công!"
+                    : $"Đã cập nhật thông tin người dùng '{TaiKhoanDangChon.HoTen}' thành công!";
+                MessageBox.Show(thongBao, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi cập nhật người dùng: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                DangTaiDuLieu = false;
+            }
         }
 
         public async Task TaiDanhSachNguoiDungAsync()

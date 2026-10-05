@@ -11,7 +11,8 @@ public sealed record PropertySummary(
     string? Type,
     decimal MinimumPrice,
     string? CoverImageUrl,
-    double Rating = 5.0);
+    double Rating = 0.0,
+    int ReviewCount = 0);
 
 public sealed record PropertyDetails(
     int Id,

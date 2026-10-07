@@ -43,31 +43,31 @@ public sealed class ProfileController(
         account.GioiTinh = request.Gender;
         account.DienThoai = phone;
 
+        if (!string.IsNullOrWhiteSpace(request.BankName) || !string.IsNullOrWhiteSpace(request.AccountNumber))
+        {
+            account.NganHang = request.BankName?.Trim();
+            account.SoTaiKhoan = request.AccountNumber?.Trim();
+            account.TenNguoiThuHuong = request.AccountHolder?.Trim()?.ToUpperInvariant() ?? account.HoTen.ToUpperInvariant();
+        }
+        else if (!string.IsNullOrWhiteSpace(request.BankInformation))
+        {
+            var parts = request.BankInformation.Split('-', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 3)
+            {
+                account.NganHang = parts[0];
+                account.SoTaiKhoan = parts[1];
+                account.TenNguoiThuHuong = parts[2].ToUpperInvariant();
+            }
+            else if (parts.Length == 2)
+            {
+                account.NganHang = parts[0];
+                account.SoTaiKhoan = parts[1];
+                account.TenNguoiThuHuong = account.HoTen.ToUpperInvariant();
+            }
+        }
+
         if (account.MaVaiTro == VaiTro.OWNER)
         {
-            if (!string.IsNullOrWhiteSpace(request.BankName) || !string.IsNullOrWhiteSpace(request.AccountNumber))
-            {
-                account.NganHang = request.BankName?.Trim();
-                account.SoTaiKhoan = request.AccountNumber?.Trim();
-                account.TenNguoiThuHuong = request.AccountHolder?.Trim()?.ToUpperInvariant() ?? account.HoTen.ToUpperInvariant();
-            }
-            else if (!string.IsNullOrWhiteSpace(request.BankInformation))
-            {
-                var parts = request.BankInformation.Split('-', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length >= 3)
-                {
-                    account.NganHang = parts[0];
-                    account.SoTaiKhoan = parts[1];
-                    account.TenNguoiThuHuong = parts[2].ToUpperInvariant();
-                }
-                else if (parts.Length == 2)
-                {
-                    account.NganHang = parts[0];
-                    account.SoTaiKhoan = parts[1];
-                    account.TenNguoiThuHuong = account.HoTen.ToUpperInvariant();
-                }
-            }
-
             account.CCCD = request.CitizenId?.Trim();
         }
 
@@ -175,8 +175,8 @@ public sealed class ProfileController(
             account.GioiTinh, account.DienThoai, roleName,
             isOwner ? account.ThongTinNganHang : null,
             isOwner ? account.CCCD : null,
-            isOwner ? account.NganHang : null,
-            isOwner ? account.SoTaiKhoan : null,
-            isOwner ? account.TenNguoiThuHuong : null);
+            account.NganHang,
+            account.SoTaiKhoan,
+            account.TenNguoiThuHuong);
     }
 }

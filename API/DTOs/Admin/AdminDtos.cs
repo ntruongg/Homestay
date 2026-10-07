@@ -159,7 +159,12 @@ public sealed record AdminInvoiceInfo(
     string PaymentMethod,
     decimal CommissionPercentage = 15.00m,
     decimal CommissionAmount = 0.00m,
-    decimal HostPayout = 0.00m
+    decimal HostPayout = 0.00m,
+    string? TrangThaiQuyetToan = "ChuaQuyetToan",
+    string? MaGiaoDichQuyetToan = null,
+    DateTime? NgayQuyetToan = null,
+    decimal? SoTienQuyetToan = null,
+    string? GhiChuQuyetToan = null
 );
 
 public sealed record AdminBookingDetailsResponse(
@@ -223,6 +228,13 @@ public sealed class RecordPayoutRequest
     public decimal? Amount { get; set; }
 
     [StringLength(500)]
+    public string? Note { get; set; }
+}
+
+public sealed class SettleBookingRequest
+{
+    public string? TransactionNo { get; set; }
+    public decimal? Amount { get; set; }
     public string? Note { get; set; }
 }
 
@@ -400,7 +412,10 @@ public sealed record RevenueBookingItemResponse(
     string? MaGiaoDichQuyetToan = null,
     DateTime? NgayQuyetToan = null,
     decimal? SoTienQuyetToan = null,
-    string? GhiChuQuyetToan = null
+    string? GhiChuQuyetToan = null,
+    string? OwnerBankName = null,
+    string? OwnerAccountNumber = null,
+    string? OwnerAccountHolder = null
 );
 #endregion
 

@@ -22,7 +22,9 @@ builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
 builder.Services.AddSingleton<IRazorTemplateRenderer, RazorTemplateRenderer>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IOtpService, OtpService>();
+builder.Services.AddScoped<API.Services.Database.IDatabaseMaintenanceService, API.Services.Database.DatabaseMaintenanceService>();
 builder.Services.AddHostedService<ExpiredBookingCleanupService>();
+builder.Services.AddHostedService<API.Services.Database.AutomatedBackupHostedService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("Jwt:Key is not configured.");

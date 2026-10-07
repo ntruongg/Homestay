@@ -280,6 +280,7 @@ CREATE TABLE ChiTietDon (
     DonGia DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     PRIMARY KEY (MaDonDatPhong, MaPhong)
 );
+CREATE NONCLUSTERED INDEX IX_ChiTietDon_MaPhong ON ChiTietDon(MaPhong);
 
 -- 12. BẢNG DỊCH VỤ ĐÍNH KÈM ĐƠN ĐẶT PHÒNG
 CREATE TABLE DonDatPhongDichVu (
@@ -292,7 +293,7 @@ CREATE TABLE DonDatPhongDichVu (
 );
 CREATE INDEX IX_DonDatPhongDichVu_MaDichVu ON DonDatPhongDichVu(MaDichVu);
 
--- 13. BẢNG THANH TOÁN (HOA HỒNG 15% MINH BẠCH)
+-- 13. BẢNG THANH TOÁN (HOA HỒNG 15% MINH BẠCH & ĐỐI SOÁT QUYẾT TOÁN 85%)
 CREATE TABLE ThanhToan (
     MaHoaDon INT PRIMARY KEY REFERENCES DonDatPhong(MaDonDatPhong) ON DELETE CASCADE,
     TongTien DECIMAL(12,2) NOT NULL,
@@ -301,7 +302,12 @@ CREATE TABLE ThanhToan (
     NgayThanhToan DATETIME NOT NULL DEFAULT GETDATE(),
     PhanTramHoaHong DECIMAL(5,2) NOT NULL DEFAULT 15.00,
     TienHoaHong DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-    TienThucNhanChu DECIMAL(12,2) NOT NULL DEFAULT 0.00
+    TienThucNhanChu DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    TrangThaiQuyetToan NVARCHAR(30) NOT NULL DEFAULT 'ChuaQuyetToan',
+    MaGiaoDichQuyetToan VARCHAR(50) NULL,
+    NgayQuyetToan DATETIME NULL,
+    SoTienQuyetToan DECIMAL(12,2) NULL,
+    GhiChuQuyetToan NVARCHAR(500) NULL
 );
 
 -- 14. BẢNG LỊCH LƯU TRÚ

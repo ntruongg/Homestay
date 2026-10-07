@@ -296,6 +296,51 @@ public sealed class AdminController(
         await db.SaveChangesAsync(cancellationToken);
         return Ok(new { message = "Đã cập nhật trạng thái hoạt động.", isActive = property.TrangThaiHoatDong });
     }
+
+    [HttpPut("properties/{id:int}")]
+    public async Task<IActionResult> UpdateProperty(
+        int id,
+        [FromBody] UpdatePropertyAdminRequest request,
+        CancellationToken cancellationToken)
+    {
+        var adminId = GetAccountId();
+        var property = await db.CoSoLuuTrus.FirstOrDefaultAsync(p => p.MaCoSoLuuTru == id, cancellationToken);
+        if (property is null)
+            return NotFound("Không tìm thấy cơ sở lưu trú.");
+
+        if (!string.IsNullOrWhiteSpace(request.Name))
+            property.TenCoSoLuuTru = request.Name.Trim();
+
+        if (request.Address != null)
+            property.DiaChi = request.Address.Trim();
+
+        if (request.Ward != null)
+            property.PhuongXa = request.Ward.Trim();
+
+        if (request.City != null)
+            property.ThanhPho = request.City.Trim();
+
+        if (!string.IsNullOrWhiteSpace(request.Type))
+            property.LoaiHinh = request.Type.Trim();
+
+        if (request.Phone != null)
+            property.DienThoai = request.Phone.Trim();
+
+        if (request.Email != null)
+            property.Email = request.Email.Trim();
+
+        if (request.Policy != null)
+            property.ChinhSach = request.Policy.Trim();
+
+        if (request.IsActive.HasValue)
+            property.TrangThaiHoatDong = request.IsActive.Value;
+
+        await LogActionAsync(adminId, "CAP_NHAT_CO_SO", "CoSoLuuTru", id,
+            $"Admin #{adminId} cập nhật thông tin cơ sở '{property.TenCoSoLuuTru}'", cancellationToken);
+
+        await db.SaveChangesAsync(cancellationToken);
+        return Ok(new { message = "Cập nhật thông tin cơ sở lưu trú thành công." });
+    }
     #endregion
 
     #region 2. Quản lý đặt phòng & Hoàn tiền (Bookings & Refunds)
@@ -456,6 +501,29 @@ public sealed class AdminController(
         if (booking is null)
             return NotFound("Không tìm thấy đơn đặt phòng.");
 
+        var roomIds = booking.ChiTietDons.Select(d => d.MaPhong).ToList();
+        if (roomIds.Count > 0)
+        {
+            var hasConflict = await db.DonDatPhongs
+                .Where(b => b.MaDonDatPhong != id
+                    && (b.TrangThai == "DaDuyet" || b.TrangThai == "Confirmed" || b.TrangThai == "ChoDuyet" || b.TrangThai == "Pending")
+                    && b.NgayDen < booking.NgayDi && b.NgayDi > booking.NgayDen)
+                .AnyAsync(b => b.ChiTietDons.Any(cd => roomIds.Contains(cd.MaPhong)), cancellationToken);
+
+            if (hasConflict)
+            {
+                return BadRequest("Không thể từ chối hoàn tiền và khôi phục đơn phòng vì đã có đơn đặt khác giữ phòng trong khoảng thời gian này. Vui lòng phê duyệt hoàn tiền cho khách.");
+            }
+
+            var schedules = await db.LichLuuTrus
+                .Where(l => roomIds.Contains(l.MaPhong) && l.Ngay >= booking.NgayDen.Date && l.Ngay < booking.NgayDi.Date)
+                .ToListAsync(cancellationToken);
+            foreach (var sch in schedules)
+            {
+                sch.TrangThai = "Đã đặt";
+            }
+        }
+
         booking.TrangThai = "DaDuyet";
 
         // Ghi Audit Log
@@ -493,6 +561,208 @@ public sealed class AdminController(
         }
 
         return Ok(new { message = "Đã từ chối yêu cầu hoàn tiền." });
+    }
+
+    [HttpGet("bookings/{id:int}")]
+    public async Task<ActionResult<AdminBookingDetailsResponse>> GetBookingDetails(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var booking = await db.DonDatPhongs.AsNoTracking()
+            .Include(b => b.KhachHang)
+            .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru).ThenInclude(c => c.ChuCoSoLuuTru)
+            .Include(b => b.DonDatPhongDichVus).ThenInclude(d => d.DichVu)
+            .Include(b => b.ThanhToan)
+            .FirstOrDefaultAsync(b => b.MaDonDatPhong == id, cancellationToken);
+
+        if (booking is null)
+            return NotFound("Không tìm thấy đơn đặt phòng.");
+
+        var firstRoom = booking.ChiTietDons.FirstOrDefault()?.Phong;
+        var property = firstRoom?.CoSoLuuTru;
+        var owner = property?.ChuCoSoLuuTru;
+
+        var guestInfo = new AdminGuestInfo(
+            booking.KhachHang.MaNguoiDung,
+            booking.KhachHang.HoTen,
+            booking.KhachHang.Email,
+            booking.KhachHang.DienThoai,
+            booking.KhachHang.NganHang,
+            booking.KhachHang.SoTaiKhoan,
+            booking.KhachHang.TenNguoiThuHuong
+        );
+
+        var ownerInfo = new AdminOwnerInfo(
+            owner?.MaNguoiDung ?? 0,
+            owner?.HoTen ?? "N/A",
+            owner?.Email ?? "N/A",
+            owner?.DienThoai ?? "N/A",
+            owner?.NganHang,
+            owner?.SoTaiKhoan,
+            owner?.TenNguoiThuHuong
+        );
+
+        var roomItems = booking.ChiTietDons.Select(d => new AdminBookingRoomItem(
+            d.MaPhong,
+            d.Phong?.SoPhong ?? d.MaPhong.ToString(),
+            d.DonGia
+        )).ToList();
+
+        var serviceItems = booking.DonDatPhongDichVus.Select(s => new AdminServiceItem(
+            s.MaDichVu,
+            s.DichVu?.TenDichVu ?? "Dịch vụ",
+            s.SoLuong,
+            s.DonGia,
+            s.ThanhTien
+        )).ToList();
+
+        var nights = Math.Max(1, (booking.NgayDi.Date - booking.NgayDen.Date).Days);
+        var roomTotal = booking.ChiTietDons.Sum(d => d.DonGia) * nights;
+        var extraTotal = booking.DonDatPhongDichVus.Sum(f => f.ThanhTien);
+        var totalAmount = booking.ThanhToan?.TongTien ?? (roomTotal + extraTotal);
+
+        AdminInvoiceInfo? invoiceInfo = null;
+        if (booking.ThanhToan != null)
+        {
+            var comm = booking.ThanhToan.TienHoaHong > 0 ? booking.ThanhToan.TienHoaHong : Math.Round(totalAmount * 0.15m, 2);
+            var payout = booking.ThanhToan.TienThucNhanChu > 0 ? booking.ThanhToan.TienThucNhanChu : (totalAmount - comm);
+            invoiceInfo = new AdminInvoiceInfo(
+                booking.ThanhToan.MaHoaDon,
+                totalAmount,
+                roomTotal,
+                booking.ThanhToan.PTTT ?? "Online",
+                15.00m,
+                comm,
+                payout,
+                booking.ThanhToan.TrangThaiQuyetToan ?? "ChuaQuyetToan",
+                booking.ThanhToan.MaGiaoDichQuyetToan,
+                booking.ThanhToan.NgayQuyetToan,
+                booking.ThanhToan.SoTienQuyetToan,
+                booking.ThanhToan.GhiChuQuyetToan
+            );
+        }
+
+        var response = new AdminBookingDetailsResponse(
+            booking.MaDonDatPhong,
+            booking.NgayDat,
+            booking.NgayDen,
+            booking.NgayDi,
+            booking.SoNguoiLon,
+            booking.SoTreEm,
+            booking.SoNguoi,
+            booking.TrangThai,
+            totalAmount,
+            guestInfo,
+            ownerInfo,
+            property?.MaCoSoLuuTru ?? 0,
+            property?.TenCoSoLuuTru ?? "Homestay",
+            property?.DiaChi,
+            roomItems,
+            serviceItems,
+            invoiceInfo,
+            booking.LyDoHoanTien,
+            booking.ThoiGianYeuCauHoan
+        );
+
+        return Ok(response);
+    }
+
+    [HttpPut("bookings/{id:int}")]
+    public async Task<IActionResult> UpdateBooking(
+        int id,
+        [FromBody] UpdateBookingAdminRequest request,
+        CancellationToken cancellationToken)
+    {
+        var adminId = GetAccountId();
+        var booking = await db.DonDatPhongs
+            .Include(b => b.KhachHang)
+            .FirstOrDefaultAsync(b => b.MaDonDatPhong == id, cancellationToken);
+
+        if (booking is null)
+            return NotFound("Không tìm thấy đơn đặt phòng.");
+
+        if (!string.IsNullOrWhiteSpace(request.Status))
+            booking.TrangThai = request.Status.Trim();
+
+        if (request.CheckIn.HasValue)
+            booking.NgayDen = request.CheckIn.Value;
+
+        if (request.CheckOut.HasValue)
+            booking.NgayDi = request.CheckOut.Value;
+
+        if (request.Adults.HasValue)
+            booking.SoNguoiLon = request.Adults.Value;
+
+        if (request.Children.HasValue)
+            booking.SoTreEm = request.Children.Value;
+
+        if (!string.IsNullOrWhiteSpace(request.GuestName) && booking.KhachHang != null)
+            booking.KhachHang.HoTen = request.GuestName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(request.GuestPhone) && booking.KhachHang != null)
+            booking.KhachHang.DienThoai = request.GuestPhone.Trim();
+
+        if (!string.IsNullOrWhiteSpace(request.GuestEmail) && booking.KhachHang != null)
+            booking.KhachHang.Email = request.GuestEmail.Trim();
+
+        var noteDesc = !string.IsNullOrWhiteSpace(request.AdminNote) ? $". Ghi chú: {request.AdminNote.Trim()}" : "";
+        await LogActionAsync(adminId, "CAP_NHAT_DON_DAT", "DonDatPhong", id,
+            $"Admin #{adminId} cập nhật đơn đặt phòng #{id} (Trạng thái: {booking.TrangThai}){noteDesc}", cancellationToken);
+
+        await db.SaveChangesAsync(cancellationToken);
+        return Ok(new { message = $"Cập nhật đơn đặt phòng #{id} thành công." });
+    }
+
+    [HttpPost("bookings/{id:int}/settle")]
+    public async Task<IActionResult> SettleBooking(
+        int id,
+        [FromBody] SettleBookingRequest request,
+        CancellationToken cancellationToken)
+    {
+        var adminId = GetAccountId();
+        var booking = await db.DonDatPhongs
+            .Include(b => b.ThanhToan)
+            .Include(b => b.ChiTietDons)
+            .FirstOrDefaultAsync(b => b.MaDonDatPhong == id, cancellationToken);
+
+        if (booking is null)
+            return NotFound("Không tìm thấy đơn đặt phòng.");
+
+        if (booking.ThanhToan is null)
+            return BadRequest("Đơn đặt phòng chưa có thông tin thanh toán để quyết toán.");
+
+        if (booking.TrangThai is "DaHuy" or "DaHoanTien")
+            return BadRequest("Không thể quyết toán tiền cho đơn phòng đã hủy hoặc đã hoàn tiền.");
+
+        var total = booking.ThanhToan.TongTien;
+        var comm = booking.ThanhToan.TienHoaHong > 0 ? booking.ThanhToan.TienHoaHong : Math.Round(total * 0.15m, 2);
+        var calculatedPayout = booking.ThanhToan.TienThucNhanChu > 0 ? booking.ThanhToan.TienThucNhanChu : (total - comm);
+
+        booking.ThanhToan.TrangThaiQuyetToan = "DaQuyetToan";
+        booking.ThanhToan.MaGiaoDichQuyetToan = string.IsNullOrWhiteSpace(request.TransactionNo)
+            ? $"PAYOUT-{id}-{DateTime.UtcNow:yyyyMMddHHmmss}"
+            : request.TransactionNo.Trim();
+        booking.ThanhToan.NgayQuyetToan = DateTime.UtcNow;
+        booking.ThanhToan.SoTienQuyetToan = request.Amount.HasValue && request.Amount.Value > 0
+            ? request.Amount.Value
+            : calculatedPayout;
+        booking.ThanhToan.GhiChuQuyetToan = request.Note?.Trim();
+
+        await LogActionAsync(adminId, "QUYET_TOAN_CHU_NHA", "ThanhToan", booking.ThanhToan.MaHoaDon,
+            $"Admin #{adminId} quyết toán chi trả host {booking.ThanhToan.SoTienQuyetToan:N0}đ cho đơn #{id}. Mã GD: {booking.ThanhToan.MaGiaoDichQuyetToan}",
+            cancellationToken);
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Ok(new
+        {
+            message = "Quyết toán chi trả cho chủ nhà thành công.",
+            bookingId = id,
+            transactionNo = booking.ThanhToan.MaGiaoDichQuyetToan,
+            payoutAmount = booking.ThanhToan.SoTienQuyetToan,
+            settledAt = booking.ThanhToan.NgayQuyetToan,
+            status = booking.ThanhToan.TrangThaiQuyetToan
+        });
     }
     #endregion
 
@@ -767,7 +1037,15 @@ public sealed class AdminController(
                 hostPayout,
                 b.TrangThai,
                 paymentStatus,
-                b.NgayDat
+                b.NgayDat,
+                b.ThanhToan?.TrangThaiQuyetToan ?? "ChuaQuyetToan",
+                b.ThanhToan?.MaGiaoDichQuyetToan,
+                b.ThanhToan?.NgayQuyetToan,
+                b.ThanhToan?.SoTienQuyetToan,
+                b.ThanhToan?.GhiChuQuyetToan,
+                owner?.NganHang,
+                owner?.SoTaiKhoan,
+                owner?.TenNguoiThuHuong
             );
         }).ToList();
 

@@ -235,7 +235,8 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
         if (booking == null)
             return NotFound("Không tìm thấy đơn đặt phòng.");
 
-        if (booking.TrangThai is not ("ChoThanhToan" or "Pending" or "ChoDuyet"))
+        bool isLatePayment = (booking.TrangThai == "DaHuy");
+        if (booking.TrangThai is not ("ChoThanhToan" or "Pending" or "ChoDuyet") && !isLatePayment)
         {
             return BadRequest($"Không thể xác nhận thanh toán cho đơn đang ở trạng thái {booking.TrangThai}.");
         }
@@ -275,13 +276,48 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
             db.ThanhToans.Add(thanhToan);
         }
 
-        booking.TrangThai = "ChoDuyet"; // Chuyển sang Chờ duyệt sau khi thanh toán thành công!
+        var roomIds = booking.ChiTietDons.Select(d => d.MaPhong).ToList();
+        if (isLatePayment)
+        {
+            // Kiểm tra phòng có bị khách khác đặt trong thời gian trễ không
+            var hasConflict = await db.ChiTietDons.AnyAsync(d =>
+                d.MaDonDatPhong != id &&
+                roomIds.Contains(d.MaPhong) &&
+                (d.DonDatPhong.TrangThai == "ChoThanhToan" || d.DonDatPhong.TrangThai == "ChoDuyet" || d.DonDatPhong.TrangThai == "DaDuyet") &&
+                d.DonDatPhong.NgayDen < booking.NgayDi && d.DonDatPhong.NgayDi > booking.NgayDen,
+                cancellationToken);
+
+            if (!hasConflict)
+            {
+                booking.TrangThai = "ChoDuyet";
+                var schedules = await db.LichLuuTrus
+                    .Where(l => roomIds.Contains(l.MaPhong) && l.Ngay >= booking.NgayDen.Date && l.Ngay < booking.NgayDi.Date)
+                    .ToListAsync(cancellationToken);
+                foreach (var sch in schedules) sch.TrangThai = "Đã đặt";
+            }
+            else
+            {
+                booking.TrangThai = "YeuCauHoanTien";
+                booking.ThoiGianYeuCauHoan = DateTime.UtcNow;
+                booking.LyDoHoanTien = "Thanh toán thành công sau khi đơn quá hạn và phòng đã có khách đặt. Tự động chuyển Chờ hoàn tiền 100%.";
+            }
+        }
+        else
+        {
+            booking.TrangThai = "ChoDuyet"; // Chuyển sang Chờ duyệt sau khi thanh toán thành công
+            var schedules = await db.LichLuuTrus
+                .Where(l => roomIds.Contains(l.MaPhong) && l.Ngay >= booking.NgayDen.Date && l.Ngay < booking.NgayDi.Date)
+                .ToListAsync(cancellationToken);
+            foreach (var sch in schedules) sch.TrangThai = "Đã đặt";
+        }
 
         await db.SaveChangesAsync(cancellationToken);
         return Ok(new
         {
             success = true,
-            message = "Thanh toán VNPay thành công. Đơn đặt phòng đã được tự động chuyển sang trạng thái Chờ duyệt.",
+            message = booking.TrangThai == "ChoDuyet" 
+                ? "Thanh toán VNPay thành công. Đơn đặt phòng đã được tự động chuyển sang trạng thái Chờ duyệt."
+                : "Thanh toán thành công. Đơn đặt phòng đã tự động tạo yêu cầu hoàn tiền do phòng đã có khách khác đặt.",
             bookingId = booking.MaDonDatPhong,
             status = booking.TrangThai,
             totalAmount = total

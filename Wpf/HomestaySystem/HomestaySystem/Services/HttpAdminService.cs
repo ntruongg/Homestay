@@ -195,10 +195,12 @@ namespace HomestaySystem.Services
                 TenChuHome = dto.Owner?.FullName ?? string.Empty,
                 EmailChuHome = dto.Owner?.Email ?? string.Empty,
                 SoDienThoaiChuHome = dto.Owner?.Phone ?? string.Empty,
-                SoCCCDChuHome = !string.IsNullOrWhiteSpace(dto.Owner?.CitizenId) ? dto.Owner.CitizenId : "049098012345",
-                TenNganHangChuHome = !string.IsNullOrWhiteSpace(dto.Owner?.BankInformation) ? dto.Owner.BankInformation : "Vietcombank (VCB)",
-                SoTaiKhoanChuHome = "1028472918",
-                ChuTaiKhoanChuHome = dto.Owner?.FullName ?? string.Empty,
+                SoCCCDChuHome = !string.IsNullOrWhiteSpace(dto.Owner?.CitizenId) ? dto.Owner.CitizenId : string.Empty,
+                TenNganHangChuHome = !string.IsNullOrWhiteSpace(dto.Owner?.BankName)
+                    ? dto.Owner.BankName
+                    : (!string.IsNullOrWhiteSpace(dto.Owner?.BankInformation) ? dto.Owner.BankInformation : string.Empty),
+                SoTaiKhoanChuHome = !string.IsNullOrWhiteSpace(dto.Owner?.AccountNumber) ? dto.Owner.AccountNumber : string.Empty,
+                ChuTaiKhoanChuHome = !string.IsNullOrWhiteSpace(dto.Owner?.AccountHolder) ? dto.Owner.AccountHolder : (dto.Owner?.FullName ?? string.Empty),
                 TrangThai = dto.ApprovalStatus switch
                 {
                     "Approved" => "DaDuyet",
@@ -651,10 +653,13 @@ namespace HomestaySystem.Services
                             TongTien = b.TotalAmount,
                             TrangThai = b.Status,
                             ThoiGianTao = b.BookingDate,
-                            TrangThaiQuyetToan = !string.IsNullOrWhiteSpace(b.TrangThaiQuyetToan) ? b.TrangThaiQuyetToan : (b.PaymentStatus == "Paid" ? "DaQuyetToan" : "ChuaQuyetToan"),
+                            TrangThaiQuyetToan = !string.IsNullOrWhiteSpace(b.TrangThaiQuyetToan) ? b.TrangThaiQuyetToan : "ChuaQuyetToan",
                             MaGiaoDichQuyetToan = b.MaGiaoDichQuyetToan,
                             NgayQuyetToan = b.NgayQuyetToan,
-                            GhiChuQuyetToan = b.GhiChuQuyetToan
+                            GhiChuQuyetToan = b.GhiChuQuyetToan,
+                            TenNganHangChuHome = b.OwnerBankName ?? "Vietcombank (VCB)",
+                            SoTaiKhoanNganHangChuHome = b.OwnerAccountNumber ?? "Chưa cập nhật",
+                            ChuTaiKhoanNganHangChuHome = b.OwnerAccountHolder ?? b.OwnerName
                         }).ToList();
 
                         var query = list.Where(d => d.TrangThai == "CheckedOut" || d.TrangThai == "HoanThanh" || d.TrangThai == "DaHoanTat");
@@ -676,7 +681,23 @@ namespace HomestaySystem.Services
 
         public async Task<bool> XacNhanQuyetToanAsync(int maDon, string maGiaoDich, string ghiChu, decimal? soTien = null)
         {
-            return true;
+            try
+            {
+                await EnsureAuthenticatedAsync();
+                var payload = new
+                {
+                    TransactionNo = maGiaoDich,
+                    Amount = soTien,
+                    Note = ghiChu
+                };
+                var response = await _http.PostAsJsonAsync($"api/admin/bookings/{maDon}/settle", payload);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] XacNhanQuyetToanAsync error: {ex.Message}");
+                return false;
+            }
         }
 
         // ================= 4. BÁO CÁO DOANH THU & DÒNG TIỀN =================
@@ -848,27 +869,366 @@ namespace HomestaySystem.Services
             return await CapNhatKhuyenMaiAsync(km);
         }
 
-        // ================= 6. BẢO TRÌ HỆ THỐNG =================
+        // ================= 6. BẢO TRÌ HỆ THỐNG (BACKUP & RESTORE) =================
+        public async Task<DatabaseStatus?> LayTrangThaiCSDLAsync()
+        {
+            try
+            {
+                await EnsureAuthenticatedAsync();
+                var response = await _http.GetAsync("api/admin/database/status");
+                if (response.IsSuccessStatusCode)
+                {
+                    var dto = await response.Content.ReadFromJsonAsync<ApiDatabaseStatusDto>(JsonOptions);
+                    if (dto != null)
+                    {
+                        return new DatabaseStatus
+                        {
+                            DatabaseName = dto.DatabaseName,
+                            ServerVersion = dto.ServerVersion,
+                            DataSizeMB = dto.DataSizeMB,
+                            LogSizeMB = dto.LogSizeMB,
+                            TotalTables = dto.TotalTables,
+                            LastBackupDate = dto.LastBackupDate,
+                            TotalBackupsCount = dto.TotalBackupsCount,
+                            TotalBackupsSizeFormatted = dto.TotalBackupsSizeFormatted
+                        };
+                    }
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] LayTrangThaiCSDLAsync error: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<List<BackupItem>> LayDanhSachBanSaoLuuAsync()
+        {
+            try
+            {
+                await EnsureAuthenticatedAsync();
+                var response = await _http.GetAsync("api/admin/database/backups");
+                if (response.IsSuccessStatusCode)
+                {
+                    var dtos = await response.Content.ReadFromJsonAsync<List<ApiBackupItemDto>>(JsonOptions);
+                    if (dtos != null)
+                    {
+                        return dtos.Select(b => new BackupItem
+                        {
+                            FileName = b.FileName,
+                            SizeInBytes = b.SizeInBytes,
+                            FormattedSize = b.FormattedSize,
+                            CreatedAt = b.CreatedAt,
+                            IsAutomated = b.IsAutomated,
+                            Description = b.Description
+                        }).OrderByDescending(b => b.CreatedAt).ToList();
+                    }
+                }
+                return new List<BackupItem>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] LayDanhSachBanSaoLuuAsync error: {ex.Message}");
+                return new List<BackupItem>();
+            }
+        }
+
+        public async Task<(bool ThanhCong, string ThongBao, BackupItem? Item)> TaoBanSaoLuuAsync(string? moTa = null, bool compress = true)
+        {
+            try
+            {
+                await EnsureAuthenticatedAsync();
+                var payload = new { description = moTa, compress = compress };
+                var response = await _http.PostAsJsonAsync("api/admin/database/backup", payload, JsonOptions);
+                if (response.IsSuccessStatusCode)
+                {
+                    var dto = await response.Content.ReadFromJsonAsync<ApiBackupItemDto>(JsonOptions);
+                    var item = dto != null ? new BackupItem
+                    {
+                        FileName = dto.FileName,
+                        SizeInBytes = dto.SizeInBytes,
+                        FormattedSize = dto.FormattedSize,
+                        CreatedAt = dto.CreatedAt,
+                        IsAutomated = dto.IsAutomated,
+                        Description = dto.Description
+                    } : null;
+
+                    return (true, $"Tạo bản sao lưu thành công: {dto?.FileName} ({dto?.FormattedSize})", item);
+                }
+
+                var errorMsg = await response.Content.ReadAsStringAsync();
+                return (false, $"Tạo bản sao lưu thất bại ({response.StatusCode}): {errorMsg}", null);
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi kết nối khi sao lưu: {ex.Message}", null);
+            }
+        }
+
+        public async Task<(bool ThanhCong, string ThongBao)> TaiTepSaoLuuVeMayAsync(string tenTep, string duongDanLuu)
+        {
+            try
+            {
+                await EnsureAuthenticatedAsync();
+                var response = await _http.GetAsync($"api/admin/database/backups/{Uri.EscapeDataString(tenTep)}/download", HttpCompletionOption.ResponseHeadersRead);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    return (false, $"Không thể tải tệp sao lưu ({response.StatusCode}): {error}");
+                }
+
+                var dir = System.IO.Path.GetDirectoryName(duongDanLuu);
+                if (!string.IsNullOrEmpty(dir) && !System.IO.Directory.Exists(dir))
+                {
+                    System.IO.Directory.CreateDirectory(dir);
+                }
+
+                await using (var fileStream = System.IO.File.Create(duongDanLuu))
+                await using (var httpStream = await response.Content.ReadAsStreamAsync())
+                {
+                    await httpStream.CopyToAsync(fileStream);
+                }
+
+                return (true, $"Đã tải tệp sao lưu về máy thành công:\n{duongDanLuu}");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi khi tải tệp sao lưu: {ex.Message}");
+            }
+        }
+
+        public async Task<(bool ThanhCong, string ThongBao)> PhucHoiTuTepMayChuAsync(string tenTep, string matKhauAdmin, string xacNhanTenDb = "HOMESTAY_DB")
+        {
+            try
+            {
+                await EnsureAuthenticatedAsync();
+                var payload = new
+                {
+                    fileName = tenTep,
+                    adminPasswordConfirmation = matKhauAdmin,
+                    confirmDatabaseName = xacNhanTenDb
+                };
+                var response = await _http.PostAsJsonAsync("api/admin/database/restore", payload, JsonOptions);
+                if (response.IsSuccessStatusCode)
+                {
+                    return (true, $"Phục hồi cơ sở dữ liệu thành công từ bản sao lưu '{tenTep}'!");
+                }
+
+                var error = await response.Content.ReadAsStringAsync();
+                return (false, $"Phục hồi thất bại ({response.StatusCode}): {error}");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi phục hồi CSDL: {ex.Message}");
+            }
+        }
+
+        public async Task<(bool ThanhCong, string ThongBao)> PhucHoiTuTepUploadAsync(string duongDanTepCucBo, string matKhauAdmin, string xacNhanTenDb = "HOMESTAY_DB")
+        {
+            try
+            {
+                if (!System.IO.File.Exists(duongDanTepCucBo))
+                {
+                    return (false, $"Tệp cục bộ không tồn tại: {duongDanTepCucBo}");
+                }
+
+                await EnsureAuthenticatedAsync();
+                using var content = new MultipartFormDataContent();
+                await using var fileStream = System.IO.File.OpenRead(duongDanTepCucBo);
+                var fileName = System.IO.Path.GetFileName(duongDanTepCucBo);
+                using var streamContent = new StreamContent(fileStream);
+                streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+
+                content.Add(streamContent, "file", fileName);
+                content.Add(new StringContent(matKhauAdmin), "adminPasswordConfirmation");
+                content.Add(new StringContent(xacNhanTenDb), "confirmDatabaseName");
+
+                var response = await _http.PostAsync("api/admin/database/restore/upload", content);
+                if (response.IsSuccessStatusCode)
+                {
+                    return (true, $"Đã tải lên và phục hồi CSDL thành công từ tệp '{fileName}'!");
+                }
+
+                var error = await response.Content.ReadAsStringAsync();
+                return (false, $"Phục hồi từ tệp tải lên thất bại ({response.StatusCode}): {error}");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi tải lên và phục hồi: {ex.Message}");
+            }
+        }
+
+        public async Task<bool> XoaBanSaoLuuAsync(string tenTep)
+        {
+            try
+            {
+                await EnsureAuthenticatedAsync();
+                var response = await _http.DeleteAsync($"api/admin/database/backups/{Uri.EscapeDataString(tenTep)}");
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] XoaBanSaoLuuAsync error: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<BackupSchedule?> LayLichSaoLuuTuDongAsync()
+        {
+            try
+            {
+                await EnsureAuthenticatedAsync();
+                var response = await _http.GetAsync("api/admin/database/schedule");
+                if (response.IsSuccessStatusCode)
+                {
+                    var dto = await response.Content.ReadFromJsonAsync<ApiBackupScheduleDto>(JsonOptions);
+                    if (dto != null)
+                    {
+                        return new BackupSchedule
+                        {
+                            IsEnabled = dto.IsEnabled,
+                            CronExpression = dto.CronExpression,
+                            RetentionDays = dto.RetentionDays,
+                            LastRunTime = dto.LastRunTime,
+                            NextRunTime = dto.NextRunTime
+                        };
+                    }
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] LayLichSaoLuuTuDongAsync error: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<bool> CapNhatLichSaoLuuTuDongAsync(bool isEnabled, int retentionDays, string? cronExpression = null)
+        {
+            try
+            {
+                await EnsureAuthenticatedAsync();
+                var payload = new
+                {
+                    isEnabled = isEnabled,
+                    retentionDays = retentionDays,
+                    cronExpression = cronExpression ?? "0 2 * * *"
+                };
+                var response = await _http.PutAsJsonAsync("api/admin/database/schedule", payload, JsonOptions);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] CapNhatLichSaoLuuTuDongAsync error: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<(bool ThanhCong, string ThongBao)> KichHoatSaoLuuTuDongNgayAsync()
+        {
+            try
+            {
+                await EnsureAuthenticatedAsync();
+                var response = await _http.PostAsync("api/admin/database/schedule/trigger", null);
+                if (response.IsSuccessStatusCode)
+                {
+                    return (true, "Đã kích hoạt và hoàn tất chu kỳ sao lưu & dọn dẹp tự động thành công!");
+                }
+
+                var err = await response.Content.ReadAsStringAsync();
+                return (false, $"Kích hoạt thất bại: {err}");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi kích hoạt: {ex.Message}");
+            }
+        }
+
         public async Task<(bool ThanhCong, string ThongBao)> SaoLuuCoSoDuLieuAsync(string duongDanThuMuc)
         {
-            await Task.Delay(100);
-            return (true, "Sao lưu tự động hoàn tất trên máy chủ SQL Server.");
+            var (success, msg, item) = await TaoBanSaoLuuAsync("Sao lưu CSDL từ phần mềm Quản trị", true);
+            if (!success || item == null)
+            {
+                return (false, msg);
+            }
+
+            if (!string.IsNullOrWhiteSpace(duongDanThuMuc))
+            {
+                try
+                {
+                    var targetFile = System.IO.Path.Combine(duongDanThuMuc, item.FileName);
+                    var downloadRes = await TaiTepSaoLuuVeMayAsync(item.FileName, targetFile);
+                    if (downloadRes.ThanhCong)
+                    {
+                        return (true, $"{msg}\nĐã lưu về máy trạm: {targetFile}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return (true, $"{msg} (Không thể tải về thư mục máy trạm: {ex.Message})");
+                }
+            }
+
+            return (true, msg);
         }
 
         public async Task<(bool ThanhCong, string ThongBao)> PhucHoiCoSoDuLieuAsync(string duongDanTepBak)
         {
-            await Task.Delay(100);
-            return (true, "CSDL đã đồng bộ với hệ thống máy chủ.");
+            if (string.IsNullOrWhiteSpace(duongDanTepBak))
+            {
+                return (false, "Đường dẫn tệp sao lưu không được để trống.");
+            }
+
+            if (System.IO.File.Exists(duongDanTepBak))
+            {
+                return await PhucHoiTuTepUploadAsync(duongDanTepBak, _adminPassword, "HOMESTAY_DB");
+            }
+
+            var fileName = System.IO.Path.GetFileName(duongDanTepBak);
+            return await PhucHoiTuTepMayChuAsync(fileName, _adminPassword, "HOMESTAY_DB");
         }
 
         public async Task<List<string>> LayNhatKyBaoTriAsync()
         {
-            await Task.Delay(50);
-            return new List<string>
+            try
             {
-                $"[{DateTime.Now:dd/MM/yyyy HH:mm:ss}] Máy chủ dữ liệu hoạt động ổn định.",
-                $"[{DateTime.Now.AddHours(-1):dd/MM/yyyy HH:mm:ss}] Đồng bộ cơ sở dữ liệu an toàn thành công."
-            };
+                await EnsureAuthenticatedAsync();
+                var response = await _http.GetAsync("api/admin/audit-logs?pageSize=100");
+                if (response.IsSuccessStatusCode)
+                {
+                    var logs = await response.Content.ReadFromJsonAsync<List<ApiAuditLogDto>>(JsonOptions);
+                    if (logs != null && logs.Count > 0)
+                    {
+                        var dbLogs = logs
+                            .Where(l => l.TargetType == "Database" || l.Action.Contains("CSDL") || l.Action.Contains("SAO_LUU") || l.Action.Contains("PHUC_HOI"))
+                            .Select(l => $"[{l.CreatedAt.ToLocalTime():dd/MM/yyyy HH:mm:ss}] ({l.Action}) {l.Description}")
+                            .ToList();
+
+                        if (dbLogs.Count > 0) return dbLogs;
+                    }
+                }
+
+                // Nếu chưa có audit log CSDL, tổng hợp từ danh sách bản sao lưu và trạng thái
+                var backups = await LayDanhSachBanSaoLuuAsync();
+                var list = new List<string>();
+                foreach (var b in backups.Take(10))
+                {
+                    list.Add($"[{b.CreatedAt:dd/MM/yyyy HH:mm:ss}] Bản sao lưu {b.FileName} ({b.FormattedSize}) - {b.LoaiSaoLuuText}");
+                }
+
+                if (list.Count == 0)
+                {
+                    list.Add($"[{DateTime.Now:dd/MM/yyyy HH:mm:ss}] Máy chủ cơ sở dữ liệu hoạt động bình thường.");
+                }
+
+                return list;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] LayNhatKyBaoTriAsync error: {ex.Message}");
+                return new List<string> { $"[{DateTime.Now:dd/MM/yyyy HH:mm:ss}] Không thể tải nhật ký máy chủ: {ex.Message}" };
+            }
         }
 
         private static CoSoLuuTru MapToCoSoLuuTru(ApiPropertySummaryDto dto)
@@ -883,9 +1243,9 @@ namespace HomestaySystem.Services
                 TenChuHome = dto.OwnerName,
                 EmailChuHome = dto.OwnerEmail,
                 SoDienThoaiChuHome = dto.OwnerPhone,
-                SoCCCDChuHome = "049098012345",
-                TenNganHangChuHome = "Vietcombank (VCB)",
-                SoTaiKhoanChuHome = "1028472918",
+                SoCCCDChuHome = string.Empty,
+                TenNganHangChuHome = string.Empty,
+                SoTaiKhoanChuHome = string.Empty,
                 ChuTaiKhoanChuHome = dto.OwnerName,
                 LoaiHinh = string.Equals(dto.Type, "Hotel", StringComparison.OrdinalIgnoreCase) ? "Khách sạn" : "Homestay nguyên căn",
                 TrangThai = dto.ApprovalStatus switch
@@ -912,7 +1272,7 @@ namespace HomestaySystem.Services
         private record AuthResultDto(string AccessToken, DateTime ExpiresAt);
         private record ApiPropertySummaryDto(int Id, string Name, string? Address, string? City, string? Type, bool IsActive, string ApprovalStatus, string? RejectionReason, int TotalRooms, int OwnerId, string OwnerName, string OwnerEmail, string OwnerPhone, string? CoverImageUrl);
         private record ApiPropertyDetailsDto(int Id, string Name, string? Phone, string? Email, string? Address, string? Ward, string? City, string? Type, string? Policy, bool IsActive, string ApprovalStatus, string? RejectionReason, string? BusinessLicenseUrl, string? FireSafetyDocumentUrl, string? SecurityDocumentUrl, ApiOwnerContactDto? Owner, List<string>? Photos, List<ApiRoomDetailsDto>? Rooms, List<ApiApprovalHistoryDto>? ApprovalHistory);
-        private record ApiOwnerContactDto(int Id, string FullName, string Email, string Phone, string? CitizenId, string? BankInformation);
+        private record ApiOwnerContactDto(int Id, string FullName, string Email, string Phone, string? CitizenId, string? BankInformation, string? BankName = null, string? AccountNumber = null, string? AccountHolder = null);
         private record ApiRoomDetailsDto(int RoomId, string RoomNumber, int Capacity, decimal BasePrice, string Status, string? RoomType, List<string>? Photos);
         private record ApiApprovalHistoryDto(
             [property: JsonPropertyName("id")] int HistoryId,
@@ -929,8 +1289,12 @@ namespace HomestaySystem.Services
         private record ApiBookingRoomItemDto(int RoomId, string RoomNumber, decimal Price);
         private record ApiInvoiceDto(int InvoiceId, decimal TotalAmount, decimal BaseAmount, string PaymentMethod);
         private record ApiRevenueReportDto(decimal TotalCustomerPaid, decimal PlatformCommission, decimal HostPayout, int TotalBookings, int TotalProperties, int TotalUsers, List<ApiRevenueBookingItemDto>? Bookings);
-        private record ApiRevenueBookingItemDto(int BookingId, string PropertyName, int OwnerId, string OwnerName, string GuestName, DateTime CheckIn, DateTime CheckOut, decimal TotalAmount, decimal Commission, decimal HostPayout, string Status, string PaymentStatus, DateTime BookingDate, string? TrangThaiQuyetToan, string? MaGiaoDichQuyetToan, DateTime? NgayQuyetToan, decimal? SoTienQuyetToan, string? GhiChuQuyetToan);
+        private record ApiRevenueBookingItemDto(int BookingId, string PropertyName, int OwnerId, string OwnerName, string GuestName, DateTime CheckIn, DateTime CheckOut, decimal TotalAmount, decimal Commission, decimal HostPayout, string Status, string PaymentStatus, DateTime BookingDate, string? TrangThaiQuyetToan, string? MaGiaoDichQuyetToan, DateTime? NgayQuyetToan, decimal? SoTienQuyetToan, string? GhiChuQuyetToan, string? OwnerBankName = null, string? OwnerAccountNumber = null, string? OwnerAccountHolder = null);
         private record ApiPromotionDto(int Id, string Code, int Percentage, decimal? MaxDiscount, DateTime? StartDate, DateTime? ExpiryDate, int UsageCount, bool IsActive);
+        private record ApiBackupItemDto(string FileName, long SizeInBytes, string FormattedSize, DateTime CreatedAt, bool IsAutomated, string? Description);
+        private record ApiDatabaseStatusDto(string DatabaseName, string ServerVersion, decimal DataSizeMB, decimal LogSizeMB, int TotalTables, DateTime? LastBackupDate, int TotalBackupsCount, string? TotalBackupsSizeFormatted);
+        private record ApiAuditLogDto(int Id, int? UserId, string? UserName, string? UserEmail, string Action, string TargetType, int? TargetId, string Description, string? IpAddress, DateTime CreatedAt);
+        private record ApiBackupScheduleDto(bool IsEnabled, string CronExpression, int RetentionDays, DateTime? LastRunTime, DateTime? NextRunTime);
         #endregion
     }
 }

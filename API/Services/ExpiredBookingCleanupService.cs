@@ -43,10 +43,12 @@ public sealed class ExpiredBookingCleanupService(
 
         if (expiredBookings.Count == 0) return;
 
-        logger.LogInformation("Phát hiện {Count} đơn đặt phòng quá hạn thanh toán (>30 phút). Bắt đầu giải phóng phòng và xóa khỏi hệ thống.", expiredBookings.Count);
+        logger.LogInformation("Phát hiện {Count} đơn đặt phòng quá hạn thanh toán (>30 phút). Bắt đầu chuyển trạng thái Đã hủy và giải phóng phòng.", expiredBookings.Count);
 
         foreach (var booking in expiredBookings)
         {
+            booking.TrangThai = "DaHuy";
+
             var roomIds = booking.ChiTietDons.Select(d => d.MaPhong).ToList();
             if (roomIds.Count > 0)
             {
@@ -59,11 +61,9 @@ public sealed class ExpiredBookingCleanupService(
                     sch.TrangThai = "Trống";
                 }
             }
-
-            db.DonDatPhongs.Remove(booking);
         }
 
         await db.SaveChangesAsync(cancellationToken);
-        logger.LogInformation("Đã xóa hoàn toàn {Count} đơn đặt phòng quá hạn và khôi phục lịch phòng trống thành công.", expiredBookings.Count);
+        logger.LogInformation("Đã chuyển {Count} đơn đặt phòng quá hạn sang 'DaHuy' và khôi phục lịch phòng trống thành công.", expiredBookings.Count);
     }
 }

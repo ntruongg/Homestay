@@ -135,7 +135,10 @@ public sealed class HomestayApiClient(HttpClient http)
             input.FullName,
             input.DateOfBirth,
             input.Gender,
-            input.Phone
+            input.Phone,
+            input.BankName,
+            input.AccountNumber,
+            input.AccountHolder
         };
 
         return await SendAuthorizedAsync<Profile>(

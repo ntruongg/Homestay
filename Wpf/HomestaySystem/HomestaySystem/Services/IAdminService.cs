@@ -50,6 +50,16 @@ namespace HomestaySystem.Services
         Task<bool> DoiTrangThaiKhuyenMaiAsync(int maKhuyenMai, string trangThaiMoi);
 
         // ================= 6. BẢO TRÌ HỆ THỐNG (BACKUP & RESTORE) =================
+        Task<DatabaseStatus?> LayTrangThaiCSDLAsync();
+        Task<List<BackupItem>> LayDanhSachBanSaoLuuAsync();
+        Task<(bool ThanhCong, string ThongBao, BackupItem? Item)> TaoBanSaoLuuAsync(string? moTa = null, bool compress = true);
+        Task<(bool ThanhCong, string ThongBao)> TaiTepSaoLuuVeMayAsync(string tenTep, string duongDanLuu);
+        Task<(bool ThanhCong, string ThongBao)> PhucHoiTuTepMayChuAsync(string tenTep, string matKhauAdmin, string xacNhanTenDb = "HOMESTAY_DB");
+        Task<(bool ThanhCong, string ThongBao)> PhucHoiTuTepUploadAsync(string duongDanTepCucBo, string matKhauAdmin, string xacNhanTenDb = "HOMESTAY_DB");
+        Task<bool> XoaBanSaoLuuAsync(string tenTep);
+        Task<BackupSchedule?> LayLichSaoLuuTuDongAsync();
+        Task<bool> CapNhatLichSaoLuuTuDongAsync(bool isEnabled, int retentionDays, string? cronExpression = null);
+        Task<(bool ThanhCong, string ThongBao)> KichHoatSaoLuuTuDongNgayAsync();
         Task<(bool ThanhCong, string ThongBao)> SaoLuuCoSoDuLieuAsync(string duongDanThuMuc);
         Task<(bool ThanhCong, string ThongBao)> PhucHoiCoSoDuLieuAsync(string duongDanTepBak);
         Task<List<string>> LayNhatKyBaoTriAsync();

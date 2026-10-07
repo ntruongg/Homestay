@@ -380,7 +380,7 @@
                                             <TextBlock Grid.Column="0" Text="🪪" FontSize="13" Foreground="#0194F3" VerticalAlignment="Center"/>
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                                 <TextBlock Text="CCCD: " FontSize="12.5" Foreground="#64748B"/>
-                                                <TextBlock Text="{Binding CoSoDangChon.CCCDHienThi, FallbackValue='049098012345'}" FontSize="13" FontWeight="Bold" Foreground="#0F172A"/>
+                                                <TextBlock Text="{Binding CoSoDangChon.CCCDHienThi, FallbackValue='Chưa cập nhật'}" FontSize="13" FontWeight="Bold" Foreground="#0F172A"/>
                                             </StackPanel>
                                         </Grid>
 
@@ -418,11 +418,11 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="🏦" FontSize="13" Foreground="#10B981" VerticalAlignment="Center"/>
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding CoSoDangChon.NganHangHienThi, FallbackValue='Vietcombank (VCB)'}"
+                                                <TextBlock Text="{Binding CoSoDangChon.NganHangHienThi, FallbackValue='Chưa cập nhật'}"
                                                            FontSize="13" FontWeight="SemiBold" Foreground="#0F172A"/>
                                                 <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
                                                     <TextBlock Text="STK: " FontSize="12.5" Foreground="#64748B"/>
-                                                    <TextBlock Text="{Binding CoSoDangChon.SoTaiKhoanHienThi, FallbackValue='1028472918'}"
+                                                    <TextBlock Text="{Binding CoSoDangChon.SoTaiKhoanHienThi, FallbackValue='Chưa cập nhật'}"
                                                                FontSize="13" FontWeight="Bold" Foreground="#10B981"/>
                                                 </StackPanel>
                                             </StackPanel>
@@ -437,7 +437,7 @@
                                             <TextBlock Grid.Column="0" Text="💳" FontSize="13" Foreground="#10B981" VerticalAlignment="Center"/>
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                                 <TextBlock Text="Chủ TK: " FontSize="12.5" Foreground="#64748B"/>
-                                                <TextBlock Text="{Binding CoSoDangChon.ChuTaiKhoanHienThi, FallbackValue='NGUYEN VAN AN'}"
+                                                <TextBlock Text="{Binding CoSoDangChon.ChuTaiKhoanHienThi, FallbackValue='Chưa cập nhật'}"
                                                            FontSize="13" FontWeight="Bold" Foreground="#0F172A"/>
                                             </StackPanel>
                                         </Grid>

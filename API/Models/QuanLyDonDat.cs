@@ -105,6 +105,20 @@ public class ThanhToan
 
     [Column(TypeName = "decimal(12,2)")]
     public decimal TienThucNhanChu { get; set; } = 0.00m;
+
+    [Required, StringLength(30)]
+    public string TrangThaiQuyetToan { get; set; } = "ChuaQuyetToan";
+
+    [StringLength(50)]
+    public string? MaGiaoDichQuyetToan { get; set; }
+
+    public DateTime? NgayQuyetToan { get; set; }
+
+    [Column(TypeName = "decimal(12,2)")]
+    public decimal? SoTienQuyetToan { get; set; }
+
+    [StringLength(500)]
+    public string? GhiChuQuyetToan { get; set; }
 }
 
 [Table("LichLuuTru")]

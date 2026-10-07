@@ -21,15 +21,15 @@ namespace HomestaySystem.Models
         public string TenChuHome { get; set; } = string.Empty;
         public string SoDienThoaiChuHome { get; set; } = string.Empty;
         public string EmailChuHome { get; set; } = string.Empty;
-        public string SoCCCDChuHome { get; set; } = "049098012345";
-        public string TenNganHangChuHome { get; set; } = "Vietcombank (VCB)";
-        public string SoTaiKhoanChuHome { get; set; } = "1028472918";
+        public string SoCCCDChuHome { get; set; } = string.Empty;
+        public string TenNganHangChuHome { get; set; } = string.Empty;
+        public string SoTaiKhoanChuHome { get; set; } = string.Empty;
         public string ChuTaiKhoanChuHome { get; set; } = string.Empty;
 
-        public string ChuTaiKhoanHienThi => !string.IsNullOrWhiteSpace(ChuTaiKhoanChuHome) ? ChuTaiKhoanChuHome : TenChuHome;
-        public string CCCDHienThi => !string.IsNullOrWhiteSpace(SoCCCDChuHome) ? SoCCCDChuHome : "049098012345";
-        public string NganHangHienThi => !string.IsNullOrWhiteSpace(TenNganHangChuHome) ? TenNganHangChuHome : "Vietcombank (VCB)";
-        public string SoTaiKhoanHienThi => !string.IsNullOrWhiteSpace(SoTaiKhoanChuHome) ? SoTaiKhoanChuHome : "1028472918";
+        public string ChuTaiKhoanHienThi => !string.IsNullOrWhiteSpace(ChuTaiKhoanChuHome) ? ChuTaiKhoanChuHome : (!string.IsNullOrWhiteSpace(TenChuHome) ? TenChuHome : "Chưa cập nhật");
+        public string CCCDHienThi => !string.IsNullOrWhiteSpace(SoCCCDChuHome) ? SoCCCDChuHome : "Chưa cập nhật";
+        public string NganHangHienThi => !string.IsNullOrWhiteSpace(TenNganHangChuHome) ? TenNganHangChuHome : "Chưa cập nhật";
+        public string SoTaiKhoanHienThi => !string.IsNullOrWhiteSpace(SoTaiKhoanChuHome) ? SoTaiKhoanChuHome : "Chưa cập nhật";
 
         /// <summary>
         /// Trạng thái kiểm duyệt: "ChoDuyet", "DaDuyet", "TuChoi"

@@ -70,4 +70,5 @@ public sealed record BookingResponse(
     int GuestCount, int Adults, int Children, string Status, decimal TotalAmount,
     IReadOnlyList<BookingServiceResponse> Services, string? PromoCode, decimal DiscountAmount,
     string? PropertyName = null, IReadOnlyList<string>? RoomNumbers = null, string? PropertyImage = null,
-    bool HasReviewed = false, int? ReviewRating = null, string? ReviewComment = null);
+    bool HasReviewed = false, int? ReviewRating = null, string? ReviewComment = null,
+    DateTime? CreatedAt = null);

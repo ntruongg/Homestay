@@ -2065,7 +2065,7 @@
             document.getElementById('modalPropertyName').textContent = `${card.getAttribute('data-property')} (${card.getAttribute('data-rooms')})`;
             document.getElementById('modalGuestCount').textContent = `${card.getAttribute('data-guests')} người`;
             document.getElementById('modalStayDates').textContent = `${card.getAttribute('data-checkin')} → ${card.getAttribute('data-checkout')}`;
-            document.getElementById('modalBaseAmount').textContent = card.getAttribute('data-amount') || '';
+            document.getElementById('modalBaseAmount').textContent = 'Đang tính...';
             document.getElementById('modalTotalAmount').textContent = card.getAttribute('data-amount') || '';
 
             const modal = new bootstrap.Modal(document.getElementById('bookingDetailModal'));
@@ -2082,6 +2082,57 @@
                         if (d.guestEmail) document.getElementById('modalGuestEmail').textContent = d.guestEmail;
                         if (d.basePrice != null) document.getElementById('modalBaseAmount').textContent = Number(d.basePrice).toLocaleString('vi-VN') + ' ₫';
                         if (d.totalAmount != null) document.getElementById('modalTotalAmount').textContent = Number(d.totalAmount).toLocaleString('vi-VN') + ' ₫';
+
+                        // Render Dịch vụ bổ sung (Extra Fees)
+                        const extraFeesSec = document.getElementById('modalExtraFeesSection');
+                        if (extraFeesSec) {
+                            const fees = d.extraFees || d.ExtraFees || [];
+                            if (fees.length > 0) {
+                                const totalFees = fees.reduce((sum, f) => sum + (f.total || f.Total || 0), 0);
+                                let html = `<div class="d-flex justify-content-between small fw-bold text-navy mb-1">
+                                    <span><i class="bi bi-bell-fill text-primary me-1"></i>Dịch vụ bổ sung (${fees.length}):</span>
+                                    <span class="text-success fw-bold">+${Number(totalFees).toLocaleString('vi-VN')} ₫</span>
+                                </div>
+                                <div class="bg-white p-2 rounded-3 border mb-2">`;
+                                fees.forEach(f => {
+                                    const fName = f.name || f.Name || 'Dịch vụ';
+                                    const fQty = f.quantity ?? f.Quantity ?? 1;
+                                    const fPrice = f.price ?? f.Price ?? 0;
+                                    const fTotal = f.total ?? f.Total ?? (fQty * fPrice);
+                                    html += `<div class="d-flex justify-content-between align-items-center small py-1 border-bottom">
+                                        <div>
+                                            <span class="fw-semibold text-navy">${fName}</span>
+                                            <span class="badge bg-light text-dark border ms-1">x${fQty}</span>
+                                            <span class="text-muted ms-1">(${Number(fPrice).toLocaleString('vi-VN')} ₫/lượt)</span>
+                                        </div>
+                                        <span class="fw-bold text-dark">+${Number(fTotal).toLocaleString('vi-VN')} ₫</span>
+                                    </div>`;
+                                });
+                                html += `</div>`;
+                                extraFeesSec.innerHTML = html;
+                            } else {
+                                extraFeesSec.innerHTML = `<div class="d-flex justify-content-between small text-muted">
+                                    <span>Phí dịch vụ &amp; Phụ thu:</span>
+                                    <span>0 ₫ (Không có)</span>
+                                </div>`;
+                            }
+                        }
+
+                        // Render Mã giảm giá (Discount)
+                        const discSec = document.getElementById('modalDiscountSection');
+                        if (discSec) {
+                            if (d.discountAmount && d.discountAmount > 0) {
+                                discSec.innerHTML = `<div class="d-flex justify-content-between text-success small">
+                                    <span>Mã ưu đãi (${d.promotionCode || ''}):</span>
+                                    <span class="fw-bold">-${Number(d.discountAmount).toLocaleString('vi-VN')} ₫</span>
+                                </div>`;
+                            } else {
+                                discSec.innerHTML = `<div class="d-flex justify-content-between">
+                                    <span class="text-muted small">Mã giảm giá ưu đãi:</span>
+                                    <span class="text-muted small">0 ₫ (Không áp dụng)</span>
+                                </div>`;
+                            }
+                        }
                     }
                 }
             } catch (e) {

@@ -59,6 +59,7 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
                 bookingServices.Add(new DonDatPhongDichVu
                 {
                     MaDichVu = dbSvc.MaDichVu,
+                    DichVu = dbSvc,
                     SoLuong = qty,
                     DonGia = dbSvc.GiaDichVu,
                     ThanhTien = qty * dbSvc.GiaDichVu
@@ -70,7 +71,7 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
             }
         }
 
-        var nights = (request.CheckOut.Date - request.CheckIn.Date).Days;
+        var nights = Math.Max(1, (request.CheckOut.Date - request.CheckIn.Date).Days);
         var roomTotal = rooms.Sum(r => r.GiaGoc) * nights;
         var servicesTotal = bookingServices.Sum(f => f.ThanhTien);
         var total = roomTotal + servicesTotal;
@@ -125,6 +126,27 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
     public async Task<ActionResult<IReadOnlyList<BookingResponse>>> GetMine(CancellationToken cancellationToken)
     {
         var accountId = GetAccountId();
+        var cutoffTime = DateTime.UtcNow.AddMinutes(-30);
+        var expiredBookings = await db.DonDatPhongs
+            .Include(b => b.ChiTietDons)
+            .Include(b => b.ThanhToan)
+            .Where(b => b.MaKhachHang == accountId && (b.TrangThai == "ChoThanhToan" || b.TrangThai == "Pending") && b.ThanhToan == null && b.NgayDat <= cutoffTime)
+            .ToListAsync(cancellationToken);
+
+        if (expiredBookings.Count > 0)
+        {
+            foreach (var b in expiredBookings)
+            {
+                b.TrangThai = "DaHuy";
+                var roomIds = b.ChiTietDons.Select(d => d.MaPhong).ToList();
+                var schedules = await db.LichLuuTrus
+                    .Where(l => roomIds.Contains(l.MaPhong) && l.Ngay >= b.NgayDen.Date && l.Ngay < b.NgayDi.Date)
+                    .ToListAsync(cancellationToken);
+                foreach (var sch in schedules) sch.TrangThai = "Trống";
+            }
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
         var bookings = await db.DonDatPhongs.AsNoTracking()
             .AsSplitQuery()
             .Where(b => b.MaKhachHang == accountId)
@@ -141,9 +163,10 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<ActionResult<BookingResponse>> GetById(int id, CancellationToken cancellationToken)
     {
-        var booking = await db.DonDatPhongs.AsNoTracking()
+        var accountId = GetAccountId();
+        var booking = await db.DonDatPhongs
             .AsSplitQuery()
-            .Where(b => b.MaDonDatPhong == id && b.MaKhachHang == GetAccountId())
+            .Where(b => b.MaDonDatPhong == id && b.MaKhachHang == accountId)
             .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(p => p.CoSoLuuTru).ThenInclude(c => c.HinhAnhs)
             .Include(b => b.DonDatPhongDichVus).ThenInclude(d => d.DichVu)
             .Include(b => b.ThanhToan)
@@ -151,9 +174,21 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
             .Include(b => b.DanhGia)
             .SingleOrDefaultAsync(cancellationToken);
 
-        return booking is null
-            ? NotFound()
-            : Ok(ToResponse(booking, booking.ChiTietDons.Select(d => d.MaPhong), booking.ThanhToan?.TongTien ?? CalculateBookingTotal(booking)));
+        if (booking is null) return NotFound();
+
+        // Tự động kiểm tra đơn quá hạn 30 phút
+        if ((booking.TrangThai == "ChoThanhToan" || booking.TrangThai == "Pending") && booking.ThanhToan == null && booking.NgayDat <= DateTime.UtcNow.AddMinutes(-30))
+        {
+            booking.TrangThai = "DaHuy";
+            var roomIds = booking.ChiTietDons.Select(d => d.MaPhong).ToList();
+            var schedules = await db.LichLuuTrus
+                .Where(l => roomIds.Contains(l.MaPhong) && l.Ngay >= booking.NgayDen.Date && l.Ngay < booking.NgayDi.Date)
+                .ToListAsync(cancellationToken);
+            foreach (var sch in schedules) sch.TrangThai = "Trống";
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        return Ok(ToResponse(booking, booking.ChiTietDons.Select(d => d.MaPhong), booking.ThanhToan?.TongTien ?? CalculateBookingTotal(booking)));
     }
 
     [HttpPut("{id:int}/cancel")]
@@ -195,12 +230,14 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
         if (booking is null)
             return NotFound();
 
-        // Chỉ xóa đơn chưa thanh toán
+        // Chỉ hủy đơn chưa thanh toán
         if (booking.TrangThai is "ChoThanhToan" or "Pending")
         {
             var hasPayment = await db.ThanhToans.AnyAsync(t => t.MaHoaDon == id, cancellationToken);
             if (hasPayment)
                 return BadRequest("Đơn đặt phòng đã được thanh toán, không thể hủy theo diện quá hạn.");
+
+            booking.TrangThai = "DaHuy";
 
             var roomIds = booking.ChiTietDons.Select(d => d.MaPhong).ToList();
             var schedules = await db.LichLuuTrus
@@ -212,7 +249,6 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
                 sch.TrangThai = "Trống";
             }
 
-            db.DonDatPhongs.Remove(booking);
             await db.SaveChangesAsync(cancellationToken);
         }
 
@@ -428,7 +464,8 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
             propImage,
             booking.DanhGia != null,
             booking.DanhGia?.DiemSo,
-            booking.DanhGia?.NoiDungDanhGia);
+            booking.DanhGia?.NoiDungDanhGia,
+            DateTime.SpecifyKind(booking.NgayDat, DateTimeKind.Utc));
     }
 
     private static decimal CalculateBookingTotal(DonDatPhong booking)

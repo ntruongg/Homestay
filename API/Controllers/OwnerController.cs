@@ -44,6 +44,9 @@ public sealed class OwnerController(
         var bookings = await db.DonDatPhongs.AsNoTracking()
             .Where(b => b.ChiTietDons.Any(d => roomIds.Contains(d.MaPhong)))
             .Include(b => b.KhachHang)
+            .Include(b => b.DonDatPhongDichVus).ThenInclude(d => d.DichVu)
+            .Include(b => b.ThanhToan)
+            .Include(b => b.GiamGia)
             .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(r => r.CoSoLuuTru)
             .OrderByDescending(b => b.NgayDat)
             .ToListAsync(cancellationToken);
@@ -95,7 +98,15 @@ public sealed class OwnerController(
             var propName = b.ChiTietDons.FirstOrDefault()?.Phong?.CoSoLuuTru?.TenCoSoLuuTru ?? "Homestay";
             var roomNos = b.ChiTietDons.Select(d => d.Phong?.SoPhong ?? d.MaPhong.ToString()).ToList();
             var nights = Math.Max(1, (b.NgayDi.Date - b.NgayDen.Date).Days);
-            var calculatedTotal = b.ChiTietDons.Sum(d => d.DonGia) * nights;
+            var roomSubtotal = b.ChiTietDons.Sum(d => d.DonGia) * nights;
+            var servicesSubtotal = b.DonDatPhongDichVus.Sum(s => s.ThanhTien);
+            decimal discount = 0;
+            if (b.GiamGia != null)
+            {
+                var rawDisc = (roomSubtotal + servicesSubtotal) * (b.GiamGia.PhanTram / 100m);
+                discount = b.GiamGia.ToiDa.HasValue ? Math.Min(rawDisc, b.GiamGia.ToiDa.Value) : rawDisc;
+            }
+            var calculatedTotal = b.ThanhToan?.TongTien ?? Math.Max(0, roomSubtotal + servicesSubtotal - discount);
 
             return new OwnerBookingDto(
                 b.MaDonDatPhong,
@@ -375,6 +386,8 @@ public sealed class OwnerController(
         var query = db.DonDatPhongs.AsNoTracking()
             .Where(b => b.ChiTietDons.Any(d => myRoomIds.Contains(d.MaPhong)))
             .Include(b => b.KhachHang)
+            .Include(b => b.DonDatPhongDichVus).ThenInclude(d => d.DichVu)
+            .Include(b => b.GiamGia)
             .Include(b => b.ThanhToan)
             .Include(b => b.ChiTietDons).ThenInclude(d => d.Phong).ThenInclude(r => r.CoSoLuuTru)
             .AsQueryable();
@@ -399,6 +412,17 @@ public sealed class OwnerController(
             items = items.Select(b =>
             {
                 var firstRoom = b.ChiTietDons.FirstOrDefault()?.Phong;
+                var nights = Math.Max(1, (b.NgayDi.Date - b.NgayDen.Date).Days);
+                var roomSubtotal = b.ChiTietDons.Sum(d => d.DonGia) * nights;
+                var servicesSubtotal = b.DonDatPhongDichVus.Sum(s => s.ThanhTien);
+                decimal discount = 0;
+                if (b.GiamGia != null)
+                {
+                    var rawDisc = (roomSubtotal + servicesSubtotal) * (b.GiamGia.PhanTram / 100m);
+                    discount = b.GiamGia.ToiDa.HasValue ? Math.Min(rawDisc, b.GiamGia.ToiDa.Value) : rawDisc;
+                }
+                var calculatedTotal = b.ThanhToan?.TongTien ?? Math.Max(0, roomSubtotal + servicesSubtotal - discount);
+
                 return new
                 {
                     id = b.MaDonDatPhong,
@@ -410,11 +434,19 @@ public sealed class OwnerController(
                     checkIn = b.NgayDen,
                     checkOut = b.NgayDi,
                     totalGuests = b.SoNguoi,
-                    totalAmount = b.ThanhToan?.TongTien ?? 0,
+                    totalAmount = calculatedTotal,
                     payoutAmount = b.ThanhToan?.TienThucNhanChu ?? 0,
                     status = b.TrangThai,
                     bookingDate = b.NgayDat,
-                    isPaid = b.ThanhToan != null
+                    isPaid = b.ThanhToan != null,
+                    services = b.DonDatPhongDichVus.Select(s => new
+                    {
+                        serviceId = s.MaDichVu,
+                        name = s.DichVu?.TenDichVu ?? "Dịch vụ",
+                        quantity = s.SoLuong,
+                        unitPrice = s.DonGia,
+                        totalPrice = s.ThanhTien
+                    }).ToList()
                 };
             })
         });

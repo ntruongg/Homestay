@@ -25,7 +25,9 @@
     var avgRating = reviewCount > 0 ? Math.Round(reviews.Average(r => r.Rating), 1) : 5.0;
     var reviewPageSize = 5;
     var totalReviewPages = (int)Math.Ceiling((double)reviewCount / reviewPageSize);
-    var amenities = ViewBag.Amenities as IReadOnlyList<AmenityItem> ?? Array.Empty<AmenityItem>();
+    var propertyAmenities = (Model.Amenities != null && Model.Amenities.Count > 0)
+        ? Model.Amenities.Select(a => a.Name).ToList()
+        : (ViewBag.Amenities as IReadOnlyList<AmenityItem>)?.Select(a => a.Name).ToList() ?? new List<string>();
 }
 
 <div class="stayly-details-wrapper py-4">
@@ -264,14 +266,14 @@
                         <i class="bi bi-grid-fill text-primary me-2"></i> Tiện ích có sẵn
                     </h3>
                     <div class="row g-3">
-                        @if (amenities != null && amenities.Count > 0)
+                        @if (propertyAmenities != null && propertyAmenities.Count > 0)
                         {
-                            foreach (var a in amenities)
+                            foreach (var a in propertyAmenities)
                             {
                                 <div class="col-md-4 col-6">
                                     <div class="amenity-pill-item">
                                         <i class="bi bi-check-circle-fill text-primary me-2"></i>
-                                        <span>@a.Name</span>
+                                        <span>@a</span>
                                     </div>
                                 </div>
                             }
@@ -338,12 +340,39 @@
                                                 <span class="d-flex align-items-center gap-1">
                                                     <i class="bi bi-people-fill text-primary"></i> Sức chứa: <strong>@room.Capacity khách</strong>
                                                 </span>
-                                                <span class="d-flex align-items-center gap-1">
-                                                    <i class="bi bi-door-closed text-primary"></i> Phòng riêng
-                                                </span>
-                                                <span class="d-flex align-items-center gap-1">
-                                                    <i class="bi bi-check2-circle text-success"></i> Vệ sinh khép kín
-                                                </span>
+                                                @if (string.Equals(Model.Type, "Homestay", StringComparison.OrdinalIgnoreCase))
+                                                {
+                                                    <span class="d-flex align-items-center gap-1 text-primary fw-semibold">
+                                                        <i class="bi bi-house-heart-fill"></i> Nguyên căn riêng tư
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="d-flex align-items-center gap-1">
+                                                        <i class="bi bi-door-closed-fill text-primary"></i> Phòng riêng khép kín
+                                                    </span>
+                                                }
+                                                @if (room.Amenities != null && room.Amenities.Count > 0)
+                                                {
+                                                    @foreach (var am in room.Amenities.Take(3))
+                                                    {
+                                                        var amLower = am.Name.ToLowerInvariant();
+                                                        var iconClass = "bi-check2-circle text-success";
+                                                        if (amLower.Contains("wifi") || amLower.Contains("mạng")) { iconClass = "bi-wifi text-primary"; }
+                                                        else if (amLower.Contains("điều hòa") || amLower.Contains("máy lạnh")) { iconClass = "bi-snow text-info"; }
+                                                        else if (amLower.Contains("tv") || amLower.Contains("tivi")) { iconClass = "bi-tv text-primary"; }
+                                                        else if (amLower.Contains("tắm") || amLower.Contains("bồn tắm")) { iconClass = "bi-water text-info"; }
+                                                        else if (amLower.Contains("ban công") || amLower.Contains("cửa sổ")) { iconClass = "bi-building text-primary"; }
+                                                        else if (amLower.Contains("bếp") || amLower.Contains("nấu")) { iconClass = "bi-fire text-danger"; }
+                                                        else if (amLower.Contains("tủ lạnh") || amLower.Contains("minibar")) { iconClass = "bi-box-seam text-secondary"; }
+                                                        else if (amLower.Contains("cà phê") || amLower.Contains("trà")) { iconClass = "bi-cup-hot text-warning"; }
+                                                        else if (amLower.Contains("két sắt")) { iconClass = "bi-shield-lock text-success"; }
+
+                                                        <span class="d-flex align-items-center gap-1">
+                                                            <i class="bi @iconClass"></i> @am.Name
+                                                        </span>
+                                                    }
+                                                }
                                             </div>
                                         </div>
 
@@ -584,6 +613,7 @@
                                             <div>
                                                 <div class="fw-bold small">@svc.Name</div>
                                                 <div class="text-muted small">@svc.Price.ToString("N0") ₫</div>
+                                                <input type="hidden" name="Services.Index" value="@i" />
                                                 <input type="hidden" name="Services[@i].ServiceId" value="@svc.Id" />
                                             </div>
                                             <div class="input-group input-group-sm" style="width: 100px;">
@@ -660,6 +690,22 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Mobile Sticky Bottom Booking Bar (Chỉ hiển thị trên thiết bị di động / tablet < 992px) -->
+<div class="stayly-mobile-sticky-bar d-block d-lg-none position-fixed bottom-0 start-0 w-100 bg-white border-top shadow-lg px-3 py-2" style="z-index: 1030;">
+    <div class="container d-flex align-items-center justify-content-between">
+        <div>
+            <div class="text-muted small" style="font-size: 0.72rem;">Giá phòng từ</div>
+            <div class="fw-bold text-primary fs-5" style="line-height: 1.2;">
+                @minPrice.ToString("N0") <span class="fs-6">₫</span> <span class="text-muted fw-normal" style="font-size: 0.72rem;">/ đêm</span>
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-1" onclick="document.getElementById('staylyBookingForm')?.scrollIntoView({ behavior: 'smooth', block: 'center' });">
+            <span>Đặt phòng ngay</span>
+            <i class="bi bi-arrow-down-short fs-5"></i>
+        </button>
     </div>
 </div>
 
@@ -1252,14 +1298,8 @@
         const guestInput = document.getElementById('bookingGuestCount');
         if (guestInput) guestInput.value = adults + children;
 
-        // Bỏ qua các dịch vụ không chọn (số lượng = 0) để không gửi lên form
-        document.querySelectorAll('.service-qty').forEach((qtyInput, idx) => {
-            if (parseInt(qtyInput.value || 0) <= 0) {
-                qtyInput.disabled = true;
-                const idInput = document.querySelector(`input[name="Services[${idx}].ServiceId"]`);
-                if (idInput) idInput.disabled = true;
-            }
-        });
+        // Giữ nguyên các input dịch vụ để ASP.NET Core Model Binder nhận đủ danh sách,
+        // backend HomeController.Book sẽ tự động lọc các dịch vụ có Quantity > 0.
 
         return true;
     }

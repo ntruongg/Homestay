@@ -1,8 +1,6 @@
-Here's the improved `README.md` file, incorporating the new content while maintaining the existing structure and information:
+# Stayly Backend API
 
-# Homestay API
-
-A .NET 8 booking API for a homestay system. The API uses ASP.NET Core, Entity Framework Core, SQL Server, JWT bearer authentication, and Swagger.
+A .NET 8 booking & management API for the Stayly Homestay system. The API uses ASP.NET Core, Entity Framework Core 8, SQL Server, JWT bearer authentication, and Swagger/OpenAPI.
 
 ## Requirements
 

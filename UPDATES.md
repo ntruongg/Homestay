@@ -593,7 +593,175 @@ Dưới vai trò chuyên gia **UI/UX & Kỹ thuật Hệ thống**, lộ trình 
   1. **Tự động chuyển tiền Ngân hàng (Payout Gateway)**: Hiện tại, quy trình quyết toán 85% cho Host là quy trình chuẩn của đa số các sàn OTA (Admin kiểm tra trên màn hình Quyết toán -> thực hiện lệnh chi lương/chi trả đối tác qua Internet Banking của Doanh nghiệp -> nhập Mã Giao dịch xác nhận lên hệ thống để lưu vết đối soát). Trong tương lai nếu hệ thống liên kết API đối tác chi hộ (như VietQR Napas247 Transfer API hoặc VNPay Chi Hộ), quy trình có thể tự động bắn lệnh chuyển khoản mà không cần Admin thao tác thủ công ngoài ngân hàng.
   2. **Thời gian chạy Service API**: Do `API.exe` được chạy trực tiếp làm Backend cho Web và WPF, khi biên dịch lại dự án `API.csproj`, cần đảm bảo tắt tiến trình đang lắng nghe cổng 5176 trước khi build để tránh khóa file binary `apphost.exe`.
 
+---
 
+### 8.6. Cập Nhật Xử Lý Lỗi HTTP 500 Khi "Yêu Cầu Đặt Phòng" (Sau Pull Request #19)
 
+* **Hiện tượng**: Khách hàng ấn "Yêu cầu đặt phòng" trên Web (`/Home/Details/{id}`) bị báo lỗi HTTP 500 Internal Server Error.
+* **Nguyên nhân cốt lõi**:
+  - Bản commit mới nhất (`765ad7856679a3ae19f2759b43bd3d6795a0b2d5`) bổ sung 5 thuộc tính quyết toán vào Entity `ThanhToan` trong `API/Models/QuanLyDonDat.cs`:
+    - `TrangThaiQuyetToan` (NVARCHAR 30)
+    - `MaGiaoDichQuyetToan` (VARCHAR 50)
+    - `NgayQuyetToan` (DATETIME)
+    - `SoTienQuyetToan` (DECIMAL 12,2)
+    - `GhiChuQuyetToan` (NVARCHAR 500)
+  - Mặc dù file script `HOMESTAY_DB.sql` đã cập nhật, nhưng Database SQL Server cục bộ (`HOMESTAY_DB`) chưa chạy lệnh cập nhật schema tương ứng.
+  - Khi luồng đặt phòng kích hoạt:
+    1. `ExpiredBookingCleanupService` quét định kỳ và truy vấn `DonDatPhong` bao gồm `.Include(b => b.ThanhToan)`.
+    2. Sau khi tạo đơn, Web gọi `GetBookingsAsync` để điều hướng sang Checkout (`/Home/Checkout?bookingId=...`), API thực hiện truy vấn `DonDatPhongs.Include(b => b.ThanhToan)`.
+    3. EF Core sinh câu lệnh SQL `SELECT` có 5 cột trên, gây crash với lỗi SQL Server:
+       `SqlException (0x80131904): Invalid column name 'GhiChuQuyetToan'. Invalid column name 'MaGiaoDichQuyetToan'...` -> Dẫn đến mã lỗi HTTP 500.
+* **Biện pháp khắc phục**:
+  - Đã thực thi script đồng bộ hóa schema trên CSDL `HOMESTAY_DB`:
+    ```sql
+    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('ThanhToan') AND name = 'TrangThaiQuyetToan')
+        ALTER TABLE ThanhToan ADD TrangThaiQuyetToan NVARCHAR(30) NOT NULL CONSTRAINT DF_ThanhToan_TrangThaiQuyetToan DEFAULT 'ChuaQuyetToan';
+    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('ThanhToan') AND name = 'MaGiaoDichQuyetToan')
+        ALTER TABLE ThanhToan ADD MaGiaoDichQuyetToan VARCHAR(50) NULL;
+    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('ThanhToan') AND name = 'NgayQuyetToan')
+        ALTER TABLE ThanhToan ADD NgayQuyetToan DATETIME NULL;
+    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('ThanhToan') AND name = 'SoTienQuyetToan')
+        ALTER TABLE ThanhToan ADD SoTienQuyetToan DECIMAL(12,2) NULL;
+    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('ThanhToan') AND name = 'GhiChuQuyetToan')
+        ALTER TABLE ThanhToan ADD GhiChuQuyetToan NVARCHAR(500) NULL;
+    ```
+  - Kiểm tra toàn bộ 21 bảng trong CSDL với `HOMESTAY_DB.sql`, đảm bảo không còn sai lệch nào khác.
+* **Kết quả kiểm thử**:
+  - Đã kiểm thử luồng API: Tạo đơn đặt phòng (`POST /api/bookings`) và lấy thông tin (`GET /api/bookings`) trả về `201 Created` và `200 OK`.
+  - Đã kiểm thử giao diện thực tế (Browser Subagent): Đăng nhập tài khoản khách -> Chọn phòng -> Bấm "Yêu cầu đặt phòng" -> Điều hướng thành công 100% đến trang Checkout (`/Home/Checkout?bookingId=17`) hiển thị đúng thông tin và tùy chọn thanh toán VNPay, không còn bất kỳ lỗi 500 nào.
 
+---
+
+### 8.7. Cập Nhật Tính Tiền Dịch Vụ Bổ Sung & Hiển Thị Chi Tiết Dịch Vụ Trên Chi Tiết Thanh Toán / Chi Tiết Đơn
+
+* **Hiện tượng**:
+  1. Khi người dùng chọn dịch vụ bổ sung trên trang chi tiết Homestay (`/Home/Details/{id}`), màn hình có tính trước (preview) tiền dịch vụ, nhưng khi bấm "Yêu cầu đặt phòng" chuyển sang trang Checkout thì tiền dịch vụ chưa được cộng vào tổng tiền thanh toán.
+  2. Màn hình Chi tiết thanh toán (`/Home/Checkout`) và danh sách Chuyến đi của tôi (`/Home/Trips`) chưa hiển thị danh sách các dịch vụ bổ sung đã chọn.
+* **Nguyên nhân**:
+  1. Trong JavaScript hàm `validateBookingSubmit` (`Details.cshtml`), đoạn mã disable các input có `Quantity = 0` đã khiến form gửi các chỉ mục không liên tục (non-sequential index) lên ASP.NET Core Model Binder. Theo cơ chế mặc định của MVC, nếu thiếu chỉ mục 0, ModelBinder dừng liên kết collection và coi `input.Services` là rỗng/null, khiến dịch vụ không được gửi lên API.
+  2. Model binding thiếu thẻ ẩn `Services.Index`, và thiếu kiểm tra null an toàn (`s != null`) khi lọc danh sách dịch vụ.
+  3. Màn hình `Checkout.cshtml` và `Trips.cshtml` chưa có khối HTML hiển thị danh sách `Model.Services` và bảng chiết tính tiền phòng + dịch vụ.
+* **Biện pháp khắc phục**:
+  - **Details.cshtml**:
+    - Bổ sung `<input type="hidden" name="Services.Index" value="@i" />` cho từng dịch vụ.
+    - Loại bỏ việc disable các input số lượng = 0 trước khi submit form, để form luôn gửi đúng cấu trúc cho ModelBinder (việc lọc `Quantity > 0` được thực hiện an toàn ở Backend).
+  - **HomeController.cs & HomestayApiClient.cs**:
+    - Bổ sung kiểm tra `s != null && s.Quantity > 0` tránh ngoại lệ `NullReferenceException`.
+  - **BookingsController.cs (Backend API)**:
+    - Khi tạo `DonDatPhongDichVu`, gán trực tiếp navigation property `DichVu = dbSvc` để `ToResponse` trả về ngay tên dịch vụ chuẩn xác.
+    - Đảm bảo số đêm `nights = Math.Max(1, ...)` tính chuẩn xác tiền phòng + dịch vụ.
+  - **Checkout.cshtml (Chi tiết thanh toán)**:
+    - Bổ sung khối "Dịch vụ đã chọn" liệt kê chi tiết: Tên dịch vụ, số lượng (`xN`), đơn giá (`₫/lượt`) và thành tiền.
+    - Bổ sung bảng "Tóm tắt thanh toán": Tiền phòng (X đêm), Dịch vụ bổ sung (+... ₫), Mã ưu đãi (-... ₫), và Tổng số tiền cần thanh toán.
+  - **Trips.cshtml (Chi tiết đơn của khách)**:
+    - Hiển thị badge danh sách dịch vụ đã đặt trực tiếp trên card đơn hàng.
+    - Bổ sung nút & Modal **"Chi tiết đơn"** (`#tripDetailModal`) hiển thị toàn bộ hóa đơn: Thông tin phòng, thời gian lưu trú, tiền phòng, danh sách dịch vụ kèm theo, mã giảm giá và tổng tiền.
+  - **Dashboard.cshtml (Chi tiết đơn của chủ cơ sở)**:
+    - Cập nhật hàm `openBookingDetailModal` hiển thị động danh sách phụ thu / dịch vụ bổ sung (`extraFees`) từ API thay vì nhãn tĩnh.
+* **Kết quả kiểm thử thực tế**:
+  - Tạo đơn đặt phòng kèm dịch vụ (Phòng 202: 3.200.000 ₫ cho 2 đêm + Dịch vụ Trà chiều x2: 300.000 ₫).
+  - Tổng tiền tính đúng 100%: **3.500.000 ₫**.
+  - Trang Checkout hiển thị đầy đủ chi tiết dịch vụ `Trà chiều kèm hoa sen thơm ngát (x2) - 300.000 ₫` và tổng tiền `3.500.000 ₫`.
+  - Trang Trips hiển thị đúng badge dịch vụ và Modal chi tiết đơn mở mượt mà.
+
+---
+
+### 8.8. Sửa Lỗi Hiển Thị Chi Tiết Dịch Vụ Và Bóc Tách Các Khoản Tiền Trong Đơn Của Khách (Trips & Dashboard)
+
+* **Hiện tượng**:
+  - Khách hàng xem trang "Chuyến đi của tôi" (`/Home/Trips`) và bấm mở popup modal "Chi tiết đơn", modal chỉ hiển thị tổng tiền đơn hàng mà không hiện danh sách từng dịch vụ đã chọn cũng như đơn giá, số lượng và thành tiền của dịch vụ đó.
+  - Phía chủ cơ sở (`/Home/Dashboard`), các đơn đặt phòng chưa thanh toán (`ChoThanhToan`) hiển thị sai tổng tiền (bị thiếu tiền dịch vụ do chưa có bản ghi `ThanhToan`).
+* **Nguyên nhân cốt lõi**:
+  1. Trong Razor View `Trips.cshtml`, câu lệnh serialize `tripsData` sử dụng `System.Text.Json.JsonSerializer.Serialize` mặc định chuyển các trường của C# record `BookingServiceItem` sang **PascalCase** (`ServiceId`, `Name`, `Quantity`, `UnitPrice`, `TotalPrice`). Trong khi đó, mã JavaScript trong hàm `openTripDetailModal` lại truy cập thuộc tính theo **camelCase** (`s.name`, `s.quantity`, `s.unitPrice`, `s.totalPrice`), dẫn đến toàn bộ trả về `undefined`, `totalSvc = 0` và các dòng dịch vụ hiển thị `NaN ₫` hoặc bị ẩn.
+  2. Cú pháp Razor `x@s.Quantity` bị phân tích thành chuỗi ký tự thông thường thay vì nội suy biến, cần viết chuẩn `x@(s.Quantity)`.
+  3. Phía Backend API (`OwnerController.cs`), hai endpoint `GetDashboard` và `GetBookings` chưa nạp eager-loading navigation property `.Include(b => b.DonDatPhongDichVus).ThenInclude(d => d.DichVu)` và `.Include(b => b.GiamGia)`, đồng thời chỉ lấy `b.ThanhToan?.TongTien ?? (b.ChiTietDons.Sum(d => d.DonGia) * nights)`, hoàn toàn bỏ sót tiền dịch vụ cho các đơn chưa thanh toán.
+* **Biện pháp khắc phục**:
+  - **Trips.cshtml (Client Web)**:
+    - Project rõ ràng cấu trúc camelCase trong JSON serialization của `tripsData`: `serviceId`, `name`, `quantity`, `unitPrice`, `totalPrice`, đồng thời tính toán sẵn `roomPrice` và `servicesTotal`.
+    - Cập nhật hàm `openTripDetailModal` hỗ trợ fallback cả PascalCase và camelCase, định dạng số tiền chuẩn locale `vi-VN`.
+    - Thiết kế lại bảng phân tích chi tiết:
+      - Dòng Tiền phòng: `... ₫` (theo số đêm).
+      - Khối Dịch vụ bổ sung: Liệt kê từng dịch vụ (`Tên dịch vụ x{Số lượng} ({Đơn giá} ₫/lượt) -> {Thành tiền} ₫`).
+      - Dòng Ưu đãi mã giảm giá: `-... ₫` (nếu có).
+      - Dòng Tổng thanh toán: `... ₫` nổi bật.
+    - Sửa cú pháp thẻ Razor trên card `x@(s.Quantity)` và thêm thuộc tính `data-bs-toggle="modal"` vào nút "Chi tiết đơn".
+  - **OwnerController.cs (Backend API)**:
+    - Bổ sung nạp `.Include(b => b.DonDatPhongDichVus).ThenInclude(d => d.DichVu)` và `.Include(b => b.GiamGia)`.
+    - Tính toán `calculatedTotal = Math.Max(0, roomSubtotal + servicesSubtotal - discount)` chuẩn xác cho các đơn chưa có bản ghi `ThanhToan`.
+  - **Dashboard.cshtml (Chủ cơ sở)**:
+    - Cập nhật hàm `openBookingDetailModal` hiển thị rõ đơn giá, số lượng và thành tiền của từng dịch vụ bổ sung.
+* **Kết quả kiểm thử**:
+  - Thẻ đơn #23 của khách: Tiền phòng (1 đêm) 450.000 ₫ + Dịch vụ Bếp nướng BBQ than hoa x1 (200.000 ₫/lượt) 200.000 ₫ = Tổng thanh toán 650.000 ₫.
+  - Modal "Chi tiết đơn #23" hiển thị đầy đủ, sắc nét, minh bạch từng khoản tiền.
+
+---
+
+### 8.9. Khắc Phục Lỗi Reset Timer Mã QR Thanh Toán: Đếm 30 Phút Thực Tế Kể Từ Khi Tạo Đơn & Tự Động Hủy Đơn Sau 30 Phút
+
+* **Hiện tượng**:
+  - Bộ đếm thời gian (countdown timer) của mã QR thanh toán trên trang `/Home/Checkout` bị reset lại 30:00 từ đầu mỗi lần người dùng F5 refresh trang.
+  - Nếu khách hàng thoát trang mà chưa thanh toán rồi quay lại sau (ví dụ sau 15 phút), timer vẫn bắt đầu lại 30:00 thay vì hiển thị thời gian còn lại thực tế.
+  - Sau 30 phút, nếu khách không thanh toán thì đơn hàng vẫn giữ nguyên trạng thái `ChoThanhToan` nếu không có tương tác từ trình duyệt của khách.
+* **Nguyên nhân**:
+  1. Trang `Checkout.cshtml` gán cứng biến JavaScript `let timeInSecs = 30 * 60;`, không có liên kết với thời điểm tạo đơn hàng thực tế trong CSDL (`DonDatPhong.NgayDat`).
+  2. DTO `BookingResponse` và Model `Booking` phía Web không chứa trường `CreatedAt` (`NgayDat`).
+  3. Action `Checkout` trong `HomeController.cs` không kiểm tra thời hạn 30 phút, không truyền số giây còn lại xuống View.
+  4. Endpoint API `bookings/{id}/expire` trước đây thực hiện xóa cứng `db.DonDatPhongs.Remove(booking)` thay vì chuyển trạng thái `TrangThai = "DaHuy"`.
+* **Biện pháp khắc phục**:
+  - **API DTOs & Models**:
+    - Bổ sung `DateTime? CreatedAt = null` vào `BookingResponse` (`BookingDtos.cs`) và `Booking` (`ApiModels.cs`).
+    - Trong `BookingsController.ToResponse`, truyền `DateTime.SpecifyKind(booking.NgayDat, DateTimeKind.Utc)`.
+  - **HomeController.cs**:
+    - Trong action `Checkout`:
+      - Kiểm tra nếu trạng thái khác `ChoThanhToan`/`Pending`, chuyển hướng về Trips kèm thông báo phù hợp.
+      - Tính toán: $\text{remainingSeconds} = \max\Big(0, \,(\text{CreatedAt} + 30\text{ phút}) - \text{DateTime.UtcNow}\Big)$.
+      - Nếu $\text{remainingSeconds} \le 0$: Gọi `api.ExpireBookingAsync` để hủy đơn ngay lập tức, thông báo "Thời hạn thanh toán 30 phút đã kết thúc" và chuyển hướng về Trips.
+      - Nếu còn hạn: Truyền `remainingSeconds` xuống `ViewBag.RemainingSeconds`.
+    - Trong `CheckPaymentStatus`: Bổ sung cờ `isCancelled` để client nhận biết đơn đã bị hủy từ server.
+  - **Checkout.cshtml**:
+    - Khởi tạo giá trị chuỗi thời gian ngay từ Razor (`initTimeStr`) để tránh hiện tượng nhảy số 30:00 khi trang vừa render.
+    - JavaScript khởi tạo mốc đích: `targetExpiryTimestamp = Date.now() + (serverRemainingSecs * 1000)`.
+    - Tính chênh lệch `diffMs = targetExpiryTimestamp - Date.now()` trong mỗi tick của timer. Cách này đảm bảo đếm đúng từng giây ngay cả khi trình duyệt bóp băng thông/throttle tab chạy ngầm khi khách mở app ngân hàng, và **hoàn toàn không bị reset khi refresh trang**.
+    - Khi hết giờ ($\le 0$): Tự động gọi API hủy đơn, thông báo alert và chuyển hướng về trang Chuyến đi.
+  - **Background Worker & Lazy Check**:
+    - `ExpiredBookingCleanupService.cs`: Tăng tần suất quét lên mỗi **30 giây** (thay vì 1 phút); tự động quét các đơn `ChoThanhToan` hoặc `Pending` có `NgayDat <= DateTime.UtcNow.AddMinutes(-30)` và chưa thanh toán để chuyển sang `TrangThai = "DaHuy"`, giải phóng `LichLuuTru` về `"Trống"`.
+    - `BookingsController.cs`: Bổ sung Lazy Check tự động cập nhật đơn quá hạn trong `GetMine()` và `GetById()`, đảm bảo trạng thái "Đã hủy" được phản ánh tức thì.
+    - Sửa `Expire` endpoint từ xóa đơn (`Remove`) sang `booking.TrangThai = "DaHuy"`.
+  - **Trips.cshtml**:
+    - Hiển thị badge `Hạn thanh toán: còn ~X phút` trực tiếp trên card đơn hàng `ChoThanhToan`.
+    - Trong Modal "Chi tiết đơn", hiển thị thanh cảnh báo thời hạn thanh toán 30 phút kèm nút "Thanh toán ngay".
+* **Kết quả kiểm thử thực tế (Browser Subagent Automation)**:
+  - Tạo đơn đặt phòng mới `#24`: Mở trang thanh toán lúc `29:53`.
+  - Chờ 4 giây và F5 Refresh trang: Timer tiếp tục đếm xuống `29:46` (**xác nhận không hề bị reset**).
+  - Thoát ra trang Trips: Thẻ đơn và Modal hiển thị đúng huy hiệu hạn thanh toán còn lại.
+
+---
+
+### 8.10. Tích Hợp Hoàn Chỉnh Hệ Thống Sao Lưu & Phục Hồi Cơ Sở Dữ Liệu Sau Khi Deploy (`plan.md`)
+
+* **Mục tiêu**: Xây dựng giải pháp sao lưu và phục hồi CSDL SQL Server đáp ứng tiêu chuẩn vận hành thực tế kể cả sau khi triển khai hệ thống lên Cloud / VPS / Docker (Production Readiness).
+* **Kết quả thực hiện**:
+  1. **Backend API (`API/Services/Database/`)**:
+     - `DatabaseMaintenanceService.cs`: Thực thi các lệnh T-SQL nén sao lưu `WITH COMPRESSION`, ngắt kết nối an toàn `ALTER DATABASE [HOMESTAY_DB] SET SINGLE_USER WITH ROLLBACK IMMEDIATE`, khôi phục dữ liệu `RESTORE DATABASE ... WITH REPLACE`, và chuyển lại `MULTI_USER`.
+     - `DatabaseController.cs`: Cung cấp 7 API endpoints chuẩn RESTful (`status`, `backups`, `backup`, `download`, `restore`, `restore/upload`, `schedule`) được bảo vệ nghiêm ngặt bằng phân quyền `[Authorize(Roles = "ADMIN")]`.
+     - Hỗ trợ stream tệp dung lượng lớn với `[RequestSizeLimit(1_073_741_824)]` (1 GB) và `FileStreamResult`.
+     - `AutomatedBackupHostedService.cs`: Dịch vụ chạy nền tự động sao lưu định kỳ hàng ngày (02:00 AM) và tự động dọn dẹp các tệp cũ hơn 14 ngày (`CleanOldBackupsAsync`).
+  2. **Desktop Admin WPF (`HomestaySystem`)**:
+     - `BaoTriHeThongViewModel.cs` & `HttpAdminService.cs`: Xóa bỏ 100% các đường dẫn ổ đĩa hardcoded; kết nối HTTP RESTful với API để lấy trạng thái CSDL, kích hoạt sao lưu, tải tệp `.bak` về máy cá nhân từ xa, hoặc upload file từ máy cá nhân lên server để khôi phục.
+     - `BaoTriHeThongView.xaml`: Thiết kế giao diện quản trị chuyên nghiệp với thẻ KPI Database, bảng lịch sử bản sao lưu và hộp thoại xác thực bảo mật 2 lớp khi khôi phục CSDL.
+  3. **Trạng thái**: Đã hoàn thành 100% cả 4 giai đoạn trong [`plan.md`](file:///d:/Homestay/plan.md).
+
+---
+
+### 8.11. Bảng Tổng Hợp Kiểm Thử & Trạng Thái Toàn Bộ Hệ Thống (Full System Verification Matrix)
+
+| Phân hệ / Thành phần | Công nghệ / Nền tảng | Trạng thái Build | Trạng thái Vận hành | Ghi chú & Đánh giá |
+| :--- | :--- | :---: | :---: | :--- |
+| **Backend API** | ASP.NET Core 8.0 RESTful API | **0 Lỗi, 0 Cảnh báo** | Đang chạy tại `http://localhost:5176` | Sẵn sàng 100%: JWT Auth, Booking, Dịch vụ, VNPay, Backup/Restore CSDL, HostedServices |
+| **Web Client** | ASP.NET Core 8.0 MVC Razor | **0 Lỗi, 0 Cảnh báo** | Đang chạy tại `http://localhost:5280` | Sẵn sàng 100%: Đặt phòng, VNPay-QR Timer 30p chuẩn, Chi tiết đơn bóc tách tiền, Đánh giá, Hoàn tiền |
+| **Desktop Admin** | WPF .NET 8 / MVVM Pattern | **0 Lỗi, 2 Cảnh báo nhẹ (CS1998)** | Sẵn sàng chạy | Sẵn sàng 100%: Kiểm duyệt Homestay, Quyết toán 85/15, Bảo trì sao lưu & phục hồi CSDL từ xa |
+| **Cơ sở dữ liệu** | Microsoft SQL Server (`HOMESTAY_DB`) | **Online & Đầy đủ 21 Bảng** | Localhost & Sẵn sàng Deploy | Schema chuẩn hóa, Index `IX_ChiTietDon_MaPhong`, các ràng buộc Default, FK và Cascade an toàn |
+
+---
+*Stayly Homestay Management System — Cập nhật ngày 11/10/2026.*
 

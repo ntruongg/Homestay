@@ -82,10 +82,27 @@
                         ? booking.PropertyImage 
                         : "https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=600&q=80";
 
+                    var nightsCount = Math.Max(1, (booking.CheckOut.Date - booking.CheckIn.Date).Days);
+                    var cardServicesTotal = booking.Services?.Sum(s => s.TotalPrice) ?? 0;
+                    var cardRoomTotal = booking.TotalAmount + booking.DiscountAmount - cardServicesTotal;
+
                     <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
                         <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center">
                             <span class="fw-bold text-muted small"><i class="bi bi-receipt me-1"></i> Mã đơn: #@booking.Id</span>
-                            <span class="badge @badgeClass rounded-pill px-3 py-2 fw-semibold">@statusText</span>
+                            <div class="d-flex align-items-center gap-2">
+                                @if (booking.Status == "ChoThanhToan" && booking.CreatedAt.HasValue)
+                                {
+                                    var remainingSecs = Math.Max(0, (int)(booking.CreatedAt.Value.AddMinutes(30) - DateTime.UtcNow).TotalSeconds);
+                                    var remainingMins = (int)Math.Ceiling(remainingSecs / 60.0);
+                                    if (remainingMins > 0)
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-2 fw-semibold small">
+                                            <i class="bi bi-clock-history me-1"></i> Hạn thanh toán: còn ~@remainingMins phút
+                                        </span>
+                                    }
+                                }
+                                <span class="badge @badgeClass rounded-pill px-3 py-2 fw-semibold">@statusText</span>
+                            </div>
                         </div>
                         <div class="card-body p-4">
                             <div class="row align-items-center">
@@ -104,18 +121,58 @@
                                         <span>@booking.Adults người lớn, @booking.Children trẻ em</span>
                                     </div>
                                     
+                                    @if (booking.Services != null && booking.Services.Any())
+                                    {
+                                        <div class="mb-2 bg-light p-3 rounded-3 border">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-navy small fw-bold">
+                                                    <i class="bi bi-bell-fill text-primary me-1"></i>Dịch vụ đã chọn (@booking.Services.Count):
+                                                </span>
+                                                <span class="small fw-bold text-success">+@cardServicesTotal.ToString("N0") ₫</span>
+                                            </div>
+                                            <div class="d-flex flex-column gap-1">
+                                                @foreach (var s in booking.Services)
+                                                {
+                                                    <div class="d-flex justify-content-between align-items-center small py-1 @(s != booking.Services.Last() ? "border-bottom" : "")">
+                                                        <div>
+                                                            <span class="fw-semibold text-navy">@s.Name</span>
+                                                            <span class="badge bg-white text-dark border ms-1">x@(s.Quantity)</span>
+                                                            <span class="text-muted ms-1">(@s.UnitPrice.ToString("N0") ₫/lượt)</span>
+                                                        </div>
+                                                        <span class="fw-bold text-dark">@s.TotalPrice.ToString("N0") ₫</span>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+
                                     @if (!string.IsNullOrEmpty(booking.PromoCode))
                                     {
-                                        <div class="d-inline-flex align-items-center bg-light text-success rounded-pill px-3 py-1 fw-semibold small">
+                                        <div class="d-inline-flex align-items-center bg-light text-success rounded-pill px-3 py-1 fw-semibold small mb-2">
                                             <i class="bi bi-tag-fill me-1"></i> Mã @booking.PromoCode (-@booking.DiscountAmount.ToString("N0") ₫)
                                         </div>
                                     }
                                 </div>
                                 <div class="col-md-4 text-md-end">
                                     <div class="text-muted small mb-1">Tổng thanh toán</div>
-                                    <h4 class="fw-bold text-primary mb-3">@booking.TotalAmount.ToString("N0") ₫</h4>
+                                    <h4 class="fw-bold text-primary mb-2">@booking.TotalAmount.ToString("N0") ₫</h4>
+                                    
+                                    <div class="small text-muted mb-3 d-flex flex-column align-items-md-end gap-1">
+                                        <div>Tiền phòng (@nightsCount đêm): <strong class="text-dark">@cardRoomTotal.ToString("N0") ₫</strong></div>
+                                        @if (cardServicesTotal > 0)
+                                        {
+                                            <div class="text-success">Dịch vụ bổ sung: <strong class="text-success">+@cardServicesTotal.ToString("N0") ₫</strong></div>
+                                        }
+                                        @if (booking.DiscountAmount > 0)
+                                        {
+                                            <div class="text-danger">Ưu đãi giảm giá (@booking.PromoCode): <strong class="text-danger">-@booking.DiscountAmount.ToString("N0") ₫</strong></div>
+                                        }
+                                    </div>
                                     
                                     <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="openTripDetailModal(@booking.Id)" data-bs-toggle="modal" data-bs-target="#tripDetailModal">
+                                            <i class="bi bi-receipt me-1"></i> Chi tiết đơn
+                                        </button>
                                         @if (booking.Status == "ChoThanhToan")
                                         {
                                             <a href="/Home/Checkout?bookingId=@booking.Id" class="btn btn-primary btn-sm rounded-pill px-3">
@@ -299,7 +356,237 @@
     </div>
 </div>
 
+<!-- Modal Chi tiết đơn đặt phòng -->
+<div class="modal fade" id="tripDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 560px;">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom pb-3">
+                <h5 class="modal-title fw-bold text-navy" id="tdModalTitle">
+                    <i class="bi bi-receipt me-2 text-primary"></i>Chi tiết đơn đặt phòng
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="bg-light p-3 rounded-4 mb-3">
+                    <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                        <span class="text-muted small">Cơ sở lưu trú:</span>
+                        <strong class="text-navy small" id="tdPropName">--</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                        <span class="text-muted small">Phòng:</span>
+                        <span class="text-dark small fw-semibold" id="tdRooms">--</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                        <span class="text-muted small">Thời gian lưu trú:</span>
+                        <span class="text-dark small" id="tdDates">--</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                        <span class="text-muted small">Số lượng khách:</span>
+                        <span class="text-dark small" id="tdGuests">--</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                        <span class="text-muted small">Trạng thái đơn:</span>
+                        <span class="badge rounded-pill px-3 py-1" id="tdStatusBadge">--</span>
+                    </div>
+
+                    <!-- Thanh cảnh báo thời hạn thanh toán (nếu đơn chưa thanh toán) -->
+                    <div id="tdPaymentWarning" class="alert alert-warning py-2 px-3 small d-flex align-items-center justify-content-between mb-3 d-none">
+                        <div>
+                            <i class="bi bi-clock-history text-danger me-1"></i>
+                            <span id="tdPaymentWarningText">Thời hạn thanh toán: 30 phút kể từ lúc đặt phòng.</span>
+                        </div>
+                        <a id="tdPaymentBtn" href="#" class="btn btn-primary btn-sm rounded-pill px-3 py-1">Thanh toán ngay</a>
+                    </div>
+                    
+                    <!-- Bảng phân tích chi phí -->
+                    <div class="bg-white p-3 rounded-3 border mt-3 mb-1">
+                        <div class="small fw-bold text-navy mb-2 border-bottom pb-1">
+                            <i class="bi bi-calculator me-1 text-primary"></i>Bảng chi tiết các khoản tiền:
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 small text-muted">
+                            <span id="tdRoomPriceLabel">Tiền phòng:</span>
+                            <span class="text-dark fw-bold" id="tdRoomPrice">0 ₫</span>
+                        </div>
+
+                        <!-- Dịch vụ bổ sung -->
+                        <div id="tdServicesSection" class="mb-2">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <!-- Giảm giá -->
+                        <div id="tdDiscountSection" class="mb-2 text-success small d-none">
+                            <div class="d-flex justify-content-between">
+                                <span id="tdDiscountLabel">Mã giảm giá:</span>
+                                <span class="fw-bold" id="tdDiscountVal">-0 ₫</span>
+                            </div>
+                        </div>
+
+                        <!-- Tổng thanh toán -->
+                        <div class="d-flex justify-content-between pt-2 border-top">
+                            <div>
+                                <strong class="text-navy">Tổng thanh toán:</strong>
+                                <span class="text-muted d-block small" style="font-size: 0.75rem;">(Bao gồm tiền phòng &amp; dịch vụ)</span>
+                            </div>
+                            <strong class="text-primary fs-5" id="tdTotalAmount">0 ₫</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    const tripsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Select(b => {
+        var sList = b.Services ?? new List<Web.Models.BookingServiceItem>();
+        var sTotal = sList.Sum(s => s.TotalPrice);
+        var rPrice = b.TotalAmount + b.DiscountAmount - sTotal;
+        var nightsCount = Math.Max(1, (b.CheckOut.Date - b.CheckIn.Date).Days);
+        return new {
+            id = b.Id,
+            propTitle = !string.IsNullOrWhiteSpace(b.PropertyName) ? b.PropertyName : "Homestay nghỉ dưỡng",
+            rooms = b.RoomNumbers != null && b.RoomNumbers.Any() ? string.Join(", ", b.RoomNumbers.Select(r => "Phòng " + r)) : string.Join(", ", b.RoomIds),
+            checkIn = b.CheckIn.ToString("dd/MM/yyyy"),
+            checkOut = b.CheckOut.ToString("dd/MM/yyyy"),
+            nights = nightsCount,
+            guests = $"{b.Adults} người lớn, {b.Children} trẻ em",
+            status = b.Status,
+            promoCode = b.PromoCode,
+            discountAmount = b.DiscountAmount,
+            totalAmount = b.TotalAmount,
+            roomPrice = rPrice,
+            servicesTotal = sTotal,
+            createdAt = b.CreatedAt?.ToString("o"),
+            services = sList.Select(s => new {
+                serviceId = s.ServiceId,
+                name = s.Name,
+                quantity = s.Quantity,
+                unitPrice = s.UnitPrice,
+                totalPrice = s.TotalPrice
+            }).ToList()
+        };
+    })));
+
+    function openTripDetailModal(bookingId) {
+        const item = tripsData.find(x => x.id === bookingId);
+        if (!item) return;
+
+        document.getElementById('tdModalTitle').innerHTML = `<i class="bi bi-receipt me-2 text-primary"></i>Chi tiết đơn #${item.id}`;
+        document.getElementById('tdPropName').textContent = item.propTitle;
+        document.getElementById('tdRooms').textContent = item.rooms;
+        document.getElementById('tdDates').textContent = `${item.checkIn} - ${item.checkOut} (${item.nights} đêm)`;
+        document.getElementById('tdGuests').textContent = item.guests;
+
+        // Trạng thái badge
+        const badgeEl = document.getElementById('tdStatusBadge');
+        const statusMap = {
+            'ChoThanhToan': { text: 'Chờ thanh toán', cls: 'bg-warning text-dark' },
+            'Pending': { text: 'Chờ chủ duyệt', cls: 'bg-info text-dark' },
+            'ChoDuyet': { text: 'Chờ chủ duyệt', cls: 'bg-info text-dark' },
+            'Confirmed': { text: 'Đã xác nhận', cls: 'bg-primary text-white' },
+            'DaDuyet': { text: 'Đã xác nhận', cls: 'bg-primary text-white' },
+            'CheckedIn': { text: 'Đang lưu trú', cls: 'bg-success text-white' },
+            'DangLuuTru': { text: 'Đang lưu trú', cls: 'bg-success text-white' },
+            'Completed': { text: 'Đã hoàn tất', cls: 'bg-secondary text-white' },
+            'DaHoanTat': { text: 'Đã hoàn tất', cls: 'bg-secondary text-white' },
+            'Cancelled': { text: 'Đã hủy', cls: 'bg-danger text-white' },
+            'DaHuy': { text: 'Đã hủy', cls: 'bg-danger text-white' },
+            'RefundRequested': { text: 'Chờ duyệt hoàn tiền', cls: 'bg-warning text-dark' },
+            'YeuCauHoanTien': { text: 'Chờ duyệt hoàn tiền', cls: 'bg-warning text-dark' },
+            'Refunded': { text: 'Đã hoàn tiền', cls: 'bg-info text-dark' },
+            'DaHoanTien': { text: 'Đã hoàn tiền', cls: 'bg-info text-dark' }
+        };
+        const sInfo = statusMap[item.status] || { text: item.status, cls: 'bg-secondary text-white' };
+        badgeEl.textContent = sInfo.text;
+        badgeEl.className = `badge rounded-pill px-3 py-1 ${sInfo.cls}`;
+
+        // Xử lý cảnh báo hạn thanh toán nếu đơn là ChoThanhToan
+        const warnBox = document.getElementById('tdPaymentWarning');
+        if (item.status === 'ChoThanhToan') {
+            let remText = 'Thời hạn thanh toán: 30 phút kể từ lúc đặt phòng.';
+            if (item.createdAt) {
+                const createdMs = new Date(item.createdAt).getTime();
+                const expiryMs = createdMs + (30 * 60 * 1000);
+                const remSecs = Math.max(0, Math.ceil((expiryMs - Date.now()) / 1000));
+                const remMins = Math.ceil(remSecs / 60);
+                if (remMins > 0) {
+                    remText = `Đơn đang chờ thanh toán. Còn khoảng <strong>${remMins} phút</strong> trước khi tự động hủy.`;
+                } else {
+                    remText = `Đơn đã hết thời hạn thanh toán (30 phút) và đang được tự động chuyển sang trạng thái Đã hủy.`;
+                }
+            }
+            document.getElementById('tdPaymentWarningText').innerHTML = remText;
+            document.getElementById('tdPaymentBtn').href = `/Home/Checkout?bookingId=${item.id}`;
+            warnBox.classList.remove('d-none');
+        } else {
+            warnBox.classList.add('d-none');
+        }
+
+        // Dịch vụ và Tiền phòng
+        const svcs = item.services || [];
+        const totalSvc = item.servicesTotal != null ? item.servicesTotal : svcs.reduce((acc, cur) => acc + (cur.totalPrice || cur.TotalPrice || 0), 0);
+        const roomPriceEst = item.roomPrice != null ? item.roomPrice : (item.totalAmount + (item.discountAmount || 0) - totalSvc);
+
+        const roomPriceLabelEl = document.getElementById('tdRoomPriceLabel');
+        if (roomPriceLabelEl) {
+            roomPriceLabelEl.textContent = `Tiền phòng (${item.nights} đêm):`;
+        }
+        document.getElementById('tdRoomPrice').textContent = `${Number(roomPriceEst).toLocaleString('vi-VN')} ₫`;
+
+        const svcSec = document.getElementById('tdServicesSection');
+        if (svcs.length > 0) {
+            let html = `<div class="border-top pt-2 mt-2">
+                <div class="d-flex justify-content-between small fw-bold text-navy mb-2">
+                    <span><i class="bi bi-bell-fill text-primary me-1"></i>Dịch vụ đã chọn (${svcs.length}):</span>
+                    <span class="text-success fw-bold">+${Number(totalSvc).toLocaleString('vi-VN')} ₫</span>
+                </div>
+                <div class="bg-light p-2 rounded-3 border mb-2">`;
+            svcs.forEach(s => {
+                const sName = s.name || s.Name || 'Dịch vụ';
+                const sQty = s.quantity ?? s.Quantity ?? 1;
+                const sUnitPrice = s.unitPrice ?? s.UnitPrice ?? 0;
+                const sTotalPrice = s.totalPrice ?? s.TotalPrice ?? (sQty * sUnitPrice);
+
+                html += `<div class="d-flex justify-content-between align-items-center small py-1 border-bottom">
+                    <div>
+                        <span class="fw-semibold text-navy">${sName}</span>
+                        <span class="badge bg-white text-dark border ms-1">x${sQty}</span>
+                        <span class="text-muted ms-1">(${Number(sUnitPrice).toLocaleString('vi-VN')} ₫/lượt)</span>
+                    </div>
+                    <span class="fw-bold text-dark">+${Number(sTotalPrice).toLocaleString('vi-VN')} ₫</span>
+                </div>`;
+            });
+            html += `</div></div>`;
+            svcSec.innerHTML = html;
+        } else {
+            svcSec.innerHTML = `<div class="d-flex justify-content-between small text-muted border-top pt-2 mt-2">
+                <span>Dịch vụ bổ sung:</span>
+                <span>0 ₫ (Không có)</span>
+            </div>`;
+        }
+
+        // Giảm giá
+        const discSec = document.getElementById('tdDiscountSection');
+        if (item.promoCode && item.discountAmount > 0) {
+            discSec.classList.remove('d-none');
+            document.getElementById('tdDiscountLabel').textContent = `Mã ưu đãi (${item.promoCode}):`;
+            document.getElementById('tdDiscountVal').textContent = `-${Number(item.discountAmount).toLocaleString('vi-VN')} ₫`;
+        } else {
+            discSec.classList.add('d-none');
+        }
+
+        // Tổng tiền
+        document.getElementById('tdTotalAmount').textContent = `${Number(item.totalAmount).toLocaleString('vi-VN')} ₫`;
+
+        const modalEl = document.getElementById('tripDetailModal');
+        if (modalEl && window.bootstrap) {
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+    }
+
     function confirmCancelBooking(bookingId) {
         document.getElementById('cancelBookingId').value = bookingId;
         new bootstrap.Modal(document.getElementById('cancelBookingModal')).show();

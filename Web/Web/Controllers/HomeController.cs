@@ -941,7 +941,7 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
 
         if (input.Services != null)
         {
-            input.Services = input.Services.Where(s => s.Quantity > 0).ToList();
+            input.Services = input.Services.Where(s => s != null && s.Quantity > 0).ToList();
         }
 
         var result = await api.CreateBookingAsync(
@@ -968,6 +968,38 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
         var booking = bookings.FirstOrDefault(b => b.Id == bookingId);
 
         if (booking == null) return NotFound();
+
+        if (booking.Status is not ("ChoThanhToan" or "Pending"))
+        {
+            if (booking.Status == "DaHuy")
+            {
+                TempData["Error"] = $"Đơn đặt phòng #{booking.Id} đã bị hủy do hết thời hạn thanh toán (30 phút) hoặc theo yêu cầu.";
+            }
+            else
+            {
+                TempData["Info"] = $"Đơn đặt phòng #{booking.Id} đã được thanh toán thành công.";
+            }
+            return RedirectToAction(nameof(Trips));
+        }
+
+        // Tính toán thời gian thực tế còn lại kể từ lúc khách tạo đơn (NgayDat + 30 phút)
+        var createdAtUtc = booking.CreatedAt.HasValue 
+            ? DateTime.SpecifyKind(booking.CreatedAt.Value, DateTimeKind.Utc) 
+            : DateTime.UtcNow;
+
+        var expiryTimeUtc = createdAtUtc.AddMinutes(30);
+        var remainingSeconds = (int)Math.Max(0, (expiryTimeUtc - DateTime.UtcNow).TotalSeconds);
+
+        if (remainingSeconds <= 0)
+        {
+            await api.ExpireBookingAsync(booking.Id, token, cancellationToken);
+            TempData["Error"] = $"Thời hạn thanh toán 30 phút cho đơn #{booking.Id} đã kết thúc. Đơn đặt phòng đã tự động chuyển sang trạng thái Đã hủy.";
+            return RedirectToAction(nameof(Trips));
+        }
+
+        ViewBag.RemainingSeconds = remainingSeconds;
+        ViewBag.CreatedAtUtc = createdAtUtc.ToString("o");
+        ViewBag.ExpiryTimeUtc = expiryTimeUtc.ToString("o");
 
         // Tạo VNPay Payment URL
         var tmnCode = configuration["VnPay:TmnCode"] ?? "YOUR_VNP_TMNCODE";
@@ -1086,7 +1118,8 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
             if (booking == null) return NotFound();
 
             bool isPaid = booking.Status is "ChoDuyet" or "DaDuyet" or "Confirmed" or "Completed" or "DaHoanTat";
-            return Ok(new { isPaid, status = booking.Status });
+            bool isCancelled = booking.Status is "DaHuy" or "TuChoi";
+            return Ok(new { isPaid, isCancelled, status = booking.Status });
         }
         catch (Exception ex)
         {

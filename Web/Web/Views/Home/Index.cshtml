@@ -192,18 +192,22 @@
                         </div>
                     </div>
 
-                    <!-- 2. Loại hình lưu trú -->
+                    <!-- 2. Loại hình lưu trú (Chuẩn hóa đúng 2 loại hình của hệ thống: Homestay & Khách sạn) -->
                     <div class="filter-group">
                         <div class="filter-group-title">
                             <i class="bi bi-house-heart text-primary"></i>
                             <span>Loại hình lưu trú</span>
                         </div>
                         <div class="toggle-pills-wrap">
-                            <button type="button" class="filter-pill-btn active" data-filter="type" data-value="all" onclick="setTypeFilter(this, 'all')">Tất cả</button>
-                            <button type="button" class="filter-pill-btn" data-filter="type" data-value="Homestay" onclick="setTypeFilter(this, 'Homestay')">Homestay</button>
-                            <button type="button" class="filter-pill-btn" data-filter="type" data-value="Villa" onclick="setTypeFilter(this, 'Villa')">Villa</button>
-                            <button type="button" class="filter-pill-btn" data-filter="type" data-value="Căn hộ" onclick="setTypeFilter(this, 'Căn hộ')">Căn hộ</button>
-                            <button type="button" class="filter-pill-btn" data-filter="type" data-value="Bungalow" onclick="setTypeFilter(this, 'Bungalow')">Bungalow</button>
+                            <button type="button" class="filter-pill-btn active" data-filter="type" data-value="all" onclick="setTypeFilter(this, 'all')">
+                                <i class="bi bi-grid-fill me-1 small"></i>Tất cả
+                            </button>
+                            <button type="button" class="filter-pill-btn" data-filter="type" data-value="Homestay" onclick="setTypeFilter(this, 'Homestay')">
+                                <i class="bi bi-house-heart-fill me-1 small"></i>Homestay
+                            </button>
+                            <button type="button" class="filter-pill-btn" data-filter="type" data-value="Hotel" onclick="setTypeFilter(this, 'Hotel')">
+                                <i class="bi bi-building-fill me-1 small"></i>Khách sạn (Hotel)
+                            </button>
                         </div>
                     </div>
 
@@ -764,18 +768,12 @@
                 </li>
             `;
 
-            const start = (curPage - 1) * PAGE_SIZE + 1;
-            const end = Math.min(curPage * PAGE_SIZE, totalItems);
-
             container.innerHTML = `
                 <nav aria-label="Phân trang danh sách phòng">
                     <ul class="pagination pagination-md align-items-center mb-2 justify-content-center">
                         ${pagesHtml}
                     </ul>
                 </nav>
-                <div class="text-muted small text-center">
-                    Hiển thị <strong>${start} - ${end}</strong> trên tổng số <strong>${totalItems}</strong> homestay (15 phòng / trang)
-                </div>
             `;
         }
 
@@ -820,11 +818,19 @@
                 filtered = filtered.filter(r => r.price > 2000000);
             }
 
-            // 3. Property Type
+            // 3. Property Type (Hỗ trợ chuẩn xác Homestay và Hotel/Khách sạn)
             if (activeFilters.propertyType !== 'all') {
-                filtered = filtered.filter(r => 
-                    r.type.toLowerCase().includes(activeFilters.propertyType.toLowerCase())
-                );
+                const targetType = activeFilters.propertyType.toLowerCase();
+                filtered = filtered.filter(r => {
+                    const rType = (r.type || '').toLowerCase();
+                    if (targetType === 'hotel') {
+                        return rType.includes('hotel') || rType.includes('khách sạn') || rType.includes('khach san');
+                    }
+                    if (targetType === 'homestay') {
+                        return rType.includes('homestay');
+                    }
+                    return rType.includes(targetType);
+                });
             }
 
             // 4. Amenities

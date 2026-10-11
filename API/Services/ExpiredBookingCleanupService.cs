@@ -22,8 +22,8 @@ public sealed class ExpiredBookingCleanupService(
                 logger.LogError(ex, "Lỗi xảy ra trong quá trình quét và dọn dẹp đơn quá hạn thanh toán.");
             }
 
-            // Quét định kỳ mỗi 1 phút
-            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+            // Quét định kỳ mỗi 30 giây
+            await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
         }
     }
 
@@ -38,7 +38,7 @@ public sealed class ExpiredBookingCleanupService(
         var expiredBookings = await db.DonDatPhongs
             .Include(b => b.ChiTietDons)
             .Include(b => b.ThanhToan)
-            .Where(b => b.TrangThai == "ChoThanhToan" && b.ThanhToan == null && b.NgayDat <= cutoffTime)
+            .Where(b => (b.TrangThai == "ChoThanhToan" || b.TrangThai == "Pending") && b.ThanhToan == null && b.NgayDat <= cutoffTime)
             .ToListAsync(cancellationToken);
 
         if (expiredBookings.Count == 0) return;

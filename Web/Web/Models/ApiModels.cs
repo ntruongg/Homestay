@@ -14,6 +14,8 @@ public sealed record PropertySummary(
     double Rating = 0.0,
     int ReviewCount = 0);
 
+public sealed record RoomAmenityItem(int Id, string Name);
+
 public sealed record PropertyDetails(
     int Id,
     string Name,
@@ -23,6 +25,7 @@ public sealed record PropertyDetails(
     string? Type,
     IReadOnlyList<string> Images,
     IReadOnlyList<Room> Rooms,
+    IReadOnlyList<RoomAmenityItem>? Amenities = null,
     IReadOnlyList<ServiceItem>? Services = null);
 
 public sealed record ServiceItem(int Id, string Name, decimal Price, string? Description);
@@ -34,7 +37,8 @@ public sealed record Room(
     [property: JsonPropertyName("originalPrice")] decimal CurrentPrice,
     string? RoomStatus,
     string? RoomType,
-    IReadOnlyList<string> Images)
+    IReadOnlyList<string> Images,
+    IReadOnlyList<RoomAmenityItem>? Amenities = null)
 {
     [JsonIgnore]
     public decimal OriginalPrice => CurrentPrice;
@@ -65,7 +69,8 @@ public sealed record Booking(
     string? PropertyImage = null,
     bool HasReviewed = false,
     int? ReviewRating = null,
-    string? ReviewComment = null);
+    string? ReviewComment = null,
+    DateTime? CreatedAt = null);
 
 public sealed record AuthResult(
     string AccessToken,

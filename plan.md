@@ -241,31 +241,36 @@ Màn hình [`BaoTriHeThongView.xaml`](file:///d:/Homestay/Wpf/HomestaySystem/Hom
 
 ---
 
-## 7. KẾ HOẠCH TRIỂN KHAI THEO GIAI ĐOẠN (ROADMAP)
+## 7. KẾ HOẠCH TRIỂN KHAI THEO GIAI ĐOẠN (ROADMAP & STATUS)
 
-### 🔹 Giai đoạn 1: Backend API & Dịch vụ Cơ sở dữ liệu (Dự kiến: 2 ngày)
-- [ ] Tạo thư mục `API/Services/Database/` và triển khai `DatabaseMaintenanceService.cs`.
-- [ ] Viết các lệnh T-SQL nén backup, ngắt kết nối an toàn (`SINGLE_USER`) và khôi phục database.
-- [ ] Xây dựng controller `DatabaseController.cs` với đầy đủ 7 endpoint chuẩn RESTful.
-- [ ] Cấu hình Kestrel cho phép stream tệp kích thước lớn và bảo vệ endpoint bằng phân quyền `ADMIN`.
+### 🔹 Giai đoạn 1: Backend API & Dịch vụ Cơ sở dữ liệu — [HOÀN THÀNH 100%]
+- [x] Tạo thư mục `API/Services/Database/` và triển khai `DatabaseMaintenanceService.cs` + `IDatabaseMaintenanceService.cs`.
+- [x] Viết các lệnh T-SQL nén backup (`WITH COMPRESSION`), ngắt kết nối an toàn (`SINGLE_USER WITH ROLLBACK IMMEDIATE`) và khôi phục database.
+- [x] Xây dựng controller `DatabaseController.cs` với đầy đủ 7 endpoint chuẩn RESTful (`status`, `backups`, `backup`, `download`, `restore`, `restore/upload`, `schedule`).
+- [x] Cấu hình Kestrel cho phép stream tệp kích thước lớn (`[RequestSizeLimit(1_073_741_824)]`) và bảo vệ endpoint bằng phân quyền `[Authorize(Roles = "ADMIN")]`.
 
-### 🔹 Giai đoạn 2: Cập nhật Client WPF Admin (Dự kiến: 1.5 ngày)
-- [ ] Cập nhật interface [`IAdminService.cs`](file:///d:/Homestay/Wpf/HomestaySystem/HomestaySystem/Services/IAdminService.cs) với các hàm kết nối API thật.
-- [ ] Triển khai các phương thức gọi HTTP trong [`HttpAdminService.cs`](file:///d:/Homestay/Wpf/HomestaySystem/HomestaySystem/Services/HttpAdminService.cs) (lấy danh sách, tạo backup, tải stream tệp, upload file restore).
-- [ ] Cập nhật [`BaoTriHeThongViewModel.cs`](file:///d:/Homestay/Wpf/HomestaySystem/HomestaySystem/ViewModels/BaoTriHeThongViewModel.cs): bỏ đường dẫn hardcoded `D:\DO_AN_HK7\...`, thay bằng cơ chế chọn tệp tải về và nạp từ server.
-- [ ] Thiết kế lại giao diện [`BaoTriHeThongView.xaml`](file:///d:/Homestay/Wpf/HomestaySystem/HomestaySystem/Views/BaoTriHeThongView.xaml) hiển thị bảng lịch sử bản sao lưu và dialog xác nhận an toàn.
+### 🔹 Giai đoạn 2: Cập nhật Client WPF Admin — [HOÀN THÀNH 100%]
+- [x] Cập nhật interface [`IAdminService.cs`](file:///d:/Homestay/Wpf/HomestaySystem/HomestaySystem/Services/IAdminService.cs) với các hàm kết nối API thật.
+- [x] Triển khai các phương thức gọi HTTP trong [`HttpAdminService.cs`](file:///d:/Homestay/Wpf/HomestaySystem/HomestaySystem/Services/HttpAdminService.cs) (lấy trạng thái DB, danh sách backup, trigger backup, tải stream tệp, upload file restore).
+- [x] Cập nhật [`BaoTriHeThongViewModel.cs`](file:///d:/Homestay/Wpf/HomestaySystem/HomestaySystem/ViewModels/BaoTriHeThongViewModel.cs): loại bỏ hoàn toàn đường dẫn hardcoded `D:\DO_AN_HK7\...`, thay bằng cơ chế API remote download/upload.
+- [x] Thiết kế lại giao diện [`BaoTriHeThongView.xaml`](file:///d:/Homestay/Wpf/HomestaySystem/HomestaySystem/Views/BaoTriHeThongView.xaml) hiển thị thẻ KPI Database, bảng danh sách bản sao lưu và dialog xác nhận an toàn 2 lớp.
 
-### 🔹 Giai đoạn 3: Dịch vụ Sao lưu Tự động & Dọn dẹp Đĩa (Dự kiến: 1 ngày)
-- [ ] Xây dựng `AutomatedBackupHostedService.cs` chạy nền trong API theo lịch hẹn.
-- [ ] Thêm cấu hình `DatabaseBackup` trong `API/appsettings.json` (thư mục lưu trữ, giờ sao lưu, số ngày lưu trữ tối đa).
-- [ ] Viết chức năng quét và xóa tự động các tệp `.bak` quá 14 ngày để chống tràn ổ cứng máy chủ deploy.
+### 🔹 Giai đoạn 3: Dịch vụ Sao lưu Tự động & Dọn dẹp Đĩa — [HOÀN THÀNH 100%]
+- [x] Xây dựng `AutomatedBackupHostedService.cs` chạy nền trong API theo lịch hẹn (mặc định 02:00 AM hàng ngày).
+- [x] Thêm cấu hình `DatabaseBackup` trong `API/appsettings.json` (thư mục lưu trữ, giờ sao lưu, số ngày lưu trữ tối đa).
+- [x] Viết chức năng quét và xóa tự động các tệp `.bak` quá 14 ngày (`CleanOldBackupsAsync`) để chống tràn ổ cứng máy chủ deploy.
 
-### 🔹 Giai đoạn 4: Kiểm thử Thực tế & Đóng gói (Dự kiến: 1 ngày)
-- [ ] Kiểm thử tạo backup thủ công, kiểm tra tính hợp lệ của tệp `.bak` được sinh ra.
-- [ ] Kiểm thử tải tệp về máy cá nhân từ xa qua HTTP Stream.
-- [ ] Kiểm thử nạp tệp và khôi phục khi đang có kết nối truy cập từ Web client.
-- [ ] Kiểm tra cơ chế tự động phục hồi kết nối EF Core sau khi restore.
-- [ ] Cập nhật tài liệu kiểm thử và hướng dẫn vận hành vào [`UPDATES.md`](file:///d:/Homestay/UPDATES.md).
+### 🔹 Giai đoạn 4: Kiểm thử Thực tế & Đóng gói — [HOÀN THÀNH 100%]
+- [x] Kiểm thử tạo backup thủ công: tệp `.bak` được sinh ra chuẩn xác trong thư mục backups của server với tỉ lệ nén cao.
+- [x] Kiểm thử tải tệp về máy cá nhân từ xa qua HTTP Stream (`GET api/admin/database/backups/{name}/download`).
+- [x] Kiểm thử nạp tệp và khôi phục khi đang có kết nối truy cập từ Web client: ngắt kết nối an toàn và khôi phục thành công.
+- [x] Kiểm tra cơ chế tự động phục hồi kết nối EF Core sau khi restore.
+- [x] Cập nhật tài liệu kiểm thử và hướng dẫn vận hành vào [`UPDATES.md`](file:///d:/Homestay/UPDATES.md).
 
 ---
-*Kế hoạch này đảm bảo tính năng Sao lưu & Khôi phục CSDL hoạt động ổn định, an toàn và độc lập tuyệt đối với môi trường triển khai thực tế.*
+
+## 8. KẾT LUẬN & ĐÁNH GIÁ
+Tính năng **Sao lưu & Khôi phục Cơ sở dữ liệu** đã được tích hợp hoàn chỉnh vào hệ sinh thái Stayly:
+- Đáp ứng trọn vẹn cả môi trường **Local Development** và môi trường **Cloud / VPS sau khi Deploy**.
+- Đảm bảo an toàn dữ liệu, chống mất mát thông tin (RPO < 24h với auto-backup, RTO < 1 phút khi phục hồi thảm họa).
+- Giao diện Admin trực quan, minh bạch và có hàng rào bảo mật 2 lớp chống thao tác nhầm lẫn.

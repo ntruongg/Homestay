@@ -4,6 +4,10 @@
     ViewData["Title"] = "Thanh toán đơn đặt phòng #" + Model.Id;
     bool hasVnPayConfig = ViewBag.HasVnPayConfig is true;
     string? vnPayUrl = ViewBag.VnPayPaymentUrl as string;
+    int initRemainingSecs = ViewBag.RemainingSeconds is int s ? s : 1800;
+    int initM = initRemainingSecs / 60;
+    int initS = initRemainingSecs % 60;
+    string initTimeStr = $"{(initM < 10 ? "0" + initM : initM.ToString())}:{(initS < 10 ? "0" + initS : initS.ToString())}";
 }
 
 <div class="container py-5">
@@ -74,7 +78,7 @@
 
                                 <div class="timer-box mb-2">
                                     <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill fw-bold">
-                                        <i class="bi bi-clock-history me-1"></i> Mã hết hạn sau: <span id="countdownTimer">30:00</span>
+                                        <i class="bi bi-clock-history me-1"></i> Mã hết hạn sau: <span id="countdownTimer">@initTimeStr</span>
                                     </span>
                                 </div>
                             </div>
@@ -109,36 +113,95 @@
                                 </span>
                             </div>
                             <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                                <span class="text-muted">Thời gian nhận phòng:</span>
-                                <span class="fw-semibold">@Model.CheckIn.ToString("dd/MM/yyyy")</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                                <span class="text-muted">Thời gian trả phòng:</span>
-                                <span class="fw-semibold">@Model.CheckOut.ToString("dd/MM/yyyy")</span>
+                                <span class="text-muted">Thời gian lưu trú:</span>
+                                <span class="fw-semibold">@Model.CheckIn.ToString("dd/MM/yyyy") - @Model.CheckOut.ToString("dd/MM/yyyy") (@(Math.Max(1, (Model.CheckOut.Date - Model.CheckIn.Date).Days)) đêm)</span>
                             </div>
                             <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
                                 <span class="text-muted">Số lượng khách:</span>
                                 <span class="fw-semibold">@Model.Adults người lớn, @Model.Children trẻ em</span>
                             </div>
 
-                            @if (!string.IsNullOrEmpty(Model.PromoCode))
+                            @if (Model.Services != null && Model.Services.Any())
                             {
-                                <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                                    <span class="text-muted">Mã giảm giá đã áp dụng:</span>
-                                    <span class="badge bg-success text-white">@Model.PromoCode</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-3 border-bottom pb-2 text-success">
-                                    <span>Số tiền được giảm:</span>
-                                    <span class="fw-bold">-@Model.DiscountAmount.ToString("N0") ₫</span>
+                                <div class="mb-3 border-bottom pb-2">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="text-muted fw-bold"><i class="bi bi-bell-fill me-1 text-primary"></i> Dịch vụ đã chọn (@Model.Services.Count):</span>
+                                        <span class="fw-bold text-success">+@Model.Services.Sum(s => s.TotalPrice).ToString("N0") ₫</span>
+                                    </div>
+                                    <div class="bg-white p-3 rounded-3 border">
+                                        @foreach (var svc in Model.Services)
+                                        {
+                                            <div class="d-flex justify-content-between align-items-center small py-1 @(svc != Model.Services.Last() ? "border-bottom" : "")">
+                                                <div>
+                                                    <span class="fw-semibold text-navy">@svc.Name</span>
+                                                    <span class="badge bg-light text-dark border ms-1">x@(svc.Quantity)</span>
+                                                    <span class="text-muted ms-1">(@svc.UnitPrice.ToString("N0") ₫/lượt)</span>
+                                                </div>
+                                                <span class="fw-semibold text-dark">@svc.TotalPrice.ToString("N0") ₫</span>
+                                            </div>
+                                        }
+                                    </div>
                                 </div>
                             }
 
-                            <div class="d-flex justify-content-between align-items-center mt-4 p-3 bg-white rounded-3 shadow-sm">
-                                <span class="fs-5 fw-bold text-navy">Số tiền cần thanh toán:</span>
+                            @{
+                                var nightsCount = Math.Max(1, (Model.CheckOut.Date - Model.CheckIn.Date).Days);
+                                var totalSvc = Model.Services?.Sum(s => s.TotalPrice) ?? 0;
+                                var roomPriceEst = Model.TotalAmount + Model.DiscountAmount - totalSvc;
+                            }
+
+                            <!-- Bảng phân tích chi phí -->
+                            <div class="bg-white p-3 rounded-3 border mb-3">
+                                <div class="small fw-bold text-navy mb-2 border-bottom pb-1">Tóm tắt thanh toán:</div>
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span>Tiền phòng (@nightsCount đêm):</span>
+                                    <span>@roomPriceEst.ToString("N0") ₫</span>
+                                </div>
+                                @if (totalSvc > 0)
+                                {
+                                    <div class="d-flex justify-content-between small text-muted mb-1">
+                                        <span>Dịch vụ bổ sung:</span>
+                                        <span class="text-success">+@totalSvc.ToString("N0") ₫</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.PromoCode) && Model.DiscountAmount > 0)
+                                {
+                                    <div class="d-flex justify-content-between small text-success mb-1">
+                                        <span>Ưu đãi (@Model.PromoCode):</span>
+                                        <span class="fw-bold">-@Model.DiscountAmount.ToString("N0") ₫</span>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mt-3 p-3 bg-white rounded-3 shadow-sm border border-danger-subtle">
+                                <div>
+                                    <span class="fs-6 fw-bold text-navy d-block">Tổng số tiền cần thanh toán:</span>
+                                    <span class="small text-muted">(Đã bao gồm tiền phòng &amp; dịch vụ)</span>
+                                </div>
                                 <span class="fs-3 fw-bold text-danger">@Model.TotalAmount.ToString("N0") ₫</span>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thông báo Trạng thái Thanh toán Hiện đại (Thay thế alert) -->
+<div class="modal fade" id="checkoutNoticeModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content border-0 rounded-4 shadow-lg text-center p-4">
+            <div class="modal-body p-0">
+                <div id="noticeModalIconWrap" class="mb-3 d-inline-flex justify-content-center align-items-center rounded-circle" style="width: 80px; height: 80px; background-color: #ecfdf5;">
+                    <i id="noticeModalIcon" class="bi bi-check-circle-fill text-success fs-1"></i>
+                </div>
+                <h4 id="noticeModalTitle" class="fw-bold text-navy mb-2">Thanh toán thành công!</h4>
+                <p id="noticeModalMessage" class="text-muted small mb-4">Giao dịch đã được xác nhận. Đang chuyển hướng...</p>
+                <div class="d-grid gap-2">
+                    <button type="button" id="noticeModalBtn" class="btn btn-primary btn-lg rounded-pill fw-bold py-2 shadow-sm" onclick="handleNoticeModalConfirm()">
+                        Xem chuyến đi của tôi
+                    </button>
                 </div>
             </div>
         </div>
@@ -162,16 +225,70 @@
             }
         }
 
-        // 1. Countdown timer for 30 minutes
-        let timeInSecs = 30 * 60;
+        // Modal thông báo hiện đại thay thế alert
+        let noticeRedirectUrl = '/Home/Trips';
+        function showCheckoutNoticeModal({ type, title, message, btnText, redirectUrl }) {
+            noticeRedirectUrl = redirectUrl || '/Home/Trips';
+            const iconWrap = document.getElementById('noticeModalIconWrap');
+            const iconEl = document.getElementById('noticeModalIcon');
+            const titleEl = document.getElementById('noticeModalTitle');
+            const msgEl = document.getElementById('noticeModalMessage');
+            const btnEl = document.getElementById('noticeModalBtn');
+
+            if (type === 'success') {
+                if (iconWrap) iconWrap.style.backgroundColor = '#ecfdf5';
+                if (iconEl) iconEl.className = 'bi bi-check-circle-fill text-success fs-1';
+                if (btnEl) btnEl.className = 'btn btn-success btn-lg rounded-pill fw-bold py-2 shadow-sm';
+            } else if (type === 'expired' || type === 'cancelled') {
+                if (iconWrap) iconWrap.style.backgroundColor = '#fef2f2';
+                if (iconEl) iconEl.className = 'bi bi-clock-history text-danger fs-1';
+                if (btnEl) btnEl.className = 'btn btn-danger btn-lg rounded-pill fw-bold py-2 shadow-sm';
+            }
+
+            if (titleEl) titleEl.textContent = title;
+            if (msgEl) msgEl.textContent = message;
+            if (btnEl && btnText) btnEl.textContent = btnText;
+
+            const modalEl = document.getElementById('checkoutNoticeModal');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                const modalInstance = new bootstrap.Modal(modalEl);
+                modalInstance.show();
+                setTimeout(() => {
+                    window.location.href = noticeRedirectUrl;
+                }, 3500);
+            } else {
+                alert(message);
+                window.location.href = noticeRedirectUrl;
+            }
+        }
+
+        function handleNoticeModalConfirm() {
+            window.location.href = noticeRedirectUrl;
+        }
+
+        // 1. Countdown timer cho 30 phút thực tế kể từ lúc tạo đơn
+        const serverRemainingSecs = Math.max(0, parseInt('@(ViewBag.RemainingSeconds ?? 1800)', 10));
+        const targetExpiryTimestamp = Date.now() + (serverRemainingSecs * 1000);
         const display = document.getElementById('countdownTimer');
 
+        function updateDisplay(secs) {
+            if (!display) return;
+            const m = Math.floor(secs / 60);
+            const s = secs % 60;
+            display.textContent = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+        }
+
+        updateDisplay(serverRemainingSecs);
+
         const timer = setInterval(async function () {
-            timeInSecs--;
-            if (timeInSecs <= 0) {
+            const now = Date.now();
+            const diffMs = targetExpiryTimestamp - now;
+            const diffSecs = Math.max(0, Math.ceil(diffMs / 1000));
+
+            if (diffSecs <= 0) {
                 clearInterval(timer);
                 clearInterval(pollInterval);
-                if (display) display.textContent = "00:00";
+                updateDisplay(0);
 
                 try {
                     await fetch('/Home/ExpireBooking?bookingId=@Model.Id', {
@@ -184,16 +301,19 @@
                     console.error('Lỗi khi hủy đơn quá hạn:', e);
                 }
 
-                alert("Thời hạn thanh toán (30 phút) đã kết thúc! Đơn đặt phòng của bạn đã tự động được hủy và giải phóng phòng.");
-                window.location.href = '/Home/Trips';
+                showCheckoutNoticeModal({
+                    type: 'expired',
+                    title: 'Hết thời hạn thanh toán (30 phút)',
+                    message: 'Thời hạn thanh toán đã kết thúc! Đơn đặt phòng của bạn đã tự động chuyển sang trạng thái Đã hủy và giải phóng phòng.',
+                    btnText: 'Quay lại chuyến đi',
+                    redirectUrl: '/Home/Trips'
+                });
             } else {
-                let m = Math.floor(timeInSecs / 60);
-                let s = timeInSecs % 60;
-                if (display) display.textContent = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+                updateDisplay(diffSecs);
             }
         }, 1000);
 
-        // 2. Real-time status polling (tự động phát hiện khi khách quét QR hoặc thanh toán xong trên VNPay)
+        // 2. Real-time status polling (tự động phát hiện khi khách quét QR hoặc thanh toán xong trên VNPay hoặc đơn bị hủy)
         const pollInterval = setInterval(async function () {
             try {
                 const response = await fetch('/Home/CheckPaymentStatus?bookingId=@Model.Id');
@@ -202,8 +322,23 @@
                     if (data.isPaid) {
                         clearInterval(pollInterval);
                         clearInterval(timer);
-                        alert("Thanh toán VNPay thành công! Đơn đặt phòng đã được tự động chuyển sang trạng thái 'Chờ chủ cơ sở duyệt'.");
-                        window.location.href = '/Home/Trips';
+                        showCheckoutNoticeModal({
+                            type: 'success',
+                            title: 'Thanh toán VNPay thành công!',
+                            message: 'Giao dịch VNPay hoàn tất. Đơn đặt phòng của bạn đã được chuyển sang trạng thái Chờ chủ cơ sở duyệt.',
+                            btnText: 'Xem chuyến đi của tôi',
+                            redirectUrl: '/Home/Trips'
+                        });
+                    } else if (data.isCancelled) {
+                        clearInterval(pollInterval);
+                        clearInterval(timer);
+                        showCheckoutNoticeModal({
+                            type: 'cancelled',
+                            title: 'Đơn đặt phòng đã bị hủy',
+                            message: 'Đơn đặt phòng này đã tự động chuyển sang trạng thái Đã hủy do hết thời hạn thanh toán (30 phút).',
+                            btnText: 'Quay lại chuyến đi',
+                            redirectUrl: '/Home/Trips'
+                        });
                     }
                 }
             } catch (err) {

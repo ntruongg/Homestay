@@ -181,7 +181,7 @@ public sealed class HomestayApiClient(HttpClient http)
         CancellationToken cancellationToken = default)
     {
         var selectedServices = input.Services?
-            .Where(s => s.Quantity > 0)
+            .Where(s => s != null && s.Quantity > 0)
             .Select(s => new { s.ServiceId, s.Quantity })
             .ToList();
 

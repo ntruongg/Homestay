@@ -90,19 +90,31 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="🔍" FontSize="13" Margin="4,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBox Grid.Column="1" Text=""
+                                    <TextBox Grid.Column="1" Text="{Binding TuKhoaTimKiem, UpdateSourceTrigger=PropertyChanged}"
+                                             x:Name="txtSearchVoucher"
                                              BorderThickness="0" Background="Transparent" VerticalAlignment="Center"
                                              FontSize="12" Foreground="{StaticResource MauChuChinh}"/>
                                     <TextBlock Grid.Column="1" Text="Tìm kiếm mã voucher (STAYLY...), tên sự kiện..." FontSize="12" Foreground="#94A3B8"
-                                               VerticalAlignment="Center" Margin="2,0,0,0" IsHitTestVisible="False"/>
+                                               VerticalAlignment="Center" Margin="2,0,0,0" IsHitTestVisible="False">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Text, ElementName=txtSearchVoucher}" Value="">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </Grid>
                             </Border>
 
                             <!-- ComboBox trạng thái chuẩn bo tròn 8px hiện đại không lộ khung xám -->
-                            <ComboBox Grid.Column="2" SelectedIndex="0" Height="36" VerticalAlignment="Center">
-                                <ComboBoxItem Content="Tất cả trạng thái" IsSelected="True"/>
-                                <ComboBoxItem Content="Đang áp dụng (Active)"/>
-                                <ComboBoxItem Content="Đã khóa / Hết hạn"/>
+                            <ComboBox Grid.Column="2" SelectedValue="{Binding BoLocTrangThai}" SelectedValuePath="Tag" Height="36" VerticalAlignment="Center">
+                                <ComboBoxItem Content="Tất cả trạng thái" Tag="TatCa" IsSelected="True"/>
+                                <ComboBoxItem Content="Đang áp dụng (Active)" Tag="HoatDong"/>
+                                <ComboBoxItem Content="Đã khóa / Hết hạn" Tag="Khoa"/>
                             </ComboBox>
 
                             <!-- Badge số lượng -->
@@ -206,7 +218,7 @@
                 <DataGrid ItemsSource="{Binding DanhSachKhuyenMai}" SelectedItem="{Binding KhuyenMaiDangChon}"
                               Style="{StaticResource StaylyDataGridStyle}"
                               IsReadOnly="True"
-                              RowHeight="54"
+                              RowHeight="48"
                               HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Auto"
                               ScrollViewer.HorizontalScrollBarVisibility="Auto"

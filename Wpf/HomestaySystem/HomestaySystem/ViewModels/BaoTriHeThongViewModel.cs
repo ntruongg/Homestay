@@ -67,15 +67,15 @@ namespace HomestaySystem.ViewModels
             }
         }
 
-        public string TenCSDL => Status?.DatabaseName ?? "HOMESTAY_DB";
-        public string PhienBanMayChu => Status?.ServerVersion ?? "Microsoft SQL Server";
-        public decimal DungLuongDataMB => Status?.DataSizeMB ?? 0;
-        public decimal DungLuongLogMB => Status?.LogSizeMB ?? 0;
-        public decimal TongDungLuongMB => Status?.TongDungLuongMB ?? 0;
-        public int SoBang => Status?.TotalTables ?? 0;
-        public string LanSaoLuuCuoi => Status?.LanSaoLuuCuoiText ?? "Chưa có bản ghi";
-        public int TongSoBanSaoLuu => Status?.TotalBackupsCount ?? DanhSachBanSaoLuu.Count;
-        public string TongDungLuongSaoLuu => Status?.TotalBackupsSizeFormatted ?? "0 MB";
+        public string TenCSDL { get => Status?.DatabaseName ?? "HOMESTAY_DB"; set { } }
+        public string PhienBanMayChu { get => Status?.ServerVersion ?? "Microsoft SQL Server"; set { } }
+        public decimal DungLuongDataMB { get => Status?.DataSizeMB ?? 0; set { } }
+        public decimal DungLuongLogMB { get => Status?.LogSizeMB ?? 0; set { } }
+        public decimal TongDungLuongMB { get => Status?.TongDungLuongMB ?? 0; set { } }
+        public int SoBang { get => Status?.TotalTables ?? 0; set { } }
+        public string LanSaoLuuCuoi { get => Status?.LanSaoLuuCuoiText ?? "Chưa có bản ghi"; set { } }
+        public int TongSoBanSaoLuu { get => Status?.TotalBackupsCount ?? DanhSachBanSaoLuu.Count; set { } }
+        public string TongDungLuongSaoLuu { get => Status?.TotalBackupsSizeFormatted ?? "0 MB"; set { } }
 
         public ObservableCollection<BackupItem> DanhSachBanSaoLuu
         {
@@ -163,9 +163,9 @@ namespace HomestaySystem.ViewModels
             }
         }
 
-        public string TrangThaiLichText => LichSaoLuu?.TrangThaiLichText ?? "Đang tải cấu hình...";
-        public string LanChayTiepTheoText => LichSaoLuu?.LanChayTiepTheoText ?? "02:00 AM VN hàng ngày";
-        public string LuuTruText => LichSaoLuu?.LuuTruText ?? "Lưu trữ 14 ngày";
+        public string TrangThaiLichText { get => LichSaoLuu?.TrangThaiLichText ?? "Đang tải cấu hình..."; set { } }
+        public string LanChayTiepTheoText { get => LichSaoLuu?.LanChayTiepTheoText ?? "02:00 AM VN hàng ngày"; set { } }
+        public string LuuTruText { get => LichSaoLuu?.LuuTruText ?? "Lưu trữ 14 ngày"; set { } }
 
         public bool LichTuDongBat
         {

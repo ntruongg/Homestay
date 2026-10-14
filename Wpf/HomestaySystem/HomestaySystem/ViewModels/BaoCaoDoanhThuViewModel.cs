@@ -181,12 +181,70 @@ namespace HomestaySystem.ViewModels
             set => SetProperty(ref _danhSachTopChuHome, value);
         }
 
+        // ================= DIALOG XÁC NHẬN QUYẾT TOÁN THỦ CÔNG =================
+        private DonDatPhong? _donDangQuyetToan;
+        private bool _hienThiDialogQuyetToan;
+        private string _maGiaoDichNhap = string.Empty;
+        private string _ghiChuNhap = string.Empty;
+
+        public DonDatPhong? DonDangQuyetToan
+        {
+            get => _donDangQuyetToan;
+            set
+            {
+                if (SetProperty(ref _donDangQuyetToan, value))
+                {
+                    OnPropertyChanged(nameof(LaDaQuyetToan));
+                    OnPropertyChanged(nameof(LaChuaQuyetToan));
+                    OnPropertyChanged(nameof(TieuDeDialogQuyetToan));
+                    OnPropertyChanged(nameof(PhuDeDialogQuyetToan));
+                    OnPropertyChanged(nameof(IconDialogQuyetToan));
+                    OnPropertyChanged(nameof(MauNenIconDialogQuyetToan));
+                }
+            }
+        }
+
+        public bool LaDaQuyetToan => DonDangQuyetToan?.TrangThaiQuyetToan == "DaQuyetToan";
+        public bool LaChuaQuyetToan => !LaDaQuyetToan;
+
+        public string TieuDeDialogQuyetToan => LaDaQuyetToan
+            ? "Biên Lai Quyết Toán & Đối Soát Ngân Hàng"
+            : "Xác Nhận Quyết Toán Cho Chủ Homestay";
+
+        public string PhuDeDialogQuyetToan => LaDaQuyetToan
+            ? "Đơn đặt phòng này đã hoàn tất giải ngân 85% cho Chủ nhà qua ngân hàng"
+            : "Chuyển khoản thủ công qua ngân hàng và đối soát mã giao dịch";
+
+        public string IconDialogQuyetToan => LaDaQuyetToan ? "📄" : "💳";
+        public string MauNenIconDialogQuyetToan => LaDaQuyetToan ? "#DCFCE7" : "#E0F2FE";
+
+        public bool HienThiDialogQuyetToan
+        {
+            get => _hienThiDialogQuyetToan;
+            set => SetProperty(ref _hienThiDialogQuyetToan, value);
+        }
+
+        public string MaGiaoDichNhap
+        {
+            get => _maGiaoDichNhap;
+            set => SetProperty(ref _maGiaoDichNhap, value);
+        }
+
+        public string GhiChuNhap
+        {
+            get => _ghiChuNhap;
+            set => SetProperty(ref _ghiChuNhap, value);
+        }
+
         // Commands
         public ICommand LocDuLieuCommand { get; }
         public ICommand DatLaiBoLocCommand { get; }
         public ICommand XuatBaoCaoCommand { get; }
         public ICommand ChonTabGiaoDichCommand { get; }
         public ICommand ChonTabXepHangCommand { get; }
+        public ICommand MoDialogQuyetToanCommand { get; }
+        public ICommand XacNhanQuyetToanCommand { get; }
+        public ICommand DongDialogQuyetToanCommand { get; }
 
         public BaoCaoDoanhThuViewModel(IAdminService adminService)
         {
@@ -198,6 +256,10 @@ namespace HomestaySystem.ViewModels
 
             ChonTabGiaoDichCommand = new RelayCommand(() => TabHienTai = 0);
             ChonTabXepHangCommand = new RelayCommand(() => TabHienTai = 1);
+
+            MoDialogQuyetToanCommand = new RelayCommand<DonDatPhong>(ThucHienMoDialogQuyetToan);
+            XacNhanQuyetToanCommand = new RelayCommand(async () => await ThucHienXacNhanQuyetToanAsync());
+            DongDialogQuyetToanCommand = new RelayCommand(() => HienThiDialogQuyetToan = false);
 
             _ = KhoiTaoAsync();
         }
@@ -234,84 +296,163 @@ namespace HomestaySystem.ViewModels
                 var dsDon = await _adminService.LayDanhSachDonTheoBoLocAsync(TuNgay, DenNgay, maChu);
                 DanhSachDon = new ObservableCollection<DonDatPhong>(dsDon);
 
-                // 1. TỔNG HỢP TOP HOMESTAY NỔI BẬT & ĐƯỢC YÊU THÍCH NHẤT
+                // Lấy toàn bộ đơn đặt phòng từ API để tổng hợp bảng xếp hạng Top Analytics thực tế
+                var tatCaDon = await _adminService.LayDanhSachDonDatAsync();
+                if (tatCaDon == null || tatCaDon.Count == 0)
+                {
+                    tatCaDon = DanhSachDon.ToList();
+                }
+
+                // 1. TỔNG HỢP TOP HOMESTAY NỔI BẬT DỰA TRÊN DỮ LIỆU THẬT CSDL & API
                 var tatCaCoSo = await _adminService.LayTatCaCoSoAsync();
+
+                var mapDonTheoCoSo = tatCaDon
+                    .Where(d => !string.IsNullOrWhiteSpace(d.TenCoSo))
+                    .GroupBy(d => d.TenCoSo.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+
                 var topCoSo = tatCaCoSo
-                    .OrderByDescending(c => c.SoLuotDat)
-                    .Take(10)
-                    .Select((c, idx) =>
+                    .Select(c =>
                     {
-                        int luotDat = c.SoLuotDat > 0 ? c.SoLuotDat : (120 - idx * 8);
-                        decimal gia = c.GiaTrungBinh > 0 ? c.GiaTrungBinh : 1250000m;
-                        return new TopHomestayDto
-                        {
-                            Hang = idx + 1,
-                            MaCoSoHienThi = c.MaCoSoHienThi,
-                            TenCoSo = c.TenCoSo,
-                            KhuVuc = c.KhuVuc,
-                            LoaiHinh = c.LoaiHinhHienThi,
-                            TenChuHome = c.TenChuHome,
-                            SoLuotDat = luotDat,
-                            DanhGia = c.DanhGia > 0 ? c.DanhGia : Math.Round(4.95 - idx * 0.04, 1),
-                            DoanhThu = luotDat * gia,
-                            TrangThai = c.TenHienThiTrangThai
-                        };
-                    }).ToList();
-                DanhSachTopHomestay = new ObservableCollection<TopHomestayDto>(topCoSo);
+                        var donCuaCoSo = mapDonTheoCoSo.GetValueOrDefault(c.TenCoSo?.Trim() ?? string.Empty)
+                            ?? tatCaDon.Where(d => !string.IsNullOrEmpty(d.TenCoSo) && !string.IsNullOrEmpty(c.TenCoSo) && 
+                                (d.TenCoSo.Equals(c.TenCoSo, StringComparison.OrdinalIgnoreCase) || 
+                                 d.TenCoSo.Contains(c.TenCoSo) || 
+                                 c.TenCoSo.Contains(d.TenCoSo))).ToList();
 
-                // 2. TỔNG HỢP TOP KHÁCH HÀNG THƯỜNG XUYÊN (VIP MEMBERS)
-                var tatCaTaiKhoan = await _adminService.LayDanhSachTaiKhoanAsync();
-                var khachHangs = tatCaTaiKhoan.Where(t => t.VaiTro == "KhachHang").ToList();
-                var topKhach = khachHangs
-                    .OrderByDescending(k => k.SoLuotDatPhong)
-                    .Take(10)
-                    .Select((k, idx) =>
-                    {
-                        int soDon = k.SoLuotDatPhong > 0 ? k.SoLuotDatPhong : Math.Max(2, 14 - idx * 2);
-                        decimal chiTieu = soDon * 2150000m;
-                        string hang = idx switch
-                        {
-                            0 => "Hội viên Kim Cương 💎",
-                            1 or 2 => "Hội viên Vàng 👑",
-                            _ => "Hội viên Bạc 🌟"
-                        };
-                        return new TopKhachHangDto
-                        {
-                            Hang = idx + 1,
-                            MaKhachHienThi = k.MaTaiKhoanHienThi,
-                            HoTen = k.HoTen,
-                            SoDienThoai = k.SoDienThoaiHienThi,
-                            Email = k.EmailHienThi,
-                            SoDonDat = soDon,
-                            TongChiTieu = chiTieu,
-                            HangThanhVien = hang
-                        };
-                    }).ToList();
-                DanhSachTopKhachHang = new ObservableCollection<TopKhachHangDto>(topKhach);
+                        int luotDat = donCuaCoSo.Count;
+                        decimal doanhThu = donCuaCoSo.Sum(d => d.TongTien);
+                        double danhGia = c.DanhGia > 0 ? c.DanhGia : (luotDat > 0 ? 5.0 : 0.0);
 
-                // 3. TỔNG HỢP TOP CHỦ HOMESTAY HOẠT ĐỘNG XUẤT SẮC (SUPERHOSTS)
-                var chuHomes = tatCaTaiKhoan.Where(t => t.VaiTro == "ChuHome").ToList();
-                var topChu = chuHomes
-                    .Select((ch, idx) =>
-                    {
-                        int soCoSo = tatCaCoSo.Count(c => c.MaChuHome == ch.MaTaiKhoan);
-                        if (soCoSo == 0) soCoSo = Math.Max(1, 4 - idx);
-                        decimal doanhThu = soCoSo * 42000000m + (10 - idx) * 3500000m;
-                        return new TopChuHomeDto
+                        return new
                         {
-                            Hang = idx + 1,
-                            MaChuHomeHienThi = ch.MaDoiTacHienThi,
-                            HoTen = ch.HoTen,
-                            SoDienThoai = ch.SoDienThoaiHienThi,
-                            SoCoSo = soCoSo,
-                            TongDoanhThu = doanhThu,
-                            DaXacThucTERA = ch.DaXacThucTERA,
-                            DanhHieu = ch.DaXacThucTERA ? "Superhost TERA ⭐" : "Đối tác Verified"
+                            CoSo = c,
+                            LuotDat = luotDat,
+                            DoanhThu = doanhThu,
+                            DanhGia = danhGia
                         };
                     })
-                    .OrderByDescending(c => c.TongDoanhThu)
+                    .OrderByDescending(x => x.LuotDat)
+                    .ThenByDescending(x => x.DoanhThu)
                     .Take(10)
-                    .Select((c, idx) => { c.Hang = idx + 1; return c; })
+                    .Select((x, idx) => new TopHomestayDto
+                    {
+                        Hang = idx + 1,
+                        MaCoSoHienThi = x.CoSo.MaCoSoHienThi,
+                        TenCoSo = x.CoSo.TenCoSo,
+                        KhuVuc = x.CoSo.KhuVuc,
+                        LoaiHinh = x.CoSo.LoaiHinhHienThi,
+                        TenChuHome = x.CoSo.TenChuHome,
+                        SoLuotDat = x.LuotDat,
+                        DanhGia = x.DanhGia,
+                        DoanhThu = x.DoanhThu,
+                        TrangThai = x.CoSo.TenHienThiTrangThai
+                    })
+                    .ToList();
+                DanhSachTopHomestay = new ObservableCollection<TopHomestayDto>(topCoSo);
+
+                // 2. TỔNG HỢP TOP KHÁCH HÀNG THƯỜNG XUYÊN (VIP) DỰA TRÊN DỮ LIỆU THẬT
+                var tatCaTaiKhoan = await _adminService.LayDanhSachTaiKhoanAsync();
+                var khachHangs = tatCaTaiKhoan.Where(t => t.VaiTro == "KhachHang").ToList();
+
+                var mapDonKhachId = tatCaDon
+                    .Where(d => d.MaKhachHang > 0)
+                    .GroupBy(d => d.MaKhachHang)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                var mapDonKhachEmail = tatCaDon
+                    .Where(d => !string.IsNullOrWhiteSpace(d.EmailKhach))
+                    .GroupBy(d => d.EmailKhach.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+
+                var mapDonKhachTen = tatCaDon
+                    .Where(d => !string.IsNullOrWhiteSpace(d.TenKhachHang))
+                    .GroupBy(d => d.TenKhachHang.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+
+                var topKhach = khachHangs
+                    .Select(k =>
+                    {
+                        var donCuaKhach = mapDonKhachId.GetValueOrDefault(k.MaTaiKhoan)
+                            ?? (!string.IsNullOrWhiteSpace(k.Email) ? mapDonKhachEmail.GetValueOrDefault(k.Email.Trim()) : null)
+                            ?? (!string.IsNullOrWhiteSpace(k.HoTen) ? mapDonKhachTen.GetValueOrDefault(k.HoTen.Trim()) : null)
+                            ?? new List<DonDatPhong>();
+
+                        int soDon = donCuaKhach.Count > 0 ? donCuaKhach.Count : k.SoLuotDatPhong;
+                        decimal chiTieu = donCuaKhach.Sum(d => d.TongTien);
+                        string hang = chiTieu switch
+                        {
+                            >= 20000000m => "Hội viên Kim Cương 💎",
+                            >= 10000000m => "Hội viên Vàng 👑",
+                            >= 3000000m  => "Hội viên Bạc 🌟",
+                            > 0          => "Thành viên Thân thiết ✨",
+                            _            => "Thành viên Mới 🌱"
+                        };
+
+                        return new
+                        {
+                            Khach = k,
+                            SoDon = soDon,
+                            ChiTieu = chiTieu,
+                            HangThanhVien = hang
+                        };
+                    })
+                    .OrderByDescending(x => x.ChiTieu)
+                    .ThenByDescending(x => x.SoDon)
+                    .Take(10)
+                    .Select((x, idx) => new TopKhachHangDto
+                    {
+                        Hang = idx + 1,
+                        MaKhachHienThi = x.Khach.MaTaiKhoanHienThi,
+                        HoTen = x.Khach.HoTen,
+                        SoDienThoai = x.Khach.SoDienThoaiHienThi,
+                        Email = x.Khach.EmailHienThi,
+                        SoDonDat = x.SoDon,
+                        TongChiTieu = x.ChiTieu,
+                        HangThanhVien = x.HangThanhVien
+                    })
+                    .ToList();
+                DanhSachTopKhachHang = new ObservableCollection<TopKhachHangDto>(topKhach);
+
+                // 3. TỔNG HỢP TOP CHỦ HOMESTAY HOẠT ĐỘNG XUẤT SẮC DỰA TRÊN DỮ LIỆU THẬT
+                var chuHomes = tatCaTaiKhoan.Where(t => t.VaiTro == "ChuHome").ToList();
+
+                var topChu = chuHomes
+                    .Select(ch =>
+                    {
+                        var coSoCuaChu = tatCaCoSo.Where(c => c.MaChuHome == ch.MaTaiKhoan || string.Equals(c.TenChuHome?.Trim(), ch.HoTen?.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+                        int soCoSo = coSoCuaChu.Count;
+                        var tenCoSos = coSoCuaChu.Select(c => c.TenCoSo?.Trim() ?? string.Empty).Where(s => !string.IsNullOrEmpty(s)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                        var donCuaChu = tatCaDon.Where(d => d.MaChuHome == ch.MaTaiKhoan 
+                            || string.Equals(d.TenChuHome?.Trim(), ch.HoTen?.Trim(), StringComparison.OrdinalIgnoreCase)
+                            || (!string.IsNullOrWhiteSpace(d.TenCoSo) && tenCoSos.Contains(d.TenCoSo.Trim()))).ToList();
+
+                        decimal doanhThu = donCuaChu.Sum(d => d.TongTien);
+                        string danhHieu = ch.DaXacThucTERA ? (doanhThu > 0 ? "Superhost TERA ⭐" : "Đối tác TERA Verified") : (soCoSo > 0 ? "Đối tác Triển vọng" : "Đối tác Mới");
+
+                        return new
+                        {
+                            Chu = ch,
+                            SoCoSo = soCoSo,
+                            DoanhThu = doanhThu,
+                            DanhHieu = danhHieu
+                        };
+                    })
+                    .OrderByDescending(x => x.DoanhThu)
+                    .ThenByDescending(x => x.SoCoSo)
+                    .Take(10)
+                    .Select((x, idx) => new TopChuHomeDto
+                    {
+                        Hang = idx + 1,
+                        MaChuHomeHienThi = x.Chu.MaDoiTacHienThi,
+                        HoTen = x.Chu.HoTen,
+                        SoDienThoai = x.Chu.SoDienThoaiHienThi,
+                        SoCoSo = x.SoCoSo,
+                        TongDoanhThu = x.DoanhThu,
+                        DaXacThucTERA = x.Chu.DaXacThucTERA,
+                        DanhHieu = x.DanhHieu
+                    })
                     .ToList();
                 DanhSachTopChuHome = new ObservableCollection<TopChuHomeDto>(topChu);
 
@@ -372,6 +513,83 @@ namespace HomestaySystem.ViewModels
             catch (Exception ex)
             {
                 MessageBox.Show($"Lỗi khi xuất tệp báo cáo: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // ================= XỬ LÝ QUYẾT TOÁN CHI TRẢ CHỦ NHÀ =================
+        private void ThucHienMoDialogQuyetToan(DonDatPhong? don)
+        {
+            if (don == null) return;
+            DonDangQuyetToan = don;
+            if (don.TrangThaiQuyetToan == "DaQuyetToan")
+            {
+                MaGiaoDichNhap = !string.IsNullOrWhiteSpace(don.MaGiaoDichQuyetToan)
+                    ? don.MaGiaoDichQuyetToan
+                    : "---";
+                GhiChuNhap = !string.IsNullOrWhiteSpace(don.GhiChuQuyetToan)
+                    ? don.GhiChuQuyetToan
+                    : "Đã hoàn tất thanh toán";
+            }
+            else
+            {
+                MaGiaoDichNhap = !string.IsNullOrWhiteSpace(don.MaGiaoDichQuyetToan)
+                    ? don.MaGiaoDichQuyetToan
+                    : $"PAYOUT-{don.MaDon}-{DateTime.Now:yyyyMMddHHmm}";
+                GhiChuNhap = !string.IsNullOrWhiteSpace(don.GhiChuQuyetToan)
+                    ? don.GhiChuQuyetToan
+                    : $"Đã chuyển khoản ngân hàng {don.TienChuHomeNhan:N0} đ tới chủ homestay {don.TenChuHome}";
+            }
+            HienThiDialogQuyetToan = true;
+        }
+
+        private async Task ThucHienXacNhanQuyetToanAsync()
+        {
+            if (DonDangQuyetToan == null) return;
+
+            if (DonDangQuyetToan.TrangThaiQuyetToan == "DaQuyetToan")
+            {
+                HienThiDialogQuyetToan = false;
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(MaGiaoDichNhap))
+            {
+                MessageBox.Show("Vui lòng nhập Mã giao dịch ngân hàng / Ủy nhiệm chi để đối soát!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            DangTaiDuLieu = true;
+            try
+            {
+                bool thanhCong = await _adminService.XacNhanQuyetToanAsync(
+                    DonDangQuyetToan.MaDon,
+                    MaGiaoDichNhap.Trim(),
+                    GhiChuNhap.Trim(),
+                    DonDangQuyetToan.TienChuHomeNhan);
+
+                if (thanhCong)
+                {
+                    HienThiDialogQuyetToan = false;
+                    MessageBox.Show(
+                        $"Xác nhận quyết toán thành công!\n\n" +
+                        $"• Đơn đặt phòng: {DonDangQuyetToan.MaDonHienThi}\n" +
+                        $"• Chủ homestay: {DonDangQuyetToan.TenChuHome}\n" +
+                        $"• Số tiền chi trả (85%): {DonDangQuyetToan.TienChuHomeNhan:N0} đ\n" +
+                        $"• Mã GD ngân hàng: {MaGiaoDichNhap}",
+                        "Quyết toán hoàn tất",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+
+                    await TaiBaoCaoAsync();
+                }
+                else
+                {
+                    MessageBox.Show("Không thể ghi nhận quyết toán trên máy chủ API. Vui lòng kiểm tra lại kết nối!", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            finally
+            {
+                DangTaiDuLieu = false;
             }
         }
     }

@@ -16,10 +16,7 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/properties")]
-public sealed class PropertiesController(
-    HomestayDbContext db,
-    IEmailService emailService,
-    ICloudinaryService cloudinaryService) : ControllerBase
+public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
 {
     [HttpGet("locations")]
     public async Task<ActionResult<IReadOnlyList<string>>> GetLocations(CancellationToken cancellationToken = default)

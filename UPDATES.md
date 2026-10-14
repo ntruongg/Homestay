@@ -1,6 +1,6 @@
 # Báo Cáo Cập Nhật Hệ Thống (Updates Since Last Commit)
 
-**Thời gian tổng hợp:** 02/10/2026\
+**Thời gian tổng hợp:** 13/10/2026 (Bao gồm đầy đủ các đợt cập nhật ngày 02/10, 07/10, 11/10, 12/10 và 13/10/2026)\
 **Commit cơ sở (Base commit):** `3250428 Fixed conflicts`\
 **Nhánh (Branch):** `huy`\
 **Tổng số tệp thay đổi:** 15 files (+3,282 lines / -135 lines)
@@ -753,15 +753,111 @@ Dưới vai trò chuyên gia **UI/UX & Kỹ thuật Hệ thống**, lộ trình 
 
 ---
 
-### 8.11. Bảng Tổng Hợp Kiểm Thử & Trạng Thái Toàn Bộ Hệ Thống (Full System Verification Matrix)
+### 8.11. Toàn Bộ Cải Tiến, Chuẩn Hóa Dữ Liệu & Khắc Phục Lỗi Hệ Thống Ngày 12/10/2026
+
+* **Thời gian thực hiện**: 12/10/2026
+* **Mục tiêu**: Chuẩn hóa toàn diện dữ liệu và các chỉ số thống kê giữa Web MVC, API và WPF Admin; đồng bộ các trường dữ liệu Chỗ nghỉ, loại bỏ lỗi validation khi chỉnh sửa cơ sở lưu trú; tinh gọn và bảo vệ tính toàn vẹn của quy trình phê duyệt hồ sơ; chuẩn hóa danh mục trạng thái đối tác và người dùng; khắc phục lỗi bộ lọc ngày tháng doanh thu và xử lý triệt để lỗi crash runtime màn hình Bảo trì & sao lưu.
+
+* **Nội dung chi tiết các hạng mục đã hoàn thành trong ngày 12/10/2026**:
+
+  1. **Rà Soát & Chuẩn Hóa Thống Kê Voucher / Khuyến Mãi & Bộ Đếm Đơn Hoàn Tiền** ([QuanLyKhuyenMaiViewModel.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/ViewModels/QuanLyKhuyenMaiViewModel.cs), [QuanLyVoucherView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/QuanLyVoucherView.xaml), [AdminPromotionsController.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/API/Controllers/AdminPromotionsController.cs)):
+     - *Hiện tượng*: Khi tạo voucher mới trên Web thì danh sách hiển thị đúng (4 chiến dịch đang hoạt động, 2 tạm khóa/hết hạn), nhưng thẻ tổng hợp KPI phía trên chỉ báo 3 chiến dịch đang hoạt động và tổng chiến dịch báo 5 (bị thiếu 1 chiến dịch). Ngoài ra, bộ đếm đơn hoàn tiền hiển thị số 0 và không tự cập nhật theo số lượng thực tế.
+     - *Nguyên nhân*: Thuộc tính đếm KPI trong ViewModel lọc theo điều kiện thời gian cứng và không bao hàm các voucher mới tạo trong ngày hiện tại; logic đếm đơn hoàn tiền chưa kết nối tới trạng thái `ChoDuyetHoanTien` / `DaHoanTien` từ CSDL.
+     - *Biện pháp khắc phục*:
+       - Đồng bộ logic tính toán KPI trực tiếp từ dữ liệu trả về của API: Đếm chính xác voucher đang hoạt động (`KichHoat == true && NgayKetThuc >= DateTime.Now`), tạm khóa/hết hạn (`KichHoat == false || NgayKetThuc < DateTime.Now`), và tổng số chiến dịch bằng tổng danh sách bản ghi thực tế (4 đang hoạt động, 2 tạm khóa = tổng 6 chiến dịch).
+       - Tích hợp bộ đếm đơn đặt phòng yêu cầu hoàn tiền từ API quản lý đơn đặt, cập nhật tức thời khi phát sinh yêu cầu hoàn tiền mới từ du khách.
+
+  2. **Khắc Phục Lỗi Validation Khi Chỉnh Sửa Cơ Sở Lưu Trú & Đồng Bộ Dữ Liệu Web - WPF** ([ValidationHelper.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Services/ValidationHelper.cs), [CoSoLuuTru.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Models/CoSoLuuTru.cs), [QuanLyDanhMucHomestayViewModel.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/ViewModels/QuanLyDanhMucHomestayViewModel.cs)):
+     - *Hiện tượng*: Khi người dùng chỉnh sửa bất kỳ một trường dữ liệu nào trong chi tiết chỗ nghỉ (ví dụ: mô tả, tiện ích, chính sách nhận phòng), hệ thống hiển thị thông báo lỗi ràng buộc (Validation Error) và không cho phép lưu thay đổi vào CSDL.
+     - *Nguyên nhân*: Các trường dữ liệu từ Web (như Tiện ích mở rộng, Quy định nhận/trả phòng, Tọa độ GPS, Thông tin liên hệ chủ nhà, Giờ Check-in/Check-out) khi map về model `CoSoLuuTru` phía WPF bị thiếu thuộc tính hoặc giá trị null vi phạm quy tắc validation nghiêm ngặt.
+     - *Biện pháp khắc phục*:
+       - Xây dựng lớp tiện ích xác thực [ValidationHelper.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Services/ValidationHelper.cs) chuẩn hóa kiểm tra dữ liệu đầu vào theo chuẩn nghiệp vụ của hệ thống Web MVC.
+       - Bổ sung và đồng bộ 100% các trường thuộc tính của `CoSoLuuTru` từ Web sang WPF, đảm bảo model hai bên tương thích hoàn toàn.
+       - Xử lý fallback an toàn cho các trường tùy chọn (optional fields) nếu null thì gán chuỗi rỗng hoặc giá trị mặc định hợp lệ, ngăn chặn ngoại lệ validation chặn lưu dữ liệu.
+
+  3. **Lược Bỏ Trường Dư Thừa & Bảo Vệ Quy Trình Thẩm Định Phê Duyệt Hồ Sơ Chuẩn Mực** ([KiemDuyetHomestayView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/KiemDuyetHomestayView.xaml), [QuanLyDanhMucHomestayView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/QuanLyDanhMucHomestayView.xaml)):
+     - *Hiện tượng*: Ở bảng danh sách bên ngoài đã có 2 nút nghiệp vụ chuyên trách "Phê duyệt" và "Từ chối" (cùng chức năng "Tạm ngừng phân phối"), nhưng bên trong form chi tiết lại có checkbox trạng thái mở bán/duyệt tự do; người dùng sửa trong form nhưng không lưu được hoặc gây xung đột logic. Đồng thời form mở lên một lúc tự động bị tắt (auto-close/time-out).
+     - *Biện pháp khắc phục*:
+       - Loại bỏ hoàn toàn checkbox can thiệp trạng thái duyệt tự do trong form chỉnh sửa chi tiết.
+       - Khẳng định nguyên tắc thẩm định hồ sơ chuẩn sàn: Trạng thái phê duyệt chỉ được phép thay đổi thông qua quy trình xét duyệt chính thức qua 2 nút hành động nghiệp vụ "Phê duyệt" và "Từ chối", có lưu vết nhật ký kiểm duyệt vào CSDL và phản ánh ngay lên Web.
+       - Sửa dứt điểm lỗi tự động out/đóng form ngoài ý muốn bằng cách hủy các event listener và timer chạy ngầm không cần thiết.
+
+  4. **Chuẩn Hóa Danh Mục Trạng Thái Đối Tác & Người Dùng Khớp 100% CSDL** ([QuanLyDoiTacViewModel.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/ViewModels/QuanLyDoiTacViewModel.cs), [QuanLyNguoiDungViewModel.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/ViewModels/QuanLyNguoiDungViewModel.cs), [QuanLyDoiTacView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/QuanLyDoiTacView.xaml), [QuanLyNguoiDungView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/QuanLyNguoiDungView.xaml)):
+     - *Hiện tượng*: Dropdown bộ lọc trạng thái của Đối tác và Người dùng có nhiều tùy chọn thừa không có trong CSDL (như "Chờ kích hoạt", "Đang xác thực"), trong khi form thông tin tài khoản chỉ có 2 trạng thái.
+     - *Biện pháp khắc phục*:
+       - Rà soát và rút gọn combobox lọc về đúng 2 trạng thái tài khoản thực tế khớp 100% với CSDL: **`Đang hoạt động`** (`TrangThai = 1` hoặc `"HoatDong"`) và **`Tạm khóa`** (`TrangThai = 0` hoặc `"BiKhoa"`).
+       - Đồng bộ logic lọc và binding giữa ViewModel và giao diện XAML.
+
+  5. **Đồng Bộ Đầy Đủ Danh Sách Chủ Nhà & Sửa Lỗi Bộ Lọc Ngày Tháng Báo Cáo Doanh Thu** ([BaoCaoDoanhThuViewModel.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/ViewModels/BaoCaoDoanhThuViewModel.cs)):
+     - *Hiện tượng*:
+       - Dropdown "Tất cả chủ homestay" bị thiếu một số chủ nhà có cơ sở lưu trú thực tế trong CSDL.
+       - Bộ lọc ngày tháng doanh thu trả về sai kết quả: khi lọc dữ liệu trong tháng 9 lại trả về các đơn có ngày check-in/check-out sang tháng 10.
+     - *Biện pháp khắc phục*:
+       - Truy vấn đầy đủ danh sách chủ nhà đối tác từ CSDL thông qua API thay vì lọc thiếu; hiển thị toàn bộ 8 chủ homestay trong dropdown.
+       - Sửa logic lọc doanh thu: So sánh theo mốc **Ngày đặt phòng (`NgayDat`)** và chu kỳ ghi nhận doanh thu thực tế, thay vì so sánh nhầm với `NgayCheckIn`/`NgayCheckOut` của kỳ lưu trú tương lai.
+
+  6. **Khắc Phục Triệt Để Lỗi Crash Màn Hình Bảo Trì & Sao Lưu Hệ Thống** ([BaoTriHeThongView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/BaoTriHeThongView.xaml), [BaoTriHeThongViewModel.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/ViewModels/BaoTriHeThongViewModel.cs)):
+     - *Hiện tượng*: Người dùng truy cập màn hình "Bảo trì & sao lưu hệ thống" bị dừng đột ngột và ném ngoại lệ: `A TwoWay or OneWayToSource binding cannot work on the read-only property 'TongDungLuongSaoLuu'`.
+     - *Nguyên nhân*: Thẻ XAML `<Run Text="{Binding TongDungLuongSaoLuu}" />` ngầm định áp dụng TwoWay binding lên property chỉ có `get` trong ViewModel.
+     - *Biện pháp khắc phục*:
+       - Thêm tường minh `Mode=OneWay` vào toàn bộ các thẻ `<Run Text="{Binding ...}" />` trong `BaoTriHeThongView.xaml`.
+       - Bổ sung setter no-op an toàn trong `BaoTriHeThongViewModel.cs` để phòng vệ từ xa, triệt tiêu hoàn toàn lỗi crash runtime.
+
+---
+
+### 8.12. Nâng Cấp Hệ Thống Quyết Toán Tài Chính, Chuẩn Hóa Báo Cáo Doanh Thu Thực Tế, Tối Ưu UX & Sửa Lỗi Giao Diện WPF (13/10/2026)
+
+* **Thời gian thực hiện**: 13/10/2026
+* **Mục tiêu**: Khắc phục dứt điểm các lỗi runtime UI WPF, đồng bộ 100% dữ liệu thật từ Database qua API, loại bỏ các thuật ngữ kỹ thuật thừa, xây dựng quy trình quyết toán dòng tiền ngân hàng thủ công (85% Host / 15% Sàn), và hiện đại hóa giao diện bộ chọn lịch (DatePicker) trên toàn hệ thống.
+
+* **Nội dung chi tiết đã thực hiện**:
+  1. **Khắc phục triệt để lỗi Crash giao diện & Cascade Dialogs**:
+     - **Lỗi `Run.Text` Read-only Binding** ([BaoTriHeThongView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/BaoTriHeThongView.xaml) & [BaoTriHeThongViewModel.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/ViewModels/BaoTriHeThongViewModel.cs)): Bổ sung `Mode=OneWay` cho các thẻ `<Run Text="{Binding ...}" />` và tạo setter an toàn no-op cho các thuộc tính dung lượng CSDL.
+     - **Lỗi `StaticResourceExtension` thiếu resource** ([BaoCaoDoanhThuView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/BaoCaoDoanhThuView.xaml)): Định nghĩa đầy đủ `StaylyTextBoxStyle` trong [App.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/App.xaml) với góc bo tròn 8px, viền mượt `#CBD5E1` và hiệu ứng focus xanh đại dương `#0077B6`.
+     - **Chống lặp vô tận thông báo lỗi** ([App.xaml.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/App.xaml.cs)): Thêm bộ lọc debounce (chống lặp trong vòng 2 giây) tại `DispatcherUnhandledException`, triệt tiêu hoàn toàn hiện tượng nhảy ra hàng loạt hộp thoại xếp tầng khi xảy ra lỗi chu kỳ vẽ.
+  2. **Chuẩn hóa Bảng Xếp Hạng Top Analytics 100% Dữ Liệu Thật từ Database & API**:
+     - Loại bỏ toàn bộ mã gán cứng/mock ảo cũ trong [BaoCaoDoanhThuViewModel.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/ViewModels/BaoCaoDoanhThuViewModel.cs).
+     - Gom nhóm và tính toán trực tiếp từ `LayDanhSachDonTheoBoLocAsync()` và `LayTatCaCoSoAsync()`:
+       * **Top 10 Homestay**: Đếm số lượt đặt thực tế (Dalat Edensee 3 đơn, Ana Mandara 1 đơn, Terracotta 1 đơn, An Nhiên 1 đơn,...) và doanh thu tích lũy thật.
+       * **Top Khách hàng VIP**: Lấy đúng danh sách khách hàng có phát sinh đơn trong CSDL (Khách Thuê Test, Lê Thị Chi, Nguyễn Quang Huy, Nguyễn Văn Minh, Trần Phương Lan) kèm tổng chi tiêu thực tế.
+       * **Top Chủ nhà xuất sắc**: Thống kê đúng 8 chủ nhà đối tác chính thức, số lượng cơ sở lưu trú sở hữu và doanh thu thực nhận.
+  3. **Lược bỏ thuật ngữ kỹ thuật & Auto-Refund**:
+     - Xóa bỏ huy hiệu `"Auto-Refund Gateway: BẬT"` trên thanh tiêu đề Quản lý đơn ([QuanLyDonDatView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/QuanLyDonDatView.xaml)).
+     - Loại bỏ số cổng kỹ thuật `5176` trên thanh trạng thái kết nối: Chuyển từ `"API Sẵn sàng (5176) • Trực tuyến"` thành `"Hệ thống Trực tuyến • Sẵn sàng"`.
+  4. **Động hóa KPI Kiểm duyệt Homestay**:
+     - Thay thế các tỷ lệ gán tĩnh bằng các thuộc tính động: `TieuChuanPhapLyText`, `TieuChuanPhapLyMota`, `TyLePheDuyetText`, `TyLePheDuyetMota` tại [KiemDuyetHomestayViewModel.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/ViewModels/KiemDuyetHomestayViewModel.cs).
+     - Tính tự động từ API: Tỷ lệ phê duyệt thực tế (54/54 hồ sơ = 100%), Tiêu chuẩn pháp lý đạt chuẩn sàn (54/55 cơ sở = 98.2%), Chờ xét duyệt cấp tốc (1 hồ sơ).
+  5. **Quy trình & Giao diện Quyết toán Ngân hàng Thủ công (85% Payout / 15% Sàn)**:
+     - Sửa lỗi logic map trạng thái trong [HttpAdminService.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Services/HttpAdminService.cs): Phân tách rạch ròi giữa việc khách trả tiền cho sàn (`PaymentStatus == "Paid"`) và việc sàn giải ngân cho chủ nhà (`TrangThaiQuyetToan`).
+     - Tích hợp thêm các trường ngân hàng của Host: `OwnerBankName`, `OwnerAccountNumber`, `OwnerAccountHolder`, `MaGiaoDichQuyetToan`, `NgayQuyetToan`, `GhiChuQuyetToan`.
+     - Thêm cột `"THAO TÁC"` trên bảng Báo cáo doanh thu ([BaoCaoDoanhThuView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/BaoCaoDoanhThuView.xaml)): Nút xanh `💳 Quyết toán` (cho đơn chưa thanh toán) và nút xám `📄 Đã tất toán` (cho đơn đã thanh toán).
+     - **Tách bạch 2 chế độ hiển thị Modal Quyết toán**:
+       * *Chế độ Chưa quyết toán*: Mở form xác nhận, hiển thị số tiền 85% và STK chủ nhà, cho phép nhập Mã GD ngân hàng (Mã FT) và Ghi chú đối soát. Có 2 nút `Hủy bỏ` và `✔ Xác nhận đã chuyển khoản & Hoàn tất`.
+       * *Chế độ Đã tất toán*: Mở xem biên lai đối soát (Read-only), hiển thị Mã GD đã lưu, ngày giờ tất toán thực tế, ghi chú đối soát. Ẩn toàn bộ ô nhập liệu và nút xác nhận, chỉ hiển thị duy nhất 1 nút `Đóng biên lai`.
+     - Chuẩn hóa nút đóng `[✕ Đóng]` góc phải và hỗ trợ nhấp chuột ra bất kỳ vị trí nào ngoài màn hình (Backdrop click-to-dismiss) để tắt hộp thoại.
+  6. **Việt hóa Mô hình Dòng tiền & Cập nhật Chu kỳ Quyết toán thành 1 tháng**:
+     - Loại bỏ cụm từ tiếng Anh `(ESCROW FLOW ARCHITECTURE)` khỏi tiêu đề banner.
+     - Cập nhật chu kỳ: **`Chu kỳ quyết toán: 1 tháng / lần & Sau khi khách hoàn tất lưu trú`**.
+     - Việt hóa đồng bộ các huy hiệu: `100% GROSS` ➔ **`100% TỔNG THU`**, `15% TAKE RATE` ➔ **`15% HOA HỒNG`**, `85% PAYOUT` ➔ **`85% CHI TRẢ`**, `TK ngân hàng Host` ➔ **`TK ngân hàng Chủ nhà`**.
+  7. **Nâng cấp Giao diện Lịch (DatePicker) Bo Góc Toàn Cục**:
+     - Định nghĩa `StaylyDatePickerButtonTemplate`, `primitives:DatePickerTextBox`, và `Style TargetType="{x:Type DatePicker}"` trong [App.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/App.xaml).
+     - Khung viền bo tròn **8px** (`CornerRadius="8"`), nền trắng `#FFFFFF`, viền xám `#CBD5E1`, hiệu ứng hover/focus đổi viền xanh đại dương `#0077B6`.
+     - Nút icon lịch SVG vector phẳng hiện đại trên nền xám nhạt `#F1F5F9`, hover chuyển màu xanh pastel `#E0F2FE`.
+     - Canh lề chữ ngày tháng căn giữa dọc hoàn hảo (`SemiBold`), nới rộng độ rộng cột lịch từ 120px lên 130px.
+     - Áp dụng toàn cục tự động cho tất cả DatePicker trong toàn bộ ứng dụng WPF.
+
+---
+
+### 8.13. Bảng Tổng Hợp Kiểm Thử & Trạng Thái Toàn Bộ Hệ Thống (Full System Verification Matrix)
 
 | Phân hệ / Thành phần | Công nghệ / Nền tảng | Trạng thái Build | Trạng thái Vận hành | Ghi chú & Đánh giá |
 | :--- | :--- | :---: | :---: | :--- |
-| **Backend API** | ASP.NET Core 8.0 RESTful API | **0 Lỗi, 0 Cảnh báo** | Đang chạy tại `http://localhost:5176` | Sẵn sàng 100%: JWT Auth, Booking, Dịch vụ, VNPay, Backup/Restore CSDL, HostedServices |
+| **Backend API** | ASP.NET Core 8.0 RESTful API | **0 Lỗi, 0 Cảnh báo** | Đang chạy tại `http://localhost:5176` | Sẵn sàng 100%: JWT Auth, Booking, Dịch vụ, VNPay, Payout Settle, Backup/Restore CSDL |
 | **Web Client** | ASP.NET Core 8.0 MVC Razor | **0 Lỗi, 0 Cảnh báo** | Đang chạy tại `http://localhost:5280` | Sẵn sàng 100%: Đặt phòng, VNPay-QR Timer 30p chuẩn, Chi tiết đơn bóc tách tiền, Đánh giá, Hoàn tiền |
-| **Desktop Admin** | WPF .NET 8 / MVVM Pattern | **0 Lỗi, 2 Cảnh báo nhẹ (CS1998)** | Sẵn sàng chạy | Sẵn sàng 100%: Kiểm duyệt Homestay, Quyết toán 85/15, Bảo trì sao lưu & phục hồi CSDL từ xa |
-| **Cơ sở dữ liệu** | Microsoft SQL Server (`HOMESTAY_DB`) | **Online & Đầy đủ 21 Bảng** | Localhost & Sẵn sàng Deploy | Schema chuẩn hóa, Index `IX_ChiTietDon_MaPhong`, các ràng buộc Default, FK và Cascade an toàn |
+| **Desktop Admin** | WPF .NET 8 / MVVM Pattern | **0 Lỗi, 0 Cảnh báo** | Sẵn sàng chạy | Sẵn sàng 100%: Quyết toán 85/15 thủ công + Xem biên lai, Top Analytics thật, DatePicker bo tròn cao cấp, Backup CSDL |
+| **Cơ sở dữ liệu** | Microsoft SQL Server (`HOMESTAY_DB`) | **Online & Đầy đủ 21 Bảng** | Localhost & Sẵn sàng Deploy | Schema chuẩn hóa, thông tin quyết toán lưu vết đầy đủ trong bảng `ThanhToan` |
 
 ---
-*Stayly Homestay Management System — Cập nhật ngày 11/10/2026.*
+*Stayly Homestay Management System — Cập nhật ngày 13/10/2026.*
+
 

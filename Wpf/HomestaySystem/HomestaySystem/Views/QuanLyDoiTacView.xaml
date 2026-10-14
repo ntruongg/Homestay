@@ -134,14 +134,12 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Bộ lọc phân loại hồ sơ đối tác TERA -->
+                            <!-- Bộ lọc phân loại hồ sơ đối tác TERA (chuẩn hóa gọn gàng) -->
                             <ComboBox Grid.Column="2" SelectedValue="{Binding BoLocTrangThai}" SelectedValuePath="Tag" Height="36" VerticalAlignment="Center">
                                 <ComboBoxItem Content="Tất cả đối tác" Tag="TatCa" IsSelected="True"/>
                                 <ComboBoxItem Content="Đã xác thực TERA" Tag="DaXacThucTERA"/>
                                 <ComboBoxItem Content="Chờ xác thực TERA" Tag="ChoXacThucTERA"/>
-                                <ComboBoxItem Content="Bị từ chối hồ sơ" Tag="TuChoi"/>
-                                <ComboBoxItem Content="Bị khóa hoạt động" Tag="BiKhoa"/>
-                                <ComboBoxItem Content="Bị từ chối / Khóa" Tag="BiKhoaHoacTuChoi"/>
+                                <ComboBoxItem Content="Bị khóa / Từ chối" Tag="BiKhoaHoacTuChoi"/>
                             </ComboBox>
 
                             <!-- Số lượng kết quả lọc -->
@@ -533,7 +531,7 @@
                                 <!-- NÚT CHỈNH SỬA THÔNG TIN ĐỐI TÁC RIÊNG BIỆT -->
                                 <Button Content="✏️ Chỉnh sửa hồ sơ đối tác" Height="38" Background="{StaticResource MauStaylyPrimary}" Foreground="White" 
                                         FontWeight="Bold" FontSize="13" BorderThickness="0" Margin="0,0,0,8"
-                                        Command="{Binding MoDialogChinhSuaCommand}" Cursor="Hand" ToolTip="Chỉnh sửa thông tin cá nhân và tài khoản đối tác TERA">
+                                        Command="{Binding MoDialogChinhSuaCommand}" Cursor="Hand" ToolTip="Chỉnh sửa thông tin cá nhân và tài khoản đối tác">
                                     <Button.Resources>
                                         <Style TargetType="Border">
                                             <Setter Property="CornerRadius" Value="8"/>
@@ -541,18 +539,7 @@
                                     </Button.Resources>
                                 </Button>
 
-                                <!-- Hàng nút 1: Xác thực TERA -->
-                                <Button Content="⭐ Xác nhận / Đổi trạng thái TERA" Height="38" Background="{StaticResource MauStaylyGreen}" Foreground="White" 
-                                        FontWeight="Bold" FontSize="13" BorderThickness="0" Margin="0,0,0,8"
-                                        Command="{Binding XacThucTERACommand}" Cursor="Hand" ToolTip="Cấp hoặc thu hồi chứng nhận hồ sơ TERA">
-                                    <Button.Resources>
-                                        <Style TargetType="Border">
-                                            <Setter Property="CornerRadius" Value="8"/>
-                                        </Style>
-                                    </Button.Resources>
-                                </Button>
-
-                                <!-- Hàng nút 2: Từ chối / Mở tài khoản -->
+                                <!-- Hàng nút thao tác: Từ chối đối tác & Khóa/Mở tài khoản -->
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -570,10 +557,22 @@
                                         </Button.Resources>
                                     </Button>
 
-                                    <!-- NÚT MỞ TÀI KHOẢN ĐỐI TÁC -->
-                                    <Button Grid.Column="2" Content="🔓 Mở tài khoản" Height="38" Background="{StaticResource MauStaylyGreen}" Foreground="White" 
+                                    <!-- NÚT KHÓA / MỞ TÀI KHOẢN ĐỐI TÁC (Tự động đổi nhãn và màu theo trạng thái) -->
+                                    <Button Grid.Column="2" Height="38" Foreground="White" 
                                             FontWeight="Bold" FontSize="13" BorderThickness="0"
-                                            Command="{Binding MoKhoaTaiKhoanCommand}" Cursor="Hand" ToolTip="Kích hoạt lại tài khoản đối tác">
+                                            Command="{Binding MoKhoaTaiKhoanCommand}" Cursor="Hand" ToolTip="Khóa hoặc mở lại tài khoản đối tác">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Content" Value="🔓 Mở tài khoản"/>
+                                                <Setter Property="Background" Value="{StaticResource MauStaylyGreen}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding LaTaiKhoanDangHoatDong}" Value="True">
+                                                        <Setter Property="Content" Value="🔒 Khóa tài khoản"/>
+                                                        <Setter Property="Background" Value="{StaticResource MauStaylyYellowDam}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
                                         <Button.Resources>
                                             <Style TargetType="Border">
                                                 <Setter Property="CornerRadius" Value="8"/>
@@ -746,6 +745,7 @@
                             <TextBlock Text="Họ và tên chủ nhà (*):" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                             <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" Margin="0,0,0,10" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                                 <TextBox Text="{Binding SuaHoTen, UpdateSourceTrigger=PropertyChanged}"
+                                         MaxLength="100"
                                          BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                             </Border>
 
@@ -757,32 +757,49 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Số điện thoại:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Số điện thoại (*):" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                                     <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                                         <TextBox Text="{Binding SuaSoDienThoai, UpdateSourceTrigger=PropertyChanged}"
+                                                 MaxLength="10"
                                                  BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                                     </Border>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Email đối tác:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Email đối tác (*):" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                                     <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                                         <TextBox Text="{Binding SuaEmail, UpdateSourceTrigger=PropertyChanged}"
+                                                 MaxLength="100"
                                                  BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                                     </Border>
                                 </StackPanel>
                             </Grid>
 
+                            <!-- Đổi mật khẩu mới (nếu cần cấp lại) -->
+                            <StackPanel Margin="0,0,0,10">
+                                <DockPanel Margin="0,0,0,4">
+                                    <TextBlock Text="Đổi mật khẩu mới:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}"/>
+                                    <TextBlock Text="(để trống nếu muốn giữ nguyên mật khẩu cũ)" FontSize="11.5" Foreground="{StaticResource MauChuPhu}" Margin="6,1,0,0"/>
+                                </DockPanel>
+                                <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                    <TextBox Text="{Binding SuaMatKhau, UpdateSourceTrigger=PropertyChanged}"
+                                             MaxLength="100"
+                                             BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
+                                </Border>
+                            </StackPanel>
+
                             <!-- Địa chỉ cơ sở -->
                             <TextBlock Text="Địa chỉ cơ sở lưu trú:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                             <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" Margin="0,0,0,10" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                                 <TextBox Text="{Binding SuaDiaChi, UpdateSourceTrigger=PropertyChanged}"
+                                         MaxLength="200"
                                          BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                             </Border>
 
-                            <!-- Số CCCD định danh -->
-                            <TextBlock Text="Số CCCD định danh:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
+                            <!-- Số CCCD định danh (12 số) -->
+                            <TextBlock Text="Số CCCD định danh (12 số) (*):" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                             <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" Margin="0,0,0,10" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                                 <TextBox Text="{Binding SuaCCCD, UpdateSourceTrigger=PropertyChanged}"
+                                         MaxLength="12"
                                          BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                             </Border>
 
@@ -805,15 +822,17 @@
                                     <TextBlock Text="Số tài khoản:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                                     <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                                         <TextBox Text="{Binding SuaSoTaiKhoan, UpdateSourceTrigger=PropertyChanged}"
+                                                 MaxLength="20"
                                                  BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                                     </Border>
                                 </StackPanel>
                             </Grid>
 
                             <!-- Tên chủ tài khoản -->
-                            <TextBlock Text="Tên chủ tài khoản thụ hưởng:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
+                            <TextBlock Text="Tên chủ tài khoản thụ hưởng (In hoa không dấu):" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                             <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                                 <TextBox Text="{Binding SuaChuTaiKhoan, UpdateSourceTrigger=PropertyChanged}"
+                                         MaxLength="100"
                                          BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                             </Border>
                         </StackPanel>
@@ -876,30 +895,7 @@
                     <!-- Form Input Fields cuộn mượt -->
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,16" Padding="0,0,8,0">
                         <StackPanel>
-                            <!-- Tên đăng nhập & Mật khẩu -->
-                            <Grid Margin="0,0,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="10"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Tên đăng nhập (Username) *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
-                                    <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                        <TextBox Text="{Binding ThemTenDangNhap, UpdateSourceTrigger=PropertyChanged}"
-                                                 BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
-                                    </Border>
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Mật khẩu khởi tạo *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
-                                    <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                        <TextBox Text="{Binding ThemMatKhau, UpdateSourceTrigger=PropertyChanged}"
-                                                 BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
-                                    </Border>
-                                </StackPanel>
-                            </Grid>
-
-                            <!-- Họ tên chủ nhà & Số điện thoại -->
+                            <!-- Họ tên chủ nhà & Mật khẩu khởi tạo -->
                             <Grid Margin="0,0,0,10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -910,19 +906,21 @@
                                     <TextBlock Text="Họ và tên chủ nhà *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                                     <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                                         <TextBox Text="{Binding ThemHoTen, UpdateSourceTrigger=PropertyChanged}"
+                                                 MaxLength="100"
                                                  BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                                     </Border>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Số điện thoại liên hệ *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Mật khẩu khởi tạo *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                                     <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                        <TextBox Text="{Binding ThemSoDienThoai, UpdateSourceTrigger=PropertyChanged}"
+                                        <TextBox Text="{Binding ThemMatKhau, UpdateSourceTrigger=PropertyChanged}"
+                                                 MaxLength="100"
                                                  BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                                     </Border>
                                 </StackPanel>
                             </Grid>
 
-                            <!-- Email & Địa chỉ -->
+                            <!-- Số điện thoại & Email -->
                             <Grid Margin="0,0,0,10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -930,26 +928,39 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Email liên hệ:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Số điện thoại liên hệ *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                                     <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                        <TextBox Text="{Binding ThemEmail, UpdateSourceTrigger=PropertyChanged}"
+                                        <TextBox Text="{Binding ThemSoDienThoai, UpdateSourceTrigger=PropertyChanged}"
+                                                 MaxLength="10"
                                                  BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                                     </Border>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Địa chỉ cư trú / cơ sở:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Email liên hệ *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                                     <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                        <TextBox Text="{Binding ThemDiaChi, UpdateSourceTrigger=PropertyChanged}"
+                                        <TextBox Text="{Binding ThemEmail, UpdateSourceTrigger=PropertyChanged}"
+                                                 MaxLength="100"
                                                  BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                                     </Border>
                                 </StackPanel>
                             </Grid>
 
+                            <!-- Địa chỉ cư trú / cơ sở -->
+                            <StackPanel Margin="0,0,0,10">
+                                <TextBlock Text="Địa chỉ cư trú / cơ sở:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
+                                <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                    <TextBox Text="{Binding ThemDiaChi, UpdateSourceTrigger=PropertyChanged}"
+                                             MaxLength="200"
+                                             BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
+                                </Border>
+                            </StackPanel>
+
                             <!-- Định danh pháp lý TERA: CCCD -->
                             <TextBlock Text="THÔNG TIN ĐỊNH DANH PHÁP LÝ TERA" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauStaylyPrimary}" Margin="0,4,0,8"/>
-                            <TextBlock Text="Số CCCD / CMND:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
+                            <TextBlock Text="Số CCCD định danh (12 số) *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                             <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" Margin="0,0,0,10" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                                 <TextBox Text="{Binding ThemCCCD, UpdateSourceTrigger=PropertyChanged}"
+                                         MaxLength="12"
                                          BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                             </Border>
 
@@ -962,7 +973,7 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Ngân hàng thụ hưởng:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Ngân hàng thụ hưởng *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                                     <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                                         <ComboBox ItemsSource="{Binding DanhSachNganHangHoTro}"
                                                   SelectedItem="{Binding ThemNganHang, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -970,18 +981,20 @@
                                     </Border>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Số tài khoản ngân hàng:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Số tài khoản ngân hàng *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                                     <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                                         <TextBox Text="{Binding ThemSoTaiKhoan, UpdateSourceTrigger=PropertyChanged}"
+                                                 MaxLength="20"
                                                  BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                                     </Border>
                                 </StackPanel>
                             </Grid>
 
                             <!-- Tên chủ tài khoản -->
-                            <TextBlock Text="Tên chủ tài khoản thụ hưởng (In hoa không dấu):" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
+                            <TextBlock Text="Tên chủ tài khoản thụ hưởng (In hoa không dấu) *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                             <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1" Margin="0,0,0,12">
                                 <TextBox Text="{Binding ThemChuTaiKhoan, UpdateSourceTrigger=PropertyChanged}"
+                                         MaxLength="100"
                                          BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                             </Border>
 

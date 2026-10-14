@@ -780,11 +780,11 @@ public sealed class AdminController(
 
         if (!string.IsNullOrWhiteSpace(role) && !role.Equals("All", StringComparison.OrdinalIgnoreCase))
         {
-            if (role.Equals("Owner", StringComparison.OrdinalIgnoreCase))
+            if (role.Equals("Owner", StringComparison.OrdinalIgnoreCase) || role.Equals("ChuHome", StringComparison.OrdinalIgnoreCase))
                 query = query.Where(t => t.MaVaiTro == VaiTro.OWNER);
-            else if (role.Equals("Guest", StringComparison.OrdinalIgnoreCase))
+            else if (role.Equals("Guest", StringComparison.OrdinalIgnoreCase) || role.Equals("KhachHang", StringComparison.OrdinalIgnoreCase))
                 query = query.Where(t => t.MaVaiTro == VaiTro.GUEST);
-            else if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            else if (role.Equals("Admin", StringComparison.OrdinalIgnoreCase) || role.Equals("QuanTriVien", StringComparison.OrdinalIgnoreCase))
                 query = query.Where(t => t.MaVaiTro == VaiTro.ADMIN);
         }
 
@@ -821,7 +821,9 @@ public sealed class AdminController(
             bookingCounts.GetValueOrDefault(u.MaNguoiDung, 0),
             u.NganHang,
             u.SoTaiKhoan,
-            u.TenNguoiThuHuong
+            u.TenNguoiThuHuong,
+            u.TrangThaiDuyet ?? (u.TrangThai ? "HoatDong" : "BiKhoa"),
+            u.LyDoTuChoi
         )).ToList();
 
         return Ok(result);
@@ -838,14 +840,42 @@ public sealed class AdminController(
         if (user is null)
             return NotFound("Người dùng không tồn tại.");
 
-        user.TrangThai = request.IsActive;
+        bool isRejection = string.Equals(request.Status, "TuChoi", StringComparison.OrdinalIgnoreCase) ||
+                           (!request.IsActive && !string.IsNullOrWhiteSpace(request.Reason));
+
+        if (isRejection)
+        {
+            user.TrangThai = false;
+            user.TrangThaiDuyet = "TuChoi";
+            user.LyDoTuChoi = !string.IsNullOrWhiteSpace(request.Reason) ? request.Reason.Trim() : "Hồ sơ chưa đạt tiêu chuẩn phê duyệt";
+        }
+        else if (request.IsActive)
+        {
+            user.TrangThai = true;
+            user.TrangThaiDuyet = "HoatDong";
+            user.LyDoTuChoi = null;
+        }
+        else
+        {
+            user.TrangThai = false;
+            user.TrangThaiDuyet = "BiKhoa";
+        }
 
         // Ghi Audit Log
-        await LogActionAsync(adminId, request.IsActive ? "MO_KHOA_TAI_KHOAN" : "KHOA_TAI_KHOAN", "NguoiDung", id,
-            $"Admin #{adminId} {(request.IsActive ? "mở khóa" : "khóa")} tài khoản {user.Email}", cancellationToken);
+        string logAction = isRejection ? "TU_CHOI_TAI_KHOAN" : (request.IsActive ? "MO_KHOA_TAI_KHOAN" : "KHOA_TAI_KHOAN");
+        string logDetail = isRejection
+            ? $"Admin #{adminId} từ chối tài khoản {user.Email}. Lý do: {user.LyDoTuChoi}"
+            : $"Admin #{adminId} {(request.IsActive ? "mở khóa" : "khóa")} tài khoản {user.Email}";
+
+        await LogActionAsync(adminId, logAction, "NguoiDung", id, logDetail, cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
-        return Ok(new { message = $"Tài khoản #{id} đã được {(request.IsActive ? "kích hoạt" : "khóa")}.", isActive = user.TrangThai });
+        return Ok(new { 
+            message = $"Tài khoản #{id} đã được {(isRejection ? "từ chối" : (request.IsActive ? "kích hoạt" : "khóa"))}.", 
+            isActive = user.TrangThai,
+            status = user.TrangThaiDuyet,
+            reason = user.LyDoTuChoi
+        });
     }
 
     [HttpPost("users")]
@@ -883,6 +913,17 @@ public sealed class AdminController(
             TrangThai = true,
             NgayTao = DateTime.UtcNow
         };
+
+        if (request.DateOfBirth.HasValue)
+        {
+            user.NgaySinh = request.DateOfBirth.Value;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Gender))
+        {
+            var g = request.Gender.Trim().ToUpperInvariant();
+            user.GioiTinh = (g.StartsWith("NỮ") || g.StartsWith("F")) ? "F" : "M";
+        }
 
         var rawPassword = string.IsNullOrWhiteSpace(request.Password) ? "123456" : request.Password;
         user.MatKhau = passwordHasher.HashPassword(user, rawPassword);
@@ -987,13 +1028,13 @@ public sealed class AdminController(
         if (fromDate.HasValue)
         {
             var from = fromDate.Value.Date;
-            query = query.Where(b => b.NgayDat >= from);
+            query = query.Where(b => b.NgayDen >= from);
         }
 
         if (toDate.HasValue)
         {
-            var to = toDate.Value.Date.AddDays(1).AddTicks(-1);
-            query = query.Where(b => b.NgayDat <= to);
+            var to = toDate.Value.Date;
+            query = query.Where(b => b.NgayDen <= to);
         }
 
         if (ownerId.HasValue && ownerId.Value > 0)

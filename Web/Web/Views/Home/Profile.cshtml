@@ -223,8 +223,8 @@
                                     </h6>
                                     <div class="row g-3">
                                         <div class="col-md-12">
-                                            <label class="form-label small fw-bold">Số CCCD / Mã định danh cá nhân *</label>
-                                            <input asp-for="Input.CitizenId" class="form-control rounded-pill px-3 py-2" required placeholder="Nhập 9 - 12 chữ số CCCD" />
+                                            <label class="form-label small fw-bold">Số CCCD định danh cá nhân (12 số) *</label>
+                                            <input asp-for="Input.CitizenId" class="form-control rounded-pill px-3 py-2" required maxlength="12" placeholder="Nhập đúng 12 chữ số CCCD gắn chip" />
                                             <span asp-validation-for="Input.CitizenId" class="text-danger small"></span>
                                         </div>
 

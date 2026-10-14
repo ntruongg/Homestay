@@ -131,13 +131,11 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Bộ lọc trạng thái người dùng -->
+                            <!-- Bộ lọc trạng thái người dùng (chuẩn hóa 2 trạng thái thực tế) -->
                             <ComboBox Grid.Column="2" SelectedValue="{Binding BoLocTrangThai}" SelectedValuePath="Tag" Height="36" VerticalAlignment="Center">
                                 <ComboBoxItem Content="Tất cả trạng thái" Tag="TatCa" IsSelected="True"/>
                                 <ComboBoxItem Content="Đang hoạt động" Tag="HoatDong"/>
-                                <ComboBoxItem Content="Bị từ chối" Tag="TuChoi"/>
-                                <ComboBoxItem Content="Bị khóa vi phạm" Tag="BiKhoa"/>
-                                <ComboBoxItem Content="Bị khóa hoặc từ chối" Tag="BiKhoaHoacTuChoi"/>
+                                <ComboBoxItem Content="Bị khóa / Từ chối" Tag="BiKhoaHoacTuChoi"/>
                             </ComboBox>
 
                             <!-- Số lượng kết quả lọc -->
@@ -814,35 +812,12 @@
 
                     <!-- Form Input Fields -->
                     <StackPanel Grid.Row="1" Margin="0,0,0,16">
-                        <!-- Tên đăng nhập & Mật khẩu -->
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="10"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Tên đăng nhập (Username) *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
-                                <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                    <TextBox Text="{Binding ThemTenDangNhap, UpdateSourceTrigger=PropertyChanged}"
-                                             BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
-                                </Border>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Mật khẩu khởi tạo *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
-                                <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                    <TextBox Text="{Binding ThemMatKhau, UpdateSourceTrigger=PropertyChanged}"
-                                             BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
-                                </Border>
-                            </StackPanel>
-                        </Grid>
-
                         <!-- Họ tên & Vai trò -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="10"/>
-                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="150"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="Họ và tên người dùng *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
@@ -857,6 +832,17 @@
                                     <ComboBoxItem Content="Khách hàng" Tag="KhachHang" IsSelected="True"/>
                                     <ComboBoxItem Content="Quản trị viên" Tag="QuanTriVien"/>
                                 </ComboBox>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Mật khẩu khởi tạo -->
+                        <Grid Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Mật khẩu khởi tạo *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
+                                <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                    <TextBox Text="{Binding ThemMatKhau, UpdateSourceTrigger=PropertyChanged}"
+                                             BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
+                                </Border>
                             </StackPanel>
                         </Grid>
 

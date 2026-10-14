@@ -291,7 +291,7 @@ namespace HomestaySystem.ViewModels
 
         private void ThucHienMoDialogThemMoi()
         {
-            ThemTenDangNhap = $"user_{DateTime.Now:MMddHHmm}";
+            ThemTenDangNhap = string.Empty;
             ThemMatKhau = "Stayly@2026";
             ThemHoTen = string.Empty;
             ThemEmail = string.Empty;
@@ -304,49 +304,72 @@ namespace HomestaySystem.ViewModels
 
         private async Task ThucHienXacNhanThemMoiAsync()
         {
-            if (string.IsNullOrWhiteSpace(ThemTenDangNhap))
+            if (!ValidationHelper.IsValidVietnameseName(ThemHoTen, out var errName))
             {
-                MessageBox.Show("Vui lòng nhập tên đăng nhập!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(errName, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            if (string.IsNullOrWhiteSpace(ThemHoTen))
+            if (!ValidationHelper.IsValidVietnamesePhone(ThemSoDienThoai, out var errPhone))
             {
-                MessageBox.Show("Vui lòng nhập họ và tên người dùng!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(errPhone, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            if (string.IsNullOrWhiteSpace(ThemEmail))
+            if (!ValidationHelper.IsValidEmail(ThemEmail, out var errEmail))
             {
-                MessageBox.Show("Vui lòng nhập email người dùng!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(errEmail, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!ValidationHelper.IsValidPassword(ThemMatKhau, out var errPass))
+            {
+                MessageBox.Show(errPass, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!ValidationHelper.IsValidDateOfBirth(ThemNgaySinh, out var errDob))
+            {
+                MessageBox.Show(errDob, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            var taiKhoanMoi = new TaiKhoan
+            try
             {
-                TenDangNhap = ThemTenDangNhap.Trim(),
-                MatKhau = ThemMatKhau.Trim(),
-                HoTen = ThemHoTen.Trim(),
-                Email = ThemEmail.Trim(),
-                SoDienThoai = ThemSoDienThoai?.Trim() ?? string.Empty,
-                NgaySinh = ThemNgaySinh,
-                GioiTinh = ThemGioiTinh,
-                VaiTro = ThemVaiTro,
-                TrangThai = "HoatDong",
-                NgayTao = DateTime.Now
-            };
+                DangTaiDuLieu = true;
+                var usernameFallback = ThemEmail.Trim().Split('@')[0];
+                var taiKhoanMoi = new TaiKhoan
+                {
+                    TenDangNhap = usernameFallback,
+                    MatKhau = string.IsNullOrWhiteSpace(ThemMatKhau) ? "Stayly@2026" : ThemMatKhau.Trim(),
+                    HoTen = ThemHoTen.Trim(),
+                    Email = ThemEmail.Trim().ToLowerInvariant(),
+                    SoDienThoai = ThemSoDienThoai.Trim(),
+                    NgaySinh = ThemNgaySinh,
+                    GioiTinh = ThemGioiTinh,
+                    VaiTro = ThemVaiTro,
+                    TrangThai = "HoatDong",
+                    NgayTao = DateTime.Now
+                };
 
-            var ok = await _adminService.TaoTaiKhoanAsync(taiKhoanMoi);
-            if (ok)
-            {
-                _tatCaNguoiDung.Insert(0, taiKhoanMoi);
-                CapNhatThongKe();
-                ApDungBoLoc();
-                TaiKhoanDangChon = taiKhoanMoi;
-                HienThiDialogThemMoi = false;
-                MessageBox.Show($"Đã tạo thành công tài khoản người dùng: {taiKhoanMoi.HoTen} ({taiKhoanMoi.TenDangNhap})!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+                var ok = await _adminService.TaoTaiKhoanAsync(taiKhoanMoi);
+                if (ok)
+                {
+                    _tatCaNguoiDung.Insert(0, taiKhoanMoi);
+                    CapNhatThongKe();
+                    ApDungBoLoc();
+                    TaiKhoanDangChon = taiKhoanMoi;
+                    HienThiDialogThemMoi = false;
+                    MessageBox.Show($"Đã tạo thành công tài khoản người dùng: {taiKhoanMoi.HoTen} ({taiKhoanMoi.Email})!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Không thể tạo tài khoản người dùng. Vui lòng kiểm tra lại kết nối!", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Không thể tạo tài khoản người dùng. Vui lòng kiểm tra lại kết nối!", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Không thể tạo tài khoản: {ex.Message}", "Thông báo lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            finally
+            {
+                DangTaiDuLieu = false;
             }
         }
 
@@ -365,23 +388,43 @@ namespace HomestaySystem.ViewModels
         private async Task ThucHienXacNhanChinhSuaAsync()
         {
             if (TaiKhoanDangChon == null) return;
-            if (string.IsNullOrWhiteSpace(SuaHoTen))
+            if (!ValidationHelper.IsValidVietnameseName(SuaHoTen, out var errName))
             {
-                MessageBox.Show("Vui lòng nhập họ và tên người dùng!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(errName, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-
-            TaiKhoanDangChon.HoTen = SuaHoTen.Trim();
-            TaiKhoanDangChon.Email = SuaEmail.Trim();
-            TaiKhoanDangChon.SoDienThoai = SuaSoDienThoai.Trim();
-            TaiKhoanDangChon.NgaySinh = SuaNgaySinh;
-            TaiKhoanDangChon.GioiTinh = SuaGioiTinh;
+            if (!ValidationHelper.IsValidVietnamesePhone(SuaSoDienThoai, out var errPhone))
+            {
+                MessageBox.Show(errPhone, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!ValidationHelper.IsValidEmail(SuaEmail, out var errEmail))
+            {
+                MessageBox.Show(errEmail, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!ValidationHelper.IsValidDateOfBirth(SuaNgaySinh, out var errDob))
+            {
+                MessageBox.Show(errDob, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
             bool doiMatKhau = !string.IsNullOrWhiteSpace(SuaMatKhau);
             if (doiMatKhau)
             {
+                if (!ValidationHelper.IsValidPassword(SuaMatKhau, out var errPass))
+                {
+                    MessageBox.Show(errPass, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
                 TaiKhoanDangChon.MatKhau = SuaMatKhau.Trim();
             }
+
+            TaiKhoanDangChon.HoTen = SuaHoTen.Trim();
+            TaiKhoanDangChon.Email = SuaEmail.Trim().ToLowerInvariant();
+            TaiKhoanDangChon.SoDienThoai = SuaSoDienThoai.Trim();
+            TaiKhoanDangChon.NgaySinh = SuaNgaySinh;
+            TaiKhoanDangChon.GioiTinh = SuaGioiTinh;
 
             try
             {

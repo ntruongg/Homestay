@@ -107,9 +107,9 @@
                             </StackPanel>
                             <TextBlock FontSize="11.5" Foreground="#64748B">
                                 <Run Text="Data: "/>
-                                <Run Text="{Binding DungLuongDataMB, StringFormat='{}{0:N1} MB'}" FontWeight="SemiBold" Foreground="#0284C7"/>
+                                <Run Text="{Binding DungLuongDataMB, Mode=OneWay, StringFormat='{}{0:N1} MB'}" FontWeight="SemiBold" Foreground="#0284C7"/>
                                 <Run Text=" | Log: "/>
-                                <Run Text="{Binding DungLuongLogMB, StringFormat='{}{0:N1} MB'}" FontWeight="SemiBold" Foreground="#64748B"/>
+                                <Run Text="{Binding DungLuongLogMB, Mode=OneWay, StringFormat='{}{0:N1} MB'}" FontWeight="SemiBold" Foreground="#64748B"/>
                             </TextBlock>
                         </StackPanel>
                     </Border>
@@ -169,7 +169,7 @@
                             </StackPanel>
                             <TextBlock FontSize="11.5" Foreground="#64748B">
                                 <Run Text="Tổng dung lượng: "/>
-                                <Run Text="{Binding TongDungLuongSaoLuu}" FontWeight="SemiBold" Foreground="#D97706"/>
+                                <Run Text="{Binding TongDungLuongSaoLuu, Mode=OneWay}" FontWeight="SemiBold" Foreground="#D97706"/>
                             </TextBlock>
                         </StackPanel>
                     </Border>
@@ -197,9 +197,9 @@
                             </StackPanel>
                             <TextBlock FontSize="12" Foreground="#166534" Margin="0,3,0,0">
                                 <Run Text="Lần chạy tới: "/>
-                                <Run Text="{Binding LanChayTiepTheoText}" FontWeight="Bold"/>
+                                <Run Text="{Binding LanChayTiepTheoText, Mode=OneWay}" FontWeight="Bold"/>
                                 <Run Text=" | Chính sách: "/>
-                                <Run Text="{Binding LuuTruText}"/>
+                                <Run Text="{Binding LuuTruText, Mode=OneWay}"/>
                             </TextBlock>
                         </StackPanel>
 

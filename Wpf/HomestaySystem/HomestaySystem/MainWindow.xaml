@@ -213,9 +213,10 @@
                                                 <TextBlock Text="📑" FontSize="14" VerticalAlignment="Center" Margin="0,0,9,0"/>
                                                 <TextBlock Text="Đơn đặt &amp; hoàn tiền" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" x:Name="txtTitle" Foreground="#475569"/>
                                             </StackPanel>
-                                            <!-- Badge số đơn yêu cầu hoàn tiền -->
-                                            <Border HorizontalAlignment="Right" Background="{StaticResource MauStaylyRed}" CornerRadius="9" Padding="6,1.5" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding QuanLyDonDatVM.SoDonYeuCauHoanTien}" Foreground="White" FontSize="10.5" FontWeight="Bold"/>
+                                            <!-- Badge số đơn cần xử lý (hoàn tiền + chờ duyệt) -->
+                                            <Border HorizontalAlignment="Right" Background="{StaticResource MauStaylyRed}" CornerRadius="9" Padding="6,1.5" VerticalAlignment="Center"
+                                                    Visibility="{Binding QuanLyDonDatVM.CoDonCanXuLy, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="{Binding QuanLyDonDatVM.SoDonCanXuLy}" Foreground="White" FontSize="10.5" FontWeight="Bold"/>
                                             </Border>
                                         </Grid>
                                     </Border>

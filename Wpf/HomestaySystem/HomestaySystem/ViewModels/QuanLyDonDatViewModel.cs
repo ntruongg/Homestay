@@ -137,8 +137,12 @@ namespace HomestaySystem.ViewModels
         private string _suaTenKhachHang = string.Empty;
         private string _suaSoDienThoai = string.Empty;
         private string _suaEmail = string.Empty;
-        private string _suaTrangThai = "ChoXacNhan";
+        private string _suaTrangThai = "ChoDuyet";
         private string _suaGhiChu = string.Empty;
+        private DateTime _suaNgayCheckIn = DateTime.Today;
+        private DateTime _suaNgayCheckOut = DateTime.Today.AddDays(1);
+        private int _suaSoNguoiLon = 1;
+        private int _suaSoTreEm = 0;
 
         public bool HienThiDialogChinhSua
         {
@@ -164,6 +168,30 @@ namespace HomestaySystem.ViewModels
             set => SetProperty(ref _suaEmail, value);
         }
 
+        public DateTime SuaNgayCheckIn
+        {
+            get => _suaNgayCheckIn;
+            set => SetProperty(ref _suaNgayCheckIn, value);
+        }
+
+        public DateTime SuaNgayCheckOut
+        {
+            get => _suaNgayCheckOut;
+            set => SetProperty(ref _suaNgayCheckOut, value);
+        }
+
+        public int SuaSoNguoiLon
+        {
+            get => _suaSoNguoiLon;
+            set => SetProperty(ref _suaSoNguoiLon, value);
+        }
+
+        public int SuaSoTreEm
+        {
+            get => _suaSoTreEm;
+            set => SetProperty(ref _suaSoTreEm, value);
+        }
+
         public string SuaTrangThai
         {
             get => _suaTrangThai;
@@ -176,11 +204,25 @@ namespace HomestaySystem.ViewModels
             set => SetProperty(ref _suaGhiChu, value);
         }
 
+        public record LuaChonTrangThaiDon(string MaTrangThai, string TenHienThi);
+        public List<LuaChonTrangThaiDon> DanhSachTrangThaiDon { get; } = new()
+        {
+            new("ChoDuyet", "⏳ Chờ xác nhận / Chờ duyệt"),
+            new("DaDuyet", "✅ Đã xác nhận / Sẵn sàng đón"),
+            new("DangO", "🏡 Khách đang lưu trú (Đang ở)"),
+            new("DaHoanTat", "🏁 Đã hoàn tất (Checked-out)"),
+            new("YeuCauHoanTien", "💸 Yêu cầu hoàn tiền"),
+            new("DaHoanTien", "💰 Đã hoàn tiền thành công"),
+            new("DaHuy", "🚫 Đã hủy / Từ chối đơn")
+        };
+
         // Thống kê nhanh
         public int TongSoDon => _tatCaDon.Count;
-        public int SoDonChoXacNhan => _tatCaDon.Count(d => d.TrangThai == "Pending" || d.TrangThai == "ChoXacNhan");
+        public int SoDonChoXacNhan => _tatCaDon.Count(d => d.TrangThai == "Pending" || d.TrangThai == "ChoXacNhan" || d.TrangThai == "ChoDuyet");
         public int SoDonHoanThanh => _tatCaDon.Count(d => d.TrangThai == "CheckedOut" || d.TrangThai == "HoanThanh" || d.TrangThai == "DaHoanTat");
         public int SoDonYeuCauHoanTien => _tatCaDon.Count(d => d.TrangThai == "RefundRequested" || d.TrangThai == "YeuCauHoanTien");
+        public int SoDonCanXuLy => SoDonYeuCauHoanTien + SoDonChoXacNhan;
+        public bool CoDonCanXuLy => SoDonCanXuLy > 0;
 
         // Commands
         public ICommand TaiDuLieuCommand { get; }
@@ -190,6 +232,8 @@ namespace HomestaySystem.ViewModels
         public ICommand MoDialogTuChoiHoanTienCommand { get; }
         public ICommand XacNhanTuChoiHoanTienCommand { get; }
         public ICommand HuyDialogTuChoiHoanTienCommand { get; }
+        public ICommand DuyetDonCommand { get; }
+        public ICommand HuyDonCommand { get; }
         public ICommand MoDialogChinhSuaCommand { get; }
         public ICommand XacNhanChinhSuaCommand { get; }
         public ICommand HuyDialogChinhSuaCommand { get; }
@@ -215,6 +259,9 @@ namespace HomestaySystem.ViewModels
             XacNhanTuChoiHoanTienCommand = new RelayCommand(async () => await ThucHienXacNhanTuChoiHoanTienAsync());
             HuyDialogTuChoiHoanTienCommand = new RelayCommand(() => HienThiDialogTuChoiHoanTien = false);
 
+            DuyetDonCommand = new RelayCommand(async () => await ThucHienDuyetDonAsync(), () => DonDangChon != null && DonDangChon.LaDonChoDuyet);
+            HuyDonCommand = new RelayCommand(async () => await ThucHienHuyDonAsync(), () => DonDangChon != null && (DonDangChon.LaDonChoDuyet || DonDangChon.TrangThai == "DaDuyet"));
+
             MoDialogChinhSuaCommand = new RelayCommand(ThucHienMoDialogChinhSua, () => DonDangChon != null);
             XacNhanChinhSuaCommand = new RelayCommand(async () => await ThucHienXacNhanChinhSuaAsync());
             HuyDialogChinhSuaCommand = new RelayCommand(() => HienThiDialogChinhSua = false);
@@ -228,7 +275,28 @@ namespace HomestaySystem.ViewModels
             SuaTenKhachHang = DonDangChon.TenKhachHang;
             SuaSoDienThoai = DonDangChon.SoDienThoaiKhach;
             SuaEmail = DonDangChon.EmailKhach;
-            SuaTrangThai = DonDangChon.TrangThai;
+            SuaNgayCheckIn = DonDangChon.NgayNhanPhong != default ? DonDangChon.NgayNhanPhong : DateTime.Today;
+            SuaNgayCheckOut = DonDangChon.NgayTraPhong != default ? DonDangChon.NgayTraPhong : DateTime.Today.AddDays(1);
+            SuaSoNguoiLon = DonDangChon.SoNguoiLon > 0 ? DonDangChon.SoNguoiLon : 1;
+            SuaSoTreEm = DonDangChon.SoTreEm >= 0 ? DonDangChon.SoTreEm : 0;
+
+            string status = DonDangChon.TrangThai ?? "ChoDuyet";
+            if (status.Equals("Pending", StringComparison.OrdinalIgnoreCase) || status.Equals("ChoXacNhan", StringComparison.OrdinalIgnoreCase))
+                status = "ChoDuyet";
+            else if (status.Equals("Confirmed", StringComparison.OrdinalIgnoreCase) || status.Equals("DaXacNhan", StringComparison.OrdinalIgnoreCase))
+                status = "DaDuyet";
+            else if (status.Equals("CheckedIn", StringComparison.OrdinalIgnoreCase))
+                status = "DangO";
+            else if (status.Equals("CheckedOut", StringComparison.OrdinalIgnoreCase) || status.Equals("HoanThanh", StringComparison.OrdinalIgnoreCase))
+                status = "DaHoanTat";
+            else if (status.Equals("RefundRequested", StringComparison.OrdinalIgnoreCase))
+                status = "YeuCauHoanTien";
+            else if (status.Equals("Refunded", StringComparison.OrdinalIgnoreCase))
+                status = "DaHoanTien";
+            else if (status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase))
+                status = "DaHuy";
+
+            SuaTrangThai = DanhSachTrangThaiDon.Any(s => s.MaTrangThai == status) ? status : "ChoDuyet";
             SuaGhiChu = DonDangChon.GhiChu;
             HienThiDialogChinhSua = true;
         }
@@ -236,15 +304,44 @@ namespace HomestaySystem.ViewModels
         private async Task ThucHienXacNhanChinhSuaAsync()
         {
             if (DonDangChon == null) return;
-            if (string.IsNullOrWhiteSpace(SuaTenKhachHang))
+            if (!ValidationHelper.IsValidVietnameseName(SuaTenKhachHang, out var errName))
             {
-                MessageBox.Show("Vui lòng nhập tên khách hàng!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(errName, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!ValidationHelper.IsValidVietnamesePhone(SuaSoDienThoai, out var errPhone))
+            {
+                MessageBox.Show(errPhone, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!ValidationHelper.IsValidEmail(SuaEmail, out var errEmail))
+            {
+                MessageBox.Show(errEmail, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (SuaNgayCheckOut.Date <= SuaNgayCheckIn.Date)
+            {
+                MessageBox.Show("Ngày trả phòng (Check-out) phải sau ngày nhận phòng (Check-in) ít nhất 1 ngày!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (SuaSoNguoiLon < 1)
+            {
+                MessageBox.Show("Số người lớn phải từ 1 trở lên!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (SuaSoTreEm < 0)
+            {
+                MessageBox.Show("Số trẻ em không được âm!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             DonDangChon.TenKhachHang = SuaTenKhachHang.Trim();
             DonDangChon.SoDienThoaiKhach = SuaSoDienThoai.Trim();
-            DonDangChon.EmailKhach = SuaEmail.Trim();
+            DonDangChon.EmailKhach = SuaEmail.Trim().ToLowerInvariant();
+            DonDangChon.NgayNhanPhong = SuaNgayCheckIn;
+            DonDangChon.NgayTraPhong = SuaNgayCheckOut;
+            DonDangChon.SoNguoiLon = SuaSoNguoiLon;
+            DonDangChon.SoTreEm = SuaSoTreEm;
             DonDangChon.TrangThai = SuaTrangThai;
             DonDangChon.GhiChu = SuaGhiChu?.Trim() ?? string.Empty;
 
@@ -318,9 +415,9 @@ namespace HomestaySystem.ViewModels
                 {
                     query = query.Where(d => d.TrangThai == "CheckedOut" || d.TrangThai == "HoanThanh" || d.TrangThai == "DaHoanTat");
                 }
-                else if (BoLocTrangThai == "Pending" || BoLocTrangThai == "ChoXacNhan")
+                else if (BoLocTrangThai == "Pending" || BoLocTrangThai == "ChoXacNhan" || BoLocTrangThai == "ChoDuyet")
                 {
-                    query = query.Where(d => d.TrangThai == "Pending" || d.TrangThai == "ChoXacNhan");
+                    query = query.Where(d => d.TrangThai == "Pending" || d.TrangThai == "ChoXacNhan" || d.TrangThai == "ChoDuyet");
                 }
                 else if (BoLocTrangThai == "CheckedIn" || BoLocTrangThai == "DangO")
                 {
@@ -353,9 +450,17 @@ namespace HomestaySystem.ViewModels
             }
 
             DanhSachHienThi = new ObservableCollection<DonDatPhong>(query.OrderByDescending(d => d.ThoiGianTao));
-            if (DonDangChon != null && !DanhSachHienThi.Contains(DonDangChon))
+            if (DonDangChon != null)
             {
-                DonDangChon = null;
+                var existing = DanhSachHienThi.FirstOrDefault(d => d.MaDon == DonDangChon.MaDon);
+                if (existing != null)
+                {
+                    DonDangChon = existing;
+                }
+                else if (string.IsNullOrWhiteSpace(TuKhoaTimKiem) && (string.IsNullOrWhiteSpace(BoLocTrangThai) || BoLocTrangThai == "TatCa"))
+                {
+                    DonDangChon = null;
+                }
             }
         }
 
@@ -365,6 +470,8 @@ namespace HomestaySystem.ViewModels
             OnPropertyChanged(nameof(SoDonChoXacNhan));
             OnPropertyChanged(nameof(SoDonHoanThanh));
             OnPropertyChanged(nameof(SoDonYeuCauHoanTien));
+            OnPropertyChanged(nameof(SoDonCanXuLy));
+            OnPropertyChanged(nameof(CoDonCanXuLy));
         }
 
         private void ThucHienMoDialogHoanTien()
@@ -433,6 +540,82 @@ namespace HomestaySystem.ViewModels
             else
             {
                 MessageBox.Show("Thao tác từ chối hoàn tiền thất bại.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async Task ThucHienDuyetDonAsync()
+        {
+            if (DonDangChon == null) return;
+            var hoi = MessageBox.Show(
+                $"Xác nhận PHÊ DUYỆT tiếp nhận đơn đặt phòng {DonDangChon.MaDonHienThi} của khách '{DonDangChon.TenKhachHang}'?\nSau khi duyệt, đơn sẽ chuyển sang trạng thái Đã xác nhận / Sẵn sàng đón tiếp.",
+                "Xác nhận phê duyệt đơn",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (hoi != MessageBoxResult.Yes) return;
+
+            try
+            {
+                DangTaiDuLieu = true;
+                DonDangChon.TrangThai = "DaDuyet";
+                bool thanhCong = await _adminService.CapNhatDonDatAsync(DonDangChon);
+                if (thanhCong)
+                {
+                    CapNhatThongKe();
+                    OnPropertyChanged(nameof(DonDangChon));
+                    MessageBox.Show($"Đã phê duyệt tiếp nhận đơn {DonDangChon.MaDonHienThi} thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                    await TaiDanhSachDonDatAsync();
+                }
+                else
+                {
+                    MessageBox.Show("Không thể duyệt đơn. Vui lòng kiểm tra lại kết nối máy chủ!", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi phê duyệt đơn: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                DangTaiDuLieu = false;
+            }
+        }
+
+        private async Task ThucHienHuyDonAsync()
+        {
+            if (DonDangChon == null) return;
+            var hoi = MessageBox.Show(
+                $"Xác nhận TỪ CHỐI / HỦY đơn đặt phòng {DonDangChon.MaDonHienThi} của khách '{DonDangChon.TenKhachHang}'?\nLịch phòng sẽ được giải phóng trên hệ thống sàn.",
+                "Xác nhận từ chối / hủy đơn",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (hoi != MessageBoxResult.Yes) return;
+
+            try
+            {
+                DangTaiDuLieu = true;
+                DonDangChon.TrangThai = "DaHuy";
+                bool thanhCong = await _adminService.CapNhatDonDatAsync(DonDangChon);
+                if (thanhCong)
+                {
+                    CapNhatThongKe();
+                    OnPropertyChanged(nameof(DonDangChon));
+                    MessageBox.Show($"Đã từ chối / hủy đơn {DonDangChon.MaDonHienThi} thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                    await TaiDanhSachDonDatAsync();
+                }
+                else
+                {
+                    MessageBox.Show("Không thể từ chối / hủy đơn. Vui lòng kiểm tra lại kết nối máy chủ!", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi từ chối / hủy đơn: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                DangTaiDuLieu = false;
             }
         }
     }

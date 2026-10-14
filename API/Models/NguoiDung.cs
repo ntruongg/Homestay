@@ -45,6 +45,12 @@ public class NguoiDung
     [StringLength(20)]
     public string? CCCD { get; set; }
 
+    [StringLength(30)]
+    public string? TrangThaiDuyet { get; set; } = "HoatDong";
+
+    [StringLength(500)]
+    public string? LyDoTuChoi { get; set; }
+
     public ICollection<CoSoLuuTru> CoSoLuuTrus { get; set; } = [];
     public ICollection<DonDatPhong> DonDatPhongs { get; set; } = [];
     public ICollection<LichSuDuyet> LichSuDuyets { get; set; } = [];

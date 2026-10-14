@@ -15,9 +15,12 @@ namespace HomestaySystem.ViewModels
     public class QuanLyKhuyenMaiViewModel : ViewModelBase
     {
         private readonly IAdminService _adminService;
+        private List<KhuyenMai> _tatCaKhuyenMai = new();
         private ObservableCollection<KhuyenMai> _danhSachKhuyenMai = new();
         private KhuyenMai? _khuyenMaiDangChon;
         private KhuyenMai _khuyenMaiForm = new();
+        private string _tuKhoaTimKiem = string.Empty;
+        private string _boLocTrangThai = "TatCa";
         private bool _dangThemMoi;
         private bool _hienThiDialogForm;
         private bool _dangTaiDuLieu;
@@ -27,6 +30,30 @@ namespace HomestaySystem.ViewModels
         {
             get => _danhSachKhuyenMai;
             set => SetProperty(ref _danhSachKhuyenMai, value);
+        }
+
+        public string TuKhoaTimKiem
+        {
+            get => _tuKhoaTimKiem;
+            set
+            {
+                if (SetProperty(ref _tuKhoaTimKiem, value))
+                {
+                    ApDungBoLoc();
+                }
+            }
+        }
+
+        public string BoLocTrangThai
+        {
+            get => _boLocTrangThai;
+            set
+            {
+                if (SetProperty(ref _boLocTrangThai, value))
+                {
+                    ApDungBoLoc();
+                }
+            }
         }
 
         public KhuyenMai? KhuyenMaiDangChon
@@ -81,11 +108,12 @@ namespace HomestaySystem.ViewModels
         public string TieuDeDialog => DangThemMoi ? "TẠO MÃ VOUCHER MỚI" : "CẬP NHẬT MÃ KHUYẾN MÃI";
         public string TieuDeNutLuu => DangThemMoi ? "Tạo voucher mới" : "Lưu thay đổi";
 
-        // KPI Metrics
-        public int TongSoVoucher => DanhSachKhuyenMai.Count;
-        public int SoVoucherDangHoatDong => System.Linq.Enumerable.Count(DanhSachKhuyenMai, v => v.TrangThai == "HoatDong");
-        public int SoLuotApDung => System.Linq.Enumerable.Sum(DanhSachKhuyenMai, v => v.SoLuongDaDung);
-        public string TongNganSachDaChi => $"{System.Linq.Enumerable.Sum(DanhSachKhuyenMai, v => v.SoLuongDaDung * 120000):N0} đ";
+        // KPI Metrics (Tính trên toàn bộ danh sách chiến dịch)
+        public int TongSoVoucher => _tatCaKhuyenMai.Count;
+        public int SoVoucherDangHoatDong => System.Linq.Enumerable.Count(_tatCaKhuyenMai, v => v.TrangThai == "HoatDong");
+        public int SoVoucherDaKhoa => System.Linq.Enumerable.Count(_tatCaKhuyenMai, v => v.TrangThai == "Khoa");
+        public int SoLuotApDung => System.Linq.Enumerable.Sum(_tatCaKhuyenMai, v => v.SoLuongDaDung);
+        public string TongNganSachDaChi => $"{System.Linq.Enumerable.Sum(_tatCaKhuyenMai, v => v.SoLuongDaDung * 120000):N0} đ";
 
         // Commands
         public ICommand TaiDuLieuCommand { get; }
@@ -126,17 +154,54 @@ namespace HomestaySystem.ViewModels
             try
             {
                 var ds = await _adminService.LayDanhSachKhuyenMaiAsync();
-                DanhSachKhuyenMai = new ObservableCollection<KhuyenMai>(ds);
-                if (KhuyenMaiDangChon != null && !DanhSachKhuyenMai.Contains(KhuyenMaiDangChon))
-                {
-                    KhuyenMaiDangChon = null;
-                }
-                ThongBaoTrangThai = $"Đã tải {DanhSachKhuyenMai.Count} mã khuyến mãi.";
+                _tatCaKhuyenMai = ds ?? new List<KhuyenMai>();
+                ApDungBoLoc();
+                CapNhatThongKe();
+                ThongBaoTrangThai = $"Đã tải {_tatCaKhuyenMai.Count} mã khuyến mãi ({SoVoucherDangHoatDong} hoạt động, {SoVoucherDaKhoa} đã khóa/hết hạn).";
             }
             finally
             {
                 DangTaiDuLieu = false;
             }
+        }
+
+        private void ApDungBoLoc()
+        {
+            var ketQua = _tatCaKhuyenMai.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(BoLocTrangThai) && BoLocTrangThai != "TatCa")
+            {
+                ketQua = BoLocTrangThai switch
+                {
+                    "HoatDong" => ketQua.Where(v => v.TrangThai == "HoatDong"),
+                    "Khoa" => ketQua.Where(v => v.TrangThai == "Khoa"),
+                    _ => ketQua
+                };
+            }
+
+            if (!string.IsNullOrWhiteSpace(TuKhoaTimKiem))
+            {
+                string kw = TuKhoaTimKiem.Trim().ToLower();
+                ketQua = ketQua.Where(v =>
+                    (!string.IsNullOrEmpty(v.MaCode) && v.MaCode.ToLower().Contains(kw)) ||
+                    (!string.IsNullOrEmpty(v.TenChuongTrinh) && v.TenChuongTrinh.ToLower().Contains(kw)));
+            }
+
+            DanhSachKhuyenMai = new ObservableCollection<KhuyenMai>(ketQua);
+
+            if (KhuyenMaiDangChon != null && !DanhSachKhuyenMai.Contains(KhuyenMaiDangChon))
+            {
+                KhuyenMaiDangChon = null;
+            }
+        }
+
+        private void CapNhatThongKe()
+        {
+            OnPropertyChanged(nameof(TongSoVoucher));
+            OnPropertyChanged(nameof(SoVoucherDangHoatDong));
+            OnPropertyChanged(nameof(SoVoucherDaKhoa));
+            OnPropertyChanged(nameof(SoLuotApDung));
+            OnPropertyChanged(nameof(TongNganSachDaChi));
         }
 
         private void ThucHienDongDialog()
@@ -190,6 +255,9 @@ namespace HomestaySystem.ViewModels
 
         private async Task ThucHienLuuKhuyenMaiAsync()
         {
+            KhuyenMaiForm.MaCode = KhuyenMaiForm.MaCode?.Trim().ToUpperInvariant() ?? string.Empty;
+            KhuyenMaiForm.TenChuongTrinh = KhuyenMaiForm.TenChuongTrinh?.Trim() ?? string.Empty;
+
             if (string.IsNullOrWhiteSpace(KhuyenMaiForm.MaCode) || string.IsNullOrWhiteSpace(KhuyenMaiForm.TenChuongTrinh))
             {
                 MessageBox.Show("Vui lòng nhập đầy đủ Mã Code và Tên chương trình!", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -199,6 +267,24 @@ namespace HomestaySystem.ViewModels
             if (KhuyenMaiForm.PhanTramGiam <= 0 || KhuyenMaiForm.PhanTramGiam > 100)
             {
                 MessageBox.Show("Phần trăm giảm phải nằm trong khoảng từ 1% đến 100%!", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (KhuyenMaiForm.GiamToiDa < 0)
+            {
+                MessageBox.Show("Mức giảm tối đa không được là số âm!", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (KhuyenMaiForm.DonGiaToiThieu < 0)
+            {
+                MessageBox.Show("Đơn giá tối thiểu không được là số âm!", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (KhuyenMaiForm.SoLuongToiDa <= 0)
+            {
+                MessageBox.Show("Số lượt sử dụng tối đa phải lớn hơn 0!", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 

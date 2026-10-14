@@ -41,9 +41,14 @@ namespace HomestaySystem.Models
         public string? SoTaiKhoanNganHangChuHome { get; set; }
         public string? ChuTaiKhoanNganHangChuHome { get; set; }
 
-        // Thời gian lưu trú
+        // Thời gian lưu trú & Số lượng khách
         public DateTime NgayCheckIn { get; set; }
         public DateTime NgayCheckOut { get; set; }
+        public DateTime NgayNhanPhong { get => NgayCheckIn; set => NgayCheckIn = value; }
+        public DateTime NgayTraPhong { get => NgayCheckOut; set => NgayCheckOut = value; }
+        public int SoNguoiLon { get; set; } = 1;
+        public int SoTreEm { get; set; } = 0;
+        public int TongSoKhach => SoNguoiLon + SoTreEm;
 
         // ================= DÒNG TIỀN QUYẾT TOÁN 85/15 =================
         /// <summary>
@@ -62,8 +67,12 @@ namespace HomestaySystem.Models
         public string TrangThaiQuyetToan { get; set; } = "ChuaQuyetToan";
 
         public DateTime? NgayQuyetToan { get; set; }
+        public DateTime? ThoiGianQuyetToan { get => NgayQuyetToan; set => NgayQuyetToan = value; }
         public string? MaGiaoDichQuyetToan { get; set; }
         public string? GhiChuQuyetToan { get; set; }
+        public string NgayQuyetToanDinhDang => NgayQuyetToan.HasValue ? NgayQuyetToan.Value.ToString("dd/MM/yyyy HH:mm") : "---";
+        public bool LaDaQuyetToan => TrangThaiQuyetToan == "DaQuyetToan";
+        public bool LaChuaQuyetToan => TrangThaiQuyetToan != "DaQuyetToan";
 
         public DateTime ThoiGianTao { get; set; } = DateTime.Now;
         public string GhiChu { get; set; } = string.Empty;
@@ -81,7 +90,7 @@ namespace HomestaySystem.Models
         {
             get => TrangThai switch
             {
-                "Pending" or "ChoXacNhan" => "Chờ xác nhận",
+                "Pending" or "ChoXacNhan" or "ChoDuyet" => "Chờ duyệt/xác nhận",
                 "Confirmed" or "DaXacNhan" or "DaDuyet" => "Đã duyệt/xác nhận",
                 "CheckedIn" or "DangO" => "Đang lưu trú",
                 "CheckedOut" or "HoanThanh" or "DaHoanTat" => "Đã hoàn tất",
@@ -98,7 +107,7 @@ namespace HomestaySystem.Models
             get => TrangThai switch
             {
                 "Confirmed" or "DaXacNhan" or "DaDuyet" or "CheckedIn" or "DangO" or "CheckedOut" or "HoanThanh" or "DaHoanTat" or "Refunded" or "DaHoanTien" => "#10B981", // Xanh lá
-                "Pending" or "ChoXacNhan" or "RefundRequested" or "YeuCauHoanTien" => "#F59E0B", // Vàng: Cảnh báo, chờ duyệt
+                "Pending" or "ChoXacNhan" or "ChoDuyet" or "RefundRequested" or "YeuCauHoanTien" => "#F59E0B", // Vàng: Cảnh báo, chờ duyệt
                 "Cancelled" or "DaHuy" or "TuChoi" or "BiKhoa" => "#EF4444", // Đỏ: Dừng hoạt động, hủy, từ chối
                 _ => "#64748B"
             };
@@ -108,7 +117,10 @@ namespace HomestaySystem.Models
         public string TenHienThiQuyetToan { get => TrangThaiQuyetToan == "DaQuyetToan" ? "Đã quyết toán" : "Chưa quyết toán"; set {} }
         public string MauQuyetToan { get => TrangThaiQuyetToan == "DaQuyetToan" ? "#10B981" : "#EF4444"; set {} }
         public bool CoTheQuyetToan { get => (TrangThai == "HoanThanh" || TrangThai == "CheckedOut" || TrangThai == "DaHoanTat") && TrangThaiQuyetToan == "ChuaQuyetToan"; set {} }
-        public bool CoTheHoanTien { get => TrangThai == "RefundRequested" || TrangThai == "Confirmed" || TrangThai == "DaXacNhan" || TrangThai == "DaDuyet"; set {} }
+        public bool LaDonChoDuyet => TrangThai == "Pending" || TrangThai == "ChoXacNhan" || TrangThai == "ChoDuyet";
+        public bool LaDonHoanTien => TrangThai == "RefundRequested" || TrangThai == "YeuCauHoanTien";
+        public bool CoTheHoanTien => LaDonHoanTien || TrangThai == "Confirmed" || TrangThai == "DaXacNhan" || TrangThai == "DaDuyet";
+        public string TieuDeThamDinhHienThi => LaDonHoanTien ? "THẨM ĐỊNH HOÀN TIỀN & ĐỐI SOÁT" : "CHI TIẾT ĐƠN ĐẶT PHÒNG";
 
         // Bổ trợ hoàn tiền & cổng thanh toán
         public string CongThanhToan { get; set; } = "VNPay QR";

@@ -210,6 +210,7 @@ namespace HomestaySystem.ViewModels
                 ManHinhHienTai = KiemDuyetVM;
                 TieuDeTrang = "Kiểm duyệt Homestay";
                 MenuDangChon = "KiemDuyet";
+                _ = KiemDuyetVM.TaiDanhSachChoDuyetAsync();
             });
 
             ChuyenManHinhNguoiDungCommand = new RelayCommand(() =>
@@ -242,6 +243,7 @@ namespace HomestaySystem.ViewModels
                 ManHinhHienTai = QuanLyDonDatVM;
                 TieuDeTrang = "Đơn đặt & hoàn tiền";
                 MenuDangChon = "DonDat";
+                _ = QuanLyDonDatVM.TaiDanhSachDonDatAsync();
             });
 
             ChuyenManHinhBaoCaoCommand = new RelayCommand(() =>
@@ -256,6 +258,7 @@ namespace HomestaySystem.ViewModels
                 ManHinhHienTai = QuanLyKhuyenMaiVM;
                 TieuDeTrang = "Mã ưu đãi";
                 MenuDangChon = "KhuyenMai";
+                _ = QuanLyKhuyenMaiVM.TaiDanhSachKhuyenMaiAsync();
             });
 
             ChuyenManHinhBaoTriCommand = new RelayCommand(() =>
@@ -263,15 +266,62 @@ namespace HomestaySystem.ViewModels
                 ManHinhHienTai = BaoTriHeThongVM;
                 TieuDeTrang = "Bảo trì & sao lưu";
                 MenuDangChon = "BaoTri";
+                _ = BaoTriHeThongVM.TaiDuLieuAsync();
             });
 
             DangXuatCommand = new RelayCommand(ThucHienDangXuat);
 
-            // Đồng hồ thời gian thực
+            // Nạp dữ liệu ban đầu cho badge sidebar
+            _ = QuanLyDonDatVM.TaiDanhSachDonDatAsync();
+
+            // Đồng hồ thời gian thực & đồng bộ nền định kỳ 15 giây
             CapNhatThoiGian();
+            int tickCount = 0;
             _dongHoTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-            _dongHoTimer.Tick += (s, e) => CapNhatThoiGian();
+            _dongHoTimer.Tick += (s, e) =>
+            {
+                CapNhatThoiGian();
+                tickCount++;
+                if (tickCount >= 15)
+                {
+                    tickCount = 0;
+                    _ = DongBoDuLieuNenAsync();
+                }
+            };
             _dongHoTimer.Start();
+        }
+
+        private async Task DongBoDuLieuNenAsync()
+        {
+            try
+            {
+                // Chỉ tải lại nền nếu người dùng không đang mở hồ sơ xem chi tiết hoặc mở dialog chỉnh sửa/hoàn tiền
+                bool dangTuongTacDonDat = QuanLyDonDatVM.DonDangChon != null ||
+                                          QuanLyDonDatVM.HienThiDialogChinhSua ||
+                                          QuanLyDonDatVM.HienThiDialogHoanTien ||
+                                          QuanLyDonDatVM.HienThiDialogTuChoiHoanTien;
+                if (!dangTuongTacDonDat)
+                {
+                    await QuanLyDonDatVM.TaiDanhSachDonDatAsync();
+                }
+
+                bool dangTuongTacKiemDuyet = KiemDuyetVM.CoSoDangChon != null ||
+                                             KiemDuyetVM.HienThiDialogTuChoi ||
+                                             KiemDuyetVM.HienThiDialogXemAnh;
+                if (!dangTuongTacKiemDuyet)
+                {
+                    await KiemDuyetVM.TaiDanhSachChoDuyetAsync();
+                }
+
+                if (ManHinhHienTai == QuanLyKhuyenMaiVM && !QuanLyKhuyenMaiVM.HienThiDialogForm)
+                {
+                    await QuanLyKhuyenMaiVM.TaiDanhSachKhuyenMaiAsync();
+                }
+            }
+            catch
+            {
+                // Bỏ qua lỗi ngầm
+            }
         }
 
         private void CapNhatThoiGian()

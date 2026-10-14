@@ -222,13 +222,32 @@ public sealed class AuthController(
             .SingleOrDefaultAsync(a => a.Email == email || a.DienThoai == input, cancellationToken);
 
         if (account is null ||
-            !account.TrangThai ||
             passwordHasher.VerifyHashedPassword(
                 account,
                 account.MatKhau,
                 request.Password) == PasswordVerificationResult.Failed)
         {
-            return Unauthorized("Invalid credentials.");
+            return Unauthorized(new { code = "INVALID_CREDENTIALS", message = "Email hoặc mật khẩu không chính xác." });
+        }
+
+        if (string.Equals(account.TrangThaiDuyet, "TuChoi", StringComparison.OrdinalIgnoreCase))
+        {
+            var reason = !string.IsNullOrWhiteSpace(account.LyDoTuChoi)
+                ? account.LyDoTuChoi
+                : "Hồ sơ chưa đạt tiêu chuẩn phê duyệt của Stayly";
+            return Unauthorized(new { 
+                code = "ACCOUNT_REJECTED", 
+                message = $"Hồ sơ tài khoản đối tác của bạn đã bị từ chối phê duyệt. Lý do: {reason}. Vui lòng liên hệ ban quản trị để được hỗ trợ giải quyết.",
+                reason = account.LyDoTuChoi
+            });
+        }
+
+        if (!account.TrangThai || string.Equals(account.TrangThaiDuyet, "BiKhoa", StringComparison.OrdinalIgnoreCase))
+        {
+            return Unauthorized(new { 
+                code = "ACCOUNT_LOCKED", 
+                message = "Tài khoản của bạn hiện đang bị tạm khóa hoặc ngừng hoạt động. Vui lòng liên hệ ban quản trị để được hỗ trợ." 
+            });
         }
 
         return Ok(CreateAuthResponse(account));

@@ -437,8 +437,9 @@
             const citizenIdEl = document.getElementById('CitizenIdInput');
             if (citizenIdEl) {
                 const citizenId = citizenIdEl.value.trim();
-                if (!citizenId || citizenId.length < 9) {
-                    markInvalid('CitizenIdInput', 'CitizenIdInputError', 'Vui lòng nhập số CCCD / định danh cá nhân hợp lệ (9 - 12 chữ số).');
+                const cccdRegex = /^\d{12}$/;
+                if (!citizenId || !cccdRegex.test(citizenId)) {
+                    markInvalid('CitizenIdInput', 'CitizenIdInputError', 'Vui lòng nhập số CCCD định danh cá nhân hợp lệ (đúng 12 chữ số số học).');
                 }
 
                 const bankNameEl = document.getElementById('BankNameInput');

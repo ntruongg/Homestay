@@ -94,8 +94,8 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
                             <TextBlock Text="TIÊU CHUẨN PHÁP LÝ" FontSize="11" FontWeight="Bold" Foreground="#64748B" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="100%" FontSize="22" FontWeight="Black" Foreground="#0194F3" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="GPKD • PCCC • ANTT" FontSize="11" Foreground="#0194F3" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding TieuChuanPhapLyText, FallbackValue='100%'}" FontSize="22" FontWeight="Black" Foreground="#0194F3" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding TieuChuanPhapLyMota, FallbackValue='GPKD • PCCC • ANTT'}" FontSize="11" Foreground="#0194F3" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                         <Border Grid.Column="1" Width="42" Height="42" CornerRadius="21" Background="#E0F2FE" Margin="10,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="📜" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -112,8 +112,8 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
                             <TextBlock Text="TỶ LỆ PHÊ DUYỆT" FontSize="11" FontWeight="Bold" Foreground="#64748B" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="94.2%" FontSize="22" FontWeight="Black" Foreground="#10B981" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="Đạt chuẩn kiểm định sàn" FontSize="11" Foreground="#64748B" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding TyLePheDuyetText, FallbackValue='100%'}" FontSize="22" FontWeight="Black" Foreground="#10B981" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding TyLePheDuyetMota, FallbackValue='Đạt chuẩn kiểm định sàn'}" FontSize="11" Foreground="#64748B" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                         <Border Grid.Column="1" Width="42" Height="42" CornerRadius="21" Background="#ECFDF5" Margin="10,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="🛡️" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>

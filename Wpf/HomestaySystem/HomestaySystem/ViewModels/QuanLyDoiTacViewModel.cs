@@ -45,6 +45,8 @@ namespace HomestaySystem.ViewModels
                 {
                     OnPropertyChanged(nameof(SelectedHost));
                     OnPropertyChanged(nameof(CoTaiKhoanDangChon));
+                    OnPropertyChanged(nameof(LaTaiKhoanDangHoatDong));
+                    OnPropertyChanged(nameof(NhanNutKhoaMoTaiKhoan));
                 }
             }
         }
@@ -56,6 +58,8 @@ namespace HomestaySystem.ViewModels
         }
 
         public bool CoTaiKhoanDangChon => TaiKhoanDangChon != null;
+        public bool LaTaiKhoanDangHoatDong => TaiKhoanDangChon?.TrangThai == "HoatDong";
+        public string NhanNutKhoaMoTaiKhoan => LaTaiKhoanDangHoatDong ? "🔒 Khóa tài khoản" : "🔓 Mở tài khoản";
 
         public string BoLocTrangThai
         {
@@ -123,6 +127,7 @@ namespace HomestaySystem.ViewModels
         private string _suaNganHang = string.Empty;
         private string _suaSoTaiKhoan = string.Empty;
         private string _suaChuTaiKhoan = string.Empty;
+        private string _suaMatKhau = string.Empty;
 
         public bool HienThiDialogChinhSua
         {
@@ -182,6 +187,12 @@ namespace HomestaySystem.ViewModels
         {
             get => _suaChuTaiKhoan;
             set => SetProperty(ref _suaChuTaiKhoan, value);
+        }
+
+        public string SuaMatKhau
+        {
+            get => _suaMatKhau;
+            set => SetProperty(ref _suaMatKhau, value);
         }
 
         // ================= DIALOG TẠO ĐỐI TÁC CHỦ HOMESTAY MỚI =================
@@ -353,7 +364,11 @@ namespace HomestaySystem.ViewModels
             
             MoDialogChinhSuaCommand = new RelayCommand(ThucHienMoDialogChinhSua, () => TaiKhoanDangChon != null);
             XacNhanChinhSuaCommand = new RelayCommand(async () => await ThucHienXacNhanChinhSuaAsync());
-            HuyDialogChinhSuaCommand = new RelayCommand(() => HienThiDialogChinhSua = false);
+            HuyDialogChinhSuaCommand = new RelayCommand(() =>
+            {
+                HienThiDialogChinhSua = false;
+                SuaMatKhau = string.Empty;
+            });
 
             MoDialogThemMoiCommand = new RelayCommand(ThucHienMoDialogThemMoi);
             XacNhanThemMoiCommand = new RelayCommand(async () => await ThucHienXacNhanThemMoiAsync());
@@ -366,7 +381,7 @@ namespace HomestaySystem.ViewModels
 
         private void ThucHienMoDialogThemMoi()
         {
-            ThemTenDangNhap = $"host_{DateTime.Now:MMddHHmm}";
+            ThemTenDangNhap = string.Empty;
             ThemMatKhau = "Stayly@2026";
             ThemHoTen = string.Empty;
             ThemEmail = string.Empty;
@@ -374,7 +389,7 @@ namespace HomestaySystem.ViewModels
             ThemDiaChi = string.Empty;
             ThemCCCD = string.Empty;
             ThemMaSoThue = string.Empty;
-            ThemNganHang = "Vietcombank";
+            ThemNganHang = "Vietcombank (VCB)";
             ThemSoTaiKhoan = string.Empty;
             ThemChuTaiKhoan = string.Empty;
             ThemXacThucTERANgay = true;
@@ -383,55 +398,91 @@ namespace HomestaySystem.ViewModels
 
         private async Task ThucHienXacNhanThemMoiAsync()
         {
-            if (string.IsNullOrWhiteSpace(ThemTenDangNhap))
+            if (!ValidationHelper.IsValidVietnameseName(ThemHoTen, out var errName))
             {
-                MessageBox.Show("Vui lòng nhập tên đăng nhập của chủ nhà!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(errName, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            if (string.IsNullOrWhiteSpace(ThemHoTen))
+            if (!ValidationHelper.IsValidVietnamesePhone(ThemSoDienThoai, out var errPhone))
             {
-                MessageBox.Show("Vui lòng nhập họ và tên chủ nhà đối tác!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(errPhone, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            if (string.IsNullOrWhiteSpace(ThemSoDienThoai))
+            if (!ValidationHelper.IsValidEmail(ThemEmail, out var errEmail))
             {
-                MessageBox.Show("Vui lòng nhập số điện thoại liên hệ!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(errEmail, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!ValidationHelper.IsValidPassword(ThemMatKhau, out var errPass))
+            {
+                MessageBox.Show(errPass, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!ValidationHelper.IsValidCitizenId(ThemCCCD, out var errCccd))
+            {
+                MessageBox.Show(errCccd, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!ValidationHelper.IsValidBankAccount(ThemSoTaiKhoan, out var errAcc))
+            {
+                MessageBox.Show(errAcc, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!string.IsNullOrWhiteSpace(ThemChuTaiKhoan) && !ValidationHelper.IsValidVietnameseName(ThemChuTaiKhoan, out var errHolder))
+            {
+                MessageBox.Show($"Tên chủ tài khoản không hợp lệ: {errHolder}", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            var doiTacMoi = new TaiKhoan
+            try
             {
-                TenDangNhap = ThemTenDangNhap.Trim(),
-                MatKhau = ThemMatKhau.Trim(),
-                HoTen = ThemHoTen.Trim(),
-                Email = ThemEmail?.Trim() ?? string.Empty,
-                SoDienThoai = ThemSoDienThoai.Trim(),
-                DiaChi = ThemDiaChi?.Trim() ?? string.Empty,
-                VaiTro = "ChuHome",
-                TrangThai = "HoatDong",
-                SoCCCD = ThemCCCD?.Trim() ?? string.Empty,
-                MaSoThue = ThemMaSoThue?.Trim() ?? string.Empty,
-                TenNganHang = ThemNganHang?.Trim() ?? string.Empty,
-                SoTaiKhoanNganHang = ThemSoTaiKhoan?.Trim() ?? string.Empty,
-                ChuTaiKhoanNganHang = !string.IsNullOrWhiteSpace(ThemChuTaiKhoan) ? ThemChuTaiKhoan.Trim().ToUpper() : ThemHoTen.Trim().ToUpper(),
-                DaXacThucTERA = ThemXacThucTERANgay,
-                NgayXacThucTERA = ThemXacThucTERANgay ? DateTime.Now : null,
-                NgayTao = DateTime.Now
-            };
+                DangTaiDuLieu = true;
+                var usernameFallback = ThemEmail.Trim().Split('@')[0];
+                var matKhau = string.IsNullOrWhiteSpace(ThemMatKhau) ? "Stayly@2026" : ThemMatKhau.Trim();
+                var chuTaiKhoan = !string.IsNullOrWhiteSpace(ThemChuTaiKhoan) ? ThemChuTaiKhoan.Trim().ToUpper() : ThemHoTen.Trim().ToUpper();
 
-            var ok = await _adminService.TaoTaiKhoanAsync(doiTacMoi);
-            if (ok)
-            {
-                _tatCaDoiTac.Insert(0, doiTacMoi);
-                CapNhatThongKe();
-                ApDungBoLoc();
-                TaiKhoanDangChon = doiTacMoi;
-                HienThiDialogThemMoi = false;
-                MessageBox.Show($"Đã tạo thành công hồ sơ đối tác chủ nhà: {doiTacMoi.HoTen} ({doiTacMoi.MaDoiTacHienThi})!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+                var doiTacMoi = new TaiKhoan
+                {
+                    TenDangNhap = usernameFallback,
+                    MatKhau = matKhau,
+                    HoTen = ThemHoTen.Trim(),
+                    Email = ThemEmail.Trim().ToLowerInvariant(),
+                    SoDienThoai = ThemSoDienThoai.Trim(),
+                    DiaChi = ThemDiaChi?.Trim() ?? string.Empty,
+                    VaiTro = "ChuHome",
+                    TrangThai = "HoatDong",
+                    SoCCCD = ThemCCCD.Trim(),
+                    MaSoThue = ThemMaSoThue?.Trim() ?? string.Empty,
+                    TenNganHang = ThemNganHang?.Trim() ?? "Vietcombank (VCB)",
+                    SoTaiKhoanNganHang = ThemSoTaiKhoan.Trim(),
+                    ChuTaiKhoanNganHang = chuTaiKhoan,
+                    DaXacThucTERA = ThemXacThucTERANgay,
+                    NgayXacThucTERA = ThemXacThucTERANgay ? DateTime.Now : null,
+                    NgayTao = DateTime.Now
+                };
+
+                var ok = await _adminService.TaoTaiKhoanAsync(doiTacMoi);
+                if (ok)
+                {
+                    _tatCaDoiTac.Insert(0, doiTacMoi);
+                    CapNhatThongKe();
+                    ApDungBoLoc();
+                    TaiKhoanDangChon = doiTacMoi;
+                    HienThiDialogThemMoi = false;
+                    MessageBox.Show($"Đã tạo thành công hồ sơ đối tác chủ nhà: {doiTacMoi.HoTen} ({doiTacMoi.Email})!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Không thể tạo đối tác. Vui lòng kiểm tra lại kết nối!", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Không thể tạo đối tác. Vui lòng kiểm tra lại kết nối!", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Không thể tạo hồ sơ đối tác: {ex.Message}", "Thông báo lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            finally
+            {
+                DangTaiDuLieu = false;
             }
         }
 
@@ -447,27 +498,69 @@ namespace HomestaySystem.ViewModels
             SuaNganHang = TaiKhoanDangChon.TenNganHang ?? string.Empty;
             SuaSoTaiKhoan = TaiKhoanDangChon.SoTaiKhoanNganHang ?? string.Empty;
             SuaChuTaiKhoan = TaiKhoanDangChon.ChuTaiKhoanNganHang ?? string.Empty;
+            SuaMatKhau = string.Empty;
             HienThiDialogChinhSua = true;
         }
 
         private async Task ThucHienXacNhanChinhSuaAsync()
         {
             if (TaiKhoanDangChon == null) return;
-            if (string.IsNullOrWhiteSpace(SuaHoTen))
+            if (!ValidationHelper.IsValidVietnameseName(SuaHoTen, out var errName))
             {
-                MessageBox.Show("Vui lòng nhập họ và tên chủ nhà đối tác!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(errName, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!ValidationHelper.IsValidVietnamesePhone(SuaSoDienThoai, out var errPhone))
+            {
+                MessageBox.Show(errPhone, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!ValidationHelper.IsValidEmail(SuaEmail, out var errEmail))
+            {
+                MessageBox.Show(errEmail, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            bool doiMatKhau = !string.IsNullOrWhiteSpace(SuaMatKhau);
+            if (doiMatKhau)
+            {
+                if (!ValidationHelper.IsValidPassword(SuaMatKhau, out var errPass))
+                {
+                    MessageBox.Show(errPass, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                TaiKhoanDangChon.MatKhau = SuaMatKhau.Trim();
+            }
+            else
+            {
+                TaiKhoanDangChon.MatKhau = string.Empty;
+            }
+
+            if (!string.IsNullOrWhiteSpace(SuaCCCD) && !ValidationHelper.IsValidCitizenId(SuaCCCD, out var errCccd))
+            {
+                MessageBox.Show(errCccd, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!string.IsNullOrWhiteSpace(SuaSoTaiKhoan) && !ValidationHelper.IsValidBankAccount(SuaSoTaiKhoan, out var errAcc))
+            {
+                MessageBox.Show(errAcc, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!string.IsNullOrWhiteSpace(SuaChuTaiKhoan) && !ValidationHelper.IsValidVietnameseName(SuaChuTaiKhoan, out var errHolder))
+            {
+                MessageBox.Show($"Tên chủ tài khoản không hợp lệ: {errHolder}", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             TaiKhoanDangChon.HoTen = SuaHoTen.Trim();
-            TaiKhoanDangChon.Email = SuaEmail.Trim();
+            TaiKhoanDangChon.Email = SuaEmail.Trim().ToLowerInvariant();
             TaiKhoanDangChon.SoDienThoai = SuaSoDienThoai.Trim();
             TaiKhoanDangChon.DiaChi = SuaDiaChi.Trim();
             TaiKhoanDangChon.SoCCCD = SuaCCCD?.Trim() ?? string.Empty;
             TaiKhoanDangChon.MaSoThue = SuaMaSoThue?.Trim() ?? string.Empty;
             TaiKhoanDangChon.TenNganHang = SuaNganHang?.Trim() ?? string.Empty;
             TaiKhoanDangChon.SoTaiKhoanNganHang = SuaSoTaiKhoan?.Trim() ?? string.Empty;
-            TaiKhoanDangChon.ChuTaiKhoanNganHang = SuaChuTaiKhoan?.Trim() ?? string.Empty;
+            TaiKhoanDangChon.ChuTaiKhoanNganHang = !string.IsNullOrWhiteSpace(SuaChuTaiKhoan) ? SuaChuTaiKhoan.Trim().ToUpper() : string.Empty;
 
             try
             {
@@ -484,7 +577,13 @@ namespace HomestaySystem.ViewModels
                 ApDungBoLoc();
 
                 HienThiDialogChinhSua = false;
-                MessageBox.Show($"Đã cập nhật hồ sơ đối tác {TaiKhoanDangChon.HoTen} ({TaiKhoanDangChon.MaDoiTacHienThi}) thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                string thongBao = doiMatKhau
+                    ? $"Đã cập nhật hồ sơ và đổi mật khẩu mới cho đối tác {TaiKhoanDangChon.HoTen} ({TaiKhoanDangChon.MaDoiTacHienThi}) thành công!"
+                    : $"Đã cập nhật hồ sơ đối tác {TaiKhoanDangChon.HoTen} ({TaiKhoanDangChon.MaDoiTacHienThi}) thành công!";
+                MessageBox.Show(thongBao, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                TaiKhoanDangChon.MatKhau = string.Empty;
+                SuaMatKhau = string.Empty;
             }
             catch (Exception ex)
             {
@@ -652,35 +751,40 @@ namespace HomestaySystem.ViewModels
         private async Task ThucHienMoKhoaTaiKhoanAsync()
         {
             if (TaiKhoanDangChon == null) return;
-            if (TaiKhoanDangChon.TrangThai == "HoatDong")
-            {
-                MessageBox.Show("Tài khoản đối tác này hiện đang hoạt động bình thường!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
 
-            var hoi = MessageBox.Show(
-                $"Xác nhận khôi phục hoạt động cho tài khoản đối tác '{TaiKhoanDangChon.HoTen}' ({TaiKhoanDangChon.TenDangNhap})?",
-                "Xác nhận mở tài khoản đối tác",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+            bool dangHoatDong = TaiKhoanDangChon.TrangThai == "HoatDong";
+            string tieuDe = dangHoatDong ? "Xác nhận khóa tài khoản đối tác" : "Xác nhận mở lại tài khoản đối tác";
+            string cauHoi = dangHoatDong
+                ? $"Bạn có chắc chắn muốn TẠM KHÓA tài khoản đối tác '{TaiKhoanDangChon.HoTen}' ({TaiKhoanDangChon.Email})?"
+                : $"Xác nhận MỞ LẠI và khôi phục hoạt động cho tài khoản đối tác '{TaiKhoanDangChon.HoTen}' ({TaiKhoanDangChon.Email})?";
 
+            var hoi = MessageBox.Show(cauHoi, tieuDe, MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (hoi == MessageBoxResult.Yes)
             {
                 try
                 {
                     DangTaiDuLieu = true;
-                    bool thanhCong = await _adminService.DoiTrangThaiTaiKhoanAsync(TaiKhoanDangChon.MaTaiKhoan, "HoatDong");
+                    string trangThaiMoi = dangHoatDong ? "BiKhoa" : "HoatDong";
+                    bool thanhCong = await _adminService.DoiTrangThaiTaiKhoanAsync(TaiKhoanDangChon.MaTaiKhoan, trangThaiMoi);
                     if (thanhCong)
                     {
-                        TaiKhoanDangChon.TrangThai = "HoatDong";
-                        TaiKhoanDangChon.LyDoTuChoi = null;
-                        MessageBox.Show($"Đã kích hoạt lại tài khoản đối tác '{TaiKhoanDangChon.HoTen}' thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                        TaiKhoanDangChon.TrangThai = trangThaiMoi;
+                        if (!dangHoatDong)
+                        {
+                            TaiKhoanDangChon.LyDoTuChoi = null;
+                        }
+                        OnPropertyChanged(nameof(NhanNutKhoaMoTaiKhoan));
+                        OnPropertyChanged(nameof(LaTaiKhoanDangHoatDong));
+                        string thongBao = dangHoatDong
+                            ? $"Đã tạm khóa tài khoản đối tác '{TaiKhoanDangChon.HoTen}' thành công!"
+                            : $"Đã kích hoạt lại tài khoản đối tác '{TaiKhoanDangChon.HoTen}' thành công!";
+                        MessageBox.Show(thongBao, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
                         await TaiDanhSachDoiTacAsync();
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Lỗi khi mở khóa đối tác: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Lỗi khi chuyển trạng thái đối tác: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 finally
                 {

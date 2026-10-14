@@ -213,6 +213,18 @@ namespace HomestaySystem.ViewModels
         {
             if (DonDangChon == null) return;
 
+            if (string.IsNullOrWhiteSpace(MaGiaoDichNhap))
+            {
+                MessageBox.Show("Vui lòng nhập Mã giao dịch ngân hàng thực tế (FT...) để đối soát dòng tiền quyết toán!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(DonDangChon.SoTaiKhoanNganHangChuHome))
+            {
+                MessageBox.Show($"Đối tác chủ nhà '{DonDangChon.TenChuHome}' chưa cập nhật số tài khoản ngân hàng thụ hưởng! Vui lòng kiểm tra lại hồ sơ đối tác trước khi quyết toán.", "Thiếu thông tin ngân hàng", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             DangTaiDuLieu = true;
             bool thanhCong = await _adminService.XacNhanQuyetToanAsync(DonDangChon.MaDon, MaGiaoDichNhap.Trim(), GhiChuNhap.Trim(), DonDangChon.TienChuHomeNhan);
             DangTaiDuLieu = false;

@@ -4,9 +4,9 @@
 
 <div class="form-group mb-3">
     <label class="form-label fw-semibold">
-        Số CCCD / Định danh cá nhân <span class="text-danger">*</span>
+        Số CCCD định danh cá nhân (12 số) <span class="text-danger">*</span>
     </label>
-    <input asp-for="CitizenId" id="CitizenIdInput" class="form-control rounded-pill px-3 py-2" placeholder="Ví dụ: 001201009999" required />
+    <input asp-for="CitizenId" id="CitizenIdInput" class="form-control rounded-pill px-3 py-2" placeholder="Ví dụ: 001201009999" maxlength="12" required />
     <span asp-validation-for="CitizenId" class="text-danger small"></span>
     <div class="field-error-text" id="CitizenIdInputError"></div>
 </div>

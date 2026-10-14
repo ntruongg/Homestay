@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <UserSecretsId>9a6bcf31-dce0-456f-8530-be1b4cea23ee</UserSecretsId>
+    <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
   <ItemGroup>

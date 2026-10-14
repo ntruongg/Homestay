@@ -143,6 +143,8 @@ public class HomestayDbContext(DbContextOptions<HomestayDbContext> options) : Db
             entity.Property(x => x.NgayDen).HasColumnType("date");
             entity.Property(x => x.NgayDi).HasColumnType("date");
             entity.Property(x => x.TrangThai).HasDefaultValue("ChoThanhToan");
+            entity.ToTable(t => t.HasCheckConstraint("CK_DonDatPhong_TrangThai",
+                "[TrangThai] IN (N'ChoThanhToan', N'ChoDuyet', N'TuChoi', N'DaDuyet', N'DaHoanTat', N'YeuCauHoanTien', N'DaHoanTien', N'DaHuy')"));
             entity.HasOne(x => x.KhachHang).WithMany(x => x.DonDatPhongs)
                 .HasForeignKey(x => x.MaKhachHang).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.GiamGia).WithMany(x => x.DonDatPhongs)

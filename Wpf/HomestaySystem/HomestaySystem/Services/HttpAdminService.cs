@@ -188,9 +188,15 @@ namespace HomestaySystem.Services
                 MaCoSo = dto.Id,
                 TenCoSo = dto.Name,
                 DiaChi = dto.Address ?? string.Empty,
+                PhuongXa = dto.Ward ?? string.Empty,
                 TinhThanh = dto.City ?? string.Empty,
+                DienThoai = dto.Phone ?? string.Empty,
+                Email = dto.Email ?? string.Empty,
+                ChinhSach = dto.Policy ?? string.Empty,
                 MoTa = dto.Policy ?? string.Empty,
-                LoaiHinh = string.Equals(dto.Type, "Hotel", StringComparison.OrdinalIgnoreCase) ? "Khách sạn" : "Homestay nguyên căn",
+                ChinhSachHuyPhong = dto.Policy ?? "Miễn phí hủy trước 48 giờ.",
+                LoaiHinh = string.Equals(dto.Type, "Hotel", StringComparison.OrdinalIgnoreCase) ? "Hotel" : "Homestay",
+                TrangThaiHoatDong = dto.IsActive,
                 MaChuHome = dto.Owner?.Id ?? 0,
                 TenChuHome = dto.Owner?.FullName ?? string.Empty,
                 EmailChuHome = dto.Owner?.Email ?? string.Empty,
@@ -274,16 +280,18 @@ namespace HomestaySystem.Services
             try
             {
                 await EnsureAuthenticatedAsync();
+                string typeNormalized = (coSo.LoaiHinh.Contains("Hotel", StringComparison.OrdinalIgnoreCase) || coSo.LoaiHinh.Contains("Khách sạn", StringComparison.OrdinalIgnoreCase)) ? "Hotel" : "Homestay";
                 var payload = new
                 {
-                    name = coSo.TenCoSo,
-                    address = coSo.DiaChi,
-                    city = coSo.TinhThanh,
-                    type = coSo.LoaiHinh,
-                    phone = coSo.SoDienThoaiChuHome,
-                    email = coSo.EmailChuHome,
-                    policy = coSo.ChinhSachHuyPhong,
-                    isActive = coSo.TrangThai == "DaDuyet"
+                    name = coSo.TenCoSo.Trim(),
+                    address = coSo.DiaChi.Trim(),
+                    ward = string.IsNullOrWhiteSpace(coSo.PhuongXa) ? null : coSo.PhuongXa.Trim(),
+                    city = coSo.TinhThanh.Trim(),
+                    type = typeNormalized,
+                    phone = !string.IsNullOrWhiteSpace(coSo.DienThoai) ? coSo.DienThoai.Trim() : coSo.SoDienThoaiChuHome?.Trim(),
+                    email = !string.IsNullOrWhiteSpace(coSo.Email) ? coSo.Email.Trim().ToLowerInvariant() : coSo.EmailChuHome?.Trim().ToLowerInvariant(),
+                    policy = !string.IsNullOrWhiteSpace(coSo.ChinhSach) ? coSo.ChinhSach.Trim() : coSo.ChinhSachHuyPhong?.Trim(),
+                    isActive = coSo.TrangThaiHoatDong
                 };
                 var response = await _http.PutAsJsonAsync($"api/admin/properties/{coSo.MaCoSo}", payload, JsonOptions);
                 if (response.IsSuccessStatusCode) return true;
@@ -306,7 +314,14 @@ namespace HomestaySystem.Services
                 var url = "api/admin/users?";
                 if (!string.IsNullOrWhiteSpace(vaiTro) && vaiTro != "TatCa")
                 {
-                    url += $"role={Uri.EscapeDataString(vaiTro)}&";
+                    string roleParam = vaiTro switch
+                    {
+                        "ChuHome" => "Owner",
+                        "KhachHang" => "Guest",
+                        "QuanTriVien" => "Admin",
+                        _ => vaiTro
+                    };
+                    url += $"role={Uri.EscapeDataString(roleParam)}&";
                 }
                 if (!string.IsNullOrWhiteSpace(tuKhoa))
                 {
@@ -332,11 +347,14 @@ namespace HomestaySystem.Services
                                 "ADMIN" => "QuanTriVien",
                                 _ => "KhachHang"
                             },
-                            TrangThai = u.IsActive ? "HoatDong" : "BiKhoa",
+                            TrangThai = !string.IsNullOrWhiteSpace(u.ApprovalStatus) ? u.ApprovalStatus : (u.IsActive ? "HoatDong" : "BiKhoa"),
+                            LyDoTuChoi = u.RejectionReason,
                             NgayTao = u.CreatedAt,
                             SoCCCD = u.CitizenId,
-                            TenNganHang = u.BankInformation,
-                            DaXacThucTERA = !string.IsNullOrWhiteSpace(u.CitizenId) && !string.IsNullOrWhiteSpace(u.BankInformation)
+                            TenNganHang = !string.IsNullOrWhiteSpace(u.BankName) ? u.BankName : u.BankInformation,
+                            SoTaiKhoanNganHang = u.AccountNumber ?? string.Empty,
+                            ChuTaiKhoanNganHang = u.AccountHolder ?? string.Empty,
+                            DaXacThucTERA = !string.IsNullOrWhiteSpace(u.CitizenId) && (!string.IsNullOrWhiteSpace(u.BankInformation) || !string.IsNullOrWhiteSpace(u.AccountNumber)) && u.ApprovalStatus != "TuChoi"
                         }).ToList();
                     }
                 }
@@ -369,8 +387,21 @@ namespace HomestaySystem.Services
 
         public async Task<bool> DoiTrangThaiTaiKhoanAsync(int maTaiKhoan, string trangThaiMoi)
         {
-            bool kichHoat = trangThaiMoi == "HoatDong";
-            return await DoiTrangThaiTaiKhoanAsync(maTaiKhoan, kichHoat);
+            try
+            {
+                await EnsureAuthenticatedAsync();
+                bool kichHoat = trangThaiMoi == "HoatDong";
+                var payload = new { isActive = kichHoat, status = trangThaiMoi };
+                var response = await _http.PutAsJsonAsync($"api/admin/users/{maTaiKhoan}/status", payload, JsonOptions);
+                if (response.IsSuccessStatusCode) return true;
+                var err = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"Lỗi đổi trạng thái ({response.StatusCode}): {err}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HttpAdminService] DoiTrangThaiTaiKhoanAsync error: {ex.Message}");
+                throw;
+            }
         }
 
         public async Task<bool> TuChoiTaiKhoanAsync(int maTaiKhoan, string lyDo)
@@ -391,9 +422,9 @@ namespace HomestaySystem.Services
             }
         }
 
-        public async Task<bool> CapNhatXacThucTERAAsync(int maTaiKhoan, bool daXacThuc)
+        public Task<bool> CapNhatXacThucTERAAsync(int maTaiKhoan, bool daXacThuc)
         {
-            return true;
+            return Task.FromResult(true);
         }
 
         public async Task<bool> TaoTaiKhoanAsync(TaiKhoan taiKhoan)
@@ -403,8 +434,8 @@ namespace HomestaySystem.Services
                 await EnsureAuthenticatedAsync();
                 var payload = new
                 {
-                    username = taiKhoan.TenDangNhap,
-                    password = string.IsNullOrWhiteSpace(taiKhoan.MatKhau) ? "Stayly@123" : taiKhoan.MatKhau,
+                    username = !string.IsNullOrWhiteSpace(taiKhoan.TenDangNhap) ? taiKhoan.TenDangNhap : (!string.IsNullOrWhiteSpace(taiKhoan.Email) ? taiKhoan.Email.Split('@')[0] : taiKhoan.SoDienThoai),
+                    password = string.IsNullOrWhiteSpace(taiKhoan.MatKhau) ? "Stayly@2026" : taiKhoan.MatKhau,
                     fullName = taiKhoan.HoTen,
                     email = taiKhoan.Email,
                     phone = taiKhoan.SoDienThoai,
@@ -413,13 +444,55 @@ namespace HomestaySystem.Services
                     taxId = taiKhoan.MaSoThue,
                     bankName = taiKhoan.TenNganHang,
                     bankAccount = taiKhoan.SoTaiKhoanNganHang,
-                    bankHolder = taiKhoan.ChuTaiKhoanNganHang
+                    bankHolder = taiKhoan.ChuTaiKhoanNganHang,
+                    address = taiKhoan.DiaChi,
+                    dateOfBirth = taiKhoan.NgaySinh,
+                    gender = taiKhoan.GioiTinh
                 };
                 var response = await _http.PostAsJsonAsync("api/admin/users", payload, JsonOptions);
-                if (response.IsSuccessStatusCode) return true;
+                if (response.IsSuccessStatusCode)
+                {
+                    try
+                    {
+                        var resJson = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+                        if (resJson.TryGetProperty("id", out var idProp) && idProp.TryGetInt32(out var newId))
+                        {
+                            taiKhoan.MaTaiKhoan = newId;
+                        }
+                    }
+                    catch { }
+                    return true;
+                }
 
                 var err = await response.Content.ReadAsStringAsync();
-                throw new InvalidOperationException($"Lỗi tạo tài khoản ({response.StatusCode}): {err}");
+                string friendlyMessage = "Không thể tạo tài khoản trên hệ thống.";
+                try
+                {
+                    using var doc = JsonDocument.Parse(err);
+                    if (doc.RootElement.TryGetProperty("message", out var msgElem))
+                    {
+                        friendlyMessage = msgElem.GetString() ?? friendlyMessage;
+                    }
+                    else if (doc.RootElement.TryGetProperty("errors", out var errsElem))
+                    {
+                        var errList = new List<string>();
+                        foreach (var prop in errsElem.EnumerateObject())
+                        {
+                            foreach (var item in prop.Value.EnumerateArray())
+                            {
+                                var txt = item.GetString();
+                                if (!string.IsNullOrWhiteSpace(txt)) errList.Add(txt);
+                            }
+                        }
+                        if (errList.Count > 0)
+                        {
+                            friendlyMessage = string.Join("\n", errList);
+                        }
+                    }
+                }
+                catch { }
+
+                throw new InvalidOperationException(friendlyMessage);
             }
             catch (Exception ex)
             {
@@ -493,6 +566,8 @@ namespace HomestaySystem.Services
                             SoDienThoaiKhach = b.GuestPhone,
                             NgayCheckIn = b.CheckIn,
                             NgayCheckOut = b.CheckOut,
+                            SoNguoiLon = b.Adults,
+                            SoTreEm = b.Children,
                             TongTien = b.TotalAmount,
                             TrangThai = b.Status,
                             ThoiGianTao = b.BookingDate,
@@ -541,6 +616,8 @@ namespace HomestaySystem.Services
                             SoDienThoaiChuHome = b.Owner?.Phone ?? "N/A",
                             NgayCheckIn = b.CheckIn,
                             NgayCheckOut = b.CheckOut,
+                            SoNguoiLon = b.Adults,
+                            SoTreEm = b.Children,
                             TongTien = b.TotalAmount,
                             TrangThai = b.Status,
                             ThoiGianTao = b.BookingDate,
@@ -571,6 +648,8 @@ namespace HomestaySystem.Services
                     guestEmail = donDat.EmailKhach,
                     checkIn = donDat.NgayCheckIn,
                     checkOut = donDat.NgayCheckOut,
+                    adults = donDat.SoNguoiLon,
+                    children = donDat.SoTreEm,
                     adminNote = donDat.GhiChu
                 };
                 var response = await _http.PutAsJsonAsync($"api/admin/bookings/{donDat.MaDon}", payload, JsonOptions);
@@ -763,7 +842,13 @@ namespace HomestaySystem.Services
                             NgayCheckOut = b.CheckOut,
                             TongTien = b.TotalAmount,
                             TrangThai = b.Status,
-                            TrangThaiQuyetToan = b.PaymentStatus == "Paid" ? "DaQuyetToan" : "ChuaQuyetToan",
+                            TrangThaiQuyetToan = !string.IsNullOrWhiteSpace(b.TrangThaiQuyetToan) ? b.TrangThaiQuyetToan : "ChuaQuyetToan",
+                            TenNganHangChuHome = b.OwnerBankName ?? string.Empty,
+                            SoTaiKhoanNganHangChuHome = b.OwnerAccountNumber ?? string.Empty,
+                            ChuTaiKhoanNganHangChuHome = b.OwnerAccountHolder ?? string.Empty,
+                            MaGiaoDichQuyetToan = b.MaGiaoDichQuyetToan,
+                            ThoiGianQuyetToan = b.NgayQuyetToan,
+                            GhiChuQuyetToan = b.GhiChuQuyetToan,
                             ThoiGianTao = b.BookingDate
                         }).ToList();
                     }
@@ -1243,11 +1328,10 @@ namespace HomestaySystem.Services
                 TenChuHome = dto.OwnerName,
                 EmailChuHome = dto.OwnerEmail,
                 SoDienThoaiChuHome = dto.OwnerPhone,
-                SoCCCDChuHome = string.Empty,
-                TenNganHangChuHome = string.Empty,
-                SoTaiKhoanChuHome = string.Empty,
-                ChuTaiKhoanChuHome = dto.OwnerName,
-                LoaiHinh = string.Equals(dto.Type, "Hotel", StringComparison.OrdinalIgnoreCase) ? "Khách sạn" : "Homestay nguyên căn",
+                DienThoai = dto.OwnerPhone ?? string.Empty,
+                Email = dto.OwnerEmail ?? string.Empty,
+                LoaiHinh = string.Equals(dto.Type, "Hotel", StringComparison.OrdinalIgnoreCase) ? "Hotel" : "Homestay",
+                TrangThaiHoatDong = dto.IsActive,
                 TrangThai = dto.ApprovalStatus switch
                 {
                     "Approved" or "DaDuyet" => "DaDuyet",
@@ -1282,7 +1366,7 @@ namespace HomestaySystem.Services
             [property: JsonPropertyName("reviewerId")] int? ReviewerId,
             [property: JsonPropertyName("reviewerName")] string? ReviewerName,
             [property: JsonPropertyName("reviewedAt")] DateTime? ReviewDate);
-        private record ApiUserDto(int Id, string Email, string FullName, string Phone, string Role, int RoleId, bool IsActive, DateTime CreatedAt, string? CitizenId, string? BankInformation, int PropertyCount, int BookingCount);
+        private record ApiUserDto(int Id, string Email, string FullName, string Phone, string Role, int RoleId, bool IsActive, DateTime CreatedAt, string? CitizenId, string? BankInformation, int PropertyCount, int BookingCount, string? BankName = null, string? AccountNumber = null, string? AccountHolder = null, string? ApprovalStatus = null, string? RejectionReason = null);
         private record ApiBookingSummaryDto(int BookingId, string HomestayName, List<string>? RoomNumbers, int GuestId, string GuestName, string GuestEmail, string GuestPhone, DateTime CheckIn, DateTime CheckOut, int Adults, int Children, int TotalGuests, string Status, decimal TotalAmount, DateTime BookingDate, string PaymentStatus, string? PaymentMethod, string? RefundReason = null, DateTime? RefundRequestedAt = null, string? GuestBankName = null, string? GuestAccountNumber = null, string? GuestAccountHolder = null, string? TrangThaiQuyetToan = null, string? MaGiaoDichQuyetToan = null, DateTime? NgayQuyetToan = null, decimal? SoTienQuyetToan = null, string? GhiChuQuyetToan = null);
         private record ApiBookingDetailsDto(int BookingId, DateTime BookingDate, DateTime CheckIn, DateTime CheckOut, int Adults, int Children, int TotalGuests, string Status, decimal TotalAmount, ApiGuestContactDto? Guest, ApiOwnerContactDto? Owner, int PropertyId, string PropertyName, string? PropertyAddress, List<ApiBookingRoomItemDto>? Rooms, ApiInvoiceDto? Invoice, string? TrangThaiQuyetToan, string? MaGiaoDichQuyetToan, DateTime? NgayQuyetToan, decimal? SoTienQuyetToan, string? GhiChuQuyetToan);
         private record ApiGuestContactDto(int Id, string FullName, string Email, string Phone);

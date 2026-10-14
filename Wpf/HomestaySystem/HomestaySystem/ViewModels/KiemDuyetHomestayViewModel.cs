@@ -119,9 +119,35 @@ namespace HomestaySystem.ViewModels
             set => SetProperty(ref _thongBaoTrangThai, value);
         }
 
-        /// <summary>
-        /// Chỉ thị trạng thái kết nối máy chủ API (hiển thị trên thanh hàng đợi cấp tốc)
-        /// </summary>
+        private string _tieuChuanPhapLyText = "100%";
+        private string _tieuChuanPhapLyMota = "GPKD • PCCC • ANTT";
+        private string _tyLePheDuyetText = "100%";
+        private string _tyLePheDuyetMota = "Đạt chuẩn kiểm định sàn";
+
+        public string TieuChuanPhapLyText
+        {
+            get => _tieuChuanPhapLyText;
+            set => SetProperty(ref _tieuChuanPhapLyText, value);
+        }
+
+        public string TieuChuanPhapLyMota
+        {
+            get => _tieuChuanPhapLyMota;
+            set => SetProperty(ref _tieuChuanPhapLyMota, value);
+        }
+
+        public string TyLePheDuyetText
+        {
+            get => _tyLePheDuyetText;
+            set => SetProperty(ref _tyLePheDuyetText, value);
+        }
+
+        public string TyLePheDuyetMota
+        {
+            get => _tyLePheDuyetMota;
+            set => SetProperty(ref _tyLePheDuyetMota, value);
+        }
+
         public string TrangThaiKetNoiText
         {
             get => _trangThaiKetNoiText;
@@ -177,23 +203,57 @@ namespace HomestaySystem.ViewModels
         {
             DangTaiDuLieu = true;
             ThongBaoTrangThai = "Đang kết nối API máy chủ để lấy hồ sơ kiểm duyệt...";
-            TrangThaiKetNoiText = "Đang kết nối API (5176)...";
+            TrangThaiKetNoiText = "Đang kết nối API...";
 
             try
             {
                 var ds = await _adminService.LayDanhSachCoSoChoDuyetAsync();
                 DanhSachCoSo = new ObservableCollection<CoSoLuuTru>(ds);
 
-                // Không tự động chọn phần tử đầu tiên để danh sách hiển thị rộng rãi, rõ ràng
-                if (CoSoDangChon != null && !DanhSachCoSo.Contains(CoSoDangChon))
+                // Thống kê chính xác toàn diện từ Database & API
+                var tatCaCoSo = await _adminService.LayTatCaCoSoAsync();
+                if (tatCaCoSo != null && tatCaCoSo.Count > 0)
                 {
-                    CoSoDangChon = null;
+                    int daDuyet = tatCaCoSo.Count(c => string.Equals(c.TrangThaiDuyet, "DaDuyet", StringComparison.OrdinalIgnoreCase) || string.Equals(c.TrangThaiDuyet, "Approved", StringComparison.OrdinalIgnoreCase));
+                    int tuChoi = tatCaCoSo.Count(c => string.Equals(c.TrangThaiDuyet, "TuChoi", StringComparison.OrdinalIgnoreCase) || string.Equals(c.TrangThaiDuyet, "Rejected", StringComparison.OrdinalIgnoreCase));
+                    int tongDaXet = daDuyet + tuChoi;
+
+                    if (tongDaXet > 0)
+                    {
+                        double tyLeDuyet = (daDuyet * 100.0) / tongDaXet;
+                        TyLePheDuyetText = $"{tyLeDuyet:0.#}%";
+                        TyLePheDuyetMota = $"Đã duyệt {daDuyet}/{tongDaXet} hồ sơ";
+                    }
+                    else
+                    {
+                        TyLePheDuyetText = "100%";
+                        TyLePheDuyetMota = "Chưa có hồ sơ từ chối";
+                    }
+
+                    int coSoHopLe = tatCaCoSo.Count(c => c.TrangThaiHoatDong || string.Equals(c.TrangThaiDuyet, "DaDuyet", StringComparison.OrdinalIgnoreCase));
+                    double tyLePhapLy = (coSoHopLe * 100.0) / tatCaCoSo.Count;
+                    TieuChuanPhapLyText = $"{tyLePhapLy:0.#}%";
+                    TieuChuanPhapLyMota = $"{coSoHopLe}/{tatCaCoSo.Count} cơ sở đạt chuẩn";
+                }
+
+                // Không tự động chọn phần tử đầu tiên để danh sách hiển thị rộng rãi, rõ ràng
+                if (CoSoDangChon != null)
+                {
+                    var existing = DanhSachCoSo.FirstOrDefault(c => c.MaCoSo == CoSoDangChon.MaCoSo);
+                    if (existing != null)
+                    {
+                        CoSoDangChon = existing;
+                    }
+                    else
+                    {
+                        CoSoDangChon = null;
+                    }
                 }
 
                 OnPropertyChanged(nameof(SoLuongChoDuyet));
                 OnPropertyChanged(nameof(DanhSachChoDuyet));
-                ThongBaoTrangThai = $"Đã tải {DanhSachCoSo.Count} hồ sơ đang chờ kiểm duyệt.";
-                TrangThaiKetNoiText = "API Sẵn sàng (5176) • Trực tuyến";
+                ThongBaoTrangThai = $"Đã tải {DanhSachCoSo.Count} hồ sơ đang chờ kiểm duyệt từ API.";
+                TrangThaiKetNoiText = "Hệ thống Trực tuyến • Sẵn sàng";
             }
             catch (Exception ex)
             {

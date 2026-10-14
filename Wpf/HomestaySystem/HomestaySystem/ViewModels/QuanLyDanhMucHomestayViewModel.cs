@@ -116,10 +116,15 @@ namespace HomestaySystem.ViewModels
         // ================= DIALOG CHỈNH SỬA THÔNG TIN CHỖ NGHỈ =================
         private bool _hienThiDialogChinhSua;
         private string _suaTenCoSo = string.Empty;
-        private string _suaDiaChi = string.Empty;
-        private string _suaKhuVuc = string.Empty;
         private string _suaLoaiHinh = "Homestay";
+        private string _suaDienThoai = string.Empty;
+        private string _suaEmail = string.Empty;
+        private string _suaDiaChi = string.Empty;
+        private string _suaPhuongXa = string.Empty;
+        private string _suaKhuVuc = string.Empty;
+        private string _suaChinhSach = string.Empty;
         private string _suaTenChuHome = string.Empty;
+        private decimal _suaGiaNiemYet = 650000;
         private decimal _suaGiaTrungBinh;
 
         public bool HienThiDialogChinhSua
@@ -134,10 +139,34 @@ namespace HomestaySystem.ViewModels
             set => SetProperty(ref _suaTenCoSo, value);
         }
 
+        public string SuaLoaiHinh
+        {
+            get => _suaLoaiHinh;
+            set => SetProperty(ref _suaLoaiHinh, value);
+        }
+
+        public string SuaDienThoai
+        {
+            get => _suaDienThoai;
+            set => SetProperty(ref _suaDienThoai, value);
+        }
+
+        public string SuaEmail
+        {
+            get => _suaEmail;
+            set => SetProperty(ref _suaEmail, value);
+        }
+
         public string SuaDiaChi
         {
             get => _suaDiaChi;
             set => SetProperty(ref _suaDiaChi, value);
+        }
+
+        public string SuaPhuongXa
+        {
+            get => _suaPhuongXa;
+            set => SetProperty(ref _suaPhuongXa, value);
         }
 
         public string SuaKhuVuc
@@ -146,10 +175,10 @@ namespace HomestaySystem.ViewModels
             set => SetProperty(ref _suaKhuVuc, value);
         }
 
-        public string SuaLoaiHinh
+        public string SuaChinhSach
         {
-            get => _suaLoaiHinh;
-            set => SetProperty(ref _suaLoaiHinh, value);
+            get => _suaChinhSach;
+            set => SetProperty(ref _suaChinhSach, value);
         }
 
         public string SuaTenChuHome
@@ -158,11 +187,39 @@ namespace HomestaySystem.ViewModels
             set => SetProperty(ref _suaTenChuHome, value);
         }
 
+        public decimal SuaGiaNiemYet
+        {
+            get => _suaGiaNiemYet;
+            set
+            {
+                if (SetProperty(ref _suaGiaNiemYet, value))
+                {
+                    _suaGiaTrungBinh = value;
+                    OnPropertyChanged(nameof(SuaGiaTrungBinh));
+                }
+            }
+        }
+
         public decimal SuaGiaTrungBinh
         {
             get => _suaGiaTrungBinh;
-            set => SetProperty(ref _suaGiaTrungBinh, value);
+            set
+            {
+                if (SetProperty(ref _suaGiaTrungBinh, value))
+                {
+                    _suaGiaNiemYet = value;
+                    OnPropertyChanged(nameof(SuaGiaNiemYet));
+                }
+            }
         }
+
+        public record LuaChonLoaiHinh(string MaLoai, string TenHienThi);
+        public List<LuaChonLoaiHinh> DanhSachLoaiHinhLuuTru { get; } = new()
+        {
+            new LuaChonLoaiHinh("Homestay", "Homestay (Thuê nguyên căn)"),
+            new LuaChonLoaiHinh("Hotel", "Khách sạn / Resort (Hotel)")
+        };
+
 
         // KPI Thống kê
         public int TongSoCoSo => _tatCaCoSo.Count;
@@ -187,9 +244,31 @@ namespace HomestaySystem.ViewModels
             _boLocKhuVuc = "Tất cả khu vực";
 
             DongHoSoCommand = new RelayCommand(() => CoSoDangChon = null);
-            XemHoSoCommand = new RelayCommand<CoSoLuuTru>(cs =>
+            XemHoSoCommand = new RelayCommand<CoSoLuuTru>(async cs =>
             {
-                if (cs != null) CoSoDangChon = cs;
+                if (cs != null)
+                {
+                    CoSoDangChon = cs;
+                    try
+                    {
+                        var chiTiet = await _adminService.LayChiTietCoSoAsync(cs.MaCoSo);
+                        if (chiTiet != null && CoSoDangChon?.MaCoSo == cs.MaCoSo)
+                        {
+                            CoSoDangChon.DienThoai = chiTiet.DienThoai;
+                            CoSoDangChon.Email = chiTiet.Email;
+                            CoSoDangChon.PhuongXa = chiTiet.PhuongXa;
+                            CoSoDangChon.ChinhSach = chiTiet.ChinhSach;
+                            CoSoDangChon.MoTa = chiTiet.ChinhSach;
+                            CoSoDangChon.GiaThapNhat = chiTiet.GiaThapNhat;
+                            CoSoDangChon.GiaCaoNhat = chiTiet.GiaCaoNhat;
+                            CoSoDangChon.DanhSachHinhAnh = chiTiet.DanhSachHinhAnh;
+                            CoSoDangChon.TongSoPhong = chiTiet.TongSoPhong;
+                            CoSoDangChon.TrangThaiHoatDong = chiTiet.TrangThaiHoatDong;
+                            OnPropertyChanged(nameof(CoSoDangChon));
+                        }
+                    }
+                    catch { }
+                }
             });
 
             TaiDuLieuCommand = new RelayCommand(async () => await TaiDanhSachCoSoAsync());
@@ -204,15 +283,51 @@ namespace HomestaySystem.ViewModels
             _ = TaiDanhSachCoSoAsync();
         }
 
-        private void ThucHienMoDialogChinhSua()
+        private async void ThucHienMoDialogChinhSua()
         {
-            if (CoSoDangChon == null) return;
-            SuaTenCoSo = CoSoDangChon.TenCoSo;
-            SuaDiaChi = CoSoDangChon.DiaChi;
-            SuaKhuVuc = CoSoDangChon.KhuVuc;
-            SuaLoaiHinh = CoSoDangChon.LoaiHinhHienThi;
-            SuaTenChuHome = CoSoDangChon.TenChuHome;
-            SuaGiaTrungBinh = CoSoDangChon.GiaTrungBinh;
+            var cs = CoSoDangChon;
+            if (cs == null) return;
+
+            try
+            {
+                var chiTiet = await _adminService.LayChiTietCoSoAsync(cs.MaCoSo);
+                if (chiTiet != null && cs.MaCoSo == chiTiet.MaCoSo)
+                {
+                    cs.DienThoai = chiTiet.DienThoai;
+                    cs.Email = chiTiet.Email;
+                    cs.PhuongXa = chiTiet.PhuongXa;
+                    cs.ChinhSach = chiTiet.ChinhSach;
+                    cs.MoTa = chiTiet.ChinhSach;
+                    cs.LoaiHinh = chiTiet.LoaiHinh;
+                    cs.TrangThaiHoatDong = chiTiet.TrangThaiHoatDong;
+                    cs.GiaThapNhat = chiTiet.GiaThapNhat;
+                    cs.GiaCaoNhat = chiTiet.GiaCaoNhat;
+                }
+            }
+            catch { }
+
+            SuaTenCoSo = cs.TenCoSo ?? string.Empty;
+            SuaLoaiHinh = (cs.LoaiHinh?.Contains("Hotel", StringComparison.OrdinalIgnoreCase) == true ||
+                           cs.LoaiHinh?.Contains("Khách sạn", StringComparison.OrdinalIgnoreCase) == true)
+                          ? "Hotel" : "Homestay";
+            SuaDienThoai = !string.IsNullOrWhiteSpace(cs.DienThoai)
+                ? cs.DienThoai
+                : (!string.IsNullOrWhiteSpace(cs.SoDienThoaiChuHome) ? cs.SoDienThoaiChuHome : string.Empty);
+            SuaEmail = !string.IsNullOrWhiteSpace(cs.Email)
+                ? cs.Email
+                : (!string.IsNullOrWhiteSpace(cs.EmailChuHome) ? cs.EmailChuHome : string.Empty);
+            SuaDiaChi = cs.DiaChi ?? string.Empty;
+            SuaPhuongXa = cs.PhuongXa ?? string.Empty;
+            SuaKhuVuc = cs.TinhThanh ?? string.Empty;
+            SuaChinhSach = !string.IsNullOrWhiteSpace(cs.ChinhSach)
+                ? cs.ChinhSach
+                : (!string.IsNullOrWhiteSpace(cs.MoTa) ? cs.MoTa : string.Empty);
+            SuaTenChuHome = cs.TenChuHome ?? string.Empty;
+            SuaGiaNiemYet = cs.GiaTrungBinh > 0
+                ? cs.GiaTrungBinh
+                : (cs.GiaThapNhat > 0 ? cs.GiaThapNhat : 650000m);
+            SuaGiaTrungBinh = SuaGiaNiemYet;
+
             HienThiDialogChinhSua = true;
         }
 
@@ -221,27 +336,75 @@ namespace HomestaySystem.ViewModels
             if (CoSoDangChon == null) return;
             if (string.IsNullOrWhiteSpace(SuaTenCoSo))
             {
-                MessageBox.Show("Vui lòng nhập tên chỗ nghỉ / cơ sở lưu trú!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Vui lòng nhập tên cơ sở lưu trú!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(SuaDiaChi))
+            {
+                MessageBox.Show("Vui lòng nhập địa chỉ cụ thể của cơ sở lưu trú!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(SuaKhuVuc))
+            {
+                MessageBox.Show("Vui lòng nhập Tỉnh / Thành phố hoạt động của cơ sở!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!string.IsNullOrWhiteSpace(SuaDienThoai) && !ValidationHelper.IsValidVietnamesePhone(SuaDienThoai, out var errPhone))
+            {
+                MessageBox.Show(errPhone, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!string.IsNullOrWhiteSpace(SuaEmail) && !ValidationHelper.IsValidEmail(SuaEmail, out var errEmail))
+            {
+                MessageBox.Show(errEmail, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (SuaGiaNiemYet > 0 && SuaGiaNiemYet < 50000)
+            {
+                MessageBox.Show("Giá niêm yết của cơ sở phải từ 50.000 đ/đêm trở lên theo quy định hệ thống!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             CoSoDangChon.TenCoSo = SuaTenCoSo.Trim();
+            CoSoDangChon.LoaiHinh = SuaLoaiHinh == "Hotel" ? "Hotel" : "Homestay";
+            CoSoDangChon.DienThoai = SuaDienThoai?.Trim() ?? string.Empty;
+            CoSoDangChon.Email = SuaEmail?.Trim().ToLowerInvariant() ?? string.Empty;
             CoSoDangChon.DiaChi = SuaDiaChi.Trim();
-            CoSoDangChon.KhuVuc = SuaKhuVuc?.Trim() ?? string.Empty;
-            CoSoDangChon.TinhThanh = SuaKhuVuc?.Trim() ?? string.Empty;
-            CoSoDangChon.LoaiHinhHienThi = SuaLoaiHinh;
-            CoSoDangChon.TenChuHome = SuaTenChuHome.Trim();
-            CoSoDangChon.GiaTrungBinh = SuaGiaTrungBinh;
+            CoSoDangChon.PhuongXa = SuaPhuongXa?.Trim() ?? string.Empty;
+            CoSoDangChon.KhuVuc = SuaKhuVuc.Trim();
+            CoSoDangChon.TinhThanh = SuaKhuVuc.Trim();
+            CoSoDangChon.ChinhSach = SuaChinhSach?.Trim() ?? string.Empty;
+            CoSoDangChon.MoTa = CoSoDangChon.ChinhSach;
+            if (SuaGiaNiemYet >= 50000)
+            {
+                CoSoDangChon.GiaTrungBinh = SuaGiaNiemYet;
+            }
 
-            DangTaiDuLieu = true;
-            await _adminService.CapNhatCoSoAsync(CoSoDangChon);
-            DangTaiDuLieu = false;
+            try
+            {
+                DangTaiDuLieu = true;
+                bool ok = await _adminService.CapNhatCoSoAsync(CoSoDangChon);
+                if (!ok)
+                {
+                    MessageBox.Show($"Không thể cập nhật cơ sở {CoSoDangChon.TenCoSo}. Vui lòng kiểm tra lại kết nối máy chủ!", "Lỗi cập nhật", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
-            OnPropertyChanged(nameof(CoSoDangChon));
-            ApDungBoLoc();
+                OnPropertyChanged(nameof(CoSoDangChon));
+                ApDungBoLoc();
+                CapNhatThongKe();
 
-            HienThiDialogChinhSua = false;
-            MessageBox.Show($"Đã cập nhật thông tin cơ sở {CoSoDangChon.TenCoSo} ({CoSoDangChon.MaCoSoHienThi}) thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                HienThiDialogChinhSua = false;
+                MessageBox.Show($"Đã cập nhật thông tin cơ sở {CoSoDangChon.TenCoSo} ({CoSoDangChon.MaCoSoHienThi}) thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi cập nhật cơ sở: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                DangTaiDuLieu = false;
+            }
         }
 
         public async Task TaiDanhSachCoSoAsync()

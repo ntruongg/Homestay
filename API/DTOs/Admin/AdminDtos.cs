@@ -320,7 +320,9 @@ public sealed record AdminUserResponse(
     int BookingCount,
     string? BankName = null,
     string? AccountNumber = null,
-    string? AccountHolder = null
+    string? AccountHolder = null,
+    string? ApprovalStatus = null,
+    string? RejectionReason = null
 );
 
 public sealed class UpdateUserStatusRequest

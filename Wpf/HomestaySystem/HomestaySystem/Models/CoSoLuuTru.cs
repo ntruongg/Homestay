@@ -11,10 +11,15 @@ namespace HomestaySystem.Models
     {
         public int MaCoSo { get; set; }
         public string TenCoSo { get; set; } = string.Empty;
+        public string DienThoai { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
         public string DiaChi { get; set; } = string.Empty;
+        public string PhuongXa { get; set; } = string.Empty;
         public string TinhThanh { get; set; } = string.Empty;
         public string MoTa { get; set; } = string.Empty;
+        public string ChinhSach { get; set; } = string.Empty;
         public string ChinhSachHuyPhong { get; set; } = "Miễn phí hủy trước 48 giờ.";
+        public bool TrangThaiHoatDong { get; set; } = true;
 
         // Thông tin chủ sở hữu
         public int MaChuHome { get; set; }
@@ -35,6 +40,11 @@ namespace HomestaySystem.Models
         /// Trạng thái kiểm duyệt: "ChoDuyet", "DaDuyet", "TuChoi"
         /// </summary>
         public string TrangThai { get; set; } = "ChoDuyet";
+        public string TrangThaiDuyet
+        {
+            get => TrangThai;
+            set => TrangThai = value;
+        }
         public string? LyDoTuChoi { get; set; }
 
         public DateTime NgayGuiDuyet { get; set; } = DateTime.Now;
@@ -61,7 +71,7 @@ namespace HomestaySystem.Models
         // ================= THUỘC TÍNH BỔ TRỢ GIAO DIỆN =================
         public string MaCoSoHienThi => $"#CS-{MaCoSo:D5}";
         public string MaHoSoHienThi => $"#HS-AYR-{MaCoSo:D4}";
-        public string LoaiHinh { get; set; } = "Homestay nguyên căn";
+        public string LoaiHinh { get; set; } = "Homestay";
 
         public string LoaiHinhHienThi
         {
@@ -71,9 +81,9 @@ namespace HomestaySystem.Models
                     string.Equals(LoaiHinh, "KhachSan", StringComparison.OrdinalIgnoreCase) ||
                     LoaiHinh.Contains("Khách sạn", StringComparison.OrdinalIgnoreCase))
                 {
-                    return "Khách sạn";
+                    return "Khách sạn (Hotel)";
                 }
-                return "Homestay nguyên căn";
+                return "Homestay (Thuê nguyên căn)";
             }
             set => LoaiHinh = value;
         }

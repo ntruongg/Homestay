@@ -298,8 +298,7 @@ namespace HomestaySystem.ViewModels
                 // Chỉ tải lại nền nếu người dùng không đang mở hồ sơ xem chi tiết hoặc mở dialog chỉnh sửa/hoàn tiền
                 bool dangTuongTacDonDat = QuanLyDonDatVM.DonDangChon != null ||
                                           QuanLyDonDatVM.HienThiDialogChinhSua ||
-                                          QuanLyDonDatVM.HienThiDialogHoanTien ||
-                                          QuanLyDonDatVM.HienThiDialogTuChoiHoanTien;
+                                          QuanLyDonDatVM.HienThiDialogHoanTien;
                 if (!dangTuongTacDonDat)
                 {
                     await QuanLyDonDatVM.TaiDanhSachDonDatAsync();

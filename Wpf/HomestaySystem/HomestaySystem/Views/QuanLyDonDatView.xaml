@@ -602,7 +602,7 @@
                                     </StackPanel>
                                 </Button>
 
-                                <!-- NÚT NGHIỆP VỤ KHI ĐƠN CHỜ DUYỆT (ChoDuyet / Pending) -->
+                                <!-- NÚT NGHIỆP VỤ KHI ĐƠN CHỜ XÉT DUYỆT (ChoDuyet / Pending) -->
                                 <StackPanel Visibility="{Binding DonDangChon.LaDonChoDuyet, Converter={StaticResource BoolToVis}}">
                                     <Button Command="{Binding DuyetDonCommand}" Cursor="Hand" Margin="0,0,0,10"
                                             Background="{StaticResource MauStaylyGreen}" Foreground="White"
@@ -617,49 +617,21 @@
                                             <TextBlock Text="Phê Duyệt Tiếp Nhận Đơn"/>
                                         </StackPanel>
                                     </Button>
-
-                                    <Button Command="{Binding HuyDonCommand}" Cursor="Hand"
-                                            Background="{StaticResource MauStaylyRed}" Foreground="White"
-                                            FontSize="13" FontWeight="Bold" Height="40" ToolTip="Từ chối đơn / Hủy đơn">
-                                        <Button.Resources>
-                                            <Style TargetType="Border">
-                                                <Setter Property="CornerRadius" Value="20"/>
-                                            </Style>
-                                        </Button.Resources>
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <TextBlock Text="✕ " FontSize="13"/>
-                                            <TextBlock Text="Từ Chối / Hủy Đơn"/>
-                                        </StackPanel>
-                                    </Button>
                                 </StackPanel>
 
                                 <!-- NÚT NGHIỆP VỤ KHI ĐƠN YÊU CẦU HOÀN TIỀN (YeuCauHoanTien) -->
                                 <StackPanel Visibility="{Binding DonDangChon.LaDonHoanTien, Converter={StaticResource BoolToVis}}">
                                     <Button Command="{Binding MoDialogHoanTienCommand}" Cursor="Hand" Margin="0,0,0,10"
                                             Background="{StaticResource MauStaylyGreen}" Foreground="White"
-                                            FontSize="13" FontWeight="Bold" Height="40">
+                                            FontSize="13" FontWeight="Bold" Height="40" ToolTip="Xác nhận hoàn tiền cho khách hàng">
                                         <Button.Resources>
                                             <Style TargetType="Border">
                                                 <Setter Property="CornerRadius" Value="20"/>
                                             </Style>
                                         </Button.Resources>
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <TextBlock Text="✔ " FontSize="13"/>
-                                            <TextBlock Text="Phê Duyệt Hoàn Tiền Qua Cổng"/>
-                                        </StackPanel>
-                                    </Button>
-
-                                    <Button Command="{Binding MoDialogTuChoiHoanTienCommand}" Cursor="Hand"
-                                            Background="{StaticResource MauStaylyRed}" Foreground="White"
-                                            FontSize="13" FontWeight="Bold" Height="40">
-                                        <Button.Resources>
-                                            <Style TargetType="Border">
-                                                <Setter Property="CornerRadius" Value="20"/>
-                                            </Style>
-                                        </Button.Resources>
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <TextBlock Text="✕ " FontSize="13"/>
-                                            <TextBlock Text="Từ Chối Yêu Cầu Hoàn Tiền"/>
+                                            <TextBlock Text="💰 " FontSize="13"/>
+                                            <TextBlock Text="Xác Nhận Hoàn Tiền Cho Khách"/>
                                         </StackPanel>
                                     </Button>
                                 </StackPanel>
@@ -789,53 +761,6 @@
             </Border>
         </Grid>
 
-        <!-- ================= DIALOG TỪ CHỐI HOÀN TIỀN ================= -->
-        <Grid Visibility="{Binding HienThiDialogTuChoiHoanTien, Converter={StaticResource BoolToVis}}"
-              HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <!-- Nền mờ: Nhấp chuột ra ngoài để hủy -->
-            <Border Background="#99000000" Cursor="Hand" ToolTip="Nhấp vào vùng ngoài để đóng">
-                <Border.InputBindings>
-                    <MouseBinding MouseAction="LeftClick" Command="{Binding HuyDialogTuChoiHoanTienCommand}"/>
-                </Border.InputBindings>
-            </Border>
-            <Border Background="White" CornerRadius="16" Width="530" Padding="26" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <TextBlock Grid.Row="0" Text="TỪ CHỐI YÊU CẦU HOÀN TIỀN" FontSize="16" FontWeight="Bold" Foreground="{StaticResource MauStaylyRed}" Margin="0,0,0,8"/>
-                    <TextBlock Grid.Row="1" Text="Vui lòng cung cấp lý do từ chối gửi tới khách hàng:" FontSize="13" Foreground="{StaticResource MauChuChinh}" Margin="0,0,0,12"/>
-
-                    <Border Grid.Row="2" Background="#F1F5F9" CornerRadius="8" Padding="10,8" Margin="0,0,0,18" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                        <TextBox Text="{Binding LyDoTuChoiHoanTien, UpdateSourceTrigger=PropertyChanged}"
-                                 Height="80" AcceptsReturn="True" TextWrapping="Wrap" BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
-                    </Border>
-
-                    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Command="{Binding HuyDialogTuChoiHoanTienCommand}" Content="Hủy bỏ" Background="#F1F5F9"
-                                BorderThickness="0" Padding="18,9" Margin="0,0,12,0" FontSize="13" FontWeight="SemiBold" Cursor="Hand">
-                            <Button.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="18"/>
-                                </Style>
-                            </Button.Resources>
-                        </Button>
-                        <Button Command="{Binding XacNhanTuChoiHoanTienCommand}" Content="Xác nhận từ chối" Background="{StaticResource MauStaylyRed}"
-                                Foreground="White" BorderThickness="0" Padding="20,9" FontSize="13" FontWeight="Bold" Cursor="Hand">
-                            <Button.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="18"/>
-                                </Style>
-                            </Button.Resources>
-                        </Button>
-                    </StackPanel>
-                </Grid>
-            </Border>
-        </Grid>
 
         <!-- ================= DIALOG CHỈNH SỬA THÔNG TIN ĐƠN ĐẶT ================= -->
         <Grid Visibility="{Binding HienThiDialogChinhSua, Converter={StaticResource BoolToVis}}"

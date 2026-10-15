@@ -31,10 +31,6 @@ namespace HomestaySystem.ViewModels
         private string _lyDoHoanTien = string.Empty;
         private string _ghiChuHoanTien = string.Empty;
 
-        // Trạng thái Dialog Từ chối Hoàn tiền
-        private bool _hienThiDialogTuChoiHoanTien;
-        private string _lyDoTuChoiHoanTien = string.Empty;
-        private string _ghiChuTuChoiHoanTien = string.Empty;
 
         public ObservableCollection<DonDatPhong> DanhSachHienThi
         {
@@ -121,23 +117,6 @@ namespace HomestaySystem.ViewModels
             set => SetProperty(ref _maGiaoDichHoanTien, value);
         }
 
-        public bool HienThiDialogTuChoiHoanTien
-        {
-            get => _hienThiDialogTuChoiHoanTien;
-            set => SetProperty(ref _hienThiDialogTuChoiHoanTien, value);
-        }
-
-        public string LyDoTuChoiHoanTien
-        {
-            get => _lyDoTuChoiHoanTien;
-            set => SetProperty(ref _lyDoTuChoiHoanTien, value);
-        }
-
-        public string GhiChuTuChoiHoanTien
-        {
-            get => _ghiChuTuChoiHoanTien;
-            set => SetProperty(ref _ghiChuTuChoiHoanTien, value);
-        }
 
         // ================= TRẠNG THÁI DIALOG CHỈNH SỬA THÔNG TIN ĐƠN =================
         private bool _hienThiDialogChinhSua;
@@ -214,13 +193,13 @@ namespace HomestaySystem.ViewModels
         public record LuaChonTrangThaiDon(string MaTrangThai, string TenHienThi);
         public List<LuaChonTrangThaiDon> DanhSachTrangThaiDon { get; } = new()
         {
-            new("ChoDuyet", "⏳ Chờ xác nhận / Chờ duyệt"),
-            new("DaDuyet", "✅ Đã xác nhận / Sẵn sàng đón"),
+            new("ChoDuyet", "⏳ Chờ xét duyệt"),
+            new("DaDuyet", "✅ Đã xét duyệt"),
             new("DangO", "🏡 Khách đang lưu trú (Đang ở)"),
             new("DaHoanTat", "🏁 Đã hoàn tất (Checked-out)"),
             new("YeuCauHoanTien", "💸 Yêu cầu hoàn tiền"),
             new("DaHoanTien", "💰 Đã hoàn tiền thành công"),
-            new("DaHuy", "🚫 Đã hủy / Từ chối đơn")
+            new("DaHuy", "🚫 Đã hủy")
         };
 
         // Thống kê nhanh
@@ -236,9 +215,6 @@ namespace HomestaySystem.ViewModels
         public ICommand MoDialogHoanTienCommand { get; }
         public ICommand XacNhanHoanTienCommand { get; }
         public ICommand HuyDialogHoanTienCommand { get; }
-        public ICommand MoDialogTuChoiHoanTienCommand { get; }
-        public ICommand XacNhanTuChoiHoanTienCommand { get; }
-        public ICommand HuyDialogTuChoiHoanTienCommand { get; }
         public ICommand DuyetDonCommand { get; }
         public ICommand HuyDonCommand { get; }
         public ICommand MoDialogChinhSuaCommand { get; }
@@ -261,10 +237,6 @@ namespace HomestaySystem.ViewModels
             MoDialogHoanTienCommand = new RelayCommand(ThucHienMoDialogHoanTien, () => DonDangChon != null && DonDangChon.CoTheHoanTien);
             XacNhanHoanTienCommand = new RelayCommand(async () => await ThucHienXacNhanHoanTienAsync());
             HuyDialogHoanTienCommand = new RelayCommand(() => HienThiDialogHoanTien = false);
-
-            MoDialogTuChoiHoanTienCommand = new RelayCommand(ThucHienMoDialogTuChoi, () => DonDangChon != null && DonDangChon.CoTheHoanTien);
-            XacNhanTuChoiHoanTienCommand = new RelayCommand(async () => await ThucHienXacNhanTuChoiHoanTienAsync());
-            HuyDialogTuChoiHoanTienCommand = new RelayCommand(() => HienThiDialogTuChoiHoanTien = false);
 
             DuyetDonCommand = new RelayCommand(async () => await ThucHienDuyetDonAsync(), () => DonDangChon != null && DonDangChon.LaDonChoDuyet);
             HuyDonCommand = new RelayCommand(async () => await ThucHienHuyDonAsync(), () => DonDangChon != null && (DonDangChon.LaDonChoDuyet || DonDangChon.TrangThai == "DaDuyet"));
@@ -460,39 +432,6 @@ namespace HomestaySystem.ViewModels
             }
         }
 
-        private void ThucHienMoDialogTuChoi()
-        {
-            if (DonDangChon == null) return;
-            LyDoTuChoiHoanTien = "Yêu cầu hoàn tiền vi phạm chính sách hủy phòng cận ngày";
-            GhiChuTuChoiHoanTien = "Không chấp nhận yêu cầu";
-            HienThiDialogTuChoiHoanTien = true;
-        }
-
-        private async Task ThucHienXacNhanTuChoiHoanTienAsync()
-        {
-            if (DonDangChon == null) return;
-
-            if (string.IsNullOrWhiteSpace(LyDoTuChoiHoanTien))
-            {
-                MessageBox.Show("Vui lòng nhập lý do từ chối hoàn tiền!", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            DangTaiDuLieu = true;
-            bool thanhCong = await _adminService.TuChoiHoanTienAsync(DonDangChon.MaDon, LyDoTuChoiHoanTien, GhiChuTuChoiHoanTien);
-            DangTaiDuLieu = false;
-
-            if (thanhCong)
-            {
-                HienThiDialogTuChoiHoanTien = false;
-                MessageBox.Show($"Đã gửi quyết định từ chối hoàn tiền cho đơn {DonDangChon.MaDonHienThi}.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
-                await TaiDanhSachDonDatAsync();
-            }
-            else
-            {
-                MessageBox.Show("Thao tác từ chối hoàn tiền thất bại.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
 
         private async Task ThucHienDuyetDonAsync()
         {

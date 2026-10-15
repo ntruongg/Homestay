@@ -66,10 +66,15 @@ public class GiamGia
     [Required, StringLength(50)]
     public string TenMa { get; set; } = string.Empty;
 
+    [StringLength(200)]
+    public string? TenChuongTrinh { get; set; }
+
     public int PhanTram { get; set; }
 
     [Column(TypeName = "decimal(12,2)")]
     public decimal? ToiDa { get; set; }
+
+    public int? SoLuong { get; set; }
 
     public DateTime? NgayBatDau { get; set; }
     public DateTime? NgayHetHan { get; set; }

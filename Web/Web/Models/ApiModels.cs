@@ -102,7 +102,10 @@ public class RegisterGuestInput
     public string Phone { get; set; } = string.Empty;
     [Required, EmailAddress]
     public string Email { get; set; } = string.Empty;
-    [Required, MinLength(8)]
+    [Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]
+    [StringLength(20, MinimumLength = 8, ErrorMessage = "Mật khẩu phải từ 8 đến 20 ký tự.")]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$", 
+        ErrorMessage = "Mật khẩu phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.")]
     public string Password { get; set; } = string.Empty;
     public string? OtpCode { get; set; }
 }
@@ -110,6 +113,7 @@ public class RegisterGuestInput
 public sealed class RegisterOwnerInput : RegisterGuestInput
 {
     [Required]
+    [RegularExpression(@"^0\d{11}$", ErrorMessage = "Số CCCD phải gồm đúng 12 chữ số và bắt đầu bằng số 0.")]
     public string CitizenId { get; set; } = string.Empty;
     public string? BankName { get; set; }
     public string? AccountNumber { get; set; }
@@ -127,6 +131,7 @@ public sealed class ProfileInput
     public string Phone { get; set; } = string.Empty;
     [Required, EmailAddress]
     public string Email { get; set; } = string.Empty;
+    [RegularExpression(@"^0\d{11}$", ErrorMessage = "Số CCCD phải gồm đúng 12 chữ số và bắt đầu bằng số 0.")]
     public string? CitizenId { get; set; }
     public string? BankName { get; set; }
     public string? AccountNumber { get; set; }
@@ -135,13 +140,16 @@ public sealed class ProfileInput
 
 public sealed class ChangePasswordInput
 {
-    [Required]
+    [Required(ErrorMessage = "Vui lòng nhập mật khẩu hiện tại.")]
     public string CurrentPassword { get; set; } = string.Empty;
 
-    [Required, MinLength(8)]
+    [Required(ErrorMessage = "Vui lòng nhập mật khẩu mới.")]
+    [StringLength(20, MinimumLength = 8, ErrorMessage = "Mật khẩu mới phải từ 8 đến 20 ký tự.")]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$", 
+        ErrorMessage = "Mật khẩu mới phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.")]
     public string NewPassword { get; set; } = string.Empty;
 
-    [Required, Compare(nameof(NewPassword), ErrorMessage = "Passwords do not match.")]
+    [Required(ErrorMessage = "Vui lòng xác nhận mật khẩu mới."), Compare(nameof(NewPassword), ErrorMessage = "Mật khẩu xác nhận không trùng khớp.")]
     public string ConfirmPassword { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Mã xác thực OTP là bắt buộc.")]
@@ -500,8 +508,11 @@ public sealed record ReplyReviewInput(
 public sealed record PromotionItem(
     int Id,
     string Code,
+    string? Title,
     int Percentage,
     decimal? MaxAmount,
+    int? Quantity,
+    int? UsageCount,
     DateTime? StartDate,
     DateTime? EndDate
 );
@@ -509,8 +520,11 @@ public sealed record PromotionItem(
 public sealed record CheckPromoResult(
     [property: JsonPropertyName("maGiamGia")] int Id,
     [property: JsonPropertyName("tenMa")] string Code,
+    [property: JsonPropertyName("tenChuongTrinh")] string? Title,
     [property: JsonPropertyName("phanTram")] int Percentage,
     [property: JsonPropertyName("toiDa")] decimal? MaxAmount,
+    [property: JsonPropertyName("soLuong")] int? Quantity,
+    [property: JsonPropertyName("soLuongConLai")] int? RemainingCount,
     [property: JsonPropertyName("ngayBatDau")] DateTime? StartDate,
     [property: JsonPropertyName("ngayHetHan")] DateTime? EndDate
 );

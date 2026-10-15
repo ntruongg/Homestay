@@ -878,14 +878,14 @@ namespace HomestaySystem.Services
                         {
                             MaKhuyenMai = p.Id,
                             MaCode = p.Code,
-                            TenChuongTrinh = $"Giảm {p.Percentage}% (Tối đa {p.MaxDiscount:N0}đ)",
+                            TenChuongTrinh = string.IsNullOrWhiteSpace(p.Title) ? $"Giảm {p.Percentage}% (Tối đa {p.MaxDiscount:N0}đ)" : p.Title,
                             PhanTramGiam = p.Percentage,
                             GiamToiDa = p.MaxDiscount ?? 0,
                             DonGiaToiThieu = 0,
                             NgayBatDau = p.StartDate ?? DateTime.Today,
                             NgayKetThuc = p.ExpiryDate ?? DateTime.Today.AddMonths(1),
                             SoLuongDaDung = p.UsageCount,
-                            SoLuongToiDa = p.UsageCount + 100,
+                            SoLuongToiDa = p.Quantity is > 0 ? p.Quantity.Value : 100,
                             TrangThai = p.IsActive ? "HoatDong" : "Khoa"
                         }).ToList();
                     }
@@ -905,8 +905,10 @@ namespace HomestaySystem.Services
             var payload = new
             {
                 code = km.MaCode.Trim().ToUpperInvariant(),
+                title = km.TenChuongTrinh?.Trim(),
                 percentage = km.PhanTramGiam,
                 maxDiscount = km.GiamToiDa > 0 ? (decimal?)km.GiamToiDa : null,
+                quantity = km.SoLuongToiDa > 0 ? km.SoLuongToiDa : 100,
                 startDate = km.NgayBatDau,
                 expiryDate = km.NgayKetThuc
             };
@@ -920,8 +922,10 @@ namespace HomestaySystem.Services
             var payload = new
             {
                 code = km.MaCode.Trim().ToUpperInvariant(),
+                title = km.TenChuongTrinh?.Trim(),
                 percentage = km.PhanTramGiam,
                 maxDiscount = km.GiamToiDa > 0 ? (decimal?)km.GiamToiDa : null,
+                quantity = km.SoLuongToiDa > 0 ? km.SoLuongToiDa : 100,
                 startDate = km.NgayBatDau,
                 expiryDate = km.NgayKetThuc
             };
@@ -1374,7 +1378,7 @@ namespace HomestaySystem.Services
         private record ApiInvoiceDto(int InvoiceId, decimal TotalAmount, decimal BaseAmount, string PaymentMethod);
         private record ApiRevenueReportDto(decimal TotalCustomerPaid, decimal PlatformCommission, decimal HostPayout, int TotalBookings, int TotalProperties, int TotalUsers, List<ApiRevenueBookingItemDto>? Bookings);
         private record ApiRevenueBookingItemDto(int BookingId, string PropertyName, int OwnerId, string OwnerName, string GuestName, DateTime CheckIn, DateTime CheckOut, decimal TotalAmount, decimal Commission, decimal HostPayout, string Status, string PaymentStatus, DateTime BookingDate, string? TrangThaiQuyetToan, string? MaGiaoDichQuyetToan, DateTime? NgayQuyetToan, decimal? SoTienQuyetToan, string? GhiChuQuyetToan, string? OwnerBankName = null, string? OwnerAccountNumber = null, string? OwnerAccountHolder = null);
-        private record ApiPromotionDto(int Id, string Code, int Percentage, decimal? MaxDiscount, DateTime? StartDate, DateTime? ExpiryDate, int UsageCount, bool IsActive);
+        private record ApiPromotionDto(int Id, string Code, string? Title, int Percentage, decimal? MaxDiscount, int? Quantity, DateTime? StartDate, DateTime? ExpiryDate, int UsageCount, bool IsActive);
         private record ApiBackupItemDto(string FileName, long SizeInBytes, string FormattedSize, DateTime CreatedAt, bool IsAutomated, string? Description);
         private record ApiDatabaseStatusDto(string DatabaseName, string ServerVersion, decimal DataSizeMB, decimal LogSizeMB, int TotalTables, DateTime? LastBackupDate, int TotalBackupsCount, string? TotalBackupsSizeFormatted);
         private record ApiAuditLogDto(int Id, int? UserId, string? UserName, string? UserEmail, string Action, string TargetType, int? TargetId, string Description, string? IpAddress, DateTime CreatedAt);

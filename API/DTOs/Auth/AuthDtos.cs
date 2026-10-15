@@ -21,7 +21,10 @@ public sealed class RegisterGuestRequest
     [RegularExpression(@"^(0[3|5|7|8|9])+([0-9]{8})$", ErrorMessage = "Số điện thoại không hợp lệ")]
     public string Phone { get; set; } = string.Empty;
 
-    [Required, StringLength(100, MinimumLength = 8)]
+    [Required(ErrorMessage = "Mật khẩu là bắt buộc")]
+    [StringLength(20, MinimumLength = 8, ErrorMessage = "Mật khẩu phải từ 8 đến 20 ký tự")]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$", 
+        ErrorMessage = "Mật khẩu phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt")]
     public string Password { get; set; } = string.Empty;
 
     [RegularExpression(@"^\d{6}$", ErrorMessage = "OTP phải đúng 6 chữ số")]
@@ -47,7 +50,10 @@ public sealed class RegisterOwnerRequest
     [RegularExpression(@"^(0[3|5|7|8|9])+([0-9]{8})$", ErrorMessage = "Số điện thoại không hợp lệ")]
     public string Phone { get; set; } = string.Empty;
 
-    [Required, StringLength(100, MinimumLength = 8)]
+    [Required(ErrorMessage = "Mật khẩu là bắt buộc")]
+    [StringLength(20, MinimumLength = 8, ErrorMessage = "Mật khẩu phải từ 8 đến 20 ký tự")]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$", 
+        ErrorMessage = "Mật khẩu phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt")]
     public string Password { get; set; } = string.Empty;
 
     // 3 cột thông tin ngân hàng chuẩn hóa
@@ -67,7 +73,7 @@ public sealed class RegisterOwnerRequest
     public string? BankInformation { get; set; }
 
     [Required, StringLength(20)]
-    [RegularExpression(@"^\d{12}$", ErrorMessage = "CCCD phải bao gồm đúng 12 chữ số")]
+    [RegularExpression(@"^0\d{11}$", ErrorMessage = "CCCD phải bao gồm đúng 12 chữ số và bắt đầu bằng số 0")]
     public string CitizenId { get; set; } = string.Empty;
 
     [RegularExpression(@"^\d{6}$", ErrorMessage = "OTP phải đúng 6 chữ số")]
@@ -121,25 +127,31 @@ public sealed class UpdateProfileRequest
     public string? BankInformation { get; set; }
 
     [StringLength(20)]
-    [RegularExpression(@"^\d{12}$", ErrorMessage = "CCCD phải bao gồm đúng 12 chữ số")]
+    [RegularExpression(@"^0\d{11}$", ErrorMessage = "CCCD phải bao gồm đúng 12 chữ số và bắt đầu bằng số 0")]
     public string? CitizenId { get; set; }
 }
 
 public sealed class ChangePasswordRequest
 {
-    [Required]
+    [Required(ErrorMessage = "Mật khẩu hiện tại là bắt buộc")]
     public string CurrentPassword { get; set; } = string.Empty;
 
-    [Required, StringLength(100, MinimumLength = 8)]
+    [Required(ErrorMessage = "Mật khẩu mới là bắt buộc")]
+    [StringLength(20, MinimumLength = 8, ErrorMessage = "Mật khẩu mới phải từ 8 đến 20 ký tự")]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$", 
+        ErrorMessage = "Mật khẩu mới phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt")]
     public string NewPassword { get; set; } = string.Empty;
 }
 
 public sealed class ChangePasswordOtpRequest
 {
-    [Required]
+    [Required(ErrorMessage = "Mật khẩu hiện tại là bắt buộc")]
     public string CurrentPassword { get; set; } = string.Empty;
 
-    [Required, StringLength(100, MinimumLength = 8)]
+    [Required(ErrorMessage = "Mật khẩu mới là bắt buộc")]
+    [StringLength(20, MinimumLength = 8, ErrorMessage = "Mật khẩu mới phải từ 8 đến 20 ký tự")]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$", 
+        ErrorMessage = "Mật khẩu mới phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt")]
     public string NewPassword { get; set; } = string.Empty;
 
     [Required, StringLength(6)]

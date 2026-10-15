@@ -749,11 +749,17 @@
                         </Grid>
 
                         <!-- Đổi mật khẩu -->
-                        <TextBlock Text="Đổi mật khẩu mới (để trống nếu không muốn đổi):" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
+                        <DockPanel Margin="0,0,0,4">
+                            <TextBlock Text="Đổi mật khẩu mới:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}"/>
+                            <TextBlock Text="(để trống nếu không muốn đổi)" FontSize="11.5" Foreground="{StaticResource MauChuPhu}" Margin="6,1,0,0"/>
+                        </DockPanel>
                         <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                             <TextBox Text="{Binding SuaMatKhau, UpdateSourceTrigger=PropertyChanged}"
+                                     MaxLength="20"
                                      BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                         </Border>
+                        <TextBlock Text="* Yêu cầu 8-20 ký tự: gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt."
+                                   FontSize="11.5" Foreground="#64748B" Margin="2,4,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
 
                     <!-- Buttons -->
@@ -806,7 +812,7 @@
                         </Border>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="THÊM TÀI KHOẢN NGƯỜI DÙNG MỚI" FontSize="15" FontWeight="Bold" Foreground="{StaticResource MauStaylyPrimary}"/>
-                            <TextBlock Text="Cấp tài khoản sử dụng sàn Stayly cho khách thuê hoặc quản trị viên" FontSize="12" Foreground="{StaticResource MauChuPhu}"/>
+                            <TextBlock Text="Cấp tài khoản sử dụng sàn Stayly cho khách hàng thành viên" FontSize="12" Foreground="{StaticResource MauChuPhu}"/>
                         </StackPanel>
                     </DockPanel>
 
@@ -828,10 +834,9 @@
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="Vai trò:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
-                                <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding ThemVaiTro}" Height="38" FontSize="13" VerticalAlignment="Center">
-                                    <ComboBoxItem Content="Khách hàng" Tag="KhachHang" IsSelected="True"/>
-                                    <ComboBoxItem Content="Quản trị viên" Tag="QuanTriVien"/>
-                                </ComboBox>
+                                <Border Background="#F1F5F9" CornerRadius="8" Padding="12,0" Height="38" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                    <TextBlock Text="Khách hàng" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource MauStaylyPrimary}" VerticalAlignment="Center"/>
+                                </Border>
                             </StackPanel>
                         </Grid>
 
@@ -841,8 +846,11 @@
                                 <TextBlock Text="Mật khẩu khởi tạo *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                                 <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                                     <TextBox Text="{Binding ThemMatKhau, UpdateSourceTrigger=PropertyChanged}"
+                                             MaxLength="20"
                                              BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                                 </Border>
+                                <TextBlock Text="* Yêu cầu 8-20 ký tự: gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt (mặc định: Stayly@2026)."
+                                           FontSize="11.5" Foreground="#64748B" Margin="2,4,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Grid>
 

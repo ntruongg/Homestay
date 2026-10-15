@@ -105,7 +105,7 @@
                             <ComboBox Grid.Column="2" SelectedValue="{Binding BoLocLoaiHinh}" SelectedValuePath="Tag" Height="36" VerticalAlignment="Center">
                                 <ComboBoxItem Content="Tất cả loại hình" Tag="TatCa" IsSelected="True"/>
                                 <ComboBoxItem Content="Homestay nguyên căn" Tag="Homestay"/>
-                                <ComboBoxItem Content="Khách sạn" Tag="Hotel"/>
+                                <ComboBoxItem Content="Khách sạn (Hotel)" Tag="Hotel"/>
                             </ComboBox>
 
                             <!-- ComboBox Trạng thái chuẩn bo tròn 8px hiện đại không lộ khung xám -->
@@ -272,26 +272,32 @@
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <!-- Cột Loại hình: Tự động canh theo loại hình dài nhất như 'Homestay nguyên căn', không bị che chữ -->
-                            <DataGridTemplateColumn Header="LOẠI HÌNH" Width="Auto" MinWidth="175">
+                            <!-- Cột Loại hình: Đồng bộ style theo các cột khác, không bị che chữ -->
+                            <DataGridTemplateColumn Header="LOẠI HÌNH" Width="Auto" MinWidth="180">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border CornerRadius="8" Padding="10,4" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0">
+                                        <Border CornerRadius="8" Padding="10,4" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0">
                                             <Border.Style>
                                                 <Style TargetType="Border">
                                                     <Setter Property="Background" Value="{StaticResource MauStaylyPrimaryLight}"/>
                                                     <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding LoaiHinhHienThi}" Value="Khách sạn (Hotel)">
+                                                            <Setter Property="Background" Value="#F1F5F9"/>
+                                                        </DataTrigger>
                                                         <DataTrigger Binding="{Binding LoaiHinhHienThi}" Value="Khách sạn">
                                                             <Setter Property="Background" Value="#F1F5F9"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
                                             </Border.Style>
-                                            <TextBlock Text="{Binding LoaiHinhHienThi}" FontSize="11" FontWeight="Bold">
+                                            <TextBlock Text="{Binding LoaiHinhHienThi}" FontSize="11.5" FontWeight="SemiBold">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="Foreground" Value="{StaticResource MauStaylyPrimary}"/>
                                                         <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding LoaiHinhHienThi}" Value="Khách sạn (Hotel)">
+                                                                <Setter Property="Foreground" Value="#475569"/>
+                                                            </DataTrigger>
                                                             <DataTrigger Binding="{Binding LoaiHinhHienThi}" Value="Khách sạn">
                                                                 <Setter Property="Foreground" Value="#475569"/>
                                                             </DataTrigger>
@@ -464,7 +470,12 @@
                                         </Grid>
                                     </Border>
                                     <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding CoSoDangChon.MaCoSoHienThi, FallbackValue='#CS-00001'}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource MauStaylyPrimary}"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                            <TextBlock Text="{Binding CoSoDangChon.MaCoSoHienThi, FallbackValue='#CS-00001'}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource MauStaylyPrimary}" VerticalAlignment="Center"/>
+                                            <Border Background="{StaticResource MauStaylyPrimaryLight}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding CoSoDangChon.LoaiHinhHienThi, FallbackValue='Homestay nguyên căn'}" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource MauStaylyPrimary}"/>
+                                            </Border>
+                                        </StackPanel>
                                         <TextBlock Text="{Binding CoSoDangChon.TenCoSo, FallbackValue='Chưa chọn chỗ nghỉ'}" FontSize="14.5" FontWeight="Bold" Foreground="{StaticResource MauChuTieuDe}" TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="{Binding CoSoDangChon.DiaChi, FallbackValue='Địa chỉ cơ sở lưu trú'}" FontSize="12.5" Foreground="{StaticResource MauChuPhu}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
                                         <TextBlock Text="{Binding CoSoDangChon.TenChuHome, StringFormat='Chủ home: {0}', FallbackValue='Chủ home'}" FontSize="12.5" FontWeight="Medium" Foreground="{StaticResource MauChuChinh}" Margin="0,3,0,0"/>
@@ -472,36 +483,36 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Complaint Incident Alert Box -->
-                            <Border Background="#FEF2F2" CornerRadius="12" Padding="14,12" Margin="0,0,0,14" BorderBrush="#FECACA" BorderThickness="1">
-                                <StackPanel>
-                                    <DockPanel Margin="0,0,0,6" LastChildFill="True">
-                                        <Border DockPanel.Dock="Right" Background="#FEE2E2" CornerRadius="8" Padding="6,2" Margin="6,0,0,0" VerticalAlignment="Center">
-                                            <TextBlock Text="3 Khiếu nại" FontSize="10" FontWeight="Bold" Foreground="{StaticResource MauStaylyRed}"/>
-                                        </Border>
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock Text="⚠️ " FontSize="13" Foreground="{StaticResource MauStaylyRed}"/>
-                                            <TextBlock Text="Cảnh báo phản ánh từ khách thuê" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauStaylyRed}" TextTrimming="CharacterEllipsis"/>
-                                        </StackPanel>
-                                    </DockPanel>
-                                    <TextBlock Text="• Phản ánh sai lệch phòng so với hình ảnh thực tế niêm yết.&#x0a;• Tình trạng vệ sinh và thiết bị tiện ích chưa đạt tiêu chuẩn Stayly."
-                                               FontSize="12.5" Foreground="{StaticResource MauChuChinh}" TextWrapping="Wrap" Margin="0,0,0,6" LineHeight="18"/>
-                                    <TextBlock Text="Báo cáo gần nhất: Hôm nay lúc 11:24 SA" FontSize="11" Foreground="{StaticResource MauChuPhu}"/>
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Audit Input Form: Lý do can thiệp -->
+                            <!-- Audit Input Form: Lý do can thiệp / Tạm dừng -->
                             <StackPanel Margin="0,0,0,16">
                                 <DockPanel Margin="0,0,0,6" LastChildFill="True">
                                     <TextBlock DockPanel.Dock="Right" Text="Lưu vào Audit Log" FontSize="11" Foreground="{StaticResource MauStaylyPrimary}" VerticalAlignment="Center"/>
                                     <TextBlock Text="LÝ DO CAN THIỆP / TẠM DỪNG *" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                 </DockPanel>
-                                <Border Background="#F8FAFC" CornerRadius="12" Padding="10,8" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                    <TextBox Text="{Binding LyDoXuLy, UpdateSourceTrigger=PropertyChanged}"
-                                             BorderThickness="0" Background="Transparent" AcceptsReturn="True" TextWrapping="Wrap"
-                                             MinHeight="65" FontSize="13" Foreground="{StaticResource MauChuChinh}"/>
+                                <Border Background="#F8FAFC" CornerRadius="12" Padding="12,10" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                    <Grid>
+                                        <TextBox Text="{Binding LyDoXuLy, UpdateSourceTrigger=PropertyChanged}"
+                                                 BorderThickness="0" Background="Transparent" AcceptsReturn="True" TextWrapping="Wrap"
+                                                 MinHeight="75" FontSize="13" Foreground="{StaticResource MauChuChinh}"/>
+                                        <TextBlock Text="Nhập lý do can thiệp, vi phạm hoặc nguyên nhân tạm dừng niêm yết chỗ nghỉ..."
+                                                   FontSize="12.5" Foreground="#94A3B8" Margin="4,2,0,0" IsHitTestVisible="False">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding LyDoXuLy}" Value="">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding LyDoXuLy}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
                                 </Border>
-                                <TextBlock Text="Thông báo này sẽ được đẩy đến ứng dụng Host của đối tác." FontSize="11" Foreground="{StaticResource MauChuPhu}" Margin="0,4,0,0"/>
+                                <TextBlock Text="Thông báo này sẽ được đẩy đến ứng dụng Host của đối tác khi thực hiện tạm dừng." FontSize="11" Foreground="{StaticResource MauChuPhu}" Margin="0,4,0,0"/>
                             </StackPanel>
 
                             <!-- Action Buttons -->

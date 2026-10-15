@@ -276,12 +276,6 @@ namespace HomestaySystem.ViewModels
                 return;
             }
 
-            if (KhuyenMaiForm.DonGiaToiThieu < 0)
-            {
-                MessageBox.Show("Đơn giá tối thiểu không được là số âm!", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
             if (KhuyenMaiForm.SoLuongToiDa <= 0)
             {
                 MessageBox.Show("Số lượt sử dụng tối đa phải lớn hơn 0!", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);

@@ -336,6 +336,9 @@ public sealed class CreateUserAdminRequest
 {
     public string? Username { get; set; }
 
+    [StringLength(20, MinimumLength = 8, ErrorMessage = "Mật khẩu phải từ 8 đến 20 ký tự")]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$", 
+        ErrorMessage = "Mật khẩu phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt")]
     public string? Password { get; set; }
 
     [Required, StringLength(100)]
@@ -349,6 +352,7 @@ public sealed class CreateUserAdminRequest
 
     public string Role { get; set; } = "GUEST"; // GUEST, OWNER, ADMIN
 
+    [RegularExpression(@"^0\d{11}$", ErrorMessage = "CCCD phải bao gồm đúng 12 chữ số và bắt đầu bằng số 0")]
     public string? CitizenId { get; set; }
     public string? TaxId { get; set; }
     public string? BankName { get; set; }
@@ -372,6 +376,7 @@ public sealed class UpdateUserAdminRequest
     public string? Phone { get; set; }
 
     public string? Role { get; set; }
+    [RegularExpression(@"^0\d{11}$", ErrorMessage = "CCCD phải bao gồm đúng 12 chữ số và bắt đầu bằng số 0")]
     public string? CitizenId { get; set; }
     public string? TaxId { get; set; }
     public string? BankName { get; set; }
@@ -381,6 +386,10 @@ public sealed class UpdateUserAdminRequest
     public string? Address { get; set; }
     public DateTime? DateOfBirth { get; set; }
     public string? Gender { get; set; }
+
+    [StringLength(20, MinimumLength = 8, ErrorMessage = "Mật khẩu mới phải từ 8 đến 20 ký tự")]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$", 
+        ErrorMessage = "Mật khẩu mới phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt")]
     public string? Password { get; set; }
 }
 #endregion

@@ -223,8 +223,8 @@
                                     </h6>
                                     <div class="row g-3">
                                         <div class="col-md-12">
-                                            <label class="form-label small fw-bold">Số CCCD định danh cá nhân (12 số) *</label>
-                                            <input asp-for="Input.CitizenId" class="form-control rounded-pill px-3 py-2" required maxlength="12" placeholder="Nhập đúng 12 chữ số CCCD gắn chip" />
+                                            <label class="form-label small fw-bold">Số CCCD định danh cá nhân (12 số, bắt đầu bằng 0) *</label>
+                                            <input asp-for="Input.CitizenId" class="form-control rounded-pill px-3 py-2" required maxlength="12" pattern="0[0-9]{11}" title="CCCD phải gồm đúng 12 chữ số và bắt đầu bằng số 0" placeholder="Ví dụ: 001201009999" />
                                             <span asp-validation-for="Input.CitizenId" class="text-danger small"></span>
                                         </div>
 
@@ -339,8 +339,8 @@
                         </div>
 
                         <div class="alert alert-info py-2 px-3 small rounded-3 mb-4 d-flex align-items-center gap-2">
-                            <i class="bi bi-info-circle-fill text-primary fs-5"></i>
-                            <div><strong>Khuyến nghị an toàn:</strong> Sử dụng mật khẩu tối thiểu 8 ký tự, kết hợp chữ in hoa, chữ số và ký tự đặc biệt.</div>
+                            <i class="bi bi-shield-lock-fill text-primary fs-5"></i>
+                            <div><strong>Quy định bảo mật mật khẩu:</strong> Độ dài từ 8 đến 20 ký tự, bắt buộc bao gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.</div>
                         </div>
 
                         <div class="row g-4">
@@ -355,13 +355,15 @@
                                     </div>
 
                                     <div class="mb-3">
-                                        <label class="form-label small fw-bold">Mật khẩu mới *</label>
-                                        <input asp-for="PasswordInput.NewPassword" type="password" class="form-control rounded-pill px-3 py-2" required minlength="8" />
+                                        <label class="form-label small fw-bold">Mật khẩu mới (8-20 ký tự, gồm chữ hoa, thường, số, ký tự đặc biệt) *</label>
+                                        <input asp-for="PasswordInput.NewPassword" type="password" class="form-control rounded-pill px-3 py-2" required minlength="8" maxlength="20" placeholder="Ví dụ: Stayly@2026" />
+                                        <span asp-validation-for="PasswordInput.NewPassword" class="text-danger small"></span>
                                     </div>
 
                                     <div class="mb-3">
                                         <label class="form-label small fw-bold">Xác nhận mật khẩu mới *</label>
                                         <input asp-for="PasswordInput.ConfirmPassword" type="password" class="form-control rounded-pill px-3 py-2" required />
+                                        <span asp-validation-for="PasswordInput.ConfirmPassword" class="text-danger small"></span>
                                     </div>
 
                                     <div class="mb-4">

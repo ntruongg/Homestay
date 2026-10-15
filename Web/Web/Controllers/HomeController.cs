@@ -1322,10 +1322,13 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
             data = new
             {
                 code = promo.Code,
+                title = promo.Title,
                 percentage = promo.Percentage,
-                maxAmount = promo.MaxAmount
+                maxAmount = promo.MaxAmount,
+                quantity = promo.Quantity,
+                remainingCount = promo.RemainingCount
             },
-            message = $"Áp dụng mã {promo.Code} thành công: Giảm {promo.Percentage}%" + (promo.MaxAmount.HasValue ? $" (Tối đa {promo.MaxAmount.Value:N0} ₫)" : "")
+            message = $"Áp dụng mã {promo.Code} thành công ({promo.Title ?? "Ưu đãi Stayly"}): Giảm {promo.Percentage}%" + (promo.MaxAmount.HasValue ? $" (Tối đa {promo.MaxAmount.Value:N0} ₫)" : "")
         });
     }
 

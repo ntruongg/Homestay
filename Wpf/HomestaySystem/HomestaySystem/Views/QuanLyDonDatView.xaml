@@ -587,18 +587,18 @@
 
                             <!-- ================= CÁC NÚT HÀNH ĐỘNG QUẢN TRỊ THEO NGỮ CẢNH ================= -->
                             <StackPanel>
-                                <!-- NÚT CHỈNH SỬA THÔNG TIN ĐƠN ĐẶT (Sửa hồ sơ khách & ngày ở) -->
+                                <!-- NÚT XEM CHI TIẾT HỒ SƠ ĐƠN ĐẶT (CHẾ ĐỘ CHỈ XEM, KHÔNG SỬA) -->
                                 <Button Command="{Binding MoDialogChinhSuaCommand}" Cursor="Hand" Margin="0,0,0,10"
                                         Background="{StaticResource MauStaylyPrimary}" Foreground="White"
-                                        FontSize="13" FontWeight="Bold" Height="40" ToolTip="Mở form chỉnh sửa thông tin khách hàng và lịch lưu trú">
+                                        FontSize="13" FontWeight="Bold" Height="40" ToolTip="Xem toàn bộ hồ sơ chi tiết đơn đặt phòng (Chế độ chỉ xem)">
                                     <Button.Resources>
                                         <Style TargetType="Border">
                                             <Setter Property="CornerRadius" Value="20"/>
                                         </Style>
                                     </Button.Resources>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBlock Text="✏️ " FontSize="13"/>
-                                        <TextBlock Text="Chỉnh Sửa Thông Tin Đơn Đặt"/>
+                                        <TextBlock Text="📋 " FontSize="13"/>
+                                        <TextBlock Text="Xem Chi Tiết Hồ Sơ Đơn Đặt"/>
                                     </StackPanel>
                                 </Button>
 
@@ -689,14 +689,24 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="XÁC NHẬN PHÊ DUYỆT HOÀN TIỀN" FontSize="16" FontWeight="Bold" Foreground="{StaticResource MauStaylyGreen}" Margin="0,0,0,8"/>
-                    <TextBlock Grid.Row="1" Text="Lệnh hoàn tiền chuyển khoản trực tiếp về tài khoản khách hàng:" FontSize="13" Foreground="{StaticResource MauChuChinh}" Margin="0,0,0,14"/>
+                    <!-- Header Modal -->
+                    <DockPanel Grid.Row="0" Margin="0,0,0,12" LastChildFill="True">
+                        <Border DockPanel.Dock="Right" Background="#DCFCE7" CornerRadius="8" Padding="10,4" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding DonDangChon.MaDonHienThi, FallbackValue='#DDP-001'}" FontSize="12" FontWeight="Bold" Foreground="#15803D"/>
+                        </Border>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="💳 " FontSize="18"/>
+                            <TextBlock Text="XÁC NHẬN CHUYỂN KHOẢN HOÀN TIỀN" FontSize="15" FontWeight="Bold" Foreground="{StaticResource MauChuTieuDe}"/>
+                        </StackPanel>
+                    </DockPanel>
 
-                    <StackPanel Grid.Row="2" Margin="0,0,0,18">
+                    <TextBlock Grid.Row="1" Text="Quy trình chuyển tiền thủ công tương tự quyết toán doanh thu đối tác:" FontSize="12.5" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,12"/>
+
+                    <StackPanel Grid.Row="2" Margin="0,0,0,16">
                         <!-- Thông tin tài khoản ngân hàng thụ hưởng của khách -->
                         <Border Background="#F0FDF4" BorderBrush="#86EFAC" BorderThickness="1" CornerRadius="10" Padding="14,10" Margin="0,0,0,12">
                             <StackPanel>
-                                <TextBlock Text="THÔNG TIN TÀI KHOẢN NHẬN TIỀN CỦA KHÁCH:" FontSize="11.5" FontWeight="Bold" Foreground="#15803D" Margin="0,0,0,6"/>
+                                <TextBlock Text="TÀI KHOẢN NGÂN HÀNG NHẬN TIỀN CỦA KHÁCH:" FontSize="11.5" FontWeight="Bold" Foreground="#15803D" Margin="0,0,0,6"/>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
@@ -710,23 +720,50 @@
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Ngân hàng:" Foreground="#64748B" FontSize="12.5" Margin="0,0,8,3"/>
                                     <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DonDangChon.TenNganHangKhach, FallbackValue='Chưa cung cấp'}" FontWeight="Bold" Foreground="#1E293B" FontSize="12.5"/>
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Số tài khoản:" Foreground="#64748B" FontSize="12.5" Margin="0,0,8,3"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DonDangChon.SoTaiKhoanKhach, FallbackValue='Chưa cung cấp'}" FontWeight="Bold" Foreground="#2563EB" FontSize="13.5"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DonDangChon.SoTaiKhoanKhach, FallbackValue='Chưa cung cấp'}" FontWeight="Black" Foreground="#2563EB" FontSize="14" FontFamily="Consolas"/>
                                     <TextBlock Grid.Row="2" Grid.Column="0" Text="Chủ tài khoản:" Foreground="#64748B" FontSize="12.5"/>
                                     <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DonDangChon.TenChuTaiKhoanKhach, FallbackValue='Chưa cung cấp'}" FontWeight="Bold" Foreground="#1E293B" FontSize="12.5"/>
                                 </Grid>
                             </StackPanel>
                         </Border>
 
-                        <TextBlock Text="Số tiền hoàn (VNĐ):" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
-                        <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" Margin="0,0,0,12" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                            <TextBox Text="{Binding SoTienHoan, UpdateSourceTrigger=PropertyChanged}"
-                                     BorderThickness="0" Background="Transparent" FontSize="14" FontWeight="Bold" Foreground="{StaticResource MauChuChinh}"/>
-                        </Border>
-                        
-                        <TextBlock Text="Lý do hoàn tiền:" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
-                        <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Số tiền hoàn (VNĐ) (*):" FontSize="12" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
+                                <Border Background="#F8FAFC" CornerRadius="8" Padding="12,8" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                    <TextBox Text="{Binding SoTienHoan, UpdateSourceTrigger=PropertyChanged}"
+                                             BorderThickness="0" Background="Transparent" FontSize="13.5" FontWeight="Bold" Foreground="{StaticResource MauStaylyGreen}"/>
+                                </Border>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Mã GD ngân hàng / Mã chuẩn chi (*):" FontSize="12" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
+                                <Border Background="#F8FAFC" CornerRadius="8" Padding="12,8" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                    <TextBox Text="{Binding MaGiaoDichHoanTien, UpdateSourceTrigger=PropertyChanged}"
+                                             BorderThickness="0" Background="Transparent" FontSize="13.5" FontWeight="Bold" Foreground="#2563EB" FontFamily="Consolas"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="Lý do hoàn tiền:" FontSize="12" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
+                        <Border Background="#F8FAFC" CornerRadius="8" Padding="12,7" Margin="0,0,0,10" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                             <TextBox Text="{Binding LyDoHoanTien, UpdateSourceTrigger=PropertyChanged}"
-                                     BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
+                                     BorderThickness="0" Background="Transparent" FontSize="12.5" Foreground="{StaticResource MauChuChinh}"/>
+                        </Border>
+
+                        <TextBlock Text="Ghi chú đối soát hoàn tiền:" FontSize="12" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
+                        <Border Background="#F8FAFC" CornerRadius="8" Padding="12,7" Margin="0,0,0,10" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                            <TextBox Text="{Binding GhiChuHoanTien, UpdateSourceTrigger=PropertyChanged}"
+                                     BorderThickness="0" Background="Transparent" FontSize="12.5" Foreground="{StaticResource MauChuChinh}"/>
+                        </Border>
+
+                        <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1" CornerRadius="8" Padding="10,8">
+                            <TextBlock Text="ℹ️ Thao tác: Quản trị viên sử dụng App ngân hàng (Internet Banking) chuyển khoản tiền hoàn về số tài khoản của khách, sau đó bấm Xác nhận để hệ thống ghi vết đối soát và tự động gửi email thông báo cho khách."
+                                       FontSize="11.5" Foreground="#1E40AF" TextWrapping="Wrap" LineHeight="16"/>
                         </Border>
                     </StackPanel>
 
@@ -735,15 +772,15 @@
                                 BorderThickness="0" Padding="18,9" Margin="0,0,12,0" FontSize="13" FontWeight="SemiBold" Cursor="Hand">
                             <Button.Resources>
                                 <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="18"/>
+                                    <Setter Property="CornerRadius" Value="8"/>
                                 </Style>
                             </Button.Resources>
                         </Button>
-                        <Button Command="{Binding XacNhanHoanTienCommand}" Content="Xác nhận hoàn tiền" Background="{StaticResource MauStaylyGreen}"
+                        <Button Command="{Binding XacNhanHoanTienCommand}" Content="✔ Xác nhận đã chuyển khoản" Background="{StaticResource MauStaylyGreen}"
                                 Foreground="White" BorderThickness="0" Padding="20,9" FontSize="13" FontWeight="Bold" Cursor="Hand">
                             <Button.Resources>
                                 <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="18"/>
+                                    <Setter Property="CornerRadius" Value="8"/>
                                 </Style>
                             </Button.Resources>
                         </Button>
@@ -822,23 +859,28 @@
 
                     <!-- Header Modal -->
                     <DockPanel Grid.Row="0" Margin="0,0,0,16" LastChildFill="True">
-                        <Border DockPanel.Dock="Right" Background="{StaticResource MauStaylyPrimaryLight}" CornerRadius="8" Padding="10,4" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding DonDangChon.MaDonHienThi, FallbackValue='#DDP-001'}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource MauStaylyPrimary}"/>
-                        </Border>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Background="#F1F5F9" CornerRadius="8" Padding="10,4" Margin="0,0,8,0" VerticalAlignment="Center">
+                                <TextBlock Text="🔒 Chỉ xem (Không sửa)" FontSize="11.5" FontWeight="Bold" Foreground="#64748B"/>
+                            </Border>
+                            <Border Background="{StaticResource MauStaylyPrimaryLight}" CornerRadius="8" Padding="10,4" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding DonDangChon.MaDonHienThi, FallbackValue='#DDP-001'}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource MauStaylyPrimary}"/>
+                            </Border>
+                        </StackPanel>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="✏️ " FontSize="18"/>
-                            <TextBlock Text="CHỈNH SỬA THÔNG TIN ĐƠN ĐẶT PHÒNG" FontSize="15" FontWeight="Bold" Foreground="{StaticResource MauChuTieuDe}"/>
+                            <TextBlock Text="📋 " FontSize="18"/>
+                            <TextBlock Text="CHI TIẾT HỒ SƠ ĐƠN ĐẶT PHÒNG" FontSize="15" FontWeight="Bold" Foreground="{StaticResource MauChuTieuDe}"/>
                         </StackPanel>
                     </DockPanel>
 
-                    <!-- Form Body có cuộn nếu màn hình nhỏ -->
+                    <!-- Form Body có cuộn nếu màn hình nhỏ (Chế độ chỉ xem) -->
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,18" Padding="0,0,6,0">
                         <StackPanel>
                             <!-- Tên khách hàng -->
-                            <TextBlock Text="Tên khách hàng (*):" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
-                            <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" Margin="0,0,0,12" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                <TextBox Text="{Binding SuaTenKhachHang, UpdateSourceTrigger=PropertyChanged}"
-                                         BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
+                            <TextBlock Text="Tên khách hàng:" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
+                            <Border Background="#F8FAFC" CornerRadius="8" Padding="12,9" Margin="0,0,0,12" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                <TextBox Text="{Binding SuaTenKhachHang, Mode=OneWay}" IsReadOnly="True" Focusable="False"
+                                         BorderThickness="0" Background="Transparent" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource MauChuChinh}"/>
                             </Border>
 
                             <!-- SĐT & Email -->
@@ -849,17 +891,17 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Số điện thoại (*):" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
-                                    <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                        <TextBox Text="{Binding SuaSoDienThoai, UpdateSourceTrigger=PropertyChanged}"
-                                                 BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
+                                    <TextBlock Text="Số điện thoại:" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
+                                    <Border Background="#F8FAFC" CornerRadius="8" Padding="12,9" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                        <TextBox Text="{Binding SuaSoDienThoai, Mode=OneWay}" IsReadOnly="True" Focusable="False"
+                                                 BorderThickness="0" Background="Transparent" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource MauChuChinh}"/>
                                     </Border>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Email liên hệ (*):" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
-                                    <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                        <TextBox Text="{Binding SuaEmail, UpdateSourceTrigger=PropertyChanged}"
-                                                 BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
+                                    <TextBlock Text="Email liên hệ:" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
+                                    <Border Background="#F8FAFC" CornerRadius="8" Padding="12,9" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                        <TextBox Text="{Binding SuaEmail, Mode=OneWay}" IsReadOnly="True" Focusable="False"
+                                                 BorderThickness="0" Background="Transparent" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource MauChuChinh}"/>
                                     </Border>
                                 </StackPanel>
                             </Grid>
@@ -873,11 +915,21 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Text="Ngày nhận phòng (Check-in):" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
-                                    <DatePicker SelectedDate="{Binding SuaNgayCheckIn}" Height="38" FontSize="13" VerticalAlignment="Center"/>
+                                    <Border Background="#F8FAFC" CornerRadius="8" Padding="12,9" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="📅 " FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                            <TextBlock Text="{Binding SuaNgayCheckIn, StringFormat='dd/MM/yyyy'}" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource MauChuChinh}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="Ngày trả phòng (Check-out):" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
-                                    <DatePicker SelectedDate="{Binding SuaNgayCheckOut}" Height="38" FontSize="13" VerticalAlignment="Center"/>
+                                    <Border Background="#F8FAFC" CornerRadius="8" Padding="12,9" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="📅 " FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                            <TextBlock Text="{Binding SuaNgayCheckOut, StringFormat='dd/MM/yyyy'}" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource MauChuChinh}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
                                 </StackPanel>
                             </Grid>
 
@@ -889,24 +941,28 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Số người lớn (≥ 1):" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
-                                    <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                        <TextBox Text="{Binding SuaSoNguoiLon, UpdateSourceTrigger=PropertyChanged}"
-                                                 BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
+                                    <TextBlock Text="Số người lớn:" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
+                                    <Border Background="#F8FAFC" CornerRadius="8" Padding="12,9" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                        <TextBlock FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource MauChuChinh}">
+                                            <Run Text="{Binding SuaSoNguoiLon, Mode=OneWay}"/>
+                                            <Run Text=" người lớn"/>
+                                        </TextBlock>
                                     </Border>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Số trẻ em (≥ 0):" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
-                                    <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                        <TextBox Text="{Binding SuaSoTreEm, UpdateSourceTrigger=PropertyChanged, FallbackValue=0}"
-                                                 BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
+                                    <TextBlock Text="Số trẻ em:" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
+                                    <Border Background="#F8FAFC" CornerRadius="8" Padding="12,9" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                        <TextBlock FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource MauChuChinh}">
+                                            <Run Text="{Binding SuaSoTreEm, Mode=OneWay}"/>
+                                            <Run Text=" trẻ em"/>
+                                        </TextBlock>
                                     </Border>
                                 </StackPanel>
                             </Grid>
 
                             <!-- Trạng thái đơn hàng: Hiển thị chỉ đọc theo quy trình -->
                             <TextBlock Text="Trạng thái đơn hàng (Được quản lý theo quy trình nghiệp vụ):" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
-                            <Border Background="#F1F5F9" CornerRadius="8" Padding="12,10" Margin="0,0,0,6" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                            <Border Background="#F8FAFC" CornerRadius="8" Padding="12,10" Margin="0,0,0,6" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                                 <DockPanel LastChildFill="True">
                                     <Border DockPanel.Dock="Right" Background="#E2E8F0" CornerRadius="6" Padding="8,3" VerticalAlignment="Center">
                                         <TextBlock Text="🔒 Chỉ đọc" FontSize="11" FontWeight="SemiBold" Foreground="#64748B"/>
@@ -917,31 +973,26 @@
                                     </StackPanel>
                                 </DockPanel>
                             </Border>
-                            <TextBlock Text="ℹ️ Để đổi trạng thái (Phê duyệt nhận đơn, Hủy đơn hoặc Duyệt hoàn tiền), vui lòng sử dụng các nút hành động nghiệp vụ bên ngoài để đảm bảo tính an toàn dữ liệu và gửi email thông báo cho khách."
-                                       FontSize="11" Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,0,0,14"/>
 
-                            <!-- Ghi chú quản trị viên -->
-                            <TextBlock Text="Ghi chú quản trị viên:" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
-                            <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                <TextBox Text="{Binding SuaGhiChu, UpdateSourceTrigger=PropertyChanged}"
-                                         Height="65" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
-                                         BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
+                            <!-- Ghi chú quản trị viên / hệ thống -->
+                            <TextBlock Text="Ghi chú đơn hàng:" FontSize="12.5" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
+                            <Border Background="#F8FAFC" CornerRadius="8" Padding="12,9" Margin="0,0,0,12" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                <TextBox Text="{Binding SuaGhiChu, Mode=OneWay}" IsReadOnly="True" Focusable="False"
+                                         Height="55" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                         BorderThickness="0" Background="Transparent" FontSize="13" Foreground="{StaticResource MauChuChinh}"/>
+                            </Border>
+
+                            <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1" CornerRadius="8" Padding="12,9">
+                                <TextBlock Text="ℹ️ Đơn đặt phòng là chứng từ hợp đồng điện tử có tính chất pháp lý và tài chính giữa khách hàng, chủ nhà và sàn Stayly. Thông tin hồ sơ được bảo lưu nguyên trạng. Quản trị viên chỉ xem xét phê duyệt tiếp nhận đơn, xử lý hủy hoặc thẩm định hoàn tiền theo đúng quy trình nghiệp vụ."
+                                           FontSize="11.5" Foreground="#1E40AF" TextWrapping="Wrap" LineHeight="17"/>
                             </Border>
                         </StackPanel>
                     </ScrollViewer>
 
-                    <!-- Buttons -->
+                    <!-- Buttons: Chỉ có nút Đóng, loại bỏ nút lưu chỉnh sửa -->
                     <DockPanel Grid.Row="2" LastChildFill="False">
-                        <Button DockPanel.Dock="Left" Command="{Binding HuyDialogChinhSuaCommand}" Content="Hủy bỏ" Background="#F1F5F9"
-                                BorderThickness="0" Padding="20,9" FontSize="13" FontWeight="SemiBold" Cursor="Hand">
-                            <Button.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="8"/>
-                                </Style>
-                            </Button.Resources>
-                        </Button>
-                        <Button DockPanel.Dock="Right" Command="{Binding XacNhanChinhSuaCommand}" Content="💾 Lưu thay đổi" Background="{StaticResource MauStaylyPrimary}"
-                                Foreground="White" BorderThickness="0" Padding="22,9" FontSize="13" FontWeight="Bold" Cursor="Hand">
+                        <Button DockPanel.Dock="Right" Command="{Binding HuyDialogChinhSuaCommand}" Content="Đóng cửa sổ" Background="{StaticResource MauStaylyPrimary}"
+                                Foreground="White" BorderThickness="0" Padding="32,10" FontSize="13" FontWeight="Bold" Cursor="Hand">
                             <Button.Resources>
                                 <Style TargetType="Border">
                                     <Setter Property="CornerRadius" Value="8"/>

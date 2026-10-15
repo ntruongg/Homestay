@@ -13,8 +13,10 @@ public sealed class AdminPromotionsController(HomestayDbContext context) : Contr
 {
     public sealed record AdminPromotionPayload(
         string Code,
+        string? Title,
         int Percentage,
         decimal? MaxDiscount,
+        int? Quantity,
         DateTime? StartDate,
         DateTime? ExpiryDate
     );
@@ -29,12 +31,14 @@ public sealed class AdminPromotionsController(HomestayDbContext context) : Contr
             {
                 id = p.MaGiamGia,
                 code = p.TenMa,
+                title = p.TenChuongTrinh ?? $"Giảm {p.PhanTram}% (Tối đa {p.ToiDa:N0}đ)",
                 percentage = p.PhanTram,
                 maxDiscount = p.ToiDa,
+                quantity = p.SoLuong ?? 100,
                 startDate = p.NgayBatDau,
                 expiryDate = p.NgayHetHan,
                 usageCount = p.DonDatPhongs.Count,
-                isActive = (p.NgayHetHan == null || p.NgayHetHan >= DateTime.UtcNow)
+                isActive = (p.NgayHetHan == null || p.NgayHetHan >= DateTime.UtcNow) && (p.SoLuong == null || p.DonDatPhongs.Count < p.SoLuong)
             })
             .ToListAsync(cancellationToken);
 
@@ -53,8 +57,10 @@ public sealed class AdminPromotionsController(HomestayDbContext context) : Contr
         var promotion = new GiamGia
         {
             TenMa = code,
+            TenChuongTrinh = string.IsNullOrWhiteSpace(request.Title) ? $"Giảm {request.Percentage}% (Tối đa {request.MaxDiscount:N0}đ)" : request.Title.Trim(),
             PhanTram = request.Percentage,
             ToiDa = request.MaxDiscount,
+            SoLuong = request.Quantity is > 0 ? request.Quantity : 100,
             NgayBatDau = request.StartDate,
             NgayHetHan = request.ExpiryDate
         };
@@ -66,8 +72,10 @@ public sealed class AdminPromotionsController(HomestayDbContext context) : Contr
         {
             id = promotion.MaGiamGia,
             code = promotion.TenMa,
+            title = promotion.TenChuongTrinh,
             percentage = promotion.PhanTram,
             maxDiscount = promotion.ToiDa,
+            quantity = promotion.SoLuong,
             startDate = promotion.NgayBatDau,
             expiryDate = promotion.NgayHetHan,
             usageCount = 0,
@@ -91,8 +99,12 @@ public sealed class AdminPromotionsController(HomestayDbContext context) : Contr
         }
 
         promotion.TenMa = code;
+        if (!string.IsNullOrWhiteSpace(request.Title))
+            promotion.TenChuongTrinh = request.Title.Trim();
         promotion.PhanTram = request.Percentage;
         promotion.ToiDa = request.MaxDiscount;
+        if (request.Quantity is > 0)
+            promotion.SoLuong = request.Quantity;
         promotion.NgayBatDau = request.StartDate;
         promotion.NgayHetHan = request.ExpiryDate;
 

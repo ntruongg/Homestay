@@ -70,9 +70,11 @@
                     };
 
                     bool canCancel = booking.Status is "Pending" or "ChoDuyet" or "Confirmed" or "DaDuyet" or "ChoThanhToan";
-                    bool canRequestRefund = (booking.Status is "Confirmed" or "DaDuyet") && (DateTime.UtcNow.Date <= booking.CheckIn.Date.AddDays(-2));
+                    var todayVn = DateTime.UtcNow.AddHours(7).Date;
+                    bool isAtLeast2DaysBeforeCheckIn = todayVn <= booking.CheckIn.Date.AddDays(-2);
+                    bool canRequestRefund = (booking.Status is "Confirmed" or "DaDuyet") && isAtLeast2DaysBeforeCheckIn;
                     bool canReview = booking.Status is "Completed" or "DaHoanTat"
-                        || ((booking.Status is "Confirmed" or "DaDuyet") && DateTime.UtcNow.Date >= booking.CheckOut.Date);
+                        || ((booking.Status is "Confirmed" or "DaDuyet") && todayVn >= booking.CheckOut.Date);
 
                     var propTitle = !string.IsNullOrWhiteSpace(booking.PropertyName) ? booking.PropertyName : "Homestay nghỉ dưỡng";
                     var roomsText = booking.RoomNumbers != null && booking.RoomNumbers.Any() 
@@ -184,15 +186,33 @@
                                         }
                                         else if (booking.Status is "Pending" or "ChoDuyet")
                                         {
-                                            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="openRefundModal(@booking.Id, '@propTitle', true, @booking.TotalAmount)">
-                                                <i class="bi bi-x-circle me-1"></i> Hủy đơn &amp; Hoàn tiền
-                                            </button>
+                                            if (isAtLeast2DaysBeforeCheckIn)
+                                            {
+                                                <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="openRefundModal(@booking.Id, '@propTitle', true, @booking.TotalAmount)">
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Yêu cầu hoàn tiền
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="confirmCancelBooking(@booking.Id)">
+                                                    <i class="bi bi-x-circle me-1"></i> Hủy đơn
+                                                </button>
+                                                <span class="badge bg-light text-muted border rounded-pill px-3 py-2 small" title="Chính sách hoàn tiền chỉ áp dụng trước ngày nhận phòng tối thiểu 2 ngày">
+                                                    <i class="bi bi-shield-lock me-1"></i> Quá hạn hoàn tiền (&lt; 2 ngày)
+                                                </span>
+                                            }
                                         }
                                         else if (canRequestRefund)
                                         {
                                             <button type="button" class="btn btn-outline-warning text-dark btn-sm rounded-pill px-3" onclick="openRefundModal(@booking.Id, '@propTitle', false, @booking.TotalAmount)">
                                                 <i class="bi bi-arrow-counterclockwise me-1"></i> Hoàn tiền
                                             </button>
+                                        }
+                                        else if (booking.Status is "Confirmed" or "DaDuyet")
+                                        {
+                                            <span class="badge bg-light text-muted border rounded-pill px-3 py-2 small" title="Chính sách: Yêu cầu hoàn tiền chỉ được chấp nhận trước ngày nhận phòng tối thiểu 2 ngày">
+                                                <i class="bi bi-shield-lock me-1"></i> Quá hạn hoàn tiền (&lt; 2 ngày)
+                                            </span>
                                         }
 
                                         @if (booking.HasReviewed)

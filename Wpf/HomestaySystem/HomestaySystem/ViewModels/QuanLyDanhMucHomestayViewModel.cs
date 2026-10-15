@@ -25,7 +25,7 @@ namespace HomestaySystem.ViewModels
         private string _boLocTrangThai = "TatCa";
         private string _boLocKhuVuc = "Tất cả khu vực";
         private string _tuKhoaTimKiem = string.Empty;
-        private string _lyDoXuLy = "Vi phạm tiêu chuẩn vệ sinh an toàn hoặc thông tin phòng không đồng nhất theo phản ánh từ khách thuê.";
+        private string _lyDoXuLy = string.Empty;
         private bool _dangTaiDuLieu;
         private string _thongBaoTrangThai = string.Empty;
 
@@ -216,8 +216,8 @@ namespace HomestaySystem.ViewModels
         public record LuaChonLoaiHinh(string MaLoai, string TenHienThi);
         public List<LuaChonLoaiHinh> DanhSachLoaiHinhLuuTru { get; } = new()
         {
-            new LuaChonLoaiHinh("Homestay", "Homestay (Thuê nguyên căn)"),
-            new LuaChonLoaiHinh("Hotel", "Khách sạn / Resort (Hotel)")
+            new LuaChonLoaiHinh("Homestay", "Homestay nguyên căn"),
+            new LuaChonLoaiHinh("Hotel", "Khách sạn (Hotel)")
         };
 
 
@@ -249,6 +249,7 @@ namespace HomestaySystem.ViewModels
                 if (cs != null)
                 {
                     CoSoDangChon = cs;
+                    LyDoXuLy = string.Empty;
                     try
                     {
                         var chiTiet = await _adminService.LayChiTietCoSoAsync(cs.MaCoSo);
@@ -495,17 +496,18 @@ namespace HomestaySystem.ViewModels
             {
                 if (BoLocLoaiHinh == "Homestay")
                 {
-                    query = query.Where(c => c.LoaiHinhHienThi == "Homestay nguyên căn" ||
-                                             c.LoaiHinh.Contains("Homestay", StringComparison.OrdinalIgnoreCase) ||
-                                             c.TenCoSo.Contains("Homestay", StringComparison.OrdinalIgnoreCase));
+                    query = query.Where(c => c.LoaiHinhHienThi.Contains("Homestay", StringComparison.OrdinalIgnoreCase) ||
+                                             (c.LoaiHinh?.Contains("Homestay", StringComparison.OrdinalIgnoreCase) == true) ||
+                                             (c.TenCoSo?.Contains("Homestay", StringComparison.OrdinalIgnoreCase) == true));
                 }
                 else if (BoLocLoaiHinh == "Hotel" || BoLocLoaiHinh == "KhachSan")
                 {
-                    query = query.Where(c => c.LoaiHinhHienThi == "Khách sạn" ||
-                                             c.LoaiHinh.Contains("Hotel", StringComparison.OrdinalIgnoreCase) ||
-                                             c.LoaiHinh.Contains("Khách sạn", StringComparison.OrdinalIgnoreCase) ||
-                                             c.TenCoSo.Contains("Khách sạn", StringComparison.OrdinalIgnoreCase) ||
-                                             c.TenCoSo.Contains("Hotel", StringComparison.OrdinalIgnoreCase));
+                    query = query.Where(c => c.LoaiHinhHienThi.Contains("Khách sạn", StringComparison.OrdinalIgnoreCase) ||
+                                             c.LoaiHinhHienThi.Contains("Hotel", StringComparison.OrdinalIgnoreCase) ||
+                                             (c.LoaiHinh?.Contains("Hotel", StringComparison.OrdinalIgnoreCase) == true) ||
+                                             (c.LoaiHinh?.Contains("Khách sạn", StringComparison.OrdinalIgnoreCase) == true) ||
+                                             (c.TenCoSo?.Contains("Khách sạn", StringComparison.OrdinalIgnoreCase) == true) ||
+                                             (c.TenCoSo?.Contains("Hotel", StringComparison.OrdinalIgnoreCase) == true));
                 }
             }
 

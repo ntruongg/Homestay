@@ -274,16 +274,6 @@
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <!-- Đơn tối thiểu -->
-                            <DataGridTextColumn Header="ĐƠN TỐI THIỂU" Binding="{Binding DonGiaToiThieuDinhDang}" Width="Auto" MinWidth="125">
-                                <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="{StaticResource MauChuPhu}"/>
-                                        <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Padding" Value="12,0"/>
-                                    </Style>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
 
                             <!-- Thời hạn -->
                             <DataGridTextColumn Header="THỜI HẠN ÁP DỤNG" Binding="{Binding ThoiHanHienThi}" Width="Auto" MinWidth="175">
@@ -461,28 +451,14 @@
                                 </StackPanel>
                             </Grid>
 
-                            <!-- Đơn tối thiểu & Giới hạn số lượng -->
-                            <Grid Margin="0,0,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="10"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Đơn tối thiểu (VNĐ):" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
-                                    <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                        <TextBox Text="{Binding KhuyenMaiForm.DonGiaToiThieu, UpdateSourceTrigger=PropertyChanged}"
-                                                 BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
-                                    </Border>
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Hạn mức số lượng:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
-                                    <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
-                                        <TextBox Text="{Binding KhuyenMaiForm.SoLuongToiDa, UpdateSourceTrigger=PropertyChanged}"
-                                                 BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
-                                    </Border>
-                                </StackPanel>
-                            </Grid>
+                            <!-- Hạn mức số lượng phát hành -->
+                            <StackPanel Margin="0,0,0,10">
+                                <TextBlock Text="Hạn mức số lượng phát hành (*):" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
+                                <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
+                                    <TextBox Text="{Binding KhuyenMaiForm.SoLuongToiDa, UpdateSourceTrigger=PropertyChanged}"
+                                             BorderThickness="0" Background="Transparent" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource MauChuChinh}"/>
+                                </Border>
+                            </StackPanel>
 
                             <!-- Hiệu lực từ ngày & Hết hạn ngày -->
                             <Grid Margin="0,0,0,4">

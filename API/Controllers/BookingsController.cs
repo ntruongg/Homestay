@@ -81,11 +81,16 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
 
         if (!string.IsNullOrEmpty(request.PromoCode))
         {
-            var coupon = await db.GiamGias.FirstOrDefaultAsync(x => x.TenMa == request.PromoCode, cancellationToken);
+            var coupon = await db.GiamGias
+                .Include(x => x.DonDatPhongs)
+                .FirstOrDefaultAsync(x => x.TenMa == request.PromoCode, cancellationToken);
             if (coupon == null)
                 return BadRequest("Mã giảm giá không tồn tại.");
-            if (DateTime.UtcNow.Date < coupon.NgayBatDau || DateTime.UtcNow.Date > coupon.NgayHetHan)
+            if (DateTime.UtcNow.Date < coupon.NgayBatDau || (coupon.NgayHetHan != null && DateTime.UtcNow.Date > coupon.NgayHetHan))
                 return BadRequest("Mã giảm giá đã hết hạn hoặc chưa bắt đầu.");
+
+            if (coupon.SoLuong.HasValue && coupon.DonDatPhongs.Count >= coupon.SoLuong.Value)
+                return BadRequest("Mã giảm giá đã hết lượt sử dụng.");
 
             maGiamGiaId = coupon.MaGiamGia;
             
@@ -376,15 +381,12 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
         if (booking.TrangThai is "DaHoanTat" or "DaHoanTien" or "DaHuy" or "TuChoi")
             return BadRequest("Không thể yêu cầu hoàn tiền cho đơn đã hoàn tất, đã hủy hoặc đã hoàn tiền.");
 
-        // Nếu đơn đã được duyệt (DaDuyet / Confirmed): Kiểm tra điều kiện trước ngày nhận phòng tối thiểu 2 ngày
-        // Nếu đơn đang chờ duyệt (ChoDuyet / Pending): Khách được quyền hủy & yêu cầu hoàn tiền ngay lập tức
-        if (booking.TrangThai is "DaDuyet" or "Confirmed")
+        // Kiểm tra điều kiện chính sách hoàn tiền: Yêu cầu hoàn tiền chỉ được chấp nhận trước ngày nhận phòng tối thiểu 2 ngày
+        var minAllowedDate = booking.NgayDen.Date.AddDays(-2);
+        var todayVn = DateTime.UtcNow.AddHours(7).Date;
+        if (todayVn > minAllowedDate)
         {
-            var minAllowedDate = booking.NgayDen.Date.AddDays(-2);
-            if (DateTime.UtcNow.Date > minAllowedDate)
-            {
-                return BadRequest($"Chính sách quy định yêu cầu hoàn tiền chỉ được chấp nhận trước ngày nhận phòng tối thiểu 2 ngày (hạn chót: {minAllowedDate:dd/MM/yyyy}). Hiện tại đã quá hạn quy định.");
-            }
+            return BadRequest($"Chính sách quy định yêu cầu hoàn tiền chỉ được chấp nhận trước ngày nhận phòng tối thiểu 2 ngày (hạn chót: {minAllowedDate:dd/MM/yyyy}). Hiện tại đã quá hạn quy định.");
         }
 
         booking.TrangThai = "YeuCauHoanTien";

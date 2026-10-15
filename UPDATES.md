@@ -848,16 +848,163 @@ Dưới vai trò chuyên gia **UI/UX & Kỹ thuật Hệ thống**, lộ trình 
 
 ---
 
-### 8.13. Bảng Tổng Hợp Kiểm Thử & Trạng Thái Toàn Bộ Hệ Thống (Full System Verification Matrix)
+---
+
+### 8.14. Chuẩn Hóa Ràng Buộc CCCD 12 Số Bắt Đầu Bằng 0, Gỡ Bỏ Khối Cảnh Báo Giả Lập & Giới Hạn Quản Lý Người Dùng Chỉ Dành Riêng Cho Khách Hàng (15/10/2026)
+
+* **Thời gian thực hiện**: 15/10/2026
+* **Mục tiêu**: 
+  1. Đồng bộ quy tắc kiểm thực căn cước công dân (CCCD) trên toàn hệ thống (Web Client, API, WPF Desktop Admin) theo chuẩn Bộ Công an Việt Nam: đúng 12 chữ số và bắt buộc bắt đầu bằng số `0` (`^0\d{11}$`).
+  2. Gỡ bỏ khối cảnh báo giả lập/hardcoded trong modal giám sát chất lượng chỗ nghỉ, chỉ giữ lại ô lý do can thiệp/tạm dừng hoạt động thực tế.
+  3. Tối ưu phân hệ Quản lý người dùng trong ứng dụng Quản trị WPF: Cố định vai trò tạo mới chỉ dành cho Khách hàng thành viên (không cho tạo tài khoản Quản trị viên), đồng thời loại bỏ hoàn toàn các tài khoản Admin khỏi danh sách hiển thị và các thẻ KPI thống kê.
+
+* **Nội dung chi tiết đã thực hiện**:
+  1. **Chuẩn hóa Ràng buộc Định dạng CCCD 12 số bắt đầu bằng số 0 (`^0\d{11}$`)**:
+     - [ValidationHelper.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Services/ValidationHelper.cs): Cập nhật biểu thức chính quy `CitizenIdRegex = @"^0\d{11}$"`. Cung cấp thông báo lỗi chi tiết khi CCCD không đủ 12 số hoặc không bắt đầu bằng số 0.
+     - [Register.cshtml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Web/Web/Views/Home/Register.cshtml): Cập nhật Regex kiểm tra frontend `const cccdRegex = /^0\d{11}$/;` cùng thông báo: *"Số CCCD phải gồm đúng 12 chữ số và bắt đầu bằng số 0."*
+     - [_OwnerRegistrationFields.cshtml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Web/Web/Views/Home/_OwnerRegistrationFields.cshtml): Cập nhật thuộc tính `pattern="0[0-9]{11}"`, `maxlength="12"`, và placeholder *"Ví dụ: 001200012345 (12 số bắt đầu bằng 0)"*.
+     - [Profile.cshtml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Web/Web/Views/Home/Profile.cshtml): Cập nhật thuộc tính `pattern="0[0-9]{11}"` và placeholder hướng dẫn người dùng nhập đúng định dạng.
+     - [ApiModels.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Web/Web/Models/ApiModels.cs): Thêm thuộc tính xác thực DataAnnotations `[RegularExpression(@"^0\d{11}$", ErrorMessage = "Số CCCD phải gồm đúng 12 chữ số và bắt đầu bằng số 0.")]` cho cả `RegisterOwnerInput` và `ProfileInput`.
+     - [AuthDtos.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/API/DTOs/Auth/AuthDtos.cs) & [AdminDtos.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/API/DTOs/Admin/AdminDtos.cs): Cập nhật RegularExpression cho các DTO API nhận CCCD.
+  2. **Gỡ bỏ Khối Cảnh báo Giả lập trong Giám sát Chất lượng Chỗ nghỉ**:
+     - [QuanLyDanhMucHomestayView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/QuanLyDanhMucHomestayView.xaml): Xóa bỏ hoàn toàn thẻ `Border Background="#FEF2F2"` chứa nội dung cảnh báo tĩnh giả lập khiếu nại (vì không phản ánh đánh giá thật từ khách thuê), làm cho giao diện hồ sơ kiểm soát chất lượng trở nên trực quan, thanh thoát và chính xác.
+     - Thêm watermark mờ hướng dẫn tinh tế cho ô nhập *"Lý do can thiệp / tạm dừng cơ sở lưu trú"* bằng XAML DataTrigger, nâng cao trải nghiệm thao tác cho Admin.
+     - [QuanLyDanhMucHomestayViewModel.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/ViewModels/QuanLyDanhMucHomestayViewModel.cs): Đặt giá trị mặc định của `_lyDoXuLy` là chuỗi rỗng (`string.Empty`), đảm bảo mỗi khi mở hồ sơ một homestay khác nhau, ô lý do luôn sạch sẽ và chờ Admin nhập lý do thực tế.
+  3. **Giới hạn Phân hệ Quản lý Người dùng: Chỉ Tạo & Hiển thị Khách Hàng**:
+     - [QuanLyNguoiDungView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/QuanLyNguoiDungView.xaml):
+       * Cập nhật phụ đề modal: *"Cấp tài khoản sử dụng sàn Stayly cho khách hàng thành viên"*.
+       * Thay thế thẻ ComboBox chọn vai trò (Khách hàng / Quản trị viên) bằng khung thẻ nhãn cố định mang tên **"Khách hàng"** (`Background="#F8FAFC"`, icon `👤`, màu chữ xám đậm), khóa chặt vai trò tạo mới.
+     - [QuanLyNguoiDungViewModel.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/ViewModels/QuanLyNguoiDungViewModel.cs):
+       * Cố định thuộc tính `ThemVaiTro` luôn trả về `"KhachHang"`.
+       * Trong phương thức xác nhận thêm mới `ThucHienXacNhanThemMoiAsync()`: gán dứt khoát `VaiTro = "KhachHang"`.
+       * Trong phương thức tải dữ liệu `TaiDanhSachNguoiDungAsync()`: truyền tham số `"KhachHang"` vào `LayDanhSachTaiKhoanAsync("KhachHang")` và áp dụng bộ lọc `tatCa.Where(t => t.VaiTro == "KhachHang")`. Loại bỏ 100% các tài khoản Quản trị viên (Admin) khỏi bảng danh sách và các thẻ thống kê KPI.
+     - [AdminController.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/API/Controllers/AdminController.cs): Bổ sung kiểm tra chặn tạo tài khoản Quản trị viên qua endpoint `POST /api/admin/users`: nếu request chứa vai trò `ADMIN` hoặc `QUANTRIVIEN`, API trả về mã lỗi `400 Bad Request` kèm thông báo *"Không được phép tạo tài khoản quản trị viên. Hệ thống chỉ hỗ trợ tạo tài khoản khách hàng."*
+     - [QuanLyTaiKhoanViewModel.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/ViewModels/QuanLyTaiKhoanViewModel.cs): Lọc bỏ tài khoản có vai trò `QuanTriVien` khỏi danh sách `_tatCaTaiKhoan`, đảm bảo tính nhất quán trên toàn bộ ứng dụng.
+
+  4. **Chuẩn hóa Ràng buộc Mật khẩu Bảo mật (8-20 ký tự, Chữ in hoa, Chữ thường, Chữ số, Ký tự đặc biệt)**:
+     - **Quy tắc bảo mật đồng bộ toàn hệ thống**: Biểu thức chính quy `^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$`.
+     - [ValidationHelper.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Services/ValidationHelper.cs):
+       * Khai báo `PasswordRegex` kiểm tra chuẩn bảo mật: độ dài 8-20 ký tự, có ít nhất 1 chữ in hoa (`[A-Z]`), 1 chữ thường (`[a-z]`), 1 chữ số (`\d`) và 1 ký tự đặc biệt (`[^a-zA-Z0-9\s]`), không chứa khoảng trắng.
+       * Cập nhật hàm `IsValidPassword`: kiểm tra độ dài và regex, xuất thông báo lỗi rõ ràng. Mật khẩu mặc định khởi tạo `Stayly@2026` hoàn toàn thỏa mãn 100% tiêu chuẩn này.
+     - [QuanLyNguoiDungView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/QuanLyNguoiDungView.xaml) & [QuanLyDoiTacView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/QuanLyDoiTacView.xaml):
+       * Khắc phục lỗi che mất chữ trên tiêu đề trường mật khẩu: Tách gọn tiêu đề chính *"Đổi mật khẩu mới: (để trống nếu không đổi)"* và chuyển quy tắc bảo mật *"Yêu cầu 8-20 ký tự: gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt"* thành dòng ghi chú riêng bên dưới với `TextWrapping="Wrap"`.
+       * Áp dụng bố cục tách dòng tương tự cho form Thêm mới người dùng và Thêm/Sửa đối tác chủ homestay, giúp giao diện thoáng đãng, sang trọng và không bao giờ bị cắt chữ.
+       * Giới hạn `MaxLength="20"` trên các TextBox mật khẩu.
+     - [ApiModels.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Web/Web/Models/ApiModels.cs):
+       * Áp dụng `[StringLength(20, MinimumLength = 8)]` và `[RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$")]` cho `RegisterGuestInput.Password` và `ChangePasswordInput.NewPassword`.
+     - [Register.cshtml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Web/Web/Views/Home/Register.cshtml) & [_GuestRegistrationFields.cshtml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Web/Web/Views/Home/_GuestRegistrationFields.cshtml):
+       * Cập nhật thuộc tính `minlength="8" maxlength="20"`.
+       * Validate JavaScript chặn ngay tại form submit: kiểm tra biểu thức chính quy, hiển thị thông báo lỗi chi tiết khi người dùng nhập mật khẩu thiếu chữ hoa, thường, số hoặc ký tự đặc biệt.
+     - [_Layout.cshtml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Web/Web/Views/Shared/_Layout.cshtml):
+       * Đồng bộ modal Đăng ký nhanh trên Header: nhãn *"Mật khẩu (8-20 ký tự, gồm chữ hoa, thường, số, ký tự đặc biệt)"*, thuộc tính `maxlength="20"` và hàm validate JS regex tương ứng.
+     - [Profile.cshtml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Web/Web/Views/Home/Profile.cshtml):
+       * Cập nhật khối cảnh báo an toàn mật khẩu và nhãn trường Mật khẩu mới trong tab Đổi mật khẩu.
+     - [AuthDtos.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/API/DTOs/Auth/AuthDtos.cs) & [AdminDtos.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/API/DTOs/Admin/AdminDtos.cs):
+       * Cập nhật DataAnnotations `[StringLength(20, MinimumLength = 8)]` và RegularExpression bảo mật cho tất cả các DTO liên quan: `RegisterGuestRequest`, `RegisterOwnerRequest`, `ChangePasswordRequest`, `ChangePasswordOtpRequest`, `CreateUserAdminRequest`, `UpdateUserAdminRequest`.
+     - [AdminController.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/API/Controllers/AdminController.cs):
+       * Đổi mật khẩu dự phòng mặc định khi Admin tạo user mới mà không nhập mật khẩu từ `"123456"` sang `"Stayly@2026"` để luôn tuân thủ chuẩn bảo mật.
+
+   5. **Khắc Phục Triệt Để Lỗi Che Chữ và Canh Đều Cột Loại Hình Chỗ Nghỉ**:
+      - **Nguyên nhân cốt lõi**: Chuỗi nhãn cũ `"Homestay (Thuê nguyên căn)"` dài tới 26 ký tự, kết hợp với cơ chế Virtualization của WPF DataGrid khi dòng đầu tiên là khách sạn ngắn hơn khiến cột đo co lại, dẫn đến các dòng sau bị cắt mất đuôi chữ thành `Homestay (Thuê nguyên c`. Thêm vào đó, badge bị canh dạt về bên trái (`HorizontalAlignment="Left"`), không thẳng hàng cân đối với tiêu đề cột.
+      - [CoSoLuuTru.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Models/CoSoLuuTru.cs):
+        * Chuẩn hóa thuộc tính `LoaiHinhHienThi`: Trả về `"Homestay nguyên căn"` (18 ký tự) và `"Khách sạn (Hotel)"` (17 ký tự). Hai nhãn có độ dài cân xứng lý tưởng, súc tích và hoàn toàn đồng bộ với nhãn hiển thị phía Web.
+        * Bổ sung kiểm tra null-safe `LoaiHinh?.Contains(...) == true` triệt tiêu nguy cơ phát sinh ngoại lệ NullReferenceException.
+      - [QuanLyDanhMucHomestayViewModel.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/ViewModels/QuanLyDanhMucHomestayViewModel.cs):
+        * Cập nhật danh sách lựa chọn `DanhSachLoaiHinhLuuTru` với hai nhãn chuẩn: `"Homestay nguyên căn"` và `"Khách sạn (Hotel)"`.
+        * Cải tiến bộ lọc `BoLocLoaiHinh` linh hoạt, kiểm tra an toàn theo cả mã nội bộ (`Homestay`, `Hotel`) lẫn nhãn hiển thị thực tế.
+      - [QuanLyDanhMucHomestayView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/QuanLyDanhMucHomestayView.xaml):
+        * Cột `LOẠI HÌNH`: Tăng `MinWidth="180"`, bổ sung `HeaderStyle` căn giữa (`HorizontalContentAlignment="Center"`).
+        * Thẻ Badge: Căn đều chính giữa ô (`HorizontalAlignment="Center"`, `TextAlignment="Center"`, `Margin="6,0"`), đệm `Padding="12,5"`.
+        * Bổ sung DataTrigger chuyển màu nền `#F1F5F9` và chữ `#475569` cho cả giá trị `"Khách sạn (Hotel)"` và `"Khách sạn"`.
+        * Đồng bộ ComboBox bộ lọc và badge loại hình trong modal chi tiết hồ sơ giám sát.
+      - [KiemDuyetHomestayView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/KiemDuyetHomestayView.xaml):
+        * Áp dụng toàn bộ cấu trúc căn đều giữa và DataTrigger tương tự cho cột `LOẠI HÌNH` tại màn hình Kiểm duyệt Homestay.
+        * Chuyển đổi nhãn loại hình trong modal thẩm định hồ sơ sang dynamic binding `{Binding CoSoDangChon.LoaiHinhHienThi}` thay cho chuỗi tĩnh.
+
+   6. **Đồng Bộ Toàn Diện Phân Hệ Mã Giảm Giá / Voucher Sàn (Tên Chương Trình & Số Lượng, Bỏ Đơn Tối Thiểu)**:
+      - **Cơ sở dữ liệu (SQL Server - Bảng `GiamGia`)**:
+        * Bổ sung 2 cột mới: `TenChuongTrinh NVARCHAR(200) NULL` và `SoLuong INT NULL DEFAULT 100`.
+        * Cập nhật dữ liệu tên chương trình thực tế và hạn mức số lượng cho toàn bộ 6 voucher hiện hữu trong hệ thống.
+      - **Backend API (`API/`)**:
+        * [QuanLyDonDat.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/API/Models/QuanLyDonDat.cs): Cập nhật entity `GiamGia` với hai thuộc tính `TenChuongTrinh` và `SoLuong`.
+        * [AdminPromotionsController.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/API/Controllers/AdminPromotionsController.cs): Cập nhật `AdminPromotionPayload`, hàm `GetAll`, `Create`, `Update` tiếp nhận, lưu trữ và phản hồi đầy đủ `title`, `quantity`, `usageCount`. Tự động vô hiệu hóa mã khi lượt sử dụng đạt trần (`usageCount >= quantity`).
+        * [PromotionsController.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/API/Controllers/PromotionsController.cs) & [PropertiesController.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/API/Controllers/PropertiesController.cs): Trả về `TenChuongTrinh`, `SoLuong`, và tính toán số lượt còn lại `SoLuongConLai`. Endpoint `GetByCode` chặn áp dụng khi mã đã hết lượt dùng.
+        * [BookingsController.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/API/Controllers/BookingsController.cs): Khi khách hàng tạo đơn đặt phòng, kiểm tra chặt chẽ điều kiện số lượt sử dụng thực tế (`coupon.DonDatPhongs.Count < coupon.SoLuong`).
+      - **Desktop Admin (`WPF`)**:
+        * [QuanLyVoucherView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/QuanLyVoucherView.xaml):
+          - Xóa bỏ cột `ĐƠN TỐI THIỂU` khỏi DataGrid hiển thị.
+          - Gỡ bỏ ô nhập "Đơn tối thiểu (VNĐ)" khỏi modal Thêm/Sửa voucher, tái cấu trúc ô *"Hạn mức số lượng phát hành (*)"* rõ ràng, trực quan.
+        * [QuanLyKhuyenMaiViewModel.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/ViewModels/QuanLyKhuyenMaiViewModel.cs): Bỏ kiểm tra `DonGiaToiThieu < 0`, giữ nguyên validation `SoLuongToiDa > 0`.
+        * [HttpAdminService.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Services/HttpAdminService.cs): Cập nhật `ApiPromotionDto` và payload của `ThemKhuyenMaiAsync`, `CapNhatKhuyenMaiAsync` gửi kèm `title` và `quantity`.
+      - **Web Client (`Web/`)**:
+        * [ApiModels.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Web/Web/Models/ApiModels.cs): Cập nhật `PromotionItem` và `CheckPromoResult` nhận `Title`, `Quantity`, `UsageCount`, `RemainingCount`.
+        * [HomeController.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Web/Web/Controllers/HomeController.cs): Endpoint `CheckPromoCode` trả về tên chương trình và số lượng còn lại cho client.
+        * [_Layout.cshtml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Web/Web/Views/Shared/_Layout.cshtml): Modal Danh sách ưu đãi sàn hiển thị chính xác Tên chương trình đã tạo từ Admin và huy hiệu số lượng lượt dùng còn lại (`Còn X/Y lượt`).
+        * [Details.cshtml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Web/Web/Views/Home/Details.cshtml): Khi nhập mã áp dụng thành công và ở bảng chi tiết thanh toán, hiển thị đầy đủ tên chương trình ưu đãi gắn liền với mã voucher.
+
+---
+
+### 8.15. Bảng Tổng Hợp Kiểm Thử & Trạng Thái Toàn Bộ Hệ Thống (Cập nhật 15/10/2026)
 
 | Phân hệ / Thành phần | Công nghệ / Nền tảng | Trạng thái Build | Trạng thái Vận hành | Ghi chú & Đánh giá |
 | :--- | :--- | :---: | :---: | :--- |
-| **Backend API** | ASP.NET Core 8.0 RESTful API | **0 Lỗi, 0 Cảnh báo** | Đang chạy tại `http://localhost:5176` | Sẵn sàng 100%: JWT Auth, Booking, Dịch vụ, VNPay, Payout Settle, Backup/Restore CSDL |
-| **Web Client** | ASP.NET Core 8.0 MVC Razor | **0 Lỗi, 0 Cảnh báo** | Đang chạy tại `http://localhost:5280` | Sẵn sàng 100%: Đặt phòng, VNPay-QR Timer 30p chuẩn, Chi tiết đơn bóc tách tiền, Đánh giá, Hoàn tiền |
-| **Desktop Admin** | WPF .NET 8 / MVVM Pattern | **0 Lỗi, 0 Cảnh báo** | Sẵn sàng chạy | Sẵn sàng 100%: Quyết toán 85/15 thủ công + Xem biên lai, Top Analytics thật, DatePicker bo tròn cao cấp, Backup CSDL |
-| **Cơ sở dữ liệu** | Microsoft SQL Server (`HOMESTAY_DB`) | **Online & Đầy đủ 21 Bảng** | Localhost & Sẵn sàng Deploy | Schema chuẩn hóa, thông tin quyết toán lưu vết đầy đủ trong bảng `ThanhToan` |
+| **Backend API** | ASP.NET Core 8.0 RESTful API | **0 Lỗi, 0 Cảnh báo** | Đang chạy tại `http://localhost:5176` | Sẵn sàng 100%: Validate CCCD 12 số bắt đầu bằng 0; Ràng buộc mật khẩu 8-20 ký tự (hoa, thường, số, đặc biệt); Chặn tạo Admin |
+| **Web Client** | ASP.NET Core 8.0 MVC Razor | **0 Lỗi, 0 Cảnh báo** | Đang chạy tại `http://localhost:5280` | Sẵn sàng 100%: Validate Regex CCCD & Mật khẩu 8-20 ký tự cả client-side HTML5/JS và server-side DataAnnotations |
+| **Desktop Admin** | WPF .NET 8 / MVVM Pattern | **0 Lỗi, 0 Cảnh báo** | Sẵn sàng chạy | Sẵn sàng 100%: Màn hình Quản lý người dùng chỉ tạo/hiển thị Khách hàng, Validate mật khẩu bảo mật, gỡ cảnh báo tĩnh |
+| **Cơ sở dữ liệu** | Microsoft SQL Server (`HOMESTAY_DB`) | **Online & Đầy đủ 21 Bảng** | Localhost & Sẵn sàng Deploy | Schema chuẩn hóa, dữ liệu tài khoản và mã băm mật khẩu bảo mật đồng bộ chính xác |
+
 
 ---
-*Stayly Homestay Management System — Cập nhật ngày 13/10/2026.*
+
+### 8.16. Chuẩn Hóa Chế Độ Chỉ Xem (Read-Only) Cho Đơn Đặt Phòng & Báo Cáo Luồng Đơn Đặt & Hoàn Tiền (15/10/2026)
+
+* **Bối cảnh & Yêu cầu nghiệp vụ**:
+  - Đơn đặt phòng là chứng từ hợp đồng điện tử có tính chất pháp lý và tài chính ràng buộc giữa 3 bên: Khách thuê - Chủ homestay - Sàn Stayly.
+  - Quản trị viên (Admin) đóng vai trò giám sát, vận hành và giải quyết tranh chấp (Audit & Governance). Admin **không được phép tùy ý sửa đổi** thông tin hồ sơ của khách (Tên, SĐT, Email, Ngày nhận/trả phòng, Số người lớn/trẻ em, Tổng tiền).
+  - Vì vậy, chức năng "Chỉnh sửa thông tin đơn đặt" được chuẩn hóa lại thành "Xem chi tiết hồ sơ đơn đặt" với chế độ **Chỉ xem (Read-Only)**, loại bỏ hoàn toàn nút lưu thay đổi.
+
+* **Các tệp đã chỉnh sửa**:
+  1. [QuanLyDonDatView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/QuanLyDonDatView.xaml):
+     - Đổi nút tại modal chi tiết đơn: từ `"✏️ Chỉnh Sửa Thông Tin Đơn Đặt"` thành `"📋 Xem Chi Tiết Hồ Sơ Đơn Đặt"`.
+     - Chuyển toàn bộ modal hồ sơ sang chế độ **Chỉ xem**:
+       * Tiêu đề: `"📋 CHI TIẾT HỒ SƠ ĐƠN ĐẶT PHÒNG"` kèm badge `"🔒 Chỉ xem (Không sửa)"`.
+       * Các trường dữ liệu (Tên, SĐT, Email, Ngày đến, Ngày đi, Số người, Ghi chú) chuyển thành `IsReadOnly="True" Focusable="False"` hoặc hiển thị thẻ TextBlock rõ nét trên nền `#F8FAFC`.
+       * **Loại bỏ nút "💾 Lưu thay đổi"**, thay bằng nút `"Đóng cửa sổ"`.
+  2. [QuanLyDonDatViewModel.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/ViewModels/QuanLyDonDatViewModel.cs):
+     - Khóa phương thức cập nhật, thông báo dữ liệu đơn đặt là chứng từ hợp đồng chỉ được xem, không được chỉnh sửa trực tiếp.
+
+---
+
+### 8.17. Quy Tắc Hoàn Tiền Trước 2 Ngày, Đồng Bộ Form Web & Quy Trình Chuyển Khoản Thủ Công WPF (15/10/2026)
+
+* **Yêu cầu & Quy định**:
+  1. **Quy tắc 2 ngày trên Web & API**:
+     - Khách hàng chỉ được bấm yêu cầu hoàn tiền khi thời điểm hiện tại cách ngày nhận phòng (Check-in) tối thiểu **2 ngày**.
+     - Nếu cận ngày nhận phòng (< 2 ngày) hoặc sau ngày nhận phòng: ẩn nút Hoàn tiền trên Web, thay bằng huy hiệu `Quá hạn hoàn tiền (< 2 ngày)`, đồng thời API chặn với HTTP 400 Bad Request.
+  2. **Đồng bộ Form hoàn tiền trên Web**:
+     - Form yêu cầu hoàn tiền thu thập đầy đủ: Ngân hàng thụ hưởng, Số tài khoản, Tên chủ tài khoản, Lý do yêu cầu hoàn tiền (tự động điền nếu đã lưu trong hồ sơ).
+     - Khi gửi: API cập nhật trạng thái đơn thành `YeuCauHoanTien`, lưu thông tin tài khoản ngân hàng và lý do, giải phóng lịch phòng `LichLuuTru`.
+  3. **Quy trình Chuyển tiền thủ công tương tự Quyết toán đối tác trên WPF**:
+     - Đơn chạy xuống WPF mục "Đơn đặt & hoàn tiền" với trạng thái `YeuCauHoanTien`.
+     - Admin bấm "Phê duyệt hoàn tiền qua cổng", mở dialog chuyên dụng:
+       * Hiển thị thông tin tài khoản ngân hàng của khách (Ngân hàng, Số TK, Tên chủ TK).
+       * Số tiền cần hoàn.
+       * Hướng dẫn quy trình chuyển tiền: Admin dùng Internet Banking chuyển tiền vào STK khách.
+       * Ô nhập **Mã giao dịch ngân hàng / Mã chuẩn chi (*)** và **Ghi chú đối soát hoàn tiền**.
+       * Nút **"✔ Xác nhận đã chuyển khoản"** để lưu vết và kích hoạt gửi email thông báo hoàn tiền cho khách hàng.
+
+* **Các tệp đã chỉnh sửa**:
+  1. [Web/Web/Views/Home/Trips.cshtml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Web/Web/Views/Home/Trips.cshtml):
+     - Đồng bộ tính toán theo giờ Việt Nam (`DateTime.UtcNow.AddHours(7).Date`).
+     - Ràng buộc hiển thị nút hoàn tiền: chỉ hiển thị khi `todayVn <= booking.CheckIn.Date.AddDays(-2)`. Nếu < 2 ngày, hiển thị huy hiệu `Quá hạn hoàn tiền (< 2 ngày)`.
+  2. [API/Controllers/BookingsController.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/API/Controllers/BookingsController.cs):
+     - Ràng buộc tại `RequestRefund`: kiểm tra ngày theo giờ VN, từ chối yêu cầu nếu `todayVn > booking.NgayDen.Date.AddDays(-2)`.
+  3. [Wpf/.../ViewModels/QuanLyDonDatViewModel.cs](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/ViewModels/QuanLyDonDatViewModel.cs):
+     - Thêm thuộc tính `MaGiaoDichHoanTien`, validate bắt buộc nhập mã giao dịch ngân hàng trước khi xác nhận hoàn tiền.
+  4. [Wpf/.../Views/QuanLyDonDatView.xaml](file:///d:/DO_AN_HK7/KhoaLuanCuNhan/KLCN/Wpf/HomestaySystem/HomestaySystem/Views/QuanLyDonDatView.xaml):
+     - Nâng cấp dialog hoàn tiền hiển thị tài khoản ngân hàng của khách, ô nhập Mã GD chuẩn chi, Ghi chú đối soát và nút "✔ Xác nhận đã chuyển khoản".
+
+---
+*Stayly Homestay Management System — Cập nhật ngày 15/10/2026.*
 
 

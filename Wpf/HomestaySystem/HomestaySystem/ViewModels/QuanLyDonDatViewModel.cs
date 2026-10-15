@@ -114,6 +114,13 @@ namespace HomestaySystem.ViewModels
             set => SetProperty(ref _ghiChuHoanTien, value);
         }
 
+        private string _maGiaoDichHoanTien = string.Empty;
+        public string MaGiaoDichHoanTien
+        {
+            get => _maGiaoDichHoanTien;
+            set => SetProperty(ref _maGiaoDichHoanTien, value);
+        }
+
         public bool HienThiDialogTuChoiHoanTien
         {
             get => _hienThiDialogTuChoiHoanTien;
@@ -303,73 +310,9 @@ namespace HomestaySystem.ViewModels
 
         private async Task ThucHienXacNhanChinhSuaAsync()
         {
-            if (DonDangChon == null) return;
-            if (!ValidationHelper.IsValidVietnameseName(SuaTenKhachHang, out var errName))
-            {
-                MessageBox.Show(errName, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            if (!ValidationHelper.IsValidVietnamesePhone(SuaSoDienThoai, out var errPhone))
-            {
-                MessageBox.Show(errPhone, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            if (!ValidationHelper.IsValidEmail(SuaEmail, out var errEmail))
-            {
-                MessageBox.Show(errEmail, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            if (SuaNgayCheckOut.Date <= SuaNgayCheckIn.Date)
-            {
-                MessageBox.Show("Ngày trả phòng (Check-out) phải sau ngày nhận phòng (Check-in) ít nhất 1 ngày!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            if (SuaSoNguoiLon < 1)
-            {
-                MessageBox.Show("Số người lớn phải từ 1 trở lên!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            if (SuaSoTreEm < 0)
-            {
-                MessageBox.Show("Số trẻ em không được âm!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            DonDangChon.TenKhachHang = SuaTenKhachHang.Trim();
-            DonDangChon.SoDienThoaiKhach = SuaSoDienThoai.Trim();
-            DonDangChon.EmailKhach = SuaEmail.Trim().ToLowerInvariant();
-            DonDangChon.NgayNhanPhong = SuaNgayCheckIn;
-            DonDangChon.NgayTraPhong = SuaNgayCheckOut;
-            DonDangChon.SoNguoiLon = SuaSoNguoiLon;
-            DonDangChon.SoTreEm = SuaSoTreEm;
-            DonDangChon.TrangThai = SuaTrangThai;
-            DonDangChon.GhiChu = SuaGhiChu?.Trim() ?? string.Empty;
-
-            try
-            {
-                DangTaiDuLieu = true;
-                bool thanhCong = await _adminService.CapNhatDonDatAsync(DonDangChon);
-                if (!thanhCong)
-                {
-                    MessageBox.Show($"Không thể cập nhật đơn đặt {DonDangChon.MaDonHienThi}. Vui lòng kiểm tra lại kết nối máy chủ!", "Lỗi cập nhật", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                OnPropertyChanged(nameof(DonDangChon));
-                CapNhatThongKe();
-                ApDungBoLoc();
-
-                HienThiDialogChinhSua = false;
-                MessageBox.Show($"Đã cập nhật thông tin đơn đặt {DonDangChon.MaDonHienThi} thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi khi cập nhật đơn đặt: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                DangTaiDuLieu = false;
-            }
+            MessageBox.Show("Thông tin đơn đặt phòng là dữ liệu chứng từ hợp đồng có tính chất pháp lý và tài chính, chỉ được xem chứ không được chỉnh sửa trực tiếp. Để xử lý đơn, vui lòng sử dụng các nút nghiệp vụ (Duyệt nhận đơn, Hủy đơn hoặc Thẩm định hoàn tiền).", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+            HienThiDialogChinhSua = false;
+            await Task.CompletedTask;
         }
 
         public async Task TaiDanhSachDonDatAsync()
@@ -478,8 +421,9 @@ namespace HomestaySystem.ViewModels
         {
             if (DonDangChon == null) return;
             SoTienHoan = DonDangChon.TongTien;
-            LyDoHoanTien = "Khách hủy phòng hợp lệ theo chính sách";
-            GhiChuHoanTien = $"Duyệt hoàn tiền cho đơn {DonDangChon.MaDonHienThi}";
+            LyDoHoanTien = DonDangChon.LyDoHoanTien ?? "Khách hủy phòng hợp lệ trước 2 ngày theo chính sách";
+            MaGiaoDichHoanTien = $"REF{DateTime.Now:yyMMddHHmmss}";
+            GhiChuHoanTien = $"Đã chuyển khoản thủ công cho khách {DonDangChon.TenKhachHang} qua ngân hàng {DonDangChon.TenNganHangKhach}";
             HienThiDialogHoanTien = true;
         }
 
@@ -493,14 +437,21 @@ namespace HomestaySystem.ViewModels
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(MaGiaoDichHoanTien))
+            {
+                MessageBox.Show("Vui lòng nhập Mã giao dịch ngân hàng / Mã chuẩn chi để lưu vết đối soát chuyển tiền thủ công!", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             DangTaiDuLieu = true;
-            bool thanhCong = await _adminService.XuLyHoanTienAsync(DonDangChon.MaDon, SoTienHoan, LyDoHoanTien, GhiChuHoanTien);
+            string decisionNote = $"[Mã GD: {MaGiaoDichHoanTien.Trim()}] {GhiChuHoanTien?.Trim()}";
+            bool thanhCong = await _adminService.XuLyHoanTienAsync(DonDangChon.MaDon, SoTienHoan, LyDoHoanTien, decisionNote);
             DangTaiDuLieu = false;
 
             if (thanhCong)
             {
                 HienThiDialogHoanTien = false;
-                MessageBox.Show($"Đã xử lý hoàn tiền {SoTienHoan:N0} đ cho đơn {DonDangChon.MaDonHienThi} thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Đã xác nhận hoàn tiền {SoTienHoan:N0} đ (Mã GD: {MaGiaoDichHoanTien}) cho đơn {DonDangChon.MaDonHienThi} thành công! Hệ thống đã gửi email xác nhận hoàn tiền cho khách hàng.", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
                 await TaiDanhSachDonDatAsync();
             }
             else

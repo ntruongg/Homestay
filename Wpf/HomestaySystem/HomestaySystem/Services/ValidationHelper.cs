@@ -23,14 +23,19 @@ namespace HomestaySystem.Services
             @"^[^\s@]+@[^\s@]+\.[^\s@]+$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        // Regex CCCD định danh gắn chip: đúng 12 chữ số số học
+        // Regex CCCD định danh gắn chip: bắt đầu bằng số 0 và đúng 12 chữ số số học
         private static readonly Regex CitizenIdRegex = new(
-            @"^\d{12}$",
+            @"^0\d{11}$",
             RegexOptions.Compiled);
 
         // Regex số tài khoản ngân hàng: 6 đến 20 chữ số
         private static readonly Regex BankAccountRegex = new(
             @"^\d{6,20}$",
+            RegexOptions.Compiled);
+
+        // Regex mật khẩu bảo mật: 8-20 ký tự, bao gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt, không chứa khoảng trắng
+        private static readonly Regex PasswordRegex = new(
+            @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$",
             RegexOptions.Compiled);
 
         public static bool IsValidVietnameseName(string? name, out string error)
@@ -104,9 +109,21 @@ namespace HomestaySystem.Services
                 return true; // Cho phép rỗng để lấy mật khẩu mặc định Stayly@2026
             }
 
-            if (password.Length < 8)
+            if (password.Length < 8 || password.Length > 20)
             {
-                error = "Mật khẩu phải có độ dài tối thiểu 8 ký tự theo quy định bảo mật hệ thống!";
+                error = "Mật khẩu phải có độ dài từ 8 đến 20 ký tự theo quy định bảo mật hệ thống!";
+                return false;
+            }
+
+            if (password.Contains(' '))
+            {
+                error = "Mật khẩu không được chứa ký tự khoảng trắng!";
+                return false;
+            }
+
+            if (!PasswordRegex.IsMatch(password))
+            {
+                error = "Mật khẩu phải từ 8-20 ký tự, bao gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt!";
                 return false;
             }
 
@@ -125,7 +142,7 @@ namespace HomestaySystem.Services
             var trimmed = citizenId.Trim();
             if (!CitizenIdRegex.IsMatch(trimmed))
             {
-                error = "Số CCCD định danh phải gồm đúng 12 chữ số số học (Căn cước công dân gắn chip)!";
+                error = "Số CCCD định danh không hợp lệ (phải gồm đúng 12 chữ số và bắt đầu bằng số 0 theo quy định Căn cước công dân Việt Nam)!";
                 return false;
             }
 

@@ -222,8 +222,8 @@ namespace HomestaySystem.ViewModels
 
         public string ThemVaiTro
         {
-            get => _themVaiTro;
-            set => SetProperty(ref _themVaiTro, value);
+            get => "KhachHang";
+            set => SetProperty(ref _themVaiTro, "KhachHang");
         }
 
         // ================= THỐNG KÊ KPI CHO NGƯỜI DÙNG =================
@@ -343,7 +343,7 @@ namespace HomestaySystem.ViewModels
                     SoDienThoai = ThemSoDienThoai.Trim(),
                     NgaySinh = ThemNgaySinh,
                     GioiTinh = ThemGioiTinh,
-                    VaiTro = ThemVaiTro,
+                    VaiTro = "KhachHang",
                     TrangThai = "HoatDong",
                     NgayTao = DateTime.Now
                 };
@@ -462,12 +462,12 @@ namespace HomestaySystem.ViewModels
             ThongBaoTrangThai = "Đang tải danh sách người dùng...";
             try
             {
-                // Lấy các tài khoản người dùng (Khách hàng & Quản trị viên)
-                var tatCa = await _adminService.LayDanhSachTaiKhoanAsync();
-                _tatCaNguoiDung = tatCa.Where(t => t.VaiTro == "KhachHang" || t.VaiTro == "QuanTriVien").ToList();
+                // Chỉ lấy và hiển thị các tài khoản vai trò Khách hàng (không hiển thị Quản trị viên/Admin)
+                var tatCa = await _adminService.LayDanhSachTaiKhoanAsync("KhachHang");
+                _tatCaNguoiDung = tatCa.Where(t => t.VaiTro == "KhachHang").ToList();
                 ApDungBoLoc();
                 CapNhatThongKe();
-                ThongBaoTrangThai = $"Đã tải {_tatCaNguoiDung.Count} tài khoản người dùng thành công.";
+                ThongBaoTrangThai = $"Đã tải {_tatCaNguoiDung.Count} tài khoản khách hàng thành công.";
             }
             catch (Exception ex)
             {

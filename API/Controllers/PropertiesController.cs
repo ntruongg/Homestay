@@ -207,13 +207,18 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
     {
         var now = DateTime.UtcNow;
         var promotions = await db.GiamGias.AsNoTracking()
-            .Where(g => g.NgayHetHan == null || g.NgayHetHan >= now.Date)
+            .Include(g => g.DonDatPhongs)
+            .Where(g => (g.NgayHetHan == null || g.NgayHetHan >= now.Date) &&
+                        (g.SoLuong == null || g.DonDatPhongs.Count < g.SoLuong))
             .OrderByDescending(g => g.PhanTram)
             .Select(g => new PromotionDto(
                 g.MaGiamGia,
                 g.TenMa,
+                g.TenChuongTrinh ?? $"Giảm {g.PhanTram}% (Tối đa {g.ToiDa:N0}đ)",
                 g.PhanTram,
                 g.ToiDa,
+                g.SoLuong ?? 100,
+                g.DonDatPhongs.Count,
                 g.NgayBatDau,
                 g.NgayHetHan
             ))

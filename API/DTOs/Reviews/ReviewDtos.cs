@@ -29,8 +29,11 @@ public sealed record ReplyReviewRequest(
 public sealed record PromotionDto(
     int Id,
     string Code,
+    string? Title,
     int Percentage,
     decimal? MaxAmount,
+    int? Quantity,
+    int? UsageCount,
     DateTime? StartDate,
     DateTime? EndDate
 );

@@ -893,10 +893,15 @@ public sealed class AdminController(
         if (await db.NguoiDungs.AnyAsync(u => u.DienThoai == phone, cancellationToken))
             return Conflict(new { field = "Phone", message = "Số điện thoại này đã được sử dụng." });
 
-        var roleId = request.Role?.ToUpperInvariant() switch
+        var roleUpper = request.Role?.ToUpperInvariant();
+        if (roleUpper is "ADMIN" or "QUANTRIVIEN")
+        {
+            return BadRequest(new { field = "Role", message = "Không được phép tạo tài khoản quản trị viên. Hệ thống chỉ hỗ trợ tạo tài khoản khách hàng." });
+        }
+
+        var roleId = roleUpper switch
         {
             "OWNER" or "CHUHOME" => VaiTro.OWNER,
-            "ADMIN" or "QUANTRIVIEN" => VaiTro.ADMIN,
             _ => VaiTro.GUEST
         };
 
@@ -925,7 +930,7 @@ public sealed class AdminController(
             user.GioiTinh = (g.StartsWith("NỮ") || g.StartsWith("F")) ? "F" : "M";
         }
 
-        var rawPassword = string.IsNullOrWhiteSpace(request.Password) ? "123456" : request.Password;
+        var rawPassword = string.IsNullOrWhiteSpace(request.Password) ? "Stayly@2026" : request.Password;
         user.MatKhau = passwordHasher.HashPassword(user, rawPassword);
 
         db.NguoiDungs.Add(user);

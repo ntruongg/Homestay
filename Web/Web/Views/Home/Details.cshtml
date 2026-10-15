@@ -1168,7 +1168,7 @@
                 currentAppliedPromo = json.data;
                 feedback.className = 'small mt-1 text-success fw-semibold';
                 const maxTxt = json.data.maxAmount ? ` (Tối đa ${Number(json.data.maxAmount).toLocaleString('vi-VN')} ₫)` : '';
-                feedback.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> Đã áp dụng mã <strong>${json.data.code}</strong>: Giảm ${json.data.percentage}%${maxTxt}`;
+                feedback.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> Đã áp dụng mã <strong>${json.data.code}</strong> (${json.data.title || 'Ưu đãi'}): Giảm ${json.data.percentage}%${maxTxt}`;
                 feedback.classList.remove('d-none');
                 btn.classList.remove('btn-primary');
                 btn.classList.add('btn-success');
@@ -1255,7 +1255,7 @@
                 discountAmount = currentAppliedPromo.maxAmount;
             }
             if (discountRow) discountRow.classList.remove('d-none');
-            if (discountLabel) discountLabel.innerHTML = `<i class="bi bi-tag-fill me-1"></i> Mã <strong>${currentAppliedPromo.code}</strong> (-${currentAppliedPromo.percentage}%)`;
+            if (discountLabel) discountLabel.innerHTML = `<i class="bi bi-tag-fill me-1"></i> Mã <strong>${currentAppliedPromo.code}</strong> (${currentAppliedPromo.title || 'Ưu đãi'}): -${currentAppliedPromo.percentage}%`;
             if (discountText) discountText.textContent = `-${Math.round(discountAmount).toLocaleString('vi-VN')} ₫`;
         } else {
             if (discountRow) discountRow.classList.add('d-none');

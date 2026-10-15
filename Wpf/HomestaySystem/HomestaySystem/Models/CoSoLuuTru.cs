@@ -79,11 +79,11 @@ namespace HomestaySystem.Models
             {
                 if (string.Equals(LoaiHinh, "Hotel", StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(LoaiHinh, "KhachSan", StringComparison.OrdinalIgnoreCase) ||
-                    LoaiHinh.Contains("Khách sạn", StringComparison.OrdinalIgnoreCase))
+                    LoaiHinh?.Contains("Khách sạn", StringComparison.OrdinalIgnoreCase) == true)
                 {
                     return "Khách sạn (Hotel)";
                 }
-                return "Homestay (Thuê nguyên căn)";
+                return "Homestay nguyên căn";
             }
             set => LoaiHinh = value;
         }

@@ -429,17 +429,18 @@
             // 4. Password
             const passwordEl = document.getElementById('PasswordInput');
             const password = passwordEl ? passwordEl.value : '';
-            if (!password || password.length < 8) {
-                markInvalid('PasswordInput', 'PasswordInputError', 'Mật khẩu phải có tối thiểu 8 ký tự.');
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$/;
+            if (!password || !passwordRegex.test(password)) {
+                markInvalid('PasswordInput', 'PasswordInputError', 'Mật khẩu phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.');
             }
 
             // 5. Owner fields (if present)
             const citizenIdEl = document.getElementById('CitizenIdInput');
             if (citizenIdEl) {
                 const citizenId = citizenIdEl.value.trim();
-                const cccdRegex = /^\d{12}$/;
+                const cccdRegex = /^0\d{11}$/;
                 if (!citizenId || !cccdRegex.test(citizenId)) {
-                    markInvalid('CitizenIdInput', 'CitizenIdInputError', 'Vui lòng nhập số CCCD định danh cá nhân hợp lệ (đúng 12 chữ số số học).');
+                    markInvalid('CitizenIdInput', 'CitizenIdInputError', 'Vui lòng nhập số CCCD định danh cá nhân hợp lệ (đúng 12 chữ số và bắt đầu bằng số 0).');
                 }
 
                 const bankNameEl = document.getElementById('BankNameInput');

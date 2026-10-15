@@ -778,13 +778,15 @@
                             <StackPanel Margin="0,0,0,10">
                                 <DockPanel Margin="0,0,0,4">
                                     <TextBlock Text="Đổi mật khẩu mới:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}"/>
-                                    <TextBlock Text="(để trống nếu muốn giữ nguyên mật khẩu cũ)" FontSize="11.5" Foreground="{StaticResource MauChuPhu}" Margin="6,1,0,0"/>
+                                    <TextBlock Text="(để trống nếu giữ nguyên)" FontSize="11.5" Foreground="{StaticResource MauChuPhu}" Margin="6,1,0,0"/>
                                 </DockPanel>
                                 <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                                     <TextBox Text="{Binding SuaMatKhau, UpdateSourceTrigger=PropertyChanged}"
-                                             MaxLength="100"
+                                             MaxLength="20"
                                              BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                                 </Border>
+                                <TextBlock Text="* Yêu cầu 8-20 ký tự: gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt."
+                                           FontSize="11.5" Foreground="#64748B" Margin="2,4,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
 
                             <!-- Địa chỉ cơ sở -->
@@ -914,9 +916,11 @@
                                     <TextBlock Text="Mật khẩu khởi tạo *:" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource MauChuPhu}" Margin="0,0,0,4"/>
                                     <Border Background="#F1F5F9" CornerRadius="8" Padding="12,7" BorderBrush="{StaticResource MauVien}" BorderThickness="1">
                                         <TextBox Text="{Binding ThemMatKhau, UpdateSourceTrigger=PropertyChanged}"
-                                                 MaxLength="100"
+                                                 MaxLength="20"
                                                  BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                                     </Border>
+                                    <TextBlock Text="* 8-20 ký tự (hoa, thường, số, ký tự đặc biệt)."
+                                               FontSize="11" Foreground="#64748B" Margin="2,3,0,0" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Grid>
 

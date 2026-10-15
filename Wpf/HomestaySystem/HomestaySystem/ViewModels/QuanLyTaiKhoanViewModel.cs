@@ -170,7 +170,9 @@ namespace HomestaySystem.ViewModels
             ThongBaoTrangThai = "Đang tải danh sách tài khoản...";
             try
             {
-                _tatCaTaiKhoan = await _adminService.LayDanhSachTaiKhoanAsync();
+                var tatCa = await _adminService.LayDanhSachTaiKhoanAsync();
+                // Không hiển thị tài khoản Quản trị viên (Admin)
+                _tatCaTaiKhoan = tatCa.Where(t => t.VaiTro != "QuanTriVien").ToList();
                 ApDungBoLoc();
                 CapNhatThongKe();
                 ThongBaoTrangThai = $"Đã tải {_tatCaTaiKhoan.Count} tài khoản thành công.";

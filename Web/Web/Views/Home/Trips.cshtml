@@ -59,9 +59,9 @@
                     string statusText = booking.Status switch
                     {
                         "ChoThanhToan" => "Chờ thanh toán",
-                        "Pending" or "ChoDuyet" => "Chờ chủ duyệt",
-                        "Confirmed" or "DaDuyet" => "Đã xác nhận",
-                        "CheckedIn" or "DangLuuTru" => "Đang lưu trú",
+                        "Pending" or "ChoDuyet" => "Chờ xét duyệt",
+                        "Confirmed" or "DaDuyet" => "Đã xét duyệt",
+                        "CheckedIn" or "DangLuuTru" or "DangO" => "Đang lưu trú",
                         "Completed" or "DaHoanTat" => "Đã hoàn tất",
                         "Cancelled" or "DaHuy" => "Đã huỷ",
                         "RefundRequested" or "YeuCauHoanTien" => "Chờ duyệt hoàn tiền",
@@ -186,33 +186,23 @@
                                         }
                                         else if (booking.Status is "Pending" or "ChoDuyet")
                                         {
+                                            @* Đơn đang chờ đối tác xét duyệt *@
                                             if (isAtLeast2DaysBeforeCheckIn)
                                             {
-                                                <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="openRefundModal(@booking.Id, '@propTitle', true, @booking.TotalAmount)">
-                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Yêu cầu hoàn tiền
+                                                <button type="button" class="btn btn-outline-warning text-dark btn-sm rounded-pill px-3" onclick="openRefundModal(@booking.Id, '@propTitle', true, @booking.TotalAmount)">
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Hoàn tiền
                                                 </button>
                                             }
-                                            else
-                                            {
-                                                <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="confirmCancelBooking(@booking.Id)">
-                                                    <i class="bi bi-x-circle me-1"></i> Hủy đơn
-                                                </button>
-                                                <span class="badge bg-light text-muted border rounded-pill px-3 py-2 small" title="Chính sách hoàn tiền chỉ áp dụng trước ngày nhận phòng tối thiểu 2 ngày">
-                                                    <i class="bi bi-shield-lock me-1"></i> Quá hạn hoàn tiền (&lt; 2 ngày)
-                                                </span>
-                                            }
-                                        }
-                                        else if (canRequestRefund)
-                                        {
-                                            <button type="button" class="btn btn-outline-warning text-dark btn-sm rounded-pill px-3" onclick="openRefundModal(@booking.Id, '@propTitle', false, @booking.TotalAmount)">
-                                                <i class="bi bi-arrow-counterclockwise me-1"></i> Hoàn tiền
-                                            </button>
                                         }
                                         else if (booking.Status is "Confirmed" or "DaDuyet")
                                         {
-                                            <span class="badge bg-light text-muted border rounded-pill px-3 py-2 small" title="Chính sách: Yêu cầu hoàn tiền chỉ được chấp nhận trước ngày nhận phòng tối thiểu 2 ngày">
-                                                <i class="bi bi-shield-lock me-1"></i> Quá hạn hoàn tiền (&lt; 2 ngày)
-                                            </span>
+                                            @* Đơn đã xét duyệt: Trước 2 ngày thì còn nút hoàn, sau 2 ngày là mất nút hoàn đó *@
+                                            if (isAtLeast2DaysBeforeCheckIn)
+                                            {
+                                                <button type="button" class="btn btn-outline-warning text-dark btn-sm rounded-pill px-3" onclick="openRefundModal(@booking.Id, '@propTitle', false, @booking.TotalAmount)">
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Hoàn tiền
+                                                </button>
+                                            }
                                         }
 
                                         @if (booking.HasReviewed)
@@ -503,21 +493,21 @@
         // Trạng thái badge
         const badgeEl = document.getElementById('tdStatusBadge');
         const statusMap = {
-            'ChoThanhToan': { text: 'Chờ thanh toán', cls: 'bg-warning text-dark' },
-            'Pending': { text: 'Chờ chủ duyệt', cls: 'bg-info text-dark' },
-            'ChoDuyet': { text: 'Chờ chủ duyệt', cls: 'bg-info text-dark' },
-            'Confirmed': { text: 'Đã xác nhận', cls: 'bg-primary text-white' },
-            'DaDuyet': { text: 'Đã xác nhận', cls: 'bg-primary text-white' },
+            'ChoThanhToan': { text: 'Chờ thanh toán', cls: 'bg-warning-subtle text-warning-emphasis border border-warning' },
+            'Pending': { text: 'Chờ xét duyệt', cls: 'bg-warning text-dark' },
+            'ChoDuyet': { text: 'Chờ xét duyệt', cls: 'bg-warning text-dark' },
+            'Confirmed': { text: 'Đã xét duyệt', cls: 'bg-info text-dark' },
+            'DaDuyet': { text: 'Đã xét duyệt', cls: 'bg-info text-dark' },
             'CheckedIn': { text: 'Đang lưu trú', cls: 'bg-success text-white' },
             'DangLuuTru': { text: 'Đang lưu trú', cls: 'bg-success text-white' },
             'Completed': { text: 'Đã hoàn tất', cls: 'bg-secondary text-white' },
             'DaHoanTat': { text: 'Đã hoàn tất', cls: 'bg-secondary text-white' },
-            'Cancelled': { text: 'Đã hủy', cls: 'bg-danger text-white' },
-            'DaHuy': { text: 'Đã hủy', cls: 'bg-danger text-white' },
+            'Cancelled': { text: 'Đã huỷ', cls: 'bg-danger text-white' },
+            'DaHuy': { text: 'Đã huỷ', cls: 'bg-danger text-white' },
             'RefundRequested': { text: 'Chờ duyệt hoàn tiền', cls: 'bg-warning text-dark' },
             'YeuCauHoanTien': { text: 'Chờ duyệt hoàn tiền', cls: 'bg-warning text-dark' },
-            'Refunded': { text: 'Đã hoàn tiền', cls: 'bg-info text-dark' },
-            'DaHoanTien': { text: 'Đã hoàn tiền', cls: 'bg-info text-dark' }
+            'Refunded': { text: 'Đã hoàn tiền', cls: 'bg-secondary text-white' },
+            'DaHoanTien': { text: 'Đã hoàn tiền', cls: 'bg-secondary text-white' }
         };
         const sInfo = statusMap[item.status] || { text: item.status, cls: 'bg-secondary text-white' };
         badgeEl.textContent = sInfo.text;
@@ -619,18 +609,10 @@
         const noticeEl = document.getElementById('refundNotice');
         const titleTextEl = document.getElementById('refundModalTitleText');
 
-        if (isPendingApproval) {
-            if (titleTextEl) titleTextEl.textContent = 'Hủy đơn & Nhận hoàn tiền 100%';
-            if (noticeEl) {
-                noticeEl.className = 'alert alert-success py-2 px-3 small rounded-3 mb-3';
-                noticeEl.innerHTML = `<i class="bi bi-check-circle me-1"></i> Đơn của bạn đang chờ chủ duyệt. Bạn được hoàn lại <strong>100% số tiền (${Number(amount || 0).toLocaleString('vi-VN')} ₫)</strong>. Vui lòng cung cấp tài khoản ngân hàng để Quản trị viên chuyển trả tiền.`;
-            }
-        } else {
-            if (titleTextEl) titleTextEl.textContent = 'Yêu cầu hoàn tiền';
-            if (noticeEl) {
-                noticeEl.className = 'alert alert-info py-2 px-3 small rounded-3 mb-3';
-                noticeEl.innerHTML = '<i class="bi bi-info-circle me-1"></i> Chính sách: Yêu cầu hoàn tiền chỉ được chấp nhận trước ngày nhận phòng tối thiểu 2 ngày. Quản trị viên sẽ xét duyệt trong 24 giờ.';
-            }
+        if (titleTextEl) titleTextEl.textContent = 'Yêu cầu hoàn tiền';
+        if (noticeEl) {
+            noticeEl.className = 'alert alert-info py-2 px-3 small rounded-3 mb-3';
+            noticeEl.innerHTML = '<i class="bi bi-info-circle me-1"></i> Chính sách: Yêu cầu hoàn tiền chỉ được chấp nhận trước ngày nhận phòng tối thiểu 2 ngày. Quản trị viên sẽ xử lý chuyển tiền hoàn về tài khoản của bạn.';
         }
 
         // Tự động điền thông tin ngân hàng nếu khách đã lưu trong hồ sơ cá nhân

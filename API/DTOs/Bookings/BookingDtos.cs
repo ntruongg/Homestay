@@ -71,4 +71,11 @@ public sealed record BookingResponse(
     IReadOnlyList<BookingServiceResponse> Services, string? PromoCode, decimal DiscountAmount,
     string? PropertyName = null, IReadOnlyList<string>? RoomNumbers = null, string? PropertyImage = null,
     bool HasReviewed = false, int? ReviewRating = null, string? ReviewComment = null,
-    DateTime? CreatedAt = null);
+    DateTime? CreatedAt = null,
+    string? RefundReason = null);
+
+public sealed record ProvideBankInfoRequest(
+    [Required] string BankName,
+    [Required] string AccountNumber,
+    [Required] string AccountHolder
+);

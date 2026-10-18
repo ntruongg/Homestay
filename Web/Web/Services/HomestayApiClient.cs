@@ -277,6 +277,37 @@ public sealed class HomestayApiClient(HttpClient http)
         }
     }
 
+    public async Task<(bool Success, string? Message, string? Error)> ProvideRefundBankInfoAsync(
+        int bookingId,
+        string bankName,
+        string accountNumber,
+        string accountHolder,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = CreateAuthorizedRequest(HttpMethod.Post, $"bookings/{bookingId}/bank-info", token);
+            request.Content = JsonContent.Create(new
+            {
+                BankName = bankName,
+                AccountNumber = accountNumber,
+                AccountHolder = accountHolder
+            });
+            using var response = await http.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                return (false, null, ParseErrorMessage(err));
+            }
+            return (true, "Đã cập nhật thông tin tài khoản ngân hàng thụ hưởng nhận tiền hoàn thành công.", null);
+        }
+        catch (Exception ex)
+        {
+            return (false, null, ex.Message);
+        }
+    }
+
     public async Task<(bool Success, string? Error)> ChangePasswordAsync(
         ChangePasswordInput input,
         string token,
@@ -369,10 +400,11 @@ public sealed class HomestayApiClient(HttpClient http)
     public async Task<(bool Success, string? Error)> UpdateBookingStatusAsync(
         int bookingId,
         string status,
+        string? reason,
         string token,
         CancellationToken cancellationToken = default)
     {
-        var body = new { Status = status };
+        var body = new { Status = status, Reason = reason };
         using var request = CreateAuthorizedRequest(HttpMethod.Put, $"owner/bookings/{bookingId}/status", token);
         request.Content = JsonContent.Create(body);
 

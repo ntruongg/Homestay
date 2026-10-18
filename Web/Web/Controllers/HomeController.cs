@@ -616,17 +616,20 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
     public async Task<IActionResult> UpdateBookingStatus(
         int bookingId,
         string status,
+        string? reason,
         CancellationToken cancellationToken)
     {
         var token = HttpContext.Session.GetString("token");
         if (token is null)
-            return RedirectToAction(nameof(Login));
+            return RedirectToAction(nameof(Index));
 
-        var result = await api.UpdateBookingStatusAsync(bookingId, status, token, cancellationToken);
+        var result = await api.UpdateBookingStatusAsync(bookingId, status, reason, token, cancellationToken);
         if (!result.Success)
-            TempData["Error"] = result.Error ?? "Could not update booking status.";
+            TempData["Error"] = result.Error ?? "Không thể cập nhật trạng thái đơn đặt phòng.";
         else
-            TempData["Success"] = $"Booking #{bookingId} has been updated to {status}.";
+            TempData["Success"] = status is "TuChoi"
+                ? $"Đơn đặt phòng #{bookingId} đã được từ chối và chuyển sang quy trình hoàn tiền cho khách."
+                : $"Đơn đặt phòng #{bookingId} đã được cập nhật sang trạng thái {status}.";
 
         return RedirectToAction(nameof(Dashboard), new { tab = "bookings" });
     }
@@ -962,7 +965,7 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
     public async Task<IActionResult> Checkout(int bookingId, CancellationToken cancellationToken)
     {
         var token = HttpContext.Session.GetString("token");
-        if (token is null) return RedirectToAction(nameof(Login));
+        if (token is null) return RedirectToAction(nameof(Index));
 
         var bookings = await api.GetBookingsAsync(token, cancellationToken);
         var booking = bookings.FirstOrDefault(b => b.Id == bookingId);
@@ -1208,6 +1211,37 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
         else
         {
             TempData["Success"] = result.Message ?? $"Yêu cầu hủy & hoàn tiền cho đơn #{bookingId} đã được gửi thành công. Quản trị viên sẽ xử lý chuyển tiền về tài khoản ngân hàng của bạn.";
+        }
+
+        return RedirectToAction(nameof(Trips));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ProvideRefundBankInfo(
+        int bookingId,
+        string bankName,
+        string accountNumber,
+        string accountHolder,
+        CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (token is null) return RedirectToAction(nameof(Index));
+
+        if (string.IsNullOrWhiteSpace(bankName) || string.IsNullOrWhiteSpace(accountNumber) || string.IsNullOrWhiteSpace(accountHolder))
+        {
+            TempData["Error"] = "Vui lòng chọn ngân hàng và nhập đầy đủ số tài khoản, tên người thụ hưởng.";
+            return RedirectToAction(nameof(Trips));
+        }
+
+        var result = await api.ProvideRefundBankInfoAsync(bookingId, bankName.Trim(), accountNumber.Trim(), accountHolder.Trim(), token, cancellationToken);
+        if (!result.Success)
+        {
+            TempData["Error"] = result.Error ?? "Không thể cập nhật thông tin tài khoản hoàn tiền.";
+        }
+        else
+        {
+            TempData["Success"] = result.Message ?? "Đã cập nhật thông tin tài khoản ngân hàng thụ hưởng nhận tiền hoàn thành công.";
         }
 
         return RedirectToAction(nameof(Trips));

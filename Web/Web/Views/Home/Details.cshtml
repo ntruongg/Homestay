@@ -296,9 +296,6 @@
                         <h3 class="box-section-title mb-0">
                             <i class="bi bi-door-open-fill text-primary me-2"></i> Danh sách phòng trống (@Model.Rooms.Count)
                         </h3>
-                        <span class="badge bg-light text-primary rounded-pill px-3 py-2 border">
-                            Giá tốt nhất hôm nay
-                        </span>
                     </div>
 
                     @if (Model.Rooms == null || Model.Rooms.Count == 0)
@@ -337,8 +334,11 @@
                                             </div>
                                             <h4 class="room-title mb-2">Phòng @room.RoomNumber</h4>
                                             <div class="room-features d-flex flex-wrap gap-2 mb-2 text-muted small">
-                                                <span class="d-flex align-items-center gap-1">
-                                                    <i class="bi bi-people-fill text-primary"></i> Sức chứa: <strong>@room.Capacity khách</strong>
+                                                <span class="d-flex align-items-center gap-1 px-2 py-1 rounded-pill bg-light border text-dark small fw-semibold">
+                                                    <i class="bi bi-person-fill text-primary"></i> Người lớn: <strong class="text-navy">@room.AdultCapacity</strong>
+                                                </span>
+                                                <span class="d-flex align-items-center gap-1 px-2 py-1 rounded-pill bg-light border text-dark small fw-semibold">
+                                                    <i class="bi bi-person text-info"></i> Trẻ em: <strong class="text-navy">@room.ChildCapacity</strong>
                                                 </span>
                                                 @if (string.Equals(Model.Type, "Homestay", StringComparison.OrdinalIgnoreCase))
                                                 {
@@ -384,7 +384,7 @@
                                                     @room.CurrentPrice.ToString("N0") <span class="fs-6">₫</span>
                                                 </div>
                                             </div>
-                                            <button type="button" class="btn-stayly-select-room w-100" onclick="selectRoomForBooking(@room.Id, '@room.RoomNumber', @room.CurrentPrice, @room.Capacity)">
+                                            <button type="button" class="btn-stayly-select-room w-100" onclick="selectRoomForBooking(@room.Id, '@room.RoomNumber', @room.CurrentPrice, @room.AdultCapacity, @room.ChildCapacity)">
                                                 <i class="bi bi-bookmark-check-fill me-1"></i> Chọn phòng
                                             </button>
                                         </div>
@@ -534,10 +534,6 @@
                             <span class="fs-6 text-primary fw-bold">₫</span>
                             <span class="text-muted small"> / đêm</span>
                         </div>
-                        <div class="d-flex align-items-center gap-1 text-warning small">
-                            <i class="bi bi-star-fill"></i>
-                            <span class="fw-bold text-dark">@(reviewCount > 0 ? avgRating.ToString("0.0") : "5.0")</span>
-                        </div>
                     </div>
 
                     <form asp-action="Book" method="post" id="staylyBookingForm" onsubmit="return validateBookingSubmit(event)">
@@ -552,16 +548,17 @@
                                 {
                                     foreach (var r in Model.Rooms)
                                     {
-                                        <option value="@r.Id" data-price="@r.CurrentPrice" data-capacity="@r.Capacity">
-                                            Phòng @r.RoomNumber - @r.CurrentPrice.ToString("N0") ₫ / đêm (tối đa @r.Capacity người)
+                                        <option value="@r.Id" data-price="@r.CurrentPrice" data-adult-capacity="@r.AdultCapacity" data-child-capacity="@r.ChildCapacity" data-capacity="@r.Capacity">
+                                            Phòng @r.RoomNumber - @r.CurrentPrice.ToString("N0") ₫ / đêm (Tối đa: @r.AdultCapacity người lớn, @r.ChildCapacity trẻ em)
                                         </option>
                                     }
                                 }
                                 else
                                 {
-                                    <option value="1" data-price="500000" data-capacity="2">Phòng Tiêu Chuẩn - 500,000 ₫ / đêm</option>
+                                    <option value="1" data-price="500000" data-adult-capacity="2" data-child-capacity="1" data-capacity="3">Phòng Tiêu Chuẩn - 500,000 ₫ / đêm (Tối đa: 2 người lớn, 1 trẻ em)</option>
                                 }
                             </select>
+                            <div id="roomCapacityHint" class="small text-muted mt-1 px-2 d-flex align-items-center gap-1"></div>
                         </div>
 
                         <!-- Date Pickers (Check-in / Check-out) -->
@@ -1068,6 +1065,10 @@
             checkOut.min = tomorrow.toISOString().split('T')[0];
         }
 
+        const roomSel = document.getElementById('bookingRoomSelect');
+        if (roomSel) {
+            onRoomChanged(roomSel);
+        }
         calculateBookingTotal();
     });
 
@@ -1086,7 +1087,7 @@
         }
     }
 
-    function selectRoomForBooking(roomId, roomNumber, price, capacity) {
+    function selectRoomForBooking(roomId, roomNumber, price, adultCap, childCap) {
         const roomSelect = document.getElementById('bookingRoomSelect');
         if (roomSelect) {
             roomSelect.value = roomId;
@@ -1109,20 +1110,33 @@
         if (!opt) return;
 
         const price = Number(opt.dataset.price || 500000);
-        const capacity = Number(opt.dataset.capacity || 2);
+        const adultCap = Number(opt.dataset.adultCapacity || 2);
+        const childCap = Number(opt.dataset.childCapacity || 1);
 
         const displayPrice = document.getElementById('widgetDisplayPrice');
         if (displayPrice) {
             displayPrice.textContent = price.toLocaleString('vi-VN');
         }
 
-        const guestInput = document.getElementById('bookingGuestCount');
         const adultsInput = document.getElementById('bookingAdultsCount');
         if (adultsInput) {
-            adultsInput.max = capacity;
-            if (Number(adultsInput.value) > capacity) {
-                adultsInput.value = capacity;
+            adultsInput.max = adultCap;
+            if (Number(adultsInput.value) > adultCap) {
+                adultsInput.value = adultCap;
             }
+        }
+
+        const childrenInput = document.getElementById('bookingChildrenCount');
+        if (childrenInput) {
+            childrenInput.max = childCap;
+            if (Number(childrenInput.value) > childCap) {
+                childrenInput.value = childCap;
+            }
+        }
+
+        const capHint = document.getElementById('roomCapacityHint');
+        if (capHint) {
+            capHint.innerHTML = `<i class="bi bi-info-circle text-primary"></i> Sức chứa phòng: <strong>${adultCap} người lớn</strong> &bull; <strong>${childCap} trẻ em</strong>`;
         }
 
         calculateBookingTotal();
@@ -1290,19 +1304,53 @@
             return false;
         }
 
-        const user = document.cookie.includes('token') || document.cookie.includes('.AspNetCore.Session'); // Better check via backend flow, but we let MVC handle it.
-        // The controller will redirect to login if not authenticated anyway.
+        const roomSelect = document.getElementById('bookingRoomSelect');
+        const opt = roomSelect?.options[roomSelect.selectedIndex];
+        const adultCap = Number(opt?.dataset.adultCapacity || 2);
+        const childCap = Number(opt?.dataset.childCapacity || 1);
 
         const adults = Number(document.getElementById('bookingAdultsCount')?.value || 0);
         const children = Number(document.getElementById('bookingChildrenCount')?.value || 0);
+
+        if (adults < 1) {
+            event.preventDefault();
+            showStaylyToast('error', 'Cần ít nhất 1 người lớn để đặt phòng.');
+            return false;
+        }
+
+        if (adults > adultCap) {
+            event.preventDefault();
+            showStaylyToast('error', `Số lượng người lớn (${adults}) vượt quá sức chứa người lớn tối đa của phòng (${adultCap} người lớn). Vui lòng chọn lại.`);
+            return false;
+        }
+
+        if (children > childCap) {
+            event.preventDefault();
+            showStaylyToast('error', `Số lượng trẻ em (${children}) vượt quá sức chứa trẻ em tối đa của phòng (${childCap} trẻ em). Vui lòng chọn lại.`);
+            return false;
+        }
+
         const guestInput = document.getElementById('bookingGuestCount');
         if (guestInput) guestInput.value = adults + children;
 
-        // Giữ nguyên các input dịch vụ để ASP.NET Core Model Binder nhận đủ danh sách,
-        // backend HomeController.Book sẽ tự động lọc các dịch vụ có Quantity > 0.
-
         return true;
     }
+
+    document.getElementById('bookingAdultsCount')?.addEventListener('input', function () {
+        const opt = document.getElementById('bookingRoomSelect')?.selectedOptions[0];
+        const max = Number(opt?.dataset.adultCapacity || 2);
+        if (Number(this.value) > max) {
+            showStaylyToast('warning', `Phòng này chỉ nhận tối đa ${max} người lớn.`);
+        }
+    });
+
+    document.getElementById('bookingChildrenCount')?.addEventListener('input', function () {
+        const opt = document.getElementById('bookingRoomSelect')?.selectedOptions[0];
+        const max = Number(opt?.dataset.childCapacity || 1);
+        if (Number(this.value) > max) {
+            showStaylyToast('warning', `Phòng này chỉ nhận tối đa ${max} trẻ em.`);
+        }
+    });
 
     // Review Pagination Logic (tối đa 5 đánh giá / 1 trang)
     let currentReviewPage = 1;

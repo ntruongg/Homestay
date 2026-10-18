@@ -38,6 +38,10 @@ public sealed record Room(
     string? RoomStatus,
     string? RoomType,
     IReadOnlyList<string> Images,
+    int AdultCapacity = 2,
+    int ChildCapacity = 1,
+    string? Description = null,
+    bool IsActive = true,
     IReadOnlyList<RoomAmenityItem>? Amenities = null)
 {
     [JsonIgnore]
@@ -70,7 +74,8 @@ public sealed record Booking(
     bool HasReviewed = false,
     int? ReviewRating = null,
     string? ReviewComment = null,
-    DateTime? CreatedAt = null);
+    DateTime? CreatedAt = null,
+    string? RefundReason = null);
 
 public sealed record AuthResult(
     string AccessToken,

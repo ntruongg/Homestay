@@ -90,13 +90,13 @@ namespace HomestaySystem.Models
         {
             get => TrangThai switch
             {
-                "Pending" or "ChoXacNhan" or "ChoDuyet" => "Chờ duyệt/xác nhận",
-                "Confirmed" or "DaXacNhan" or "DaDuyet" => "Đã duyệt/xác nhận",
+                "Pending" or "ChoXacNhan" or "ChoDuyet" => "Chờ xét duyệt",
+                "Confirmed" or "DaXacNhan" or "DaDuyet" => "Đã xét duyệt",
                 "CheckedIn" or "DangO" => "Đang lưu trú",
                 "CheckedOut" or "HoanThanh" or "DaHoanTat" => "Đã hoàn tất",
-                "RefundRequested" or "YeuCauHoanTien" => "Yêu cầu hoàn tiền",
+                "RefundRequested" or "YeuCauHoanTien" => "Chờ hoàn tiền",
                 "Refunded" or "DaHoanTien" => "Đã hoàn tiền",
-                "Cancelled" or "DaHuy" or "TuChoi" => "Đã hủy/từ chối",
+                "Cancelled" or "DaHuy" or "TuChoi" => "Đã hủy",
                 _ => TrangThai
             };
             set {}

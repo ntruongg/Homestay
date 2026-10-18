@@ -201,13 +201,19 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
     {
         var booking = await db.DonDatPhongs
             .Include(b => b.ChiTietDons)
+            .Include(b => b.ThanhToan)
             .SingleOrDefaultAsync(
                 b => b.MaDonDatPhong == id && b.MaKhachHang == GetAccountId(), cancellationToken);
         if (booking is null)
             return NotFound();
 
-        if (booking.TrangThai is not ("Pending" or "Confirmed" or "ChoThanhToan" or "ChoDuyet" or "DaDuyet"))
-            return Conflict("Chỉ có thể tự hủy đơn khi đơn đang chờ thanh toán, chờ duyệt hoặc đã duyệt trước thời điểm nhận phòng.");
+        if (booking.ThanhToan != null)
+        {
+            return BadRequest("Đơn đặt phòng đã được thanh toán, không thể hủy trực tiếp. Vui lòng gửi yêu cầu hoàn tiền trước ngày nhận phòng tối thiểu 2 ngày.");
+        }
+
+        if (booking.TrangThai is not ("ChoThanhToan" or "Pending"))
+            return Conflict("Chỉ có thể tự hủy đơn khi đơn chưa thanh toán.");
 
         booking.TrangThai = "DaHuy";
 
@@ -357,7 +363,7 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
         {
             success = true,
             message = booking.TrangThai == "ChoDuyet" 
-                ? "Thanh toán VNPay thành công. Đơn đặt phòng đã được tự động chuyển sang trạng thái Chờ duyệt."
+                ? "Thanh toán VNPay thành công. Đơn đặt phòng đã được tự động chuyển sang trạng thái Chờ xét duyệt."
                 : "Thanh toán thành công. Đơn đặt phòng đã tự động tạo yêu cầu hoàn tiền do phòng đã có khách khác đặt.",
             bookingId = booking.MaDonDatPhong,
             status = booking.TrangThai,

@@ -154,6 +154,32 @@
                                             <i class="bi bi-tag-fill me-1"></i> Mã @booking.PromoCode (-@booking.DiscountAmount.ToString("N0") ₫)
                                         </div>
                                     }
+
+                                    @if (booking.Status is "RefundRequested" or "YeuCauHoanTien")
+                                    {
+                                        <div class="alert alert-warning py-2 px-3 small rounded-4 mb-2 border-warning text-start">
+                                            <div class="fw-bold text-dark mb-1 d-flex align-items-center gap-1">
+                                                <i class="bi bi-arrow-counterclockwise text-warning"></i>
+                                                <span>Đơn đang ở trạng thái Chờ hoàn tiền</span>
+                                            </div>
+                                            @if (!string.IsNullOrWhiteSpace(booking.RefundReason))
+                                            {
+                                                <div class="text-secondary small mb-1">
+                                                    <strong>Lý do từ chối / hoàn tiền:</strong> @booking.RefundReason
+                                                </div>
+                                            }
+                                            <div class="small">
+                                                @if (string.IsNullOrWhiteSpace(ViewBag.GuestAccountNumber as string))
+                                                {
+                                                    <span class="text-danger fw-semibold"><i class="bi bi-exclamation-triangle-fill me-1"></i>Vui lòng chọn ngân hàng thụ hưởng và nhập STK bên dưới để Quản trị viên xử lý hoàn tiền.</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Tài khoản nhận tiền: <strong>@(ViewBag.GuestBankName) - @(ViewBag.GuestAccountNumber) (@(ViewBag.GuestAccountHolder))</strong></span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
                                 </div>
                                 <div class="col-md-4 text-md-end">
                                     <div class="text-muted small mb-1">Tổng thanh toán</div>
@@ -186,11 +212,11 @@
                                         }
                                         else if (booking.Status is "Pending" or "ChoDuyet")
                                         {
-                                            @* Đơn đang chờ đối tác xét duyệt *@
+                                            @* Đơn đã thanh toán và đang chờ đối tác xét duyệt *@
                                             if (isAtLeast2DaysBeforeCheckIn)
                                             {
                                                 <button type="button" class="btn btn-outline-warning text-dark btn-sm rounded-pill px-3" onclick="openRefundModal(@booking.Id, '@propTitle', true, @booking.TotalAmount)">
-                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Hoàn tiền
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Yêu cầu hoàn tiền
                                                 </button>
                                             }
                                         }
@@ -200,9 +226,15 @@
                                             if (isAtLeast2DaysBeforeCheckIn)
                                             {
                                                 <button type="button" class="btn btn-outline-warning text-dark btn-sm rounded-pill px-3" onclick="openRefundModal(@booking.Id, '@propTitle', false, @booking.TotalAmount)">
-                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Hoàn tiền
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Yêu cầu hoàn tiền
                                                 </button>
                                             }
+                                        }
+                                        else if (booking.Status is "RefundRequested" or "YeuCauHoanTien")
+                                        {
+                                            <button type="button" class="btn btn-warning text-dark btn-sm rounded-pill px-3 fw-bold shadow-sm" onclick="openProvideBankModal(@booking.Id, '@propTitle')">
+                                                <i class="bi bi-bank me-1"></i> @(string.IsNullOrWhiteSpace(ViewBag.GuestAccountNumber as string) ? "Cung cấp TK ngân hàng nhận tiền" : "Cập nhật TK ngân hàng")
+                                            </button>
                                         }
 
                                         @if (booking.HasReviewed)
@@ -322,6 +354,74 @@
                 <div class="modal-footer border-top-0 pt-0">
                     <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Hủy bỏ</button>
                     <button type="submit" class="btn btn-warning rounded-pill px-4 fw-semibold">Gửi yêu cầu hoàn tiền</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cung cấp thông tin tài khoản ngân hàng nhận hoàn tiền -->
+<div class="modal fade" id="provideBankInfoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-navy">
+                    <i class="bi bi-bank me-2 text-primary"></i>
+                    <span>Tài khoản ngân hàng nhận hoàn tiền</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="ProvideRefundBankInfo" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="bookingId" id="provideBankBookingId" value="" />
+                <div class="modal-body py-3">
+                    <p class="text-muted small mb-2">Đơn đặt phòng: <strong id="provideBankPropTitle" class="text-navy"></strong></p>
+                    <div class="alert alert-info py-2 px-3 small rounded-3 mb-3">
+                        <i class="bi bi-info-circle me-1"></i> Quản trị viên sẽ tiến hành đối soát và chuyển khoản hoàn tiền trực tiếp vào tài khoản ngân hàng bạn cung cấp tại đây.
+                    </div>
+
+                    <div class="p-3 mb-2 rounded-4 bg-light border">
+                        <div class="row g-2">
+                            <div class="col-md-12">
+                                <label class="form-label small text-muted mb-1">Ngân hàng thụ hưởng <span class="text-danger">*</span></label>
+                                <select name="bankName" id="provideBankName" class="form-select rounded-pill px-3 py-2" required>
+                                    <option value="">-- Chọn ngân hàng hỗ trợ --</option>
+                                    <option value="Vietcombank (VCB)">Vietcombank (Ngân hàng Ngoại thương)</option>
+                                    <option value="VietinBank (CTG)">VietinBank (Ngân hàng Công thương)</option>
+                                    <option value="BIDV">BIDV (Đầu tư và Phát triển)</option>
+                                    <option value="Agribank">Agribank (Nông nghiệp &amp; PTNT)</option>
+                                    <option value="MB Bank (Ngân hàng Quân Đội)">MB Bank (Ngân hàng Quân Đội)</option>
+                                    <option value="Techcombank (TCB)">Techcombank (Kỹ thương)</option>
+                                    <option value="ACB (Ngân hàng Á Châu)">ACB (Ngân hàng Á Châu)</option>
+                                    <option value="VPBank">VPBank (Việt Nam Thịnh Vượng)</option>
+                                    <option value="TPBank (Tiên Phong)">TPBank (Tiên Phong)</option>
+                                    <option value="Sacombank">Sacombank (Sài Gòn Thương Tín)</option>
+                                    <option value="HDBank">HDBank (Phát triển TP.HCM)</option>
+                                    <option value="VIB (Quốc Tế)">VIB (Quốc tế Việt Nam)</option>
+                                    <option value="SHB">SHB (Sài Gòn - Hà Nội)</option>
+                                    <option value="SeABank">SeABank (Đông Nam Á)</option>
+                                    <option value="OCB (Phương Đông)">OCB (Phương Đông)</option>
+                                    <option value="MSB (Hàng Hải)">MSB (Hàng Hải)</option>
+                                    <option value="Eximbank">Eximbank (Xuất Nhập Khẩu)</option>
+                                    <option value="Nam A Bank">Nam A Bank (Nam Á)</option>
+                                    <option value="LPBank (Lộc Phát VN)">LPBank (Lộc Phát Việt Nam)</option>
+                                    <option value="BaoViet Bank">BaoViet Bank (Bảo Việt)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted mb-1">Số tài khoản <span class="text-danger">*</span></label>
+                                <input type="text" name="accountNumber" id="provideAccountNumber" class="form-control rounded-pill px-3 py-2" placeholder="Ví dụ: 1012345678" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted mb-1">Tên chủ tài khoản <span class="text-danger">*</span></label>
+                                <input type="text" name="accountHolder" id="provideAccountHolder" class="form-control rounded-pill px-3 py-2" placeholder="Ví dụ: NGUYEN VAN A" required />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold">Lưu tài khoản hoàn tiền</button>
                 </div>
             </form>
         </div>
@@ -627,6 +727,23 @@
         if (holderEl) holderEl.value = defaultHolder || '';
 
         new bootstrap.Modal(document.getElementById('refundBookingModal')).show();
+    }
+
+    function openProvideBankModal(bookingId, propTitle) {
+        document.getElementById('provideBankBookingId').value = bookingId;
+        document.getElementById('provideBankPropTitle').textContent = propTitle;
+
+        const defaultBank = '@(ViewBag.GuestBankName ?? "")';
+        const defaultAcc = '@(ViewBag.GuestAccountNumber ?? "")';
+        const defaultHolder = '@(ViewBag.GuestAccountHolder ?? "")';
+        const bankEl = document.getElementById('provideBankName');
+        const accEl = document.getElementById('provideAccountNumber');
+        const holderEl = document.getElementById('provideAccountHolder');
+        if (bankEl) bankEl.value = defaultBank || '';
+        if (accEl) accEl.value = defaultAcc || '';
+        if (holderEl) holderEl.value = defaultHolder || '';
+
+        new bootstrap.Modal(document.getElementById('provideBankInfoModal')).show();
     }
 
     function openReviewModal(bookingId, propTitle) {

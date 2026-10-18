@@ -622,7 +622,12 @@ namespace HomestaySystem.Services
                             TrangThai = b.Status,
                             ThoiGianTao = b.BookingDate,
                             TrangThaiQuyetToan = b.Invoice != null ? "DaQuyetToan" : "ChuaQuyetToan",
-                            GhiChuQuyetToan = b.Invoice != null ? $"Phương thức: {b.Invoice.PaymentMethod}" : null
+                            GhiChuQuyetToan = b.Invoice != null ? $"Phương thức: {b.Invoice.PaymentMethod}" : null,
+                            TenNganHangKhach = b.Guest?.BankName,
+                            SoTaiKhoanKhach = b.Guest?.AccountNumber,
+                            TenChuTaiKhoanKhach = b.Guest?.AccountHolder,
+                            LyDoHoanTien = b.RefundReason,
+                            ThoiGianYeuCauHoan = b.RefundRequestedAt
                         };
                     }
                 }
@@ -1372,8 +1377,8 @@ namespace HomestaySystem.Services
             [property: JsonPropertyName("reviewedAt")] DateTime? ReviewDate);
         private record ApiUserDto(int Id, string Email, string FullName, string Phone, string Role, int RoleId, bool IsActive, DateTime CreatedAt, string? CitizenId, string? BankInformation, int PropertyCount, int BookingCount, string? BankName = null, string? AccountNumber = null, string? AccountHolder = null, string? ApprovalStatus = null, string? RejectionReason = null);
         private record ApiBookingSummaryDto(int BookingId, string HomestayName, List<string>? RoomNumbers, int GuestId, string GuestName, string GuestEmail, string GuestPhone, DateTime CheckIn, DateTime CheckOut, int Adults, int Children, int TotalGuests, string Status, decimal TotalAmount, DateTime BookingDate, string PaymentStatus, string? PaymentMethod, string? RefundReason = null, DateTime? RefundRequestedAt = null, string? GuestBankName = null, string? GuestAccountNumber = null, string? GuestAccountHolder = null, string? TrangThaiQuyetToan = null, string? MaGiaoDichQuyetToan = null, DateTime? NgayQuyetToan = null, decimal? SoTienQuyetToan = null, string? GhiChuQuyetToan = null);
-        private record ApiBookingDetailsDto(int BookingId, DateTime BookingDate, DateTime CheckIn, DateTime CheckOut, int Adults, int Children, int TotalGuests, string Status, decimal TotalAmount, ApiGuestContactDto? Guest, ApiOwnerContactDto? Owner, int PropertyId, string PropertyName, string? PropertyAddress, List<ApiBookingRoomItemDto>? Rooms, ApiInvoiceDto? Invoice, string? TrangThaiQuyetToan, string? MaGiaoDichQuyetToan, DateTime? NgayQuyetToan, decimal? SoTienQuyetToan, string? GhiChuQuyetToan);
-        private record ApiGuestContactDto(int Id, string FullName, string Email, string Phone);
+        private record ApiBookingDetailsDto(int BookingId, DateTime BookingDate, DateTime CheckIn, DateTime CheckOut, int Adults, int Children, int TotalGuests, string Status, decimal TotalAmount, ApiGuestContactDto? Guest, ApiOwnerContactDto? Owner, int PropertyId, string PropertyName, string? PropertyAddress, List<ApiBookingRoomItemDto>? Rooms, ApiInvoiceDto? Invoice, string? TrangThaiQuyetToan, string? MaGiaoDichQuyetToan, DateTime? NgayQuyetToan, decimal? SoTienQuyetToan, string? GhiChuQuyetToan, string? RefundReason = null, DateTime? RefundRequestedAt = null);
+        private record ApiGuestContactDto(int Id, string FullName, string Email, string Phone, string? BankName = null, string? AccountNumber = null, string? AccountHolder = null);
         private record ApiBookingRoomItemDto(int RoomId, string RoomNumber, decimal Price);
         private record ApiInvoiceDto(int InvoiceId, decimal TotalAmount, decimal BaseAmount, string PaymentMethod);
         private record ApiRevenueReportDto(decimal TotalCustomerPaid, decimal PlatformCommission, decimal HostPayout, int TotalBookings, int TotalProperties, int TotalUsers, List<ApiRevenueBookingItemDto>? Bookings);

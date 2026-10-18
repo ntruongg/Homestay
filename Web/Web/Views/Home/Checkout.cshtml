@@ -317,6 +317,12 @@
         const pollInterval = setInterval(async function () {
             try {
                 const response = await fetch('/Home/CheckPaymentStatus?bookingId=@Model.Id');
+                if (response.status === 401) {
+                    clearInterval(pollInterval);
+                    clearInterval(timer);
+                    window.location.href = '/';
+                    return;
+                }
                 if (response.ok) {
                     const data = await response.json();
                     if (data.isPaid) {

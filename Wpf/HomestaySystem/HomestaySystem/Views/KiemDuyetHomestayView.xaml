@@ -172,7 +172,7 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel VerticalAlignment="Center" Margin="12,0" Cursor="Hand" ToolTip="{Binding TenCoSo}">
-                                            <TextBlock Text="{Binding TenCoSo}" FontWeight="Bold" FontSize="12.5" Foreground="{StaticResource MauChuTieuDe}" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding TenCoSo}" FontWeight="Bold" FontSize="12.5" Foreground="{StaticResource MauChuTieuDe}" TextWrapping="Wrap" MaxHeight="36"/>
                                             <TextBlock Text="{Binding DiaChi}" FontSize="11" Foreground="{StaticResource MauChuPhu}" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </DataTemplate>
@@ -203,19 +203,19 @@
                             </DataGridTextColumn>
 
                             <!-- Cột 5: LOẠI HÌNH (Đồng bộ theo các cột khác, không bị che chữ) -->
-                            <DataGridTemplateColumn Header="LOẠI HÌNH" Width="Auto" MinWidth="180">
+                            <DataGridTemplateColumn Header="LOẠI HÌNH" Width="Auto" MinWidth="130">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border CornerRadius="8" Padding="10,4" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0">
+                                        <Border CornerRadius="8" Padding="8,4" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="8,0">
                                             <Border.Style>
                                                 <Style TargetType="Border">
                                                     <Setter Property="Background" Value="{StaticResource MauStaylyPrimaryLight}"/>
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding LoaiHinhHienThi}" Value="Khách sạn (Hotel)">
-                                                            <Setter Property="Background" Value="#F1F5F9"/>
-                                                        </DataTrigger>
                                                         <DataTrigger Binding="{Binding LoaiHinhHienThi}" Value="Khách sạn">
                                                             <Setter Property="Background" Value="#F1F5F9"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding LoaiHinhHienThi}" Value="Resort">
+                                                            <Setter Property="Background" Value="#FEF3C7"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -225,11 +225,11 @@
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="Foreground" Value="{StaticResource MauStaylyPrimary}"/>
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding LoaiHinhHienThi}" Value="Khách sạn (Hotel)">
-                                                                <Setter Property="Foreground" Value="#475569"/>
-                                                            </DataTrigger>
                                                             <DataTrigger Binding="{Binding LoaiHinhHienThi}" Value="Khách sạn">
                                                                 <Setter Property="Foreground" Value="#475569"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding LoaiHinhHienThi}" Value="Resort">
+                                                                <Setter Property="Foreground" Value="#D97706"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
@@ -322,10 +322,10 @@
                         </Button>
                         <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
                             <Border Background="#EBF3FA" CornerRadius="6" Padding="8,3" Margin="0,0,8,0">
-                                <TextBlock Text="{Binding CoSoDangChon.LoaiHinhHienThi, FallbackValue='Homestay nguyên căn'}" FontSize="10" FontWeight="Bold" Foreground="{StaticResource MauStaylyPrimary}"/>
+                                <TextBlock Text="{Binding CoSoDangChon.LoaiHinhHienThi, FallbackValue='Homestay'}" FontSize="10" FontWeight="Bold" Foreground="{StaticResource MauStaylyPrimary}"/>
                             </Border>
                             <Border Background="#F1F5F9" CornerRadius="6" Padding="8,3" Margin="0,0,8,0">
-                                <TextBlock Text="{Binding CoSoDangChon.MaHoSoHienThi, FallbackValue='#HS-TERA-2026'}" FontSize="10" FontWeight="Bold" Foreground="#475569"/>
+                                <TextBlock Text="{Binding CoSoDangChon.MaHoSoHienThi, FallbackValue='---'}" FontSize="10" FontWeight="Bold" Foreground="#475569"/>
                             </Border>
                             <Border Background="#FEF3C7" CornerRadius="6" Padding="8,3">
                                 <TextBlock Text="{Binding CoSoDangChon.TenHienThiTrangThai, FallbackValue='Chờ kiểm duyệt'}" FontSize="10" FontWeight="Bold" Foreground="#D97706"/>
@@ -350,7 +350,7 @@
                                         <TextBlock Text="{Binding CoSoDangChon.DiaChi, FallbackValue='Địa chỉ: Đang cập nhật'}"
                                                    TextTrimming="CharacterEllipsis" Foreground="#64748B" FontSize="12" VerticalAlignment="Center" MaxWidth="380" ToolTip="{Binding CoSoDangChon.DiaChi}"/>
                                         <TextBlock Text=" • Tỉnh/TP: " FontSize="12" Foreground="#94A3B8" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="{Binding CoSoDangChon.TinhThanh, FallbackValue='Lâm Đồng'}" FontSize="12" FontWeight="SemiBold" Foreground="#0F172A" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding CoSoDangChon.TinhThanh, FallbackValue='---'}" FontSize="12" FontWeight="SemiBold" Foreground="#0F172A" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
@@ -373,7 +373,7 @@
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="👤" FontSize="14" Foreground="#0194F3" VerticalAlignment="Center"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding CoSoDangChon.TenChuHome, FallbackValue='Nguyễn Văn An'}"
+                                            <TextBlock Grid.Column="1" Text="{Binding CoSoDangChon.TenChuHome, FallbackValue='---'}"
                                                        FontWeight="Bold" FontSize="13.5" Foreground="#0F172A" TextWrapping="Wrap" VerticalAlignment="Center"/>
                                         </Grid>
 
@@ -397,7 +397,7 @@
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="📞" FontSize="13" Foreground="#0194F3" VerticalAlignment="Center"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding CoSoDangChon.SoDienThoaiChuHome, StringFormat='Hotline: {0}', FallbackValue='Hotline: 0912 345 678'}"
+                                            <TextBlock Grid.Column="1" Text="{Binding CoSoDangChon.SoDienThoaiChuHome, StringFormat='Hotline: {0}', FallbackValue='Hotline: ---'}"
                                                        FontSize="13" FontWeight="SemiBold" Foreground="#0F172A" VerticalAlignment="Center"/>
                                         </Grid>
 
@@ -408,7 +408,7 @@
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="✉️" FontSize="13" Foreground="#0194F3" VerticalAlignment="Center"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding CoSoDangChon.EmailChuHome, FallbackValue='partner@stayly.vn'}"
+                                            <TextBlock Grid.Column="1" Text="{Binding CoSoDangChon.EmailChuHome, FallbackValue='---'}"
                                                        FontSize="13" Foreground="#475569" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
                                                        ToolTip="{Binding CoSoDangChon.EmailChuHome}"/>
                                         </Grid>
@@ -469,12 +469,12 @@
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Grid.Column="0">
                                                 <TextBlock Text="Số phòng ngủ" FontSize="12" Foreground="#64748B"/>
-                                                <TextBlock Text="{Binding CoSoDangChon.TongSoPhong, StringFormat='{}{0} Phòng ngủ', FallbackValue='06 Phòng ngủ'}"
+                                                <TextBlock Text="{Binding CoSoDangChon.TongSoPhong, StringFormat='{}{0} Phòng ngủ', FallbackValue='0 Phòng ngủ'}"
                                                            FontSize="15" FontWeight="Bold" Foreground="#0194F3" Margin="0,3,0,0"/>
                                             </StackPanel>
                                             <StackPanel Grid.Column="1">
                                                 <TextBlock Text="Sức chứa khách" FontSize="12" Foreground="#64748B"/>
-                                                <TextBlock Text="10 - 16 Khách"
+                                                <TextBlock Text="{Binding CoSoDangChon.SucChuaHienThi, FallbackValue='Đang cập nhật'}"
                                                            FontSize="15" FontWeight="Bold" Foreground="#0F172A" Margin="0,3,0,0"/>
                                             </StackPanel>
                                         </Grid>
@@ -483,7 +483,7 @@
                                         <Border Background="#FFF7ED" CornerRadius="8" Padding="12,8" BorderBrush="#FED7AA" BorderThickness="1">
                                             <StackPanel>
                                                 <TextBlock Text="Khoảng giá niêm yết / đêm:" FontSize="12" Foreground="#C2410C"/>
-                                                <TextBlock Text="{Binding CoSoDangChon.KhoangGiaHienThi, FallbackValue='650.000 đ - 1.800.000 đ / đêm'}"
+                                                <TextBlock Text="{Binding CoSoDangChon.KhoangGiaHienThi, FallbackValue='---'}"
                                                            FontSize="15" FontWeight="Bold" Foreground="#EA580C" Margin="0,3,0,0" TextWrapping="Wrap"/>
                                             </StackPanel>
                                         </Border>

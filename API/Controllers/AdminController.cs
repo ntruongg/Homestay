@@ -93,6 +93,33 @@ public sealed class AdminController(
             .Where(i => i.MaCoSoLuuTru.HasValue && propertyIds.Contains(i.MaCoSoLuuTru.Value))
             .ToListAsync(cancellationToken);
 
+        var bookingPairs = await db.ChiTietDons.AsNoTracking()
+            .Where(ct => propertyIds.Contains(ct.Phong.MaCoSoLuuTru))
+            .Select(ct => new { ct.Phong.MaCoSoLuuTru, ct.MaDonDatPhong })
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var bookingCounts = bookingPairs
+            .GroupBy(x => x.MaCoSoLuuTru)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var reviewPairs = await (
+            from d in db.DanhGias.AsNoTracking()
+            from ct in d.DonDatPhong.ChiTietDons
+            where propertyIds.Contains(ct.Phong.MaCoSoLuuTru)
+            select new {
+                PropertyId = ct.Phong.MaCoSoLuuTru,
+                BookingId = d.MaDonDatPhong,
+                Score = d.DiemSo
+            }
+        )
+        .Distinct()
+        .ToListAsync(cancellationToken);
+
+        var reviewRatings = reviewPairs
+            .GroupBy(x => x.PropertyId)
+            .ToDictionary(g => g.Key, g => Math.Round(g.Average(x => (double)x.Score), 1));
+
         var result = properties.Select(p =>
         {
             var latestHistory = p.LichSuDuyets.OrderByDescending(h => h.NgayDuyet).FirstOrDefault();
@@ -114,7 +141,9 @@ public sealed class AdminController(
                 p.ChuCoSoLuuTru.HoTen,
                 p.ChuCoSoLuuTru.Email,
                 p.ChuCoSoLuuTru.DienThoai,
-                coverUrl
+                coverUrl,
+                reviewRatings.GetValueOrDefault(p.MaCoSoLuuTru, 0.0),
+                bookingCounts.GetValueOrDefault(p.MaCoSoLuuTru, 0)
             );
         }).ToList();
 
@@ -189,6 +218,17 @@ public sealed class AdminController(
 
         var latestHistory = property.LichSuDuyets.OrderByDescending(h => h.NgayDuyet).FirstOrDefault();
 
+        var rating = await db.DanhGias.AsNoTracking()
+            .Where(d => d.DonDatPhong.ChiTietDons.Any(c => c.Phong.MaCoSoLuuTru == id))
+            .Select(d => (double?)d.DiemSo)
+            .AverageAsync(cancellationToken) ?? 0.0;
+
+        var bookingCount = await db.ChiTietDons.AsNoTracking()
+            .Where(c => c.Phong.MaCoSoLuuTru == id)
+            .Select(c => c.MaDonDatPhong)
+            .Distinct()
+            .CountAsync(cancellationToken);
+
         var response = new AdminPropertyDetailsResponse(
             property.MaCoSoLuuTru,
             property.TenCoSoLuuTru,
@@ -208,7 +248,9 @@ public sealed class AdminController(
             ownerContact,
             photos,
             rooms,
-            historyDtos
+            historyDtos,
+            Math.Round(rating, 1),
+            bookingCount
         );
 
         return Ok(response);

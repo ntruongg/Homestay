@@ -18,7 +18,9 @@ public sealed record AdminPropertySummaryResponse(
     string OwnerName,
     string OwnerEmail,
     string OwnerPhone,
-    string? CoverImageUrl
+    string? CoverImageUrl,
+    double Rating = 0,
+    int BookingCount = 0
 );
 
 public sealed record AdminOwnerContact(
@@ -73,7 +75,9 @@ public sealed record AdminPropertyDetailsResponse(
     AdminOwnerContact Owner,
     IReadOnlyList<string> Photos,
     IReadOnlyList<AdminRoomDetailsResponse> Rooms,
-    IReadOnlyList<ApprovalHistoryDto> ApprovalHistory
+    IReadOnlyList<ApprovalHistoryDto> ApprovalHistory,
+    double Rating = 0,
+    int BookingCount = 0
 );
 
 public sealed class UpdatePropertyAdminRequest

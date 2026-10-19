@@ -7,7 +7,6 @@ namespace API.Data;
 
 public static class DbInitializer
 {
-    private const string SampleImageUrl = "https://res.cloudinary.com/bg2lav62/image/upload/v1789458702/c96b33e5-6e5b-4417-aabb-8df73dc47cdb.jpg";
 
     public static void Seed(HomestayDbContext context, IConfiguration? configuration = null)
     {

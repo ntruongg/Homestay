@@ -52,8 +52,8 @@ namespace HomestaySystem.Models
         public string HinhAnhCCCDMatTruoc { get; set; } = string.Empty;
         public string HinhAnhCCCDMatSau { get; set; } = string.Empty;
         public string DiaChiThuongTru { get; set; } = string.Empty;
-        public string NgayCapCCCD { get; set; } = "15/08/2021";
-        public string NoiCapCCCD { get; set; } = "Cục Cảnh sát QLHC về TTXH";
+        public string NgayCapCCCD { get; set; } = "---";
+        public string NoiCapCCCD { get; set; } = "---";
 
         public string TenHienThiVaiTro
         {

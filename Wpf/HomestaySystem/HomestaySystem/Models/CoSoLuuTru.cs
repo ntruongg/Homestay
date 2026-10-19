@@ -77,18 +77,34 @@ namespace HomestaySystem.Models
         {
             get
             {
-                if (string.Equals(LoaiHinh, "Hotel", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(LoaiHinh, "KhachSan", StringComparison.OrdinalIgnoreCase) ||
-                    LoaiHinh?.Contains("Khách sạn", StringComparison.OrdinalIgnoreCase) == true)
+                if (string.IsNullOrWhiteSpace(LoaiHinh)) return "Homestay";
+                if (LoaiHinh.Contains("Hotel", StringComparison.OrdinalIgnoreCase) ||
+                    LoaiHinh.Contains("KhachSan", StringComparison.OrdinalIgnoreCase) ||
+                    LoaiHinh.Contains("Khách sạn", StringComparison.OrdinalIgnoreCase))
                 {
-                    return "Khách sạn (Hotel)";
+                    return "Khách sạn";
                 }
-                return "Homestay nguyên căn";
+                if (LoaiHinh.Contains("Resort", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "Resort";
+                }
+                if (LoaiHinh.Contains("Villa", StringComparison.OrdinalIgnoreCase) ||
+                    LoaiHinh.Contains("Biệt thự", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "Villa";
+                }
+                if (LoaiHinh.Contains("Apartment", StringComparison.OrdinalIgnoreCase) ||
+                    LoaiHinh.Contains("Căn hộ", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "Căn hộ";
+                }
+                return "Homestay";
             }
             set => LoaiHinh = value;
         }
-        public double DanhGia { get; set; } = 4.9;
-        public int SoLuotDat { get; set; } = 128;
+        public double DanhGia { get; set; } = 0.0;
+        public int SoLuotDat { get; set; } = 0;
+        public string DanhGiaHienThi => DanhGia > 0 ? $"{DanhGia:F1}" : "Chưa có";
         public string KhuVuc
         {
             get => string.IsNullOrEmpty(TinhThanh) ? "Việt Nam" : TinhThanh;
@@ -105,12 +121,12 @@ namespace HomestaySystem.Models
         }
         public decimal GiaCoSo
         {
-            get => GiaTrungBinh > 0 ? GiaTrungBinh : (GiaThapNhat > 0 ? GiaThapNhat : (GiaCaoNhat > 0 ? GiaCaoNhat : 850000m));
+            get => GiaTrungBinh > 0 ? GiaTrungBinh : (GiaThapNhat > 0 ? GiaThapNhat : (GiaCaoNhat > 0 ? GiaCaoNhat : 0m));
             set => GiaTrungBinh = value;
         }
-        public string ThoiGianCho => "Chờ 3 giờ";
-        public string ToaDoGPS { get; set; } = "15.8792° N, 108.3541° E";
-        public string ChuyenVienThamDinh { get; set; } = "admin_stayly";
+        public string ThoiGianCho => "---";
+        public string ToaDoGPS { get; set; } = string.Empty;
+        public string ChuyenVienThamDinh { get; set; } = string.Empty;
         public int SoLuongKhieuNai { get; set; } = 0;
         public string HinhAnhThumbnail1 { get; set; } = string.Empty;
         public string HinhAnhThumbnail2 { get; set; } = string.Empty;
@@ -141,7 +157,20 @@ namespace HomestaySystem.Models
 
         public string KhoangGiaHienThi
         {
-            get => $"{GiaThapNhat:N0} đ - {GiaCaoNhat:N0} đ / đêm";
+            get
+            {
+                if (GiaThapNhat > 0 && GiaCaoNhat > 0 && GiaThapNhat != GiaCaoNhat)
+                    return $"{GiaThapNhat:N0} đ - {GiaCaoNhat:N0} đ / đêm";
+                if (GiaCoSo > 0)
+                    return $"{GiaCoSo:N0} đ / đêm";
+                return "Đang cập nhật";
+            }
+            set { }
+        }
+
+        public string SucChuaHienThi
+        {
+            get => TongSoPhong > 0 ? $"{TongSoPhong * 2} - {TongSoPhong * 4} Khách" : "Đang cập nhật";
             set { }
         }
 

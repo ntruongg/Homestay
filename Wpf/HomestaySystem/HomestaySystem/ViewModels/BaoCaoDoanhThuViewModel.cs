@@ -34,8 +34,8 @@ namespace HomestaySystem.ViewModels
         public string LoaiHinh { get; set; } = "Homestay";
         public string TenChuHome { get; set; } = string.Empty;
         public int SoLuotDat { get; set; }
-        public double DanhGia { get; set; } = 4.9;
-        public string DanhGiaHienThi => $"⭐ {DanhGia:F1}";
+        public double DanhGia { get; set; } = 0.0;
+        public string DanhGiaHienThi => DanhGia > 0 ? $"⭐ {DanhGia:F1}" : "Chưa có";
         public decimal DoanhThu { get; set; }
         public string DoanhThuDinhDang => $"{DoanhThu:N0} đ";
         public string TrangThai { get; set; } = "Đang mở bán";
@@ -55,7 +55,7 @@ namespace HomestaySystem.ViewModels
         public int SoDonDat { get; set; }
         public decimal TongChiTieu { get; set; }
         public string TongChiTieuDinhDang => $"{TongChiTieu:N0} đ";
-        public string HangThanhVien { get; set; } = "Hội viên Vàng";
+        public string HangThanhVien { get; set; } = "Thành viên Stayly";
     }
 
     /// <summary>
@@ -322,7 +322,7 @@ namespace HomestaySystem.ViewModels
 
                         int luotDat = donCuaCoSo.Count;
                         decimal doanhThu = donCuaCoSo.Sum(d => d.TongTien);
-                        double danhGia = c.DanhGia > 0 ? c.DanhGia : (luotDat > 0 ? 5.0 : 0.0);
+                        double danhGia = c.DanhGia;
 
                         return new
                         {

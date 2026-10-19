@@ -118,87 +118,15 @@ namespace HomestaySystem.ViewModels
         }
 
 
-        // ================= TRẠNG THÁI DIALOG CHỈNH SỬA THÔNG TIN ĐƠN =================
-        private bool _hienThiDialogChinhSua;
-        private string _suaTenKhachHang = string.Empty;
-        private string _suaSoDienThoai = string.Empty;
-        private string _suaEmail = string.Empty;
-        private string _suaTrangThai = "ChoDuyet";
-        private string _suaGhiChu = string.Empty;
-        private DateTime _suaNgayCheckIn = DateTime.Today;
-        private DateTime _suaNgayCheckOut = DateTime.Today.AddDays(1);
-        private int _suaSoNguoiLon = 1;
-        private int _suaSoTreEm = 0;
-
-        public bool HienThiDialogChinhSua
-        {
-            get => _hienThiDialogChinhSua;
-            set => SetProperty(ref _hienThiDialogChinhSua, value);
-        }
-
-        public string SuaTenKhachHang
-        {
-            get => _suaTenKhachHang;
-            set => SetProperty(ref _suaTenKhachHang, value);
-        }
-
-        public string SuaSoDienThoai
-        {
-            get => _suaSoDienThoai;
-            set => SetProperty(ref _suaSoDienThoai, value);
-        }
-
-        public string SuaEmail
-        {
-            get => _suaEmail;
-            set => SetProperty(ref _suaEmail, value);
-        }
-
-        public DateTime SuaNgayCheckIn
-        {
-            get => _suaNgayCheckIn;
-            set => SetProperty(ref _suaNgayCheckIn, value);
-        }
-
-        public DateTime SuaNgayCheckOut
-        {
-            get => _suaNgayCheckOut;
-            set => SetProperty(ref _suaNgayCheckOut, value);
-        }
-
-        public int SuaSoNguoiLon
-        {
-            get => _suaSoNguoiLon;
-            set => SetProperty(ref _suaSoNguoiLon, value);
-        }
-
-        public int SuaSoTreEm
-        {
-            get => _suaSoTreEm;
-            set => SetProperty(ref _suaSoTreEm, value);
-        }
-
-        public string SuaTrangThai
-        {
-            get => _suaTrangThai;
-            set => SetProperty(ref _suaTrangThai, value);
-        }
-
-        public string SuaGhiChu
-        {
-            get => _suaGhiChu;
-            set => SetProperty(ref _suaGhiChu, value);
-        }
-
         public record LuaChonTrangThaiDon(string MaTrangThai, string TenHienThi);
         public List<LuaChonTrangThaiDon> DanhSachTrangThaiDon { get; } = new()
         {
             new("ChoDuyet", "⏳ Chờ xét duyệt"),
             new("DaDuyet", "✅ Đã xét duyệt"),
-            new("DangO", "🏡 Khách đang lưu trú (Đang ở)"),
-            new("DaHoanTat", "🏁 Đã hoàn tất (Checked-out)"),
-            new("YeuCauHoanTien", "💸 Yêu cầu hoàn tiền"),
-            new("DaHoanTien", "💰 Đã hoàn tiền thành công"),
+            new("DangO", "🏡 Khách đang lưu trú"),
+            new("DaHoanTat", "🏁 Đã hoàn tất"),
+            new("YeuCauHoanTien", "💸 Chờ hoàn tiền"),
+            new("DaHoanTien", "💰 Đã hoàn tiền"),
             new("DaHuy", "🚫 Đã hủy")
         };
 
@@ -217,9 +145,6 @@ namespace HomestaySystem.ViewModels
         public ICommand HuyDialogHoanTienCommand { get; }
         public ICommand DuyetDonCommand { get; }
         public ICommand HuyDonCommand { get; }
-        public ICommand MoDialogChinhSuaCommand { get; }
-        public ICommand XacNhanChinhSuaCommand { get; }
-        public ICommand HuyDialogChinhSuaCommand { get; }
         public ICommand DongHoSoCommand { get; }
         public ICommand XemHoSoCommand { get; }
 
@@ -228,9 +153,13 @@ namespace HomestaySystem.ViewModels
             _adminService = adminService;
 
             DongHoSoCommand = new RelayCommand(() => DonDangChon = null);
-            XemHoSoCommand = new RelayCommand<DonDatPhong>(d =>
+            XemHoSoCommand = new RelayCommand<DonDatPhong>(async d =>
             {
-                if (d != null) DonDangChon = d;
+                if (d != null)
+                {
+                    DonDangChon = d;
+                    await TaiChiTietDonDatAsync(d.MaDon);
+                }
             });
 
             TaiDuLieuCommand = new RelayCommand(async () => await TaiDanhSachDonDatAsync());
@@ -241,50 +170,7 @@ namespace HomestaySystem.ViewModels
             DuyetDonCommand = new RelayCommand(async () => await ThucHienDuyetDonAsync(), () => DonDangChon != null && DonDangChon.LaDonChoDuyet);
             HuyDonCommand = new RelayCommand(async () => await ThucHienHuyDonAsync(), () => DonDangChon != null && (DonDangChon.LaDonChoDuyet || DonDangChon.TrangThai == "DaDuyet"));
 
-            MoDialogChinhSuaCommand = new RelayCommand(ThucHienMoDialogChinhSua, () => DonDangChon != null);
-            XacNhanChinhSuaCommand = new RelayCommand(async () => await ThucHienXacNhanChinhSuaAsync());
-            HuyDialogChinhSuaCommand = new RelayCommand(() => HienThiDialogChinhSua = false);
-
             _ = TaiDanhSachDonDatAsync();
-        }
-
-        private void ThucHienMoDialogChinhSua()
-        {
-            if (DonDangChon == null) return;
-            SuaTenKhachHang = DonDangChon.TenKhachHang;
-            SuaSoDienThoai = DonDangChon.SoDienThoaiKhach;
-            SuaEmail = DonDangChon.EmailKhach;
-            SuaNgayCheckIn = DonDangChon.NgayNhanPhong != default ? DonDangChon.NgayNhanPhong : DateTime.Today;
-            SuaNgayCheckOut = DonDangChon.NgayTraPhong != default ? DonDangChon.NgayTraPhong : DateTime.Today.AddDays(1);
-            SuaSoNguoiLon = DonDangChon.SoNguoiLon > 0 ? DonDangChon.SoNguoiLon : 1;
-            SuaSoTreEm = DonDangChon.SoTreEm >= 0 ? DonDangChon.SoTreEm : 0;
-
-            string status = DonDangChon.TrangThai ?? "ChoDuyet";
-            if (status.Equals("Pending", StringComparison.OrdinalIgnoreCase) || status.Equals("ChoXacNhan", StringComparison.OrdinalIgnoreCase))
-                status = "ChoDuyet";
-            else if (status.Equals("Confirmed", StringComparison.OrdinalIgnoreCase) || status.Equals("DaXacNhan", StringComparison.OrdinalIgnoreCase))
-                status = "DaDuyet";
-            else if (status.Equals("CheckedIn", StringComparison.OrdinalIgnoreCase))
-                status = "DangO";
-            else if (status.Equals("CheckedOut", StringComparison.OrdinalIgnoreCase) || status.Equals("HoanThanh", StringComparison.OrdinalIgnoreCase))
-                status = "DaHoanTat";
-            else if (status.Equals("RefundRequested", StringComparison.OrdinalIgnoreCase))
-                status = "YeuCauHoanTien";
-            else if (status.Equals("Refunded", StringComparison.OrdinalIgnoreCase))
-                status = "DaHoanTien";
-            else if (status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase))
-                status = "DaHuy";
-
-            SuaTrangThai = DanhSachTrangThaiDon.Any(s => s.MaTrangThai == status) ? status : "ChoDuyet";
-            SuaGhiChu = DonDangChon.GhiChu;
-            HienThiDialogChinhSua = true;
-        }
-
-        private async Task ThucHienXacNhanChinhSuaAsync()
-        {
-            MessageBox.Show("Thông tin đơn đặt phòng là dữ liệu chứng từ hợp đồng có tính chất pháp lý và tài chính, chỉ được xem chứ không được chỉnh sửa trực tiếp. Để xử lý đơn, vui lòng sử dụng các nút nghiệp vụ (Duyệt nhận đơn, Hủy đơn hoặc Thẩm định hoàn tiền).", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
-            HienThiDialogChinhSua = false;
-            await Task.CompletedTask;
         }
 
         public async Task TaiDanhSachDonDatAsync()
@@ -331,23 +217,31 @@ namespace HomestaySystem.ViewModels
 
             if (!string.IsNullOrWhiteSpace(BoLocTrangThai) && BoLocTrangThai != "TatCa")
             {
-                if (BoLocTrangThai == "CheckedOut" || BoLocTrangThai == "HoanThanh" || BoLocTrangThai == "DaHoanTat")
-                {
-                    query = query.Where(d => d.TrangThai == "CheckedOut" || d.TrangThai == "HoanThanh" || d.TrangThai == "DaHoanTat");
-                }
-                else if (BoLocTrangThai == "Pending" || BoLocTrangThai == "ChoXacNhan" || BoLocTrangThai == "ChoDuyet")
+                if (BoLocTrangThai == "ChoDuyet" || BoLocTrangThai == "Pending" || BoLocTrangThai == "ChoXacNhan")
                 {
                     query = query.Where(d => d.TrangThai == "Pending" || d.TrangThai == "ChoXacNhan" || d.TrangThai == "ChoDuyet");
                 }
-                else if (BoLocTrangThai == "CheckedIn" || BoLocTrangThai == "DangO")
+                else if (BoLocTrangThai == "DaDuyet" || BoLocTrangThai == "Confirmed" || BoLocTrangThai == "DaXacNhan")
+                {
+                    query = query.Where(d => d.TrangThai == "Confirmed" || d.TrangThai == "DaXacNhan" || d.TrangThai == "DaDuyet");
+                }
+                else if (BoLocTrangThai == "DangO" || BoLocTrangThai == "CheckedIn")
                 {
                     query = query.Where(d => d.TrangThai == "CheckedIn" || d.TrangThai == "DangO");
                 }
-                else if (BoLocTrangThai == "RefundRequested" || BoLocTrangThai == "YeuCauHoanTien")
+                else if (BoLocTrangThai == "DaHoanTat" || BoLocTrangThai == "CheckedOut" || BoLocTrangThai == "HoanThanh")
+                {
+                    query = query.Where(d => d.TrangThai == "CheckedOut" || d.TrangThai == "HoanThanh" || d.TrangThai == "DaHoanTat");
+                }
+                else if (BoLocTrangThai == "YeuCauHoanTien" || BoLocTrangThai == "RefundRequested")
                 {
                     query = query.Where(d => d.TrangThai == "RefundRequested" || d.TrangThai == "YeuCauHoanTien");
                 }
-                else if (BoLocTrangThai == "Cancelled" || BoLocTrangThai == "DaHuy")
+                else if (BoLocTrangThai == "DaHoanTien" || BoLocTrangThai == "Refunded")
+                {
+                    query = query.Where(d => d.TrangThai == "Refunded" || d.TrangThai == "DaHoanTien");
+                }
+                else if (BoLocTrangThai == "DaHuy" || BoLocTrangThai == "Cancelled" || BoLocTrangThai == "TuChoi")
                 {
                     query = query.Where(d => d.TrangThai == "Cancelled" || d.TrangThai == "DaHuy" || d.TrangThai == "TuChoi");
                 }
@@ -427,8 +321,10 @@ namespace HomestaySystem.ViewModels
 
             if (thanhCong)
             {
+                string maDon = DonDangChon.MaDonHienThi;
                 HienThiDialogHoanTien = false;
-                MessageBox.Show($"Đã xác nhận hoàn tiền {SoTienHoan:N0} đ (Mã GD: {MaGiaoDichHoanTien}) cho đơn {DonDangChon.MaDonHienThi} thành công! Hệ thống đã gửi email xác nhận hoàn tiền cho khách hàng.", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+                DonDangChon = null;
+                MessageBox.Show($"Đã xác nhận hoàn tiền {SoTienHoan:N0} đ (Mã GD: {MaGiaoDichHoanTien}) cho đơn {maDon} thành công! Hệ thống đã gửi email xác nhận hoàn tiền cho khách hàng.", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
                 await TaiDanhSachDonDatAsync();
             }
             else

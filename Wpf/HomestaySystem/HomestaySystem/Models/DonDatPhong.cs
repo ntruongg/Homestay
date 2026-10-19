@@ -106,10 +106,30 @@ namespace HomestaySystem.Models
         {
             get => TrangThai switch
             {
-                "Confirmed" or "DaXacNhan" or "DaDuyet" or "CheckedIn" or "DangO" or "CheckedOut" or "HoanThanh" or "DaHoanTat" or "Refunded" or "DaHoanTien" => "#10B981", // Xanh lá
-                "Pending" or "ChoXacNhan" or "ChoDuyet" or "RefundRequested" or "YeuCauHoanTien" => "#F59E0B", // Vàng: Cảnh báo, chờ duyệt
-                "Cancelled" or "DaHuy" or "TuChoi" or "BiKhoa" => "#EF4444", // Đỏ: Dừng hoạt động, hủy, từ chối
+                "Confirmed" or "DaXacNhan" or "DaDuyet" => "#10B981", // Xanh lá
+                "CheckedIn" or "DangO" => "#0284C7", // Xanh dương
+                "CheckedOut" or "HoanThanh" or "DaHoanTat" => "#059669", // Xanh ngọc
+                "Pending" or "ChoXacNhan" or "ChoDuyet" => "#D97706", // Cam vàng: Chờ xét duyệt
+                "RefundRequested" or "YeuCauHoanTien" => "#EA580C", // Cam đỏ: Chờ hoàn tiền
+                "Refunded" or "DaHoanTien" => "#7C3AED", // Tím: Đã hoàn tiền
+                "Cancelled" or "DaHuy" or "TuChoi" or "BiKhoa" => "#EF4444", // Đỏ: Đã hủy
                 _ => "#64748B"
+            };
+            set {}
+        }
+
+        public string NenTrangThai
+        {
+            get => TrangThai switch
+            {
+                "Confirmed" or "DaXacNhan" or "DaDuyet" => "#ECFDF5",
+                "CheckedIn" or "DangO" => "#E0F2FE",
+                "CheckedOut" or "HoanThanh" or "DaHoanTat" => "#D1FAE5",
+                "Pending" or "ChoXacNhan" or "ChoDuyet" => "#FEF3C7",
+                "RefundRequested" or "YeuCauHoanTien" => "#FFEDD5",
+                "Refunded" or "DaHoanTien" => "#EDE9FE",
+                "Cancelled" or "DaHuy" or "TuChoi" or "BiKhoa" => "#FEE2E2",
+                _ => "#F1F5F9"
             };
             set {}
         }
@@ -120,16 +140,80 @@ namespace HomestaySystem.Models
         public bool LaDonChoDuyet => TrangThai == "Pending" || TrangThai == "ChoXacNhan" || TrangThai == "ChoDuyet";
         public bool LaDonHoanTien => TrangThai == "RefundRequested" || TrangThai == "YeuCauHoanTien";
         public bool CoTheHoanTien => LaDonHoanTien || TrangThai == "Confirmed" || TrangThai == "DaXacNhan" || TrangThai == "DaDuyet";
-        public string TieuDeThamDinhHienThi => LaDonHoanTien ? "THẨM ĐỊNH HOÀN TIỀN & ĐỐI SOÁT" : "CHI TIẾT ĐƠN ĐẶT PHÒNG";
+        public string TieuDeThamDinhHienThi => LaDonHoanTien ? "HỒ SƠ ĐƠN & THẨM ĐỊNH HOÀN TIỀN" : "CHI TIẾT HỒ SƠ ĐƠN ĐẶT PHÒNG";
 
-        // Bổ trợ hoàn tiền & cổng thanh toán
+        // Bổ trợ hoàn tiền & cổng thanh toán (tính toán động, không gán cứng)
         public string CongThanhToan { get; set; } = "VNPay QR";
-        public string HangThanhVienKhach { get; set; } = "Hội viên Vàng";
-        public string ChinhSachHuy { get; set; } = "Miễn phí 100% hủy phòng trước 07 ngày; hủy sau 7 ngày mất 50% tiền cọc.";
-        public string ThoiDiemKhachHuy { get; set; } = "Hôm qua lúc 14:30 (Trước 09 ngày)";
-        public string KetQuaThamDinh { get; set; } = "Đủ điều kiện hoàn 100%";
+        public string HangThanhVienKhach { get; set; } = "Khách hàng Stayly";
+        public string ChinhSachHuy { get; set; } = "Miễn phí hủy phòng và hoàn tiền 100% khi yêu cầu trước ngày nhận phòng tối thiểu 02 ngày theo quy định sàn Stayly; trong vòng 02 ngày không được hỗ trợ hoàn tiền.";
+
+        public string ThoiDiemKhachHuy
+        {
+            get
+            {
+                if (!ThoiGianYeuCauHoan.HasValue) return "Chưa gửi yêu cầu hoàn";
+                var dt = ThoiGianYeuCauHoan.Value;
+                var diff = (int)(NgayCheckIn.Date - dt.Date).TotalDays;
+                if (diff > 0)
+                    return $"{dt:dd/MM/yyyy HH:mm} (Trước {diff} ngày)";
+                else if (diff == 0)
+                    return $"{dt:dd/MM/yyyy HH:mm} (Đúng ngày nhận phòng)";
+                else
+                    return $"{dt:dd/MM/yyyy HH:mm} (Sau ngày nhận phòng)";
+            }
+            set {}
+        }
+
+        public string KetQuaThamDinh
+        {
+            get
+            {
+                if (!ThoiGianYeuCauHoan.HasValue)
+                {
+                    return LaDonHoanTien ? "Đang chờ đối soát" : "Không áp dụng";
+                }
+                var diff = (NgayCheckIn.Date - ThoiGianYeuCauHoan.Value.Date).TotalDays;
+                return diff >= 2 ? "Hợp lệ 100% (Đủ điều kiện hoàn tiền)" : "Quá hạn theo chính sách (< 2 ngày)";
+            }
+            set {}
+        }
+
+        public string KetQuaThamDinhBadge
+        {
+            get
+            {
+                if (!ThoiGianYeuCauHoan.HasValue) return "---";
+                var diff = (NgayCheckIn.Date - ThoiGianYeuCauHoan.Value.Date).TotalDays;
+                return diff >= 2 ? "Hợp lệ 100%" : "Quá hạn (< 2 ngày)";
+            }
+            set {}
+        }
+
+        public string KetQuaThamDinhMau
+        {
+            get
+            {
+                if (!ThoiGianYeuCauHoan.HasValue) return "#64748B";
+                var diff = (NgayCheckIn.Date - ThoiGianYeuCauHoan.Value.Date).TotalDays;
+                return diff >= 2 ? "#10B981" : "#EF4444";
+            }
+            set {}
+        }
+
+        public string KetQuaThamDinhNen
+        {
+            get
+            {
+                if (!ThoiGianYeuCauHoan.HasValue) return "#F1F5F9";
+                var diff = (NgayCheckIn.Date - ThoiGianYeuCauHoan.Value.Date).TotalDays;
+                return diff >= 2 ? "#ECFDF5" : "#FEE2E2";
+            }
+            set {}
+        }
+
         public decimal TienPhiXuLyHoan { get; set; } = 0m;
         public decimal TienHoanThucTe => Math.Max(0m, TongTien - TienPhiXuLyHoan);
+        public string TienHoanThucTeDinhDang => $"{TienHoanThucTe:N0} đ";
         public string NgayNhanTraHienThi => $"{NgayCheckIn:dd/MM} ➔ {NgayCheckOut:dd/MM/yyyy}";
     }
 }

@@ -326,6 +326,8 @@
                                     <Setter Property="Foreground" Value="{StaticResource MauChuChinh}"/>
                                     <Setter Property="VerticalAlignment" Value="Center"/>
                                     <Setter Property="Padding" Value="12,0"/>
+                                    <Setter Property="TextWrapping" Value="Wrap"/>
+                                    <Setter Property="MaxHeight" Value="44"/>
                                     <Setter Property="ToolTip" Value="{Binding TenCoSo}"/>
                                 </Style>
                             </DataGridTextColumn.ElementStyle>

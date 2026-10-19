@@ -164,13 +164,15 @@
                             </DataGridTextColumn>
 
                             <!-- Cơ sở Homestay -->
-                            <DataGridTextColumn Header="CƠ SỞ HOMESTAY" Binding="{Binding TenCoSo, Mode=OneWay}" Width="*" MinWidth="220">
+                            <DataGridTextColumn Header="CƠ SỞ HOMESTAY" Binding="{Binding TenCoSo, Mode=OneWay}" Width="*" MinWidth="200">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="FontWeight" Value="SemiBold"/>
                                         <Setter Property="Foreground" Value="#0F172A"/>
                                         <Setter Property="VerticalAlignment" Value="Center"/>
                                         <Setter Property="Padding" Value="8,0"/>
+                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                        <Setter Property="MaxHeight" Value="44"/>
                                         <Setter Property="ToolTip" Value="{Binding TenCoSo}"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>

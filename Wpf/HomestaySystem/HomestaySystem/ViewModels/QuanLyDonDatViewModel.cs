@@ -200,6 +200,11 @@ namespace HomestaySystem.ViewModels
                     DonDangChon.TenChuHome = chiTiet.TenChuHome;
                     DonDangChon.SoDienThoaiChuHome = chiTiet.SoDienThoaiChuHome;
                     DonDangChon.GhiChuQuyetToan = chiTiet.GhiChuQuyetToan;
+                    if (!string.IsNullOrWhiteSpace(chiTiet.TenNganHangKhach)) DonDangChon.TenNganHangKhach = chiTiet.TenNganHangKhach;
+                    if (!string.IsNullOrWhiteSpace(chiTiet.SoTaiKhoanKhach)) DonDangChon.SoTaiKhoanKhach = chiTiet.SoTaiKhoanKhach;
+                    if (!string.IsNullOrWhiteSpace(chiTiet.TenChuTaiKhoanKhach)) DonDangChon.TenChuTaiKhoanKhach = chiTiet.TenChuTaiKhoanKhach;
+                    if (!string.IsNullOrWhiteSpace(chiTiet.LyDoHoanTien)) DonDangChon.LyDoHoanTien = chiTiet.LyDoHoanTien;
+                    if (chiTiet.ThoiGianYeuCauHoan.HasValue) DonDangChon.ThoiGianYeuCauHoan = chiTiet.ThoiGianYeuCauHoan;
                     OnPropertyChanged(nameof(DonDangChon));
                 }
             }

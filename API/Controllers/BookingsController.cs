@@ -27,11 +27,16 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
             return NotFound("Một hoặc nhiều phòng không tồn tại.");
 
         var adults = request.Adults > 0 ? request.Adults : Math.Max(1, request.GuestCount);
-        var children = request.Children;
+        var children = Math.Max(0, request.Children);
         var guestCount = adults + children;
 
-        if (rooms.Any(r => r.SucChua < guestCount && r.SucChuaNguoiLon < adults))
-            return BadRequest("Số lượng khách vượt quá sức chứa tối đa của phòng.");
+        foreach (var r in rooms)
+        {
+            if (adults > r.SucChuaNguoiLon)
+                return BadRequest($"Số lượng người lớn ({adults}) vượt quá sức chứa người lớn tối đa của phòng {r.SoPhong} (tối đa {r.SucChuaNguoiLon} người lớn).");
+            if (children > r.SucChuaTreEm)
+                return BadRequest($"Số lượng trẻ em ({children}) vượt quá sức chứa trẻ em tối đa của phòng {r.SoPhong} (tối đa {r.SucChuaTreEm} trẻ em).");
+        }
 
         var hasBooking = await db.ChiTietDons.AnyAsync(d => request.RoomIds.Contains(d.MaPhong) &&
             (d.DonDatPhong.TrangThai == "ChoThanhToan" || d.DonDatPhong.TrangThai == "ChoDuyet" || d.DonDatPhong.TrangThai == "DaDuyet" ||
@@ -426,6 +431,40 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
         return Ok(new { message = "Yêu cầu hoàn tiền đã được gửi tới Quản trị viên để xét duyệt và chuyển tiền hoàn.", bookingId = booking.MaDonDatPhong });
     }
 
+    [HttpPost("{id:int}/bank-info")]
+    public async Task<IActionResult> ProvideBankInfo(
+        int id, [FromBody] ProvideBankInfoRequest request, CancellationToken cancellationToken)
+    {
+        var booking = await db.DonDatPhongs
+            .Include(b => b.KhachHang)
+            .SingleOrDefaultAsync(
+                b => b.MaDonDatPhong == id && b.MaKhachHang == GetAccountId(), cancellationToken);
+
+        if (booking is null)
+            return NotFound("Không tìm thấy đơn đặt phòng.");
+
+        if (!string.IsNullOrWhiteSpace(request.BankName))
+            booking.KhachHang.NganHang = request.BankName.Trim();
+        if (!string.IsNullOrWhiteSpace(request.AccountNumber))
+            booking.KhachHang.SoTaiKhoan = request.AccountNumber.Trim();
+        if (!string.IsNullOrWhiteSpace(request.AccountHolder))
+            booking.KhachHang.TenNguoiThuHuong = request.AccountHolder.Trim().ToUpperInvariant();
+
+        var bankNote = $" [STK Hoàn: {request.BankName.Trim()} - {request.AccountNumber.Trim()} - {request.AccountHolder.Trim().ToUpperInvariant()}]";
+        if (string.IsNullOrWhiteSpace(booking.LyDoHoanTien))
+        {
+            booking.LyDoHoanTien = bankNote.Trim();
+        }
+        else if (!booking.LyDoHoanTien.Contains("STK Hoàn:"))
+        {
+            booking.LyDoHoanTien += bankNote;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { message = "Đã cập nhật thông tin tài khoản ngân hàng thụ hưởng nhận tiền hoàn thành công." });
+    }
+
     private int GetAccountId()
     {
         var claim = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
@@ -473,7 +512,8 @@ public sealed class BookingsController(HomestayDbContext db) : ControllerBase
             booking.DanhGia != null,
             booking.DanhGia?.DiemSo,
             booking.DanhGia?.NoiDungDanhGia,
-            DateTime.SpecifyKind(booking.NgayDat, DateTimeKind.Utc));
+            DateTime.SpecifyKind(booking.NgayDat, DateTimeKind.Utc),
+            booking.LyDoHoanTien);
     }
 
     private static decimal CalculateBookingTotal(DonDatPhong booking)

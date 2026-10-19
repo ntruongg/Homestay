@@ -236,19 +236,21 @@ CREATE INDEX IX_DichVu_MaCoSoLuuTru ON DichVu(MaCoSoLuuTru);
 CREATE TABLE GiamGia (
     MaGiamGia INT IDENTITY PRIMARY KEY,
     TenMa NVARCHAR(50) NOT NULL UNIQUE,
+    TenChuongTrinh NVARCHAR(200) NULL,
     PhanTram INT NOT NULL CHECK (PhanTram > 0 AND PhanTram <= 100),
     ToiDa DECIMAL(12,2) NULL,
+    SoLuong INT NULL DEFAULT 100,
     NgayBatDau DATE NULL,
     NgayHetHan DATE NULL
 );
 
 SET IDENTITY_INSERT GiamGia ON;
-INSERT INTO GiamGia (MaGiamGia, TenMa, PhanTram, ToiDa, NgayBatDau, NgayHetHan) VALUES
-(1, N'HE2026', 15, 300000, '2026-05-01', '2026-09-30'),
-(2, N'CHAOBANMOI', 20, 500000, '2026-01-01', '2026-12-31'),
-(3, N'TRAVELOKA10', 10, 200000, '2026-01-01', '2026-12-31'),
-(4, N'STAYLYLUXURY', 12, 1000000, '2026-01-01', '2026-12-31'),
-(5, N'SUMMERVIBES', 15, 400000, '2026-06-01', '2026-08-31');
+INSERT INTO GiamGia (MaGiamGia, TenMa, TenChuongTrinh, PhanTram, ToiDa, SoLuong, NgayBatDau, NgayHetHan) VALUES
+(1, N'HE2026', N'Chào hè rực rỡ 2026 - Giảm 15% tối đa 300K', 15, 300000, 100, '2026-05-01', '2026-09-30'),
+(2, N'CHAOBANMOI', N'Ưu đãi thành viên mới - Giảm 20% tối đa 500K', 20, 500000, 100, '2026-01-01', '2026-12-31'),
+(3, N'TRAVELOKA10', N'Đối tác du lịch liên kết - Giảm 10% tối đa 200K', 10, 200000, 100, '2026-01-01', '2026-12-31'),
+(4, N'STAYLYLUXURY', N'Đặc quyền nghỉ dưỡng sang trọng - Giảm 12% tối đa 1 triệu', 12, 1000000, 100, '2026-01-01', '2026-12-31'),
+(5, N'SUMMERVIBES', N'Sắc màu mùa hè - Giảm 15% tối đa 400K', 15, 400000, 100, '2026-06-01', '2026-08-31');
 SET IDENTITY_INSERT GiamGia OFF;
 
 -- 10. BẢNG ĐƠN ĐẶT PHÒNG

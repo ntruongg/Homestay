@@ -28,10 +28,11 @@
     --radius-card: 16px;
     --radius-pill: 50px;
     --radius-banner: 24px;
+    --stayly-font: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 /* Global Reset & Base */
-* {
+*, *::before, *::after {
     box-sizing: border-box;
 }
 
@@ -39,14 +40,33 @@ html {
     scroll-behavior: smooth;
 }
 
+html,
+body,
+button,
+input,
+optgroup,
+select,
+textarea,
+.btn,
+.form-control,
+.form-select,
+.dropdown-menu,
+.modal,
+.badge,
+.nav-link,
+.navbar-brand,
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--stayly-font) !important;
+}
+
 body {
     margin: 0;
     padding: 0;
     color: var(--stayly-dark);
     background-color: var(--stayly-bg);
-    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -69,6 +89,86 @@ h6 {
     font-weight: 700;
     letter-spacing: -0.02em;
     margin-top: 0;
+}
+
+/* Color Utilities & Contrast Presets */
+.text-navy {
+    color: var(--stayly-navy) !important;
+}
+
+.text-dark {
+    color: var(--stayly-dark) !important;
+}
+
+.text-primary {
+    color: var(--stayly-primary) !important;
+}
+
+.text-muted {
+    color: var(--stayly-muted) !important;
+}
+
+/* Prevent white text on light badges */
+.badge.bg-light,
+.badge.bg-white,
+.badge-light,
+.badge.border {
+    --bs-badge-color: var(--stayly-dark) !important;
+    background-color: #f1f5f9 !important;
+    color: var(--stayly-dark) !important;
+}
+
+.badge.bg-light.text-navy,
+.badge.bg-white.text-navy,
+.badge.border.text-navy {
+    --bs-badge-color: var(--stayly-navy) !important;
+    color: var(--stayly-navy) !important;
+}
+
+.badge.bg-light.text-dark,
+.badge.bg-white.text-dark,
+.badge.border.text-dark {
+    --bs-badge-color: var(--stayly-dark) !important;
+    color: var(--stayly-dark) !important;
+}
+
+.badge.bg-light.text-primary,
+.badge.bg-white.text-primary,
+.badge.border.text-primary {
+    --bs-badge-color: var(--stayly-primary) !important;
+    color: var(--stayly-primary) !important;
+}
+
+.badge.bg-light.text-success,
+.badge.bg-white.text-success,
+.badge.border.text-success {
+    --bs-badge-color: #16a34a !important;
+    color: #16a34a !important;
+}
+
+.badge.bg-light.text-secondary,
+.badge.bg-white.text-secondary,
+.badge.border.text-secondary {
+    --bs-badge-color: #64748b !important;
+    color: #64748b !important;
+}
+
+.badge.bg-light.text-info,
+.badge.bg-white.text-info,
+.badge.border.text-info {
+    --bs-badge-color: #0284c7 !important;
+    color: #0284c7 !important;
+}
+
+.btn-light,
+.btn.bg-light {
+    color: var(--stayly-dark) !important;
+    background-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+}
+
+.btn-light.text-navy {
+    color: var(--stayly-navy) !important;
 }
 
 /* ==========================================================================

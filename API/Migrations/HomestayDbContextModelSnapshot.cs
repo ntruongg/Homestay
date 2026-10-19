@@ -246,7 +246,10 @@ namespace API.Migrations
 
                     b.HasIndex("MaKhachHang");
 
-                    b.ToTable("DonDatPhong", (string)null);
+                    b.ToTable("DonDatPhong", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_DonDatPhong_TrangThai", "[TrangThai] IN (N'ChoThanhToan', N'ChoDuyet', N'TuChoi', N'DaDuyet', N'DaHoanTat', N'YeuCauHoanTien', N'DaHoanTien', N'DaHuy')");
+                        });
                 });
 
             modelBuilder.Entity("API.Models.DonDatPhongDichVu", b =>
@@ -289,6 +292,13 @@ namespace API.Migrations
 
                     b.Property<int>("PhanTram")
                         .HasColumnType("int");
+
+                    b.Property<int?>("SoLuong")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TenChuongTrinh")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("TenMa")
                         .IsRequired()
@@ -452,6 +462,10 @@ namespace API.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("LyDoTuChoi")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<int>("MaVaiTro")
                         .HasColumnType("int");
 
@@ -480,6 +494,10 @@ namespace API.Migrations
 
                     b.Property<bool>("TrangThai")
                         .HasColumnType("bit");
+
+                    b.Property<string>("TrangThaiDuyet")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.HasKey("MaNguoiDung");
 
@@ -614,6 +632,17 @@ namespace API.Migrations
                     b.Property<int>("MaHoaDon")
                         .HasColumnType("int");
 
+                    b.Property<string>("GhiChuQuyetToan")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("MaGiaoDichQuyetToan")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("NgayQuyetToan")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("NgayThanhToan")
                         .HasColumnType("datetime");
 
@@ -624,6 +653,9 @@ namespace API.Migrations
 
                     b.Property<decimal>("PhanTramHoaHong")
                         .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal?>("SoTienQuyetToan")
+                        .HasColumnType("decimal(12,2)");
 
                     b.Property<decimal>("TienGoc")
                         .HasColumnType("decimal(12,2)");
@@ -636,6 +668,11 @@ namespace API.Migrations
 
                     b.Property<decimal>("TongTien")
                         .HasColumnType("decimal(12,2)");
+
+                    b.Property<string>("TrangThaiQuyetToan")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.HasKey("MaHoaDon");
 

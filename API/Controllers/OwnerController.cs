@@ -323,12 +323,19 @@ public sealed class OwnerController(
             if (normalizedStatus is "TuChoi" && booking.ThanhToan != null)
             {
                 booking.TrangThai = "YeuCauHoanTien";
-                booking.LyDoHoanTien = "Chủ cơ sở từ chối nhận đơn - Hoàn tiền 100%";
+                var ownerReason = !string.IsNullOrWhiteSpace(request.Reason) 
+                    ? request.Reason.Trim() 
+                    : "Chủ cơ sở từ chối nhận đơn";
+                booking.LyDoHoanTien = $"Chủ cơ sở từ chối: {ownerReason}";
                 booking.ThoiGianYeuCauHoan = DateTime.UtcNow;
             }
             else
             {
                 booking.TrangThai = normalizedStatus;
+                if (!string.IsNullOrWhiteSpace(request.Reason))
+                {
+                    booking.LyDoHoanTien = $"Chủ cơ sở từ chối: {request.Reason.Trim()}";
+                }
             }
 
             var roomIds = booking.ChiTietDons.Select(d => d.MaPhong).ToList();
@@ -357,9 +364,9 @@ public sealed class OwnerController(
     }
 
     [HttpPost("bookings/{id:int}/reject")]
-    public async Task<IActionResult> RejectBooking(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> RejectBooking(int id, [FromBody] UpdateBookingStatusRequest? request, CancellationToken cancellationToken)
     {
-        return await UpdateBookingStatus(id, new UpdateBookingStatusRequest { Status = "TuChoi" }, cancellationToken);
+        return await UpdateBookingStatus(id, request ?? new UpdateBookingStatusRequest { Status = "TuChoi" }, cancellationToken);
     }
 
     [HttpGet("bookings")]

@@ -135,7 +135,7 @@ namespace HomestaySystem.ViewModels
         public int SoDonChoXacNhan => _tatCaDon.Count(d => d.TrangThai == "Pending" || d.TrangThai == "ChoXacNhan" || d.TrangThai == "ChoDuyet");
         public int SoDonHoanThanh => _tatCaDon.Count(d => d.TrangThai == "CheckedOut" || d.TrangThai == "HoanThanh" || d.TrangThai == "DaHoanTat");
         public int SoDonYeuCauHoanTien => _tatCaDon.Count(d => d.TrangThai == "RefundRequested" || d.TrangThai == "YeuCauHoanTien");
-        public int SoDonCanXuLy => SoDonYeuCauHoanTien + SoDonChoXacNhan;
+        public int SoDonCanXuLy => SoDonYeuCauHoanTien;
         public bool CoDonCanXuLy => SoDonCanXuLy > 0;
 
         // Commands
@@ -143,8 +143,6 @@ namespace HomestaySystem.ViewModels
         public ICommand MoDialogHoanTienCommand { get; }
         public ICommand XacNhanHoanTienCommand { get; }
         public ICommand HuyDialogHoanTienCommand { get; }
-        public ICommand DuyetDonCommand { get; }
-        public ICommand HuyDonCommand { get; }
         public ICommand DongHoSoCommand { get; }
         public ICommand XemHoSoCommand { get; }
 
@@ -166,9 +164,6 @@ namespace HomestaySystem.ViewModels
             MoDialogHoanTienCommand = new RelayCommand(ThucHienMoDialogHoanTien, () => DonDangChon != null && DonDangChon.CoTheHoanTien);
             XacNhanHoanTienCommand = new RelayCommand(async () => await ThucHienXacNhanHoanTienAsync());
             HuyDialogHoanTienCommand = new RelayCommand(() => HienThiDialogHoanTien = false);
-
-            DuyetDonCommand = new RelayCommand(async () => await ThucHienDuyetDonAsync(), () => DonDangChon != null && DonDangChon.LaDonChoDuyet);
-            HuyDonCommand = new RelayCommand(async () => await ThucHienHuyDonAsync(), () => DonDangChon != null && (DonDangChon.LaDonChoDuyet || DonDangChon.TrangThai == "DaDuyet"));
 
             _ = TaiDanhSachDonDatAsync();
         }
@@ -330,83 +325,6 @@ namespace HomestaySystem.ViewModels
             else
             {
                 MessageBox.Show("Xử lý hoàn tiền thất bại. Vui lòng kiểm tra lại trạng thái đơn hàng.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-
-        private async Task ThucHienDuyetDonAsync()
-        {
-            if (DonDangChon == null) return;
-            var hoi = MessageBox.Show(
-                $"Xác nhận PHÊ DUYỆT tiếp nhận đơn đặt phòng {DonDangChon.MaDonHienThi} của khách '{DonDangChon.TenKhachHang}'?\nSau khi duyệt, đơn sẽ chuyển sang trạng thái Đã xác nhận / Sẵn sàng đón tiếp.",
-                "Xác nhận phê duyệt đơn",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (hoi != MessageBoxResult.Yes) return;
-
-            try
-            {
-                DangTaiDuLieu = true;
-                DonDangChon.TrangThai = "DaDuyet";
-                bool thanhCong = await _adminService.CapNhatDonDatAsync(DonDangChon);
-                if (thanhCong)
-                {
-                    CapNhatThongKe();
-                    OnPropertyChanged(nameof(DonDangChon));
-                    MessageBox.Show($"Đã phê duyệt tiếp nhận đơn {DonDangChon.MaDonHienThi} thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
-                    await TaiDanhSachDonDatAsync();
-                }
-                else
-                {
-                    MessageBox.Show("Không thể duyệt đơn. Vui lòng kiểm tra lại kết nối máy chủ!", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi khi phê duyệt đơn: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                DangTaiDuLieu = false;
-            }
-        }
-
-        private async Task ThucHienHuyDonAsync()
-        {
-            if (DonDangChon == null) return;
-            var hoi = MessageBox.Show(
-                $"Xác nhận TỪ CHỐI / HỦY đơn đặt phòng {DonDangChon.MaDonHienThi} của khách '{DonDangChon.TenKhachHang}'?\nLịch phòng sẽ được giải phóng trên hệ thống sàn.",
-                "Xác nhận từ chối / hủy đơn",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            if (hoi != MessageBoxResult.Yes) return;
-
-            try
-            {
-                DangTaiDuLieu = true;
-                DonDangChon.TrangThai = "DaHuy";
-                bool thanhCong = await _adminService.CapNhatDonDatAsync(DonDangChon);
-                if (thanhCong)
-                {
-                    CapNhatThongKe();
-                    OnPropertyChanged(nameof(DonDangChon));
-                    MessageBox.Show($"Đã từ chối / hủy đơn {DonDangChon.MaDonHienThi} thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
-                    await TaiDanhSachDonDatAsync();
-                }
-                else
-                {
-                    MessageBox.Show("Không thể từ chối / hủy đơn. Vui lòng kiểm tra lại kết nối máy chủ!", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi khi từ chối / hủy đơn: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                DangTaiDuLieu = false;
             }
         }
     }

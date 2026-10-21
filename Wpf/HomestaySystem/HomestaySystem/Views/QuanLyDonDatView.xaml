@@ -561,22 +561,16 @@
                     <!-- Footer Nút tác vụ theo ngữ cảnh -->
                     <Border Grid.Row="2" BorderBrush="{StaticResource MauVien}" BorderThickness="0,1,0,0" Padding="0,12,0,0">
                         <StackPanel>
-                            <!-- NÚT DUYỆT ĐƠN (ChoDuyet / Pending) -->
-                            <StackPanel Visibility="{Binding DonDangChon.LaDonChoDuyet, Converter={StaticResource BoolToVis}}">
-                                <Button Command="{Binding DuyetDonCommand}" Cursor="Hand" Margin="0,0,0,8"
-                                        Background="{StaticResource MauStaylyGreen}" Foreground="White"
-                                        FontSize="13" FontWeight="Bold" Height="40" ToolTip="Phê duyệt tiếp nhận đơn đặt phòng">
-                                    <Button.Resources>
-                                        <Style TargetType="Border">
-                                            <Setter Property="CornerRadius" Value="10"/>
-                                        </Style>
-                                    </Button.Resources>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <TextBlock Text="✔ " FontSize="13"/>
-                                        <TextBlock Text="Phê Duyệt Tiếp Nhận Đơn Này"/>
-                                    </StackPanel>
-                                </Button>
-                            </StackPanel>
+                            <!-- THÔNG BÁO: ĐƠN CHỜ CHỦ HOMESTAY XÉT DUYỆT (Chủ nhà duyệt trên Web Portal, Admin không duyệt thay) -->
+                            <Border Visibility="{Binding DonDangChon.LaDonChoDuyet, Converter={StaticResource BoolToVis}}"
+                                    Background="#FEF3C7" CornerRadius="8" Padding="12,10" Margin="0,0,0,10"
+                                    BorderBrush="#FDE68A" BorderThickness="1">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="⏳ " FontSize="13" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Đơn đang chờ Chủ homestay (Đối tác) xét duyệt tiếp nhận trên Web Portal" 
+                                               FontSize="12" FontWeight="SemiBold" Foreground="#B45309" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
 
                             <!-- NÚT HOÀN TIỀN (YeuCauHoanTien) -->
                             <StackPanel Visibility="{Binding DonDangChon.LaDonHoanTien, Converter={StaticResource BoolToVis}}">

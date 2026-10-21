@@ -745,9 +745,9 @@ namespace HomestaySystem.Services
                             MaGiaoDichQuyetToan = b.MaGiaoDichQuyetToan,
                             NgayQuyetToan = b.NgayQuyetToan,
                             GhiChuQuyetToan = b.GhiChuQuyetToan,
-                            TenNganHangChuHome = b.OwnerBankName ?? "Vietcombank (VCB)",
-                            SoTaiKhoanNganHangChuHome = b.OwnerAccountNumber ?? "Chưa cập nhật",
-                            ChuTaiKhoanNganHangChuHome = b.OwnerAccountHolder ?? b.OwnerName
+                            TenNganHangChuHome = !string.IsNullOrWhiteSpace(b.OwnerBankName) ? b.OwnerBankName : "Chưa cập nhật",
+                            SoTaiKhoanNganHangChuHome = !string.IsNullOrWhiteSpace(b.OwnerAccountNumber) ? b.OwnerAccountNumber : "Chưa cập nhật",
+                            ChuTaiKhoanNganHangChuHome = !string.IsNullOrWhiteSpace(b.OwnerAccountHolder) ? b.OwnerAccountHolder : (!string.IsNullOrWhiteSpace(b.OwnerName) ? b.OwnerName : "Chưa cập nhật")
                         }).ToList();
 
                         var query = list.Where(d => d.TrangThai == "CheckedOut" || d.TrangThai == "HoanThanh" || d.TrangThai == "DaHoanTat");

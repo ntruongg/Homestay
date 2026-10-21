@@ -124,7 +124,7 @@ namespace HomestaySystem.ViewModels
         private string _suaKhuVuc = string.Empty;
         private string _suaChinhSach = string.Empty;
         private string _suaTenChuHome = string.Empty;
-        private decimal _suaGiaNiemYet = 650000;
+        private decimal _suaGiaNiemYet = 0;
         private decimal _suaGiaTrungBinh;
 
         public bool HienThiDialogChinhSua
@@ -326,7 +326,7 @@ namespace HomestaySystem.ViewModels
             SuaTenChuHome = cs.TenChuHome ?? string.Empty;
             SuaGiaNiemYet = cs.GiaTrungBinh > 0
                 ? cs.GiaTrungBinh
-                : (cs.GiaThapNhat > 0 ? cs.GiaThapNhat : 650000m);
+                : (cs.GiaThapNhat > 0 ? cs.GiaThapNhat : 0m);
             SuaGiaTrungBinh = SuaGiaNiemYet;
 
             HienThiDialogChinhSua = true;

@@ -677,6 +677,61 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
         }
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetOwnerBookingNotifications(CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        if (string.IsNullOrWhiteSpace(token))
+            return Unauthorized(new { success = false, message = "Chưa đăng nhập." });
+
+        try
+        {
+            var result = await api.GetOwnerDashboardAsync(token, cancellationToken);
+            if (!result.Success || result.Result is null)
+                return BadRequest(new { success = false, message = result.Error ?? "Không thể lấy thông báo." });
+
+            var bookings = result.Result.Bookings ?? [];
+            var pendingCount = bookings.Count(b => b.Status is "Pending" or "ChoDuyet" or "YeuCauHoanTien");
+
+            var notifications = bookings.Take(25).Select(b =>
+            {
+                var diff = DateTime.UtcNow - b.CreatedDate.ToUniversalTime();
+                string timeAgo = diff.TotalMinutes < 1 ? "Vừa xong"
+                    : diff.TotalMinutes < 60 ? $"{(int)diff.TotalMinutes} phút trước"
+                    : diff.TotalHours < 24 ? $"{(int)diff.TotalHours} giờ trước"
+                    : diff.TotalDays < 7 ? $"{(int)diff.TotalDays} ngày trước"
+                    : b.CreatedDate.ToString("dd/MM/yyyy");
+
+                return new
+                {
+                    bookingId = b.Id,
+                    propertyName = b.PropertyName,
+                    roomNumbers = b.RoomNumbers,
+                    guestName = b.GuestName,
+                    guestPhone = b.GuestPhone,
+                    checkIn = b.CheckIn.ToString("dd/MM/yyyy"),
+                    checkOut = b.CheckOut.ToString("dd/MM/yyyy"),
+                    status = b.Status,
+                    totalAmount = b.TotalAmount,
+                    createdDate = b.CreatedDate,
+                    timeAgo = timeAgo
+                };
+            }).ToList();
+
+            return Ok(new
+            {
+                success = true,
+                total = bookings.Count,
+                pendingCount = pendingCount,
+                notifications
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, message = ex.Message });
+        }
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateBookingStatus(

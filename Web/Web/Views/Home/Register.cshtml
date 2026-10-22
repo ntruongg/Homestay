@@ -352,9 +352,18 @@
         }
 
         const monitoredFields = [
-            'FullNameInput', 'PhoneInput', 'EmailInput', 'PasswordInput',
+            'FullNameInput', 'DateOfBirthInput', 'PhoneInput', 'EmailInput', 'PasswordInput',
             'CitizenIdInput', 'BankNameInput', 'AccountNumberInput', 'AccountHolderInput'
         ];
+
+        const dobInputInit = document.getElementById('DateOfBirthInput');
+        if (dobInputInit) {
+            const today = new Date();
+            const maxYear = today.getFullYear() - 18;
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            dobInputInit.max = `${maxYear}-${month}-${day}`;
+        }
 
         monitoredFields.forEach(id => {
             const el = document.getElementById(id);
@@ -403,11 +412,24 @@
                 markInvalid('FullNameInput', 'FullNameInputError', 'Họ tên bắt buộc và chỉ chứa chữ cái, khoảng trắng.');
             }
 
-            // 1.5 DateOfBirth
+            // 1.5 DateOfBirth (Tối thiểu 18 tuổi)
             const dobEl = document.getElementById('DateOfBirthInput');
             const dob = dobEl ? dobEl.value : '';
             if (!dob) {
                 markInvalid('DateOfBirthInput', 'DateOfBirthInputError', 'Vui lòng chọn ngày sinh.');
+            } else {
+                const birthDate = new Date(dob);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                if (isNaN(birthDate.getTime()) || birthDate.getFullYear() < 1900) {
+                    markInvalid('DateOfBirthInput', 'DateOfBirthInputError', 'Năm sinh không hợp lệ.');
+                } else if (age < 18) {
+                    markInvalid('DateOfBirthInput', 'DateOfBirthInputError', 'Bạn phải từ đủ 18 tuổi trở lên để đăng ký tài khoản.');
+                }
             }
 
             // 2. Phone

@@ -1,6 +1,7 @@
 @model IReadOnlyList<PropertySummary>
 @{
     ViewData["Title"] = "Stayly - Kỳ nghỉ trong mơ bắt đầu từ đây";
+    var isSearchApplied = ViewBag.IsSearchApplied is true;
 }
 
 <!-- 3. Hero Banner & Floating Search Box -->
@@ -46,7 +47,7 @@
                         <i class="bi bi-calendar-check-fill"></i>
                         <span>Ngày nhận</span>
                     </label>
-                    <input type="date" id="searchInputCheckIn" name="checkIn">
+                    <input type="date" id="searchInputCheckIn" name="checkIn" value="@(ViewBag.CheckIn ?? "")">
                 </div>
 
                 <div class="search-divider d-none d-md-block"></div>
@@ -57,7 +58,7 @@
                         <i class="bi bi-calendar-x-fill"></i>
                         <span>Ngày trả</span>
                     </label>
-                    <input type="date" id="searchInputCheckOut" name="checkOut">
+                    <input type="date" id="searchInputCheckOut" name="checkOut" value="@(ViewBag.CheckOut ?? "")">
                 </div>
 
                 <div class="search-divider d-none d-md-block"></div>
@@ -72,10 +73,10 @@
                         <span id="guestSummaryText">2 người lớn · 0 trẻ em</span>
                         <i class="bi bi-chevron-down ms-auto text-muted small"></i>
                     </button>
-                    <input type="hidden" name="adults" id="inputAdults" value="2">
-                    <input type="hidden" name="children" id="inputChildren" value="0">
+                    <input type="hidden" name="adults" id="inputAdults" value="@(ViewBag.Adults ?? 2)">
+                    <input type="hidden" name="children" id="inputChildren" value="@(ViewBag.Children ?? 0)">
                     <input type="hidden" name="childrenAges" id="inputChildrenAges" value="">
-                    <input type="hidden" name="guests" id="searchInputGuests" value="2">
+                    <input type="hidden" name="guests" id="searchInputGuests" value="@(((int?)(ViewBag.Adults) ?? 2) + ((int?)(ViewBag.Children) ?? 0))">
 
                     <!-- Guest Popover Dropdown -->
                     <div class="guest-popover-card d-none" id="guestPopover">
@@ -479,27 +480,132 @@
             propertyType: 'all',
             amenities: [],
             selectedRating: 0,
-            sortBy: 'featured'
+            sortBy: 'featured',
+            adults: @(ViewBag.Adults ?? 2),
+            children: @(ViewBag.Children ?? 0),
+            applied: @(isSearchApplied ? "true" : "false")
         };
+
+        // Helper to construct Room Details URL with synchronized check-in, check-out, and guest counts
+        window.getDetailsUrl = function (roomId) {
+            const isApplied = sessionStorage.getItem('stayly_search_applied') === 'true';
+            if (!isApplied) {
+                return `/Home/Details/${roomId}`;
+            }
+
+            const checkInVal = sessionStorage.getItem('stayly_search_checkIn') || document.getElementById('searchInputCheckIn')?.value || '';
+            const checkOutVal = sessionStorage.getItem('stayly_search_checkOut') || document.getElementById('searchInputCheckOut')?.value || '';
+            const adultsVal = sessionStorage.getItem('stayly_search_adults') !== null ? sessionStorage.getItem('stayly_search_adults') : (document.getElementById('inputAdults')?.value || 2);
+            const childrenVal = sessionStorage.getItem('stayly_search_children') !== null ? sessionStorage.getItem('stayly_search_children') : (document.getElementById('inputChildren')?.value || 0);
+
+            const params = new URLSearchParams();
+            if (checkInVal) params.set('checkIn', checkInVal);
+            if (checkOutVal) params.set('checkOut', checkOutVal);
+            if (adultsVal !== undefined && adultsVal !== null && adultsVal !== '') params.set('adults', adultsVal);
+            if (childrenVal !== undefined && childrenVal !== null && childrenVal !== '') params.set('children', childrenVal);
+
+            const qs = params.toString();
+            return `/Home/Details/${roomId}${qs ? '?' + qs : ''}`;
+        };
+
+        window.updateCardDetailsUrls = function () {
+            document.querySelectorAll('#roomListContainer a.btn-view-details, #roomListContainer h3.room-title a').forEach(a => {
+                const href = a.getAttribute('href');
+                if (!href) return;
+                const match = href.match(/\/Home\/Details\/(\d+)/);
+                if (match) {
+                    const roomId = match[1];
+                    a.setAttribute('href', getDetailsUrl(roomId));
+                }
+            });
+        };
+
+        function formatLocalDate(d) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
 
         // Initialize today's date for check-in & tomorrow for check-out
         const today = new Date();
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
+        const todayStr = formatLocalDate(today);
+        const tomorrowStr = formatLocalDate(tomorrow);
 
         const checkInEl = document.getElementById('searchInputCheckIn');
         const checkOutEl = document.getElementById('searchInputCheckOut');
-        if (checkInEl && !checkInEl.value) {
-            checkInEl.value = today.toISOString().split('T')[0];
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasUrlSearch = urlParams.has('checkIn') || urlParams.has('location') || urlParams.has('adults') || urlParams.has('children');
+
+        const initCheckIn = urlParams.get('checkIn') || checkInEl?.value;
+        const initCheckOut = urlParams.get('checkOut') || checkOutEl?.value;
+        const initAdults = urlParams.get('adults') || document.getElementById('inputAdults')?.value;
+        const initChildren = urlParams.get('children') || document.getElementById('inputChildren')?.value;
+
+        if (hasUrlSearch) {
+            sessionStorage.setItem('stayly_search_applied', 'true');
+            if (initCheckIn) sessionStorage.setItem('stayly_search_checkIn', initCheckIn);
+            if (initCheckOut) sessionStorage.setItem('stayly_search_checkOut', initCheckOut);
+            if (initAdults) sessionStorage.setItem('stayly_search_adults', initAdults);
+            if (initChildren !== null && initChildren !== undefined) sessionStorage.setItem('stayly_search_children', initChildren);
+        } else {
+            // Không có query parameters tìm kiếm: xóa trạng thái tìm kiếm cũ để chỉ lọc & đồng bộ khi bấm nút
+            sessionStorage.removeItem('stayly_search_applied');
+            sessionStorage.removeItem('stayly_search_checkIn');
+            sessionStorage.removeItem('stayly_search_checkOut');
+            sessionStorage.removeItem('stayly_search_adults');
+            sessionStorage.removeItem('stayly_search_children');
         }
-        if (checkOutEl && !checkOutEl.value) {
-            checkOutEl.value = tomorrow.toISOString().split('T')[0];
+
+        if (checkInEl) {
+            checkInEl.value = initCheckIn || todayStr;
+            checkInEl.min = todayStr;
+
+            checkInEl.addEventListener('change', () => {
+                if (checkInEl.value) {
+                    const nDay = new Date(checkInEl.value);
+                    nDay.setDate(nDay.getDate() + 1);
+                    const minOut = formatLocalDate(nDay);
+                    checkOutEl.min = minOut;
+                    if (checkOutEl.value && checkOutEl.value <= checkInEl.value) {
+                        checkOutEl.value = minOut;
+                    }
+                }
+            });
         }
+
+        if (checkOutEl) {
+            checkOutEl.value = initCheckOut || tomorrowStr;
+            if (checkInEl && checkInEl.value) {
+                const nDay = new Date(checkInEl.value);
+                nDay.setDate(nDay.getDate() + 1);
+                const minOut = formatLocalDate(nDay);
+                checkOutEl.min = minOut;
+                if (checkOutEl.value <= checkInEl.value) {
+                    checkOutEl.value = minOut;
+                }
+            }
+        }
+
+        if (initAdults) {
+            guestState.adults = parseInt(initAdults) || 2;
+        }
+        if (initChildren) {
+            guestState.children = parseInt(initChildren) || 0;
+        }
+        updateGuestUI();
 
         // Fetch rooms data on page load
         async function fetchInitialRooms() {
             try {
-                const response = await fetch(`/Home/GetRoomsJson?location=${encodeURIComponent(activeFilters.location)}`);
+                let qUrl = `/Home/GetRoomsJson?location=${encodeURIComponent(activeFilters.location)}`;
+                if (activeFilters.applied) {
+                    qUrl += `&adults=${activeFilters.adults}&children=${activeFilters.children}`;
+                }
+                const response = await fetch(qUrl);
                 if (response.ok) {
                     const data = await response.json();
                     allRoomsData = normalizeRoomsData(data);
@@ -529,6 +635,8 @@
                 const rating = Number(rawRating) > 0 ? Number(Number(rawRating).toFixed(1)) : 0;
                 const description = item.description || `Không gian lưu trú ${type.toLowerCase()} thanh bình, trang bị đầy đủ tiện nghi tại ${address}.`;
                 const amenities = ['Wifi miễn phí', 'Điều hòa', 'Chỗ đỗ xe'];
+                const maxAdultCapacity = Number(item.maxAdultCapacity !== undefined ? item.maxAdultCapacity : (item.MaxAdultCapacity !== undefined ? item.MaxAdultCapacity : 2));
+                const maxChildCapacity = Number(item.maxChildCapacity !== undefined ? item.maxChildCapacity : (item.MaxChildCapacity !== undefined ? item.MaxChildCapacity : 1));
 
                 let images = [];
                 if (item.images && Array.isArray(item.images) && item.images.length > 0) {
@@ -551,7 +659,9 @@
                     reviewCount,
                     description,
                     amenities,
-                    images
+                    images,
+                    maxAdultCapacity,
+                    maxChildCapacity
                 };
             });
         }
@@ -670,11 +780,14 @@
                                         </div>
 
                                         <h3 class="room-title">
-                                            <a href="/Home/Details/${room.id}" title="${escapeHtml(room.name)}">${escapeHtml(room.name)}</a>
+                                            <a href="${getDetailsUrl(room.id)}" title="${escapeHtml(room.name)}">${escapeHtml(room.name)}</a>
                                         </h3>
 
-                                        <div class="room-rating-row">
+                                        <div class="room-rating-row d-flex align-items-center flex-wrap gap-2">
                                             ${ratingBadgeHtml}
+                                            <span class="badge bg-light text-secondary border rounded-pill px-2 py-1 small">
+                                                <i class="bi bi-people-fill text-primary me-1"></i>Tối đa ${room.maxAdultCapacity} NL &bull; ${room.maxChildCapacity} TE
+                                            </span>
                                         </div>
 
                                         <p class="room-description">${escapeHtml(room.description)}</p>
@@ -694,7 +807,7 @@
                                             </div>
                                         </div>
 
-                                        <a href="/Home/Details/${room.id}" class="btn-view-details">
+                                        <a href="${getDetailsUrl(room.id)}" class="btn-view-details">
                                             <span>Xem chi tiết</span>
                                             <i class="bi bi-arrow-right-short fs-5"></i>
                                         </a>
@@ -786,6 +899,22 @@
             }
         };
 
+        function stripTones(str) {
+            if (!str) return '';
+            if (window.StaylyAddress && typeof window.StaylyAddress.removeVietnameseTones === 'function') {
+                return window.StaylyAddress.removeVietnameseTones(str);
+            }
+            return String(str).toLowerCase()
+                .replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a")
+                .replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e")
+                .replace(/ì|í|ị|ỉ|ĩ/g, "i")
+                .replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o")
+                .replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u")
+                .replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y")
+                .replace(/đ/g, "d")
+                .trim();
+        }
+
         // Filter calculation & rendering (Ajax - No page reload)
         function applyFiltersAndRender(resetPage = true) {
             if (resetPage) {
@@ -797,10 +926,26 @@
             // 1. Search Location
             if (activeFilters.location && activeFilters.location.trim() !== '') {
                 const loc = activeFilters.location.trim().toLowerCase();
-                filtered = filtered.filter(r => 
-                    r.address.toLowerCase().includes(loc) || 
-                    r.name.toLowerCase().includes(loc)
-                );
+                const locNoTone = stripTones(loc);
+                filtered = filtered.filter(r => {
+                    const addr = (r.address || '').toLowerCase();
+                    const name = (r.name || '').toLowerCase();
+                    if (addr.includes(loc) || name.includes(loc)) return true;
+                    if (locNoTone) {
+                        return stripTones(addr).includes(locNoTone) || stripTones(name).includes(locNoTone);
+                    }
+                    return false;
+                });
+            }
+
+            // 1.5 Filter by Capacity (Adults & Children)
+            if (activeFilters.applied) {
+                if (activeFilters.adults > 0) {
+                    filtered = filtered.filter(r => (r.maxAdultCapacity || 2) >= activeFilters.adults);
+                }
+                if (activeFilters.children > 0) {
+                    filtered = filtered.filter(r => (r.maxChildCapacity !== undefined ? r.maxChildCapacity : 1) >= activeFilters.children);
+                }
             }
 
             // 2. Price Range (Slider or quick buttons)
@@ -888,11 +1033,51 @@
         }
 
         // Global Event Handlers for Filters
-        window.handleSearchSubmit = function (e) {
-            e.preventDefault();
+        window.handleSearchSubmit = async function (e) {
+            if (e) e.preventDefault();
             const locInput = document.getElementById('searchInputLocation');
+            const checkInEl = document.getElementById('searchInputCheckIn');
+            const checkOutEl = document.getElementById('searchInputCheckOut');
+            const adultsEl = document.getElementById('inputAdults');
+            const childrenEl = document.getElementById('inputChildren');
+
             activeFilters.location = locInput ? locInput.value.trim() : '';
+            activeFilters.adults = adultsEl ? (parseInt(adultsEl.value) || 2) : 2;
+            activeFilters.children = childrenEl ? (parseInt(childrenEl.value) || 0) : 0;
+            activeFilters.applied = true;
+
+            // Chỉ lọc và đồng bộ hóa khi ấn nút tìm kiếm
+            try {
+                sessionStorage.setItem('stayly_search_applied', 'true');
+                if (checkInEl && checkInEl.value) sessionStorage.setItem('stayly_search_checkIn', checkInEl.value);
+                if (checkOutEl && checkOutEl.value) sessionStorage.setItem('stayly_search_checkOut', checkOutEl.value);
+                sessionStorage.setItem('stayly_search_adults', activeFilters.adults);
+                sessionStorage.setItem('stayly_search_children', activeFilters.children);
+                if (activeFilters.location) sessionStorage.setItem('stayly_search_location', activeFilters.location);
+
+                const searchParams = new URLSearchParams();
+                if (activeFilters.location) searchParams.set('location', activeFilters.location);
+                if (checkInEl && checkInEl.value) searchParams.set('checkIn', checkInEl.value);
+                if (checkOutEl && checkOutEl.value) searchParams.set('checkOut', checkOutEl.value);
+                searchParams.set('adults', activeFilters.adults);
+                searchParams.set('children', activeFilters.children);
+                window.history.pushState(null, '', '?' + searchParams.toString());
+            } catch (_) {}
+
+            // Truy vấn server với đầy đủ tiêu chí lọc địa điểm và sức chứa người lớn, trẻ em
+            try {
+                const qLoc = encodeURIComponent(activeFilters.location);
+                const resp = await fetch(`/Home/GetRoomsJson?location=${qLoc}&adults=${activeFilters.adults}&children=${activeFilters.children}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (Array.isArray(data)) {
+                        allRoomsData = normalizeRoomsData(data);
+                    }
+                }
+            } catch (_) {}
+
             applyFiltersAndRender(true);
+            updateCardDetailsUrls();
         };
 
         window.handlePriceSliderInput = function (val) {
@@ -998,7 +1183,10 @@
                 propertyType: 'all',
                 amenities: [],
                 selectedRating: 0,
-                sortBy: 'featured'
+                sortBy: 'featured',
+                adults: 2,
+                children: 0,
+                applied: false
             };
 
             const locInput = document.getElementById('searchInputLocation');
@@ -1031,8 +1219,8 @@
         const locDropdown = document.getElementById('destinationAutocompleteDropdown');
         if (locInput && locDropdown && window.StaylyAddress) {
             StaylyAddress.initDestinationAutocomplete(locInput, locDropdown, function (selectedCity) {
-                activeFilters.location = selectedCity;
-                applyFiltersAndRender(true);
+                locInput.value = selectedCity;
+                // Chỉ điền vào ô input - không tự động lọc hay submit, chỉ lọc & đồng bộ khi bấm nút Tìm kiếm
             });
         }
 
@@ -1040,7 +1228,6 @@
         fetchInitialRooms();
 
         // Check for login requirement
-        const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('login') === 'true') {
             setTimeout(() => {
                 const modalEl = document.getElementById('authModal');

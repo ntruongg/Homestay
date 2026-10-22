@@ -12,7 +12,9 @@ public sealed record PropertySummary(
     decimal MinimumPrice,
     string? CoverImageUrl,
     double Rating = 0.0,
-    int ReviewCount = 0);
+    int ReviewCount = 0,
+    int MaxAdultCapacity = 2,
+    int MaxChildCapacity = 1);
 
 public sealed record RoomAmenityItem(int Id, string Name);
 
@@ -97,10 +99,48 @@ public sealed class LoginInput
     public string Password { get; set; } = string.Empty;
 }
 
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
+public sealed class MinimumAgeAttribute : ValidationAttribute
+{
+    private readonly int _minAge;
+
+    public MinimumAgeAttribute(int minAge)
+    {
+        _minAge = minAge;
+        ErrorMessage = $"Bạn phải từ đủ {minAge} tuổi trở lên để đăng ký tài khoản.";
+    }
+
+    protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+    {
+        if (value is null)
+            return ValidationResult.Success;
+
+        if (value is DateTime dateOfBirth)
+        {
+            var cutoff = DateTime.Today.AddYears(-_minAge);
+            if (dateOfBirth.Date > cutoff)
+            {
+                return new ValidationResult(ErrorMessage ?? $"Bạn phải từ đủ {_minAge} tuổi trở lên để đăng ký tài khoản.");
+            }
+
+            if (dateOfBirth.Year < 1900)
+            {
+                return new ValidationResult("Năm sinh không hợp lệ.");
+            }
+
+            return ValidationResult.Success;
+        }
+
+        return new ValidationResult("Ngày sinh không hợp lệ.");
+    }
+}
+
 public class RegisterGuestInput
 {
     [Required]
     public string FullName { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Vui lòng chọn ngày sinh.")]
+    [MinimumAge(18, ErrorMessage = "Bạn phải từ đủ 18 tuổi trở lên để đăng ký tài khoản.")]
     public DateTime? DateOfBirth { get; set; }
     public string? Gender { get; set; }
     [Required, Phone]
@@ -130,6 +170,7 @@ public sealed class ProfileInput
 {
     [Required]
     public string FullName { get; set; } = string.Empty;
+    [MinimumAge(18, ErrorMessage = "Bạn phải từ đủ 18 tuổi trở lên.")]
     public DateTime? DateOfBirth { get; set; }
     public string? Gender { get; set; }
     [Required, Phone]

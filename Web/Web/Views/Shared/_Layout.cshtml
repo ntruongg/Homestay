@@ -218,7 +218,12 @@
 
                             <div class="modal-form-group">
                                 <label class="modal-form-label" for="loginPassword">Mật khẩu</label>
-                                <input type="password" id="loginPassword" class="modal-input-field" placeholder="Nhập mật khẩu của bạn" required autocomplete="current-password">
+                                <div class="password-field-wrapper">
+                                    <input type="password" id="loginPassword" class="modal-input-field" placeholder="Nhập mật khẩu của bạn" required autocomplete="current-password">
+                                    <button type="button" class="btn-toggle-password" data-target="loginPassword" title="Hiện mật khẩu" tabindex="-1">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -293,8 +298,13 @@
                             </div>
 
                             <div class="modal-form-group">
-                                <label class="modal-form-label" for="regPassword">Mật khẩu (8-20 ký tự, gồm chữ hoa, thường, số, ký tự đặc biệt) <span class="text-danger">*</span></label>
-                                <input type="password" id="regPassword" minlength="8" maxlength="20" class="modal-input-field" placeholder="Ví dụ: Stayly@2026" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$" title="Mật khẩu phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt" autocomplete="new-password">
+                                <label class="modal-form-label" for="regPassword">Mật khẩu<span class="text-danger">*</span></label>
+                                <div class="password-field-wrapper">
+                                    <input type="password" id="regPassword" minlength="8" maxlength="20" class="modal-input-field" placeholder="Ví dụ: Stayly@2026" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$" title="Mật khẩu phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt" autocomplete="new-password">
+                                    <button type="button" class="btn-toggle-password" data-target="regPassword" title="Hiện mật khẩu" tabindex="-1">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
                                 <div class="field-error-text" id="regPasswordError"></div>
                             </div>
 
@@ -570,6 +580,48 @@
             }
         }
 
+        /* ==========================================================================
+           Global Password Visibility Toggle
+           ========================================================================== */
+        window.togglePasswordVisibility = function (targetIdOrEl, btn) {
+            let input = null;
+            if (typeof targetIdOrEl === 'string') {
+                input = document.getElementById(targetIdOrEl);
+            } else if (targetIdOrEl instanceof HTMLElement) {
+                input = targetIdOrEl;
+            }
+            if (!input && btn) {
+                const wrapper = btn.closest('.password-field-wrapper') || btn.closest('.position-relative') || btn.parentElement;
+                input = wrapper ? wrapper.querySelector('input') : null;
+            }
+            if (!input) return;
+
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+
+            const icon = btn ? btn.querySelector('i') : null;
+            if (icon) {
+                if (isPassword) {
+                    icon.classList.remove('bi-eye');
+                    icon.classList.add('bi-eye-slash');
+                    btn.setAttribute('title', 'Ẩn mật khẩu');
+                } else {
+                    icon.classList.remove('bi-eye-slash');
+                    icon.classList.add('bi-eye');
+                    btn.setAttribute('title', 'Hiện mật khẩu');
+                }
+            }
+        };
+
+        // Event delegation for all password visibility buttons
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.btn-toggle-password');
+            if (!btn) return;
+            e.preventDefault();
+            const targetId = btn.dataset.target || btn.getAttribute('data-target');
+            window.togglePasswordVisibility(targetId, btn);
+        });
+
         function clearFieldError(fieldId, errorId) {
             const field = document.getElementById(fieldId);
             const errEl = document.getElementById(errorId);
@@ -583,7 +635,7 @@
         }
 
         function clearAllValidationErrors() {
-            ['regFullName', 'regPhone', 'regEmail', 'regPassword', 'guestOtpInput'].forEach(id => {
+            ['regFullName', 'regPhone', 'regEmail', 'regPassword', 'regDob', 'guestOtpInput'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('is-invalid');
                 const err = document.getElementById(id + 'Error');
@@ -596,13 +648,22 @@
 
         // Setup real-time error clearing when user types
         document.addEventListener('DOMContentLoaded', function () {
-            ['regFullName', 'regPhone', 'regEmail', 'regPassword', 'guestOtpInput'].forEach(id => {
+            ['regFullName', 'regPhone', 'regEmail', 'regPassword', 'regDob', 'guestOtpInput'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
                     el.addEventListener('input', () => clearFieldError(id, id + 'Error'));
                     el.addEventListener('change', () => clearFieldError(id, id + 'Error'));
                 }
             });
+
+            const regDobEl = document.getElementById('regDob');
+            if (regDobEl) {
+                const today = new Date();
+                const maxYear = today.getFullYear() - 18;
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                regDobEl.max = `${maxYear}-${month}-${day}`;
+            }
         });
 
         // Check localStorage.getItem('guestUser') on page load to dynamically adapt Navbar
@@ -746,10 +807,25 @@
                 hasError = true;
             }
 
-            // 1.5 Validate DateOfBirth
+            // 1.5 Validate DateOfBirth (Tối thiểu 18 tuổi)
             if (!dob) {
                 setFieldError('regDob', 'regDobError', 'Vui lòng chọn ngày sinh.');
                 hasError = true;
+            } else {
+                const birthDate = new Date(dob);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                if (isNaN(birthDate.getTime()) || birthDate.getFullYear() < 1900) {
+                    setFieldError('regDob', 'regDobError', 'Năm sinh không hợp lệ.');
+                    hasError = true;
+                } else if (age < 18) {
+                    setFieldError('regDob', 'regDobError', 'Bạn phải từ đủ 18 tuổi trở lên để đăng ký tài khoản.');
+                    hasError = true;
+                }
             }
 
             // 2. Validate Phone (VN 10 digits starting with 0)

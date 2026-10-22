@@ -38,6 +38,15 @@ public sealed class ProfileController(
         if (await db.NguoiDungs.AnyAsync(x => x.MaNguoiDung != account.MaNguoiDung && (x.DienThoai == phone), cancellationToken))
             return Conflict("Số điện thoại này đã được sử dụng.");
 
+        if (request.DateOfBirth.HasValue)
+        {
+            if (request.DateOfBirth.Value.Date > DateTime.Today.AddYears(-18))
+                return BadRequest("Bạn phải từ đủ 18 tuổi trở lên.");
+
+            if (request.DateOfBirth.Value.Year < 1900)
+                return BadRequest("Năm sinh không hợp lệ.");
+        }
+
         account.HoTen = request.FullName.Trim();
         account.NgaySinh = request.DateOfBirth;
         account.GioiTinh = request.Gender;

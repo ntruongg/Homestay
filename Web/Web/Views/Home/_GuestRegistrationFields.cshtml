@@ -11,8 +11,10 @@
 
 <div class="row g-2 mb-3">
     <div class="col-md-7">
-        <label class="form-label fw-semibold">Ngày sinh</label>
-        <input asp-for="DateOfBirth" id="DateOfBirthInput" type="date" class="form-control rounded-pill px-3 py-2">
+        <label class="form-label fw-semibold">Ngày sinh <span class="text-danger">*</span></label>
+        <input asp-for="DateOfBirth" id="DateOfBirthInput" type="date" class="form-control rounded-pill px-3 py-2" required>
+        <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
+        <div class="field-error-text" id="DateOfBirthInputError"></div>
     </div>
     <div class="col-md-5">
         <label class="form-label fw-semibold">Giới tính</label>
@@ -38,8 +40,13 @@
 </div>
 
 <div class="form-group mb-3">
-    <label class="form-label fw-semibold">Mật khẩu (8-20 ký tự, gồm chữ hoa, thường, số, ký tự đặc biệt) <span class="text-danger">*</span></label>
-    <input asp-for="Password" id="PasswordInput" type="password" minlength="8" maxlength="20" class="form-control rounded-pill px-3 py-2" placeholder="Ví dụ: Stayly@2026" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$" title="Mật khẩu phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt" required>
+    <label class="form-label fw-semibold">Mật khẩu<span class="text-danger">*</span></label>
+    <div class="password-field-wrapper">
+        <input asp-for="Password" id="PasswordInput" type="password" minlength="8" maxlength="20" class="form-control rounded-pill px-3 py-2" placeholder="Ví dụ: Stayly@2026" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$" title="Mật khẩu phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt" required>
+        <button type="button" class="btn-toggle-password" data-target="PasswordInput" title="Hiện mật khẩu" tabindex="-1">
+            <i class="bi bi-eye"></i>
+        </button>
+    </div>
     <span asp-validation-for="Password" class="text-danger small"></span>
     <div class="field-error-text" id="PasswordInputError"></div>
 </div>

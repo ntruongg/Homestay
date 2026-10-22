@@ -351,18 +351,33 @@
 
                                     <div class="mb-3">
                                         <label class="form-label small fw-bold">Mật khẩu hiện tại *</label>
-                                        <input asp-for="PasswordInput.CurrentPassword" type="password" class="form-control rounded-pill px-3 py-2" required />
+                                        <div class="password-field-wrapper">
+                                            <input asp-for="PasswordInput.CurrentPassword" id="currentPasswordInput" type="password" class="form-control rounded-pill px-3 py-2" required />
+                                            <button type="button" class="btn-toggle-password" data-target="currentPasswordInput" title="Hiện mật khẩu" tabindex="-1">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div class="mb-3">
-                                        <label class="form-label small fw-bold">Mật khẩu mới (8-20 ký tự, gồm chữ hoa, thường, số, ký tự đặc biệt) *</label>
-                                        <input asp-for="PasswordInput.NewPassword" type="password" class="form-control rounded-pill px-3 py-2" required minlength="8" maxlength="20" placeholder="Ví dụ: Stayly@2026" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$" title="Mật khẩu mới phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt" />
+                                        <label class="form-label small fw-bold">Mật khẩu mới</label>
+                                        <div class="password-field-wrapper">
+                                            <input asp-for="PasswordInput.NewPassword" id="newPasswordInput" type="password" class="form-control rounded-pill px-3 py-2" required minlength="8" maxlength="20" placeholder="Ví dụ: Stayly@2026" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$" title="Mật khẩu mới phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt" />
+                                            <button type="button" class="btn-toggle-password" data-target="newPasswordInput" title="Hiện mật khẩu" tabindex="-1">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
                                         <span asp-validation-for="PasswordInput.NewPassword" class="text-danger small"></span>
                                     </div>
 
                                     <div class="mb-3">
                                         <label class="form-label small fw-bold">Xác nhận mật khẩu mới *</label>
-                                        <input asp-for="PasswordInput.ConfirmPassword" type="password" class="form-control rounded-pill px-3 py-2" required />
+                                        <div class="password-field-wrapper">
+                                            <input asp-for="PasswordInput.ConfirmPassword" id="confirmPasswordInput" type="password" class="form-control rounded-pill px-3 py-2" required />
+                                            <button type="button" class="btn-toggle-password" data-target="confirmPasswordInput" title="Hiện mật khẩu" tabindex="-1">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
                                         <span asp-validation-for="PasswordInput.ConfirmPassword" class="text-danger small"></span>
                                     </div>
 

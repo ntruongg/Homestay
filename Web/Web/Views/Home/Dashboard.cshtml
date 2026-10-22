@@ -11,6 +11,7 @@
     var approvedProps = Model.Properties.Where(p => isAppr(p.ApprovalStatus)).ToList();
     var pendingProps = Model.Properties.Where(p => isPend(p.ApprovalStatus)).ToList();
     var rejectedProps = Model.Properties.Where(p => isRej(p.ApprovalStatus)).ToList();
+    var pendingBookingsCount = Model.Bookings.Count(b => b.Status is "Pending" or "ChoDuyet" or "YeuCauHoanTien");
 }
 
 <!doctype html>
@@ -35,6 +36,7 @@
     <link rel="stylesheet" href="/css/site.css" asp-append-version="true">
 </head>
 <body class="dashboard-body-wrapper">
+    <div id="dashboardToastContainer" class="dashboard-toast-container"></div>
 
     <!-- ==========================================================================
          1. Sidebar (Cột trái, rộng ~250px, fixed, nền #caf0f8, góc phải bo tròn 24px)
@@ -60,6 +62,9 @@
                 <button type="button" class="dashboard-tab-link @(Model.ActiveTab == "bookings" ? "active" : "")" data-tab-target="tabBookings" id="tabBtnBookings" onclick="switchDashboardTab('tabBookings', this)">
                     <i class="bi bi-calendar2-check-fill"></i>
                     <span>Đơn đặt phòng</span>
+                    <span class="dashboard-sidebar-badge @(pendingBookingsCount > 0 ? "" : "d-none")" id="sidebarBookingBadge">
+                        @(pendingBookingsCount > 99 ? "99+" : pendingBookingsCount.ToString())
+                    </span>
                 </button>
 
                 <!-- Tab 3: Dịch vụ -->
@@ -108,6 +113,123 @@
                     <div class="fw-bold text-dark small">Chủ cơ sở lưu trú</div>
                     <div class="text-muted small">@DateTime.Now.ToString("dd/MM/yyyy")</div>
                 </div>
+
+                <!-- Notification Center for Bookings -->
+                <div class="position-relative notification-center-wrapper" id="ownerNotifWrapper">
+                    <button type="button" class="btn-dashboard-notification" id="btnOwnerNotification" onclick="toggleOwnerNotificationDropdown(event)" title="Thông báo đơn đặt phòng" aria-expanded="false">
+                        <i class="bi bi-bell-fill"></i>
+                        <span class="notification-badge-pulse @(pendingBookingsCount > 0 ? "" : "d-none")" id="ownerNotifBadge">
+                            @(pendingBookingsCount > 99 ? "99+" : pendingBookingsCount.ToString())
+                        </span>
+                    </button>
+
+                    <!-- Notification Dropdown Flyout -->
+                    <div class="notification-dropdown-panel" id="ownerNotifDropdown" onclick="event.stopPropagation()">
+                        <div class="notification-header">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="notification-header-icon"><i class="bi bi-bell-fill"></i></span>
+                                    <h6 class="fw-bold mb-0 text-navy">Thông báo đặt phòng</h6>
+                                </div>
+                                <span class="badge rounded-pill bg-primary-subtle text-primary fw-bold" id="notifUnreadCounter">
+                                    @pendingBookingsCount cần xử lý
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between pt-1">
+                                <div class="notification-filter-chips">
+                                    <button type="button" class="notif-chip active" data-filter="all" onclick="filterOwnerNotifs('all', this)">Tất cả</button>
+                                    <button type="button" class="notif-chip" data-filter="pending" onclick="filterOwnerNotifs('pending', this)">Chờ duyệt</button>
+                                    <button type="button" class="notif-chip" data-filter="confirmed" onclick="filterOwnerNotifs('confirmed', this)">Đã đặt</button>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted p-0 small" onclick="markAllOwnerNotifsAsRead(event)">
+                                    <i class="bi bi-check2-all me-1"></i>Đã đọc
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="notification-body" id="ownerNotifList">
+                            @if (Model.Bookings.Count == 0)
+                            {
+                                <div class="notification-empty text-center py-4 text-muted">
+                                    <i class="bi bi-bell-slash display-6 mb-2 text-secondary opacity-50"></i>
+                                    <p class="small mb-0">Chưa có thông báo đơn đặt phòng nào</p>
+                                </div>
+                            }
+                            else
+                            {
+                                @foreach (var b in Model.Bookings.Take(25))
+                                {
+                                    var isActionRequired = b.Status is "Pending" or "ChoDuyet" or "YeuCauHoanTien";
+                                    var itemIcon = b.Status switch
+                                    {
+                                        "Pending" or "ChoDuyet" => "bi-hourglass-split",
+                                        "Confirmed" or "DaDuyet" => "bi-check-circle-fill",
+                                        "CheckedIn" => "bi-door-open-fill",
+                                        "Completed" or "DaHoanTat" => "bi-trophy-fill",
+                                        "YeuCauHoanTien" => "bi-arrow-counterclockwise",
+                                        "Cancelled" or "DaHuy" or "TuChoi" => "bi-x-circle-fill",
+                                        _ => "bi-bell-fill"
+                                    };
+                                    var itemColor = b.Status switch
+                                    {
+                                        "Pending" or "ChoDuyet" => "warning",
+                                        "Confirmed" or "DaDuyet" => "success",
+                                        "CheckedIn" => "info",
+                                        "Completed" or "DaHoanTat" => "primary",
+                                        "YeuCauHoanTien" => "danger",
+                                        "Cancelled" or "DaHuy" or "TuChoi" => "secondary",
+                                        _ => "primary"
+                                    };
+                                    var itemTitle = b.Status switch
+                                    {
+                                        "Pending" or "ChoDuyet" => "Đơn mới chờ bạn duyệt",
+                                        "Confirmed" or "DaDuyet" => "Đơn đã thanh toán & xác nhận",
+                                        "CheckedIn" => "Khách đang nhận phòng lưu trú",
+                                        "Completed" or "DaHoanTat" => "Đơn đặt phòng đã hoàn tất",
+                                        "YeuCauHoanTien" => "Khách gửi yêu cầu hoàn tiền",
+                                        "Cancelled" or "DaHuy" => "Đơn đặt phòng đã bị hủy",
+                                        "TuChoi" => "Bạn đã từ chối đơn đặt phòng",
+                                        _ => "Cập nhật đơn #" + b.Id
+                                    };
+
+                                    <div class="notification-item @(isActionRequired ? "unread" : "")"
+                                         data-booking-id="@b.Id"
+                                         data-status="@b.Status"
+                                         onclick="selectNotificationBooking(@b.Id)">
+                                        <div class="notif-avatar bg-@itemColor-subtle text-@itemColor">
+                                            <i class="bi @itemIcon"></i>
+                                        </div>
+                                        <div class="notif-content">
+                                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                                <strong class="notif-title text-navy">@itemTitle</strong>
+                                                <span class="notif-time text-muted">@b.CreatedDate.ToString("dd/MM")</span>
+                                            </div>
+                                            <div class="notif-desc">
+                                                Khách <strong>@b.GuestName</strong> đặt tại <strong>@b.PropertyName</strong>
+                                                @(b.RoomNumbers.Count > 0 ? " (Phòng " + string.Join(", ", b.RoomNumbers) + ")" : "")
+                                            </div>
+                                            <div class="notif-meta mt-1 d-flex align-items-center justify-content-between">
+                                                <span class="notif-dates small text-muted">
+                                                    <i class="bi bi-calendar-range me-1"></i>@b.CheckIn.ToString("dd/MM") - @b.CheckOut.ToString("dd/MM/yyyy")
+                                                </span>
+                                                <span class="notif-amount fw-bold text-primary small">
+                                                    @b.TotalAmount.ToString("N0") ₫
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+
+                        <div class="notification-footer">
+                            <button type="button" class="btn btn-sm btn-outline-primary w-100 rounded-pill fw-semibold" onclick="viewAllBookingsFromNotif()">
+                                Xem danh sách đơn đặt phòng &rarr;
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <a href="/Home/Profile" class="user-profile-badge" id="navUserProfileLink" title="Xem hồ sơ cá nhân"> 
                     <span class="user-avatar-circle" style="width: 42px; height: 42px; font-size: 1.05rem;"></span> 
                 </a>
@@ -294,8 +416,25 @@
              TAB 2: QUẢN LÝ ĐƠN ĐẶT PHÒNG (Booking Management)
              ========================================================================== -->
         <section class="dashboard-tab-view @(Model.ActiveTab == "bookings" ? "active" : "")" id="tabBookings">
+            <!-- Action Notification Banner for Pending Bookings -->
+            @if (pendingBookingsCount > 0)
+            {
+                <div class="booking-notification-banner mb-3" id="bookingNotificationBanner">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="banner-icon-pulse"><i class="bi bi-bell-fill"></i></div>
+                        <div>
+                            <h6 class="fw-bold mb-1 text-navy">Bạn có @pendingBookingsCount đơn đặt phòng mới cần xử lý!</h6>
+                            <p class="mb-0 text-muted small">Khách hàng đang chờ xác nhận hoặc có yêu cầu xử lý từ các cơ sở của bạn.</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold text-nowrap" onclick="filterPendingBookingsOnly()">
+                        Lọc đơn chờ duyệt &rarr;
+                    </button>
+                </div>
+            }
+
             <!-- Top row (Bộ lọc): Thanh ngang trắng, shadow mượt, bo góc 50px, 2 Dropdown -->
-            <div class="filter-bar-pill-card">
+            <div class="filter-bar-pill-card flex-wrap">
                 <!-- Dropdown 1: Lọc theo Cơ sở -->
                 <div class="d-flex align-items-center gap-2">
                     <label for="filterBookingProperty">
@@ -317,13 +456,20 @@
                     </label>
                     <select id="filterBookingStatus" class="filter-select-round" onchange="filterBookingsList()">
                         <option value="all">Tất cả trạng thái</option>
-                        <option value="Pending">Chờ duyệt (Pending)</option>
-                        <option value="Confirmed">Đã xác nhận (Confirmed)</option>
-                        <option value="CheckedIn">Đang lưu trú (CheckedIn)</option>
-                        <option value="Completed">Đã hoàn thành (Completed)</option>
-                        <option value="Cancelled">Đã hủy (Cancelled)</option>
+                        <option value="pending">Chờ duyệt</option>
+                        <option value="confirmed">Đã xác nhận</option>
+                        <option value="checkedin">Đang lưu trú</option>
+                        <option value="completed">Đã hoàn thành</option>
+                        <option value="refund">Chờ hoàn tiền</option>
+                        <option value="refunded">Đã hoàn tiền</option>
+                        <option value="cancelled">Đã hủy / Bị từ chối</option>
                     </select>
                 </div>
+
+                <!-- Nút Đặt lại bộ lọc -->
+                <button type="button" class="btn btn-sm btn-light border text-muted rounded-pill px-3 ms-auto" onclick="resetBookingFilters()" title="Đặt lại bộ lọc về mặc định">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Đặt lại
+                </button>
             </div>
 
             <!-- Indicator số lượng đơn & Nút xuất file -->
@@ -349,25 +495,55 @@
                 }
                 else
                 {
+                    <div id="noMatchingBookings" class="card p-5 text-center border-0 d-none" style="border-radius: 16px; box-shadow: var(--stayly-shadow);">
+                        <i class="bi bi-funnel text-muted display-5 mb-3"></i>
+                        <h5 class="fw-bold text-navy">Không tìm thấy đơn đặt phòng phù hợp</h5>
+                        <p class="text-muted small mb-3">Không có đơn đặt phòng nào khớp với cơ sở và trạng thái bạn đã chọn.</p>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="resetBookingFilters()">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> Đặt lại bộ lọc
+                            </button>
+                        </div>
+                    </div>
+
                     @foreach (var b in Model.Bookings)
                     {
                         var statusClass = b.Status switch
                         {
-                            "Pending" => "status-pending",
-                            "Confirmed" => "status-confirmed",
-                            "CheckedIn" => "status-checkedin",
-                            "Completed" => "status-completed",
-                            "Cancelled" => "status-cancelled",
+                            "Pending" or "ChoDuyet" => "status-pending",
+                            "Confirmed" or "DaDuyet" => "status-confirmed",
+                            "CheckedIn" or "DangLuuTru" => "status-checkedin",
+                            "Completed" or "DaHoanTat" => "status-completed",
+                            "Cancelled" or "DaHuy" => "status-cancelled",
+                            "TuChoi" or "Rejected" => "status-rejected",
+                            "YeuCauHoanTien" or "RefundRequested" => "status-refund",
+                            "DaHoanTien" or "Refunded" => "status-refunded",
                             _ => "status-pending"
+                        };
+
+                        var statusIcon = b.Status switch
+                        {
+                            "Pending" or "ChoDuyet" => "bi-hourglass-split",
+                            "Confirmed" or "DaDuyet" => "bi-check2-circle",
+                            "CheckedIn" or "DangLuuTru" => "bi-box-arrow-in-right",
+                            "Completed" or "DaHoanTat" => "bi-check-all",
+                            "Cancelled" or "DaHuy" => "bi-x-circle",
+                            "TuChoi" or "Rejected" => "bi-slash-circle",
+                            "YeuCauHoanTien" or "RefundRequested" => "bi-arrow-counterclockwise",
+                            "DaHoanTien" or "Refunded" => "bi-cash-coin",
+                            _ => "bi-info-circle"
                         };
 
                         var statusText = b.Status switch
                         {
-                            "Pending" => "Chờ duyệt",
-                            "Confirmed" => "Đã xác nhận",
-                            "CheckedIn" => "Đang lưu trú",
-                            "Completed" => "Đã hoàn thành",
-                            "Cancelled" => "Đã hủy",
+                            "Pending" or "ChoDuyet" => "Chờ duyệt",
+                            "Confirmed" or "DaDuyet" => "Đã xác nhận",
+                            "CheckedIn" or "DangLuuTru" => "Đang lưu trú",
+                            "Completed" or "DaHoanTat" => "Đã hoàn thành",
+                            "Cancelled" or "DaHuy" => "Đã hủy",
+                            "TuChoi" or "Rejected" => "Bị từ chối",
+                            "YeuCauHoanTien" or "RefundRequested" => "Chờ hoàn tiền",
+                            "DaHoanTien" or "Refunded" => "Đã hoàn tiền",
                             _ => b.Status
                         };
 
@@ -423,7 +599,7 @@
                                         @b.TotalAmount.ToString("N0") <span class="fs-6">₫</span>
                                     </div>
                                     <span class="booking-status-tag @statusClass mb-2">
-                                        @statusText
+                                        <i class="bi @statusIcon"></i> @statusText
                                     </span>
                                 </div>
                             </div>
@@ -2023,10 +2199,42 @@
             }
         }
 
+        function matchesBookingStatus(cardStatus, filterValue) {
+            if (!filterValue || filterValue === 'all') return true;
+            const s = (cardStatus || '').toLowerCase().trim();
+            const f = filterValue.toLowerCase().trim();
+
+            if (f === 'pending') {
+                return ['pending', 'choduyet', 'chờ duyệt'].includes(s);
+            }
+            if (f === 'confirmed') {
+                return ['confirmed', 'daduyet', 'đã xác nhận', 'đã duyệt'].includes(s);
+            }
+            if (f === 'checkedin') {
+                return ['checkedin', 'dangluutru', 'đang lưu trú'].includes(s);
+            }
+            if (f === 'completed') {
+                return ['completed', 'dahoantat', 'đã hoàn thành', 'đã hoàn tất'].includes(s);
+            }
+            if (f === 'refund') {
+                return ['yeucauhoantien', 'refundrequested', 'chờ hoàn tiền', 'yêu cầu hoàn tiền'].includes(s);
+            }
+            if (f === 'refunded') {
+                return ['dahoantien', 'refunded', 'đã hoàn tiền'].includes(s);
+            }
+            if (f === 'cancelled') {
+                return ['cancelled', 'dahuy', 'tuchoi', 'rejected', 'đã hủy', 'từ chối', 'bị từ chối'].includes(s);
+            }
+            return s === f;
+        }
+
         // ==================== FILTER BOOKINGS ====================
         function filterBookingsList() {
-            const propFilter = document.getElementById('filterBookingProperty').value;
-            const statusFilter = document.getElementById('filterBookingStatus').value;
+            const propFilterEl = document.getElementById('filterBookingProperty');
+            const statusFilterEl = document.getElementById('filterBookingStatus');
+            const propFilter = propFilterEl ? propFilterEl.value : 'all';
+            const statusFilter = statusFilterEl ? statusFilterEl.value : 'all';
+
             const cards = document.querySelectorAll('#bookingCardsContainer .booking-item-card');
             let visibleCount = 0;
 
@@ -2035,7 +2243,7 @@
                 const cardStatus = card.getAttribute('data-status') || '';
 
                 const matchProp = (propFilter === 'all' || cardProp === propFilter);
-                const matchStatus = (statusFilter === 'all' || cardStatus.toLowerCase() === statusFilter.toLowerCase());
+                const matchStatus = matchesBookingStatus(cardStatus, statusFilter);
 
                 if (matchProp && matchStatus) {
                     card.style.display = 'block';
@@ -2045,10 +2253,33 @@
                 }
             });
 
+            const emptyCard = document.getElementById('noMatchingBookings');
+            if (emptyCard) {
+                if (cards.length > 0 && visibleCount === 0) {
+                    emptyCard.classList.remove('d-none');
+                } else {
+                    emptyCard.classList.add('d-none');
+                }
+            }
+
             const countIndicator = document.getElementById('bookingCountIndicator');
             if (countIndicator) {
-                countIndicator.innerHTML = `Hiển thị: <strong>${visibleCount}</strong> đơn đặt phòng`;
+                if (cards.length === 0) {
+                    countIndicator.innerHTML = `Hiển thị: <strong class="text-dark">0</strong> đơn đặt phòng`;
+                } else if (visibleCount === cards.length) {
+                    countIndicator.innerHTML = `Hiển thị tất cả: <strong class="text-dark">${cards.length}</strong> đơn đặt phòng`;
+                } else {
+                    countIndicator.innerHTML = `Hiển thị: <strong class="text-primary fw-bold">${visibleCount}</strong> / <strong>${cards.length}</strong> đơn đặt phòng`;
+                }
             }
+        }
+
+        function resetBookingFilters() {
+            const propFilter = document.getElementById('filterBookingProperty');
+            const statusFilter = document.getElementById('filterBookingStatus');
+            if (propFilter) propFilter.value = 'all';
+            if (statusFilter) statusFilter.value = 'all';
+            filterBookingsList();
         }
 
         // ==================== FILTER REVIEWS ====================
@@ -2367,6 +2598,241 @@
             if (!str) return '';
             return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
         }
+
+        /* ==========================================================================
+           Owner Dashboard Booking Notifications Center JavaScript
+           ========================================================================== */
+        let knownBookingIds = new Set();
+        let readBookingIds = new Set();
+
+        try {
+            const savedRead = JSON.parse(localStorage.getItem('stayly_owner_read_booking_ids') || '[]');
+            readBookingIds = new Set(savedRead);
+        } catch (e) {
+            readBookingIds = new Set();
+        }
+
+        function toggleOwnerNotificationDropdown(event) {
+            if (event) event.stopPropagation();
+            const panel = document.getElementById('ownerNotifDropdown');
+            const btn = document.getElementById('btnOwnerNotification');
+            if (!panel) return;
+            const isOpen = panel.classList.contains('show');
+            if (isOpen) {
+                closeOwnerNotificationDropdown();
+            } else {
+                panel.classList.add('show');
+                if (btn) btn.setAttribute('aria-expanded', 'true');
+            }
+        }
+
+        function closeOwnerNotificationDropdown() {
+            const panel = document.getElementById('ownerNotifDropdown');
+            const btn = document.getElementById('btnOwnerNotification');
+            if (panel) panel.classList.remove('show');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
+
+        document.addEventListener('click', (e) => {
+            const wrapper = document.getElementById('ownerNotifWrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                closeOwnerNotificationDropdown();
+            }
+        });
+
+        function filterOwnerNotifs(filter, btn) {
+            document.querySelectorAll('.notif-chip').forEach(c => c.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            const items = document.querySelectorAll('.notification-item');
+            items.forEach(item => {
+                const status = item.getAttribute('data-status') || '';
+                if (filter === 'all') {
+                    item.style.display = 'flex';
+                } else if (filter === 'pending') {
+                    const isPending = ['Pending', 'ChoDuyet', 'YeuCauHoanTien'].includes(status);
+                    item.style.display = isPending ? 'flex' : 'none';
+                } else if (filter === 'confirmed') {
+                    const isConfirmed = ['Confirmed', 'DaDuyet', 'CheckedIn'].includes(status);
+                    item.style.display = isConfirmed ? 'flex' : 'none';
+                }
+            });
+        }
+
+        function markAllOwnerNotifsAsRead(event) {
+            if (event) event.stopPropagation();
+            document.querySelectorAll('.notification-item').forEach(item => {
+                const bId = item.getAttribute('data-booking-id');
+                if (bId) readBookingIds.add(bId);
+                item.classList.remove('unread');
+            });
+
+            try {
+                localStorage.setItem('stayly_owner_read_booking_ids', JSON.stringify(Array.from(readBookingIds)));
+            } catch (e) {}
+
+            updateNotificationBadges(0);
+        }
+
+        function updateNotificationBadges(count) {
+            const badge = document.getElementById('ownerNotifBadge');
+            const sidebarBadge = document.getElementById('sidebarBookingBadge');
+            const unreadPill = document.getElementById('notifUnreadCounter');
+
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.classList.remove('d-none');
+                    badge.style.display = '';
+                } else {
+                    badge.classList.add('d-none');
+                    badge.style.display = 'none';
+                }
+            }
+
+            if (sidebarBadge) {
+                if (count > 0) {
+                    sidebarBadge.textContent = count > 99 ? '99+' : count;
+                    sidebarBadge.classList.remove('d-none');
+                    sidebarBadge.style.display = '';
+                } else {
+                    sidebarBadge.classList.add('d-none');
+                    sidebarBadge.style.display = 'none';
+                }
+            }
+
+            if (unreadPill) {
+                unreadPill.textContent = count > 0 ? `${count} cần xử lý` : '0 mới';
+            }
+        }
+
+        function selectNotificationBooking(bookingId) {
+            closeOwnerNotificationDropdown();
+
+            // Mark as read in local storage
+            readBookingIds.add(String(bookingId));
+            try {
+                localStorage.setItem('stayly_owner_read_booking_ids', JSON.stringify(Array.from(readBookingIds)));
+            } catch (e) {}
+
+            const notifItem = document.querySelector(`.notification-item[data-booking-id="${bookingId}"]`);
+            if (notifItem) notifItem.classList.remove('unread');
+
+            // Switch to Bookings Tab
+            const btnBookings = document.getElementById('tabBtnBookings');
+            if (btnBookings) switchDashboardTab('tabBookings', btnBookings);
+
+            // Reset filters to ensure the booking card is visible
+            const propFilter = document.getElementById('filterBookingProperty');
+            const statusFilter = document.getElementById('filterBookingStatus');
+            if (propFilter) propFilter.value = 'all';
+            if (statusFilter) statusFilter.value = 'all';
+            if (typeof filterBookingsList === 'function') filterBookingsList();
+
+            // Scroll to the card and pulse highlight
+            setTimeout(() => {
+                const card = document.querySelector(`.booking-item-card[data-id="${bookingId}"]`);
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.classList.remove('booking-card-highlighted');
+                    void card.offsetWidth; // force reflow
+                    card.classList.add('booking-card-highlighted');
+                }
+            }, 250);
+        }
+
+        function filterPendingBookingsOnly() {
+            const btnBookings = document.getElementById('tabBtnBookings');
+            if (btnBookings) switchDashboardTab('tabBookings', btnBookings);
+
+            const statusFilter = document.getElementById('filterBookingStatus');
+            if (statusFilter) {
+                statusFilter.value = 'pending';
+                if (typeof filterBookingsList === 'function') filterBookingsList();
+            }
+
+            const cardsContainer = document.getElementById('bookingCardsContainer');
+            if (cardsContainer) cardsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function viewAllBookingsFromNotif() {
+            closeOwnerNotificationDropdown();
+            const btnBookings = document.getElementById('tabBtnBookings');
+            if (btnBookings) switchDashboardTab('tabBookings', btnBookings);
+        }
+
+        function showDashboardToast(htmlMessage, bookingId) {
+            const container = document.getElementById('dashboardToastContainer');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = 'dashboard-toast-card';
+            toast.innerHTML = `
+                <div class="banner-icon-pulse" style="width: 38px; height: 38px; font-size: 1rem; flex-shrink: 0;">
+                    <i class="bi bi-bell-fill"></i>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div class="fw-bold text-navy small mb-1">Đơn đặt phòng mới!</div>
+                    <div class="small text-dark text-truncate-2">${htmlMessage}</div>
+                </div>
+                <button type="button" class="btn-close btn-close-sm" style="font-size: 0.65rem;" onclick="this.parentElement.remove()"></button>
+            `;
+
+            toast.onclick = (e) => {
+                if (e.target.closest('.btn-close')) return;
+                selectNotificationBooking(bookingId);
+                toast.remove();
+            };
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(50px)';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 8000);
+        }
+
+        // Initialize known bookings on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.notification-item').forEach(item => {
+                const bId = item.getAttribute('data-booking-id');
+                if (bId) {
+                    knownBookingIds.add(bId);
+                    if (readBookingIds.has(bId)) {
+                        item.classList.remove('unread');
+                    }
+                }
+            });
+
+            // Polling for live booking notifications every 30 seconds
+            setInterval(async () => {
+                try {
+                    const res = await fetch('/Home/GetOwnerBookingNotifications');
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (data.success && data.notifications) {
+                        let hasNew = false;
+                        data.notifications.forEach(n => {
+                            const idStr = String(n.bookingId);
+                            if (!knownBookingIds.has(idStr)) {
+                                knownBookingIds.add(idStr);
+                                hasNew = true;
+                                showDashboardToast(`Khách <strong>${n.guestName}</strong> vừa đặt đơn #${n.bookingId} tại <strong>${n.propertyName}</strong> (${Number(n.totalAmount).toLocaleString('vi-VN')} ₫)`, n.bookingId);
+                            }
+                        });
+
+                        if (hasNew) {
+                            updateNotificationBadges(data.pendingCount);
+                        }
+                    }
+                } catch (e) {
+                    // Background polling fail gracefully
+                }
+            }, 30000);
+        });
     </script>
 </body>
 </html>

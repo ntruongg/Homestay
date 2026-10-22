@@ -189,6 +189,12 @@ namespace HomestaySystem.Services
                 return false;
             }
 
+            if (dob.Value.Date > DateTime.Today.AddYears(-18))
+            {
+                error = "Người dùng phải từ đủ 18 tuổi trở lên!";
+                return false;
+            }
+
             error = string.Empty;
             return true;
         }

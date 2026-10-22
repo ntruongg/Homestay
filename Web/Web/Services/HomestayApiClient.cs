@@ -9,12 +9,20 @@ public sealed class HomestayApiClient(HttpClient http)
 {
     public async Task<IReadOnlyList<PropertySummary>> GetPropertiesAsync(
         string? location = null,
+        int? adults = null,
+        int? children = null,
         CancellationToken cancellationToken = default)
     {
-        var path = $"properties?pageSize=150";
+        var path = "properties?pageSize=150";
 
         if (!string.IsNullOrWhiteSpace(location))
             path += $"&location={Uri.EscapeDataString(location)}";
+
+        if (adults.HasValue && adults.Value > 0)
+            path += $"&adults={adults.Value}";
+
+        if (children.HasValue && children.Value > 0)
+            path += $"&children={children.Value}";
 
         return await http.GetFromJsonAsync<List<PropertySummary>>(
             path,

@@ -2550,3 +2550,58 @@ textarea.form-control.is-invalid:focus {
     font-size: 0.75rem;
     color: var(--stayly-muted);
 }
+
+/* ==========================================================================
+   Password Visibility Toggle Button & Wrapper
+   ========================================================================== */
+.password-field-wrapper {
+    position: relative;
+    width: 100%;
+    display: block;
+}
+
+.password-field-wrapper input {
+    padding-right: 44px !important;
+}
+
+.btn-toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 6px;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 1.15rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease, transform 0.15s ease;
+    z-index: 5;
+    user-select: none;
+}
+
+.btn-toggle-password:hover {
+    color: var(--stayly-primary, #0077b6);
+}
+
+.btn-toggle-password:active {
+    transform: translateY(-50%) scale(0.92);
+}
+
+.btn-toggle-password:focus-visible {
+    outline: 2px solid rgba(0, 119, 182, 0.4);
+    border-radius: 6px;
+}
+
+.form-card .password-field-wrapper {
+    margin-top: 6px;
+}
+
+.form-card .password-field-wrapper input {
+    margin-top: 0;
+}

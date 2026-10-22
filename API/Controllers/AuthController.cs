@@ -97,6 +97,15 @@ public sealed class AuthController(
         if (phoneExists)
             return Conflict(new { field = "Phone", message = "Số điện thoại này đã được sử dụng trên hệ thống." });
 
+        if (!request.DateOfBirth.HasValue)
+            return BadRequest(new { field = "DateOfBirth", message = "Vui lòng chọn ngày sinh." });
+
+        if (request.DateOfBirth.Value.Date > DateTime.Today.AddYears(-18))
+            return BadRequest(new { field = "DateOfBirth", message = "Bạn phải từ đủ 18 tuổi trở lên để đăng ký tài khoản." });
+
+        if (request.DateOfBirth.Value.Year < 1900)
+            return BadRequest(new { field = "DateOfBirth", message = "Năm sinh không hợp lệ." });
+
         var requireOtp = configuration.GetValue("Auth:RequireOtp", true);
         if (requireOtp && string.IsNullOrWhiteSpace(request.OtpCode))
         {
@@ -147,6 +156,15 @@ public sealed class AuthController(
         var phoneExists = await db.NguoiDungs.AnyAsync(a => a.DienThoai == phone, cancellationToken);
         if (phoneExists)
             return Conflict(new { field = "Phone", message = "Số điện thoại này đã được sử dụng trên hệ thống." });
+
+        if (!request.DateOfBirth.HasValue)
+            return BadRequest(new { field = "DateOfBirth", message = "Vui lòng chọn ngày sinh." });
+
+        if (request.DateOfBirth.Value.Date > DateTime.Today.AddYears(-18))
+            return BadRequest(new { field = "DateOfBirth", message = "Bạn phải từ đủ 18 tuổi trở lên để đăng ký tài khoản." });
+
+        if (request.DateOfBirth.Value.Year < 1900)
+            return BadRequest(new { field = "DateOfBirth", message = "Năm sinh không hợp lệ." });
 
         var requireOtp = configuration.GetValue("Auth:RequireOtp", true);
         if (requireOtp && string.IsNullOrWhiteSpace(request.OtpCode))

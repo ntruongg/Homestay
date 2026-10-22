@@ -8,14 +8,23 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
 {
     public async Task<IActionResult> Index(
         string? location,
+        string? checkIn,
+        string? checkOut,
+        int? adults,
+        int? children,
         CancellationToken cancellationToken)
     {
         ViewBag.Location = location;
+        ViewBag.CheckIn = checkIn;
+        ViewBag.CheckOut = checkOut;
+        ViewBag.Adults = adults ?? 2;
+        ViewBag.Children = children ?? 0;
+        ViewBag.IsSearchApplied = !string.IsNullOrWhiteSpace(location) || !string.IsNullOrWhiteSpace(checkIn) || adults.HasValue || children.HasValue;
         ViewBag.User = HttpContext.Session.GetString("userName");
 
         try
         {
-            return View(await api.GetPropertiesAsync(location, cancellationToken));
+            return View(await api.GetPropertiesAsync(location, adults, children, cancellationToken));
         }
         catch (Exception ex)
         {
@@ -26,15 +35,24 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
 
     public async Task<IActionResult> Details(
         int id,
+        string? checkIn,
+        string? checkOut,
+        int? adults,
+        int? children,
         CancellationToken cancellationToken)
     {
+        ViewBag.CheckIn = checkIn;
+        ViewBag.CheckOut = checkOut;
+        ViewBag.Adults = adults ?? 2;
+        ViewBag.Children = children ?? 0;
+
         try
         {
             var property = await api.GetPropertyAsync(id, cancellationToken);
             if (property is null)
             {
                 TempData["Error"] = $"Không tìm thấy cơ sở lưu trú #{id}.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Index), new { location = (string?)null, checkIn, checkOut, adults, children });
             }
 
             try
@@ -142,6 +160,15 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
         if (input == null || string.IsNullOrWhiteSpace(input.Email) || string.IsNullOrWhiteSpace(input.Password) || string.IsNullOrWhiteSpace(input.FullName))
             return BadRequest(new { success = false, message = "Vui lòng điền đầy đủ thông tin bắt buộc (Họ tên, Email, Mật khẩu)." });
 
+        if (!input.DateOfBirth.HasValue)
+            return BadRequest(new { success = false, message = "Vui lòng chọn ngày sinh." });
+
+        if (input.DateOfBirth.Value.Date > DateTime.Today.AddYears(-18))
+            return BadRequest(new { success = false, message = "Bạn phải từ đủ 18 tuổi trở lên để đăng ký tài khoản." });
+
+        if (input.DateOfBirth.Value.Year < 1900)
+            return BadRequest(new { success = false, message = "Năm sinh không hợp lệ." });
+
         try
         {
             var result = await api.RegisterGuestAsync(input, cancellationToken);
@@ -178,6 +205,15 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
     {
         if (input == null || string.IsNullOrWhiteSpace(input.Email) || string.IsNullOrWhiteSpace(input.Password) || string.IsNullOrWhiteSpace(input.FullName))
             return BadRequest(new { success = false, message = "Vui lòng điền đầy đủ thông tin bắt buộc (Họ tên, Email, Mật khẩu)." });
+
+        if (!input.DateOfBirth.HasValue)
+            return BadRequest(new { success = false, message = "Vui lòng chọn ngày sinh." });
+
+        if (input.DateOfBirth.Value.Date > DateTime.Today.AddYears(-18))
+            return BadRequest(new { success = false, message = "Bạn phải từ đủ 18 tuổi trở lên để đăng ký tài khoản." });
+
+        if (input.DateOfBirth.Value.Year < 1900)
+            return BadRequest(new { success = false, message = "Năm sinh không hợp lệ." });
 
         if (string.IsNullOrWhiteSpace(input.CitizenId))
             return BadRequest(new { success = false, message = "Vui lòng nhập số CCCD / định danh cá nhân." });
@@ -230,11 +266,15 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetRoomsJson(string? location, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetRoomsJson(
+        string? location,
+        int? adults,
+        int? children,
+        CancellationToken cancellationToken)
     {
         try
         {
-            var properties = await api.GetPropertiesAsync(location, cancellationToken);
+            var properties = await api.GetPropertiesAsync(location, adults, children, cancellationToken);
             return Ok(properties ?? Array.Empty<PropertySummary>());
         }
         catch (Exception ex)
@@ -276,6 +316,19 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
             return View(ownerInput);
         }
 
+        if (!input.DateOfBirth.HasValue)
+        {
+            ModelState.AddModelError(nameof(input.DateOfBirth), "Vui lòng chọn ngày sinh.");
+        }
+        else if (input.DateOfBirth.Value.Date > DateTime.Today.AddYears(-18))
+        {
+            ModelState.AddModelError(nameof(input.DateOfBirth), "Bạn phải từ đủ 18 tuổi trở lên để đăng ký tài khoản.");
+        }
+        else if (input.DateOfBirth.Value.Year < 1900)
+        {
+            ModelState.AddModelError(nameof(input.DateOfBirth), "Năm sinh không hợp lệ.");
+        }
+
         if (!ModelState.IsValid)
             return View(input);
 
@@ -306,6 +359,19 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
         if (string.IsNullOrWhiteSpace(input.BankInformation) && !string.IsNullOrWhiteSpace(input.BankName))
         {
             input.BankInformation = $"{input.BankName} - {input.AccountNumber} - {input.AccountHolder}".Trim(' ', '-');
+        }
+
+        if (!input.DateOfBirth.HasValue)
+        {
+            ModelState.AddModelError(nameof(input.DateOfBirth), "Vui lòng chọn ngày sinh.");
+        }
+        else if (input.DateOfBirth.Value.Date > DateTime.Today.AddYears(-18))
+        {
+            ModelState.AddModelError(nameof(input.DateOfBirth), "Bạn phải từ đủ 18 tuổi trở lên để đăng ký tài khoản.");
+        }
+        else if (input.DateOfBirth.Value.Year < 1900)
+        {
+            ModelState.AddModelError(nameof(input.DateOfBirth), "Năm sinh không hợp lệ.");
         }
 
         if (!ModelState.IsValid)

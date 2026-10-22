@@ -34,7 +34,7 @@
     <div class="container">
         <!-- Top Navigation / Breadcrumb -->
         <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-            <a asp-action="Index" class="btn-stayly-back">
+            <a href="@(ViewBag.CheckIn != null ? Url.Action("Index", "Home", new { checkIn = ViewBag.CheckIn, checkOut = ViewBag.CheckOut, adults = ViewBag.Adults, children = ViewBag.Children }) : Url.Action("Index", "Home"))" class="btn-stayly-back" id="backToSearchLink">
                 <i class="bi bi-arrow-left me-2"></i> Quay lại danh sách
             </a>
             <div class="d-flex align-items-center gap-2">
@@ -543,7 +543,7 @@
                         <!-- Room Selector -->
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-navy">Chọn phòng nghỉ</label>
-                            <select name="RoomId" id="bookingRoomSelect" class="form-select stayly-select-input rounded-pill" required onchange="onRoomChanged(this)">
+                            <select name="RoomId" id="bookingRoomSelect" class="form-select stayly-select-input rounded-pill" required onchange="onRoomChanged(this, true)">
                                 @if (Model.Rooms != null && Model.Rooms.Count > 0)
                                 {
                                     foreach (var r in Model.Rooms)
@@ -565,11 +565,11 @@
                         <div class="row g-2 mb-3">
                             <div class="col-6">
                                 <label class="form-label small fw-bold text-navy">Nhận phòng</label>
-                                <input name="CheckIn" id="bookingCheckIn" type="date" class="form-control stayly-date-input rounded-pill" required onchange="calculateBookingTotal()" />
+                                <input name="CheckIn" id="bookingCheckIn" type="date" value="@(ViewBag.CheckIn ?? "")" class="form-control stayly-date-input rounded-pill" required onchange="onBookingDateChanged()" />
                             </div>
                             <div class="col-6">
                                 <label class="form-label small fw-bold text-navy">Trả phòng</label>
-                                <input name="CheckOut" id="bookingCheckOut" type="date" class="form-control stayly-date-input rounded-pill" required onchange="calculateBookingTotal()" />
+                                <input name="CheckOut" id="bookingCheckOut" type="date" value="@(ViewBag.CheckOut ?? "")" class="form-control stayly-date-input rounded-pill" required onchange="onBookingDateChanged()" />
                             </div>
                         </div>
 
@@ -581,7 +581,7 @@
                                     <span class="input-group-text bg-light rounded-start-pill border-end-0">
                                         <i class="bi bi-person-fill text-primary"></i>
                                     </span>
-                                    <input name="Adults" id="bookingAdultsCount" type="number" min="1" max="10" value="2" class="form-control rounded-end-pill border-start-0" required />
+                                    <input name="Adults" id="bookingAdultsCount" type="number" min="1" max="10" value="@(ViewBag.Adults ?? 2)" class="form-control rounded-end-pill border-start-0" required onchange="onBookingGuestsChanged()" oninput="onBookingGuestsChanged()" />
                                 </div>
                             </div>
                             <div class="col-6">
@@ -590,11 +590,11 @@
                                     <span class="input-group-text bg-light rounded-start-pill border-end-0">
                                         <i class="bi bi-person text-primary"></i>
                                     </span>
-                                    <input name="Children" id="bookingChildrenCount" type="number" min="0" max="5" value="0" class="form-control rounded-end-pill border-start-0" required />
+                                    <input name="Children" id="bookingChildrenCount" type="number" min="0" max="5" value="@(ViewBag.Children ?? 0)" class="form-control rounded-end-pill border-start-0" required onchange="onBookingGuestsChanged()" oninput="onBookingGuestsChanged()" />
                                 </div>
                             </div>
                             <!-- Hidden GuestCount for backwards compatibility -->
-                            <input name="GuestCount" type="hidden" id="bookingGuestCount" value="2" />
+                            <input name="GuestCount" type="hidden" id="bookingGuestCount" value="@((ViewBag.Adults ?? 2) + (ViewBag.Children ?? 0))" />
                         </div>
 
                         <!-- Extra Services -->
@@ -1047,27 +1047,225 @@
 
 <!-- Javascript for Booking Form and Modal -->
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // Initialize default dates
+    function updateBackToSearchLink() {
+        const backLink = document.getElementById('backToSearchLink');
+        if (!backLink) return;
+        const urlParams = new URLSearchParams(window.location.search);
+        const isSearchApplied = urlParams.has('checkIn') || urlParams.has('adults') || urlParams.has('children') || (sessionStorage.getItem('stayly_search_applied') === 'true');
+        if (!isSearchApplied) {
+            backLink.href = '/Home/Index';
+            return;
+        }
+        const cIn = document.getElementById('bookingCheckIn')?.value || '';
+        const cOut = document.getElementById('bookingCheckOut')?.value || '';
+        const ad = document.getElementById('bookingAdultsCount')?.value || '2';
+        const ch = document.getElementById('bookingChildrenCount')?.value || '0';
+        
+        const params = new URLSearchParams();
+        const loc = urlParams.get('location') || sessionStorage.getItem('stayly_search_location');
+        if (loc) params.set('location', loc);
+        if (cIn) params.set('checkIn', cIn);
+        if (cOut) params.set('checkOut', cOut);
+        if (ad) params.set('adults', ad);
+        if (ch !== undefined && ch !== null && ch !== '') params.set('children', ch);
+
+        backLink.href = `/Home/Index?${params.toString()}`;
+    }
+
+    function formatLocalDate(d) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function onBookingDateChanged() {
         const checkIn = document.getElementById('bookingCheckIn');
         const checkOut = document.getElementById('bookingCheckOut');
-        const today = new Date();
-        const tomorrow = new Date();
-        tomorrow.setDate(today.getDate() + 1);
+        if (!checkIn || !checkOut) return;
 
-        if (checkIn && !checkIn.value) {
-            checkIn.value = today.toISOString().split('T')[0];
-            checkIn.min = today.toISOString().split('T')[0];
+        if (checkIn.value) {
+            const nDay = new Date(checkIn.value);
+            nDay.setDate(nDay.getDate() + 1);
+            const minOut = formatLocalDate(nDay);
+            checkOut.min = minOut;
+            if (checkOut.value && checkOut.value <= checkIn.value) {
+                checkOut.value = minOut;
+            }
+            try {
+                if (sessionStorage.getItem('stayly_search_applied') === 'true') {
+                    sessionStorage.setItem('stayly_search_checkIn', checkIn.value);
+                }
+            } catch (_) {}
         }
 
-        if (checkOut && !checkOut.value) {
-            checkOut.value = tomorrow.toISOString().split('T')[0];
-            checkOut.min = tomorrow.toISOString().split('T')[0];
+        if (checkOut.value) {
+            try {
+                if (sessionStorage.getItem('stayly_search_applied') === 'true') {
+                    sessionStorage.setItem('stayly_search_checkOut', checkOut.value);
+                }
+            } catch (_) {}
         }
+
+        updateBackToSearchLink();
+        calculateBookingTotal();
+    }
+
+    function onBookingGuestsChanged() {
+        const adultsInput = document.getElementById('bookingAdultsCount');
+        const childrenInput = document.getElementById('bookingChildrenCount');
+        const guestInput = document.getElementById('bookingGuestCount');
+
+        const ad = adultsInput ? (parseInt(adultsInput.value) || 1) : 2;
+        const ch = childrenInput ? (parseInt(childrenInput.value) || 0) : 0;
+
+        if (guestInput) {
+            guestInput.value = ad + ch;
+        }
+
+        try {
+            if (sessionStorage.getItem('stayly_search_applied') === 'true') {
+                sessionStorage.setItem('stayly_search_adults', ad);
+                sessionStorage.setItem('stayly_search_children', ch);
+            }
+        } catch (_) {}
 
         const roomSel = document.getElementById('bookingRoomSelect');
         if (roomSel) {
-            onRoomChanged(roomSel);
+            const opt = roomSel.options[roomSel.selectedIndex];
+            if (opt) {
+                const adultCap = Number(opt.dataset.adultCapacity || 2);
+                const childCap = Number(opt.dataset.childCapacity || 1);
+                const capHint = document.getElementById('roomCapacityHint');
+                if (capHint) {
+                    if (ad > adultCap || ch > childCap) {
+                        capHint.innerHTML = `<i class="bi bi-exclamation-triangle-fill text-warning"></i> Sức chứa phòng: <strong>${adultCap} người lớn</strong> &bull; <strong>${childCap} trẻ em</strong> <span class="badge bg-warning text-dark ms-1">Đang vượt sức chứa</span>`;
+                    } else {
+                        capHint.innerHTML = `<i class="bi bi-info-circle text-primary"></i> Sức chứa phòng: <strong>${adultCap} người lớn</strong> &bull; <strong>${childCap} trẻ em</strong>`;
+                    }
+                }
+            }
+        }
+
+        updateBackToSearchLink();
+        calculateBookingTotal();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialize dates and guests from URL query params or sessionStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        let qCheckIn = urlParams.get('checkIn');
+        let qCheckOut = urlParams.get('checkOut');
+        let qAdults = urlParams.get('adults');
+        let qChildren = urlParams.get('children');
+
+        const isSearchApplied = urlParams.has('checkIn') || urlParams.has('adults') || urlParams.has('children') || (sessionStorage.getItem('stayly_search_applied') === 'true');
+        if (isSearchApplied) {
+            try {
+                if (!qCheckIn) qCheckIn = sessionStorage.getItem('stayly_search_checkIn');
+                if (!qCheckOut) qCheckOut = sessionStorage.getItem('stayly_search_checkOut');
+                if (!qAdults) qAdults = sessionStorage.getItem('stayly_search_adults');
+                if (qChildren === null || qChildren === undefined) qChildren = sessionStorage.getItem('stayly_search_children');
+            } catch (_) {}
+        }
+
+        const checkIn = document.getElementById('bookingCheckIn');
+        const checkOut = document.getElementById('bookingCheckOut');
+        const adultsInput = document.getElementById('bookingAdultsCount');
+        const childrenInput = document.getElementById('bookingChildrenCount');
+        const guestCountInput = document.getElementById('bookingGuestCount');
+
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const todayStr = formatLocalDate(today);
+        const tomorrowStr = formatLocalDate(tomorrow);
+
+        if (checkIn) {
+            if (!checkIn.value && qCheckIn) {
+                checkIn.value = qCheckIn;
+            }
+            if (!checkIn.value) {
+                checkIn.value = todayStr;
+            }
+            checkIn.min = todayStr;
+            try { sessionStorage.setItem('stayly_search_checkIn', checkIn.value); } catch (_) {}
+        }
+
+        if (checkOut) {
+            if (!checkOut.value && qCheckOut) {
+                checkOut.value = qCheckOut;
+            }
+            if (!checkOut.value || (checkIn && checkIn.value && checkOut.value <= checkIn.value)) {
+                if (checkIn && checkIn.value) {
+                    const nDay = new Date(checkIn.value);
+                    nDay.setDate(nDay.getDate() + 1);
+                    checkOut.value = formatLocalDate(nDay);
+                } else {
+                    checkOut.value = tomorrowStr;
+                }
+            }
+            if (checkIn && checkIn.value) {
+                const nDay = new Date(checkIn.value);
+                nDay.setDate(nDay.getDate() + 1);
+                checkOut.min = formatLocalDate(nDay);
+            } else {
+                checkOut.min = tomorrowStr;
+            }
+            try { sessionStorage.setItem('stayly_search_checkOut', checkOut.value); } catch (_) {}
+        }
+
+        if (adultsInput && qAdults !== null && qAdults !== undefined && qAdults !== '') {
+            adultsInput.value = qAdults;
+            try { sessionStorage.setItem('stayly_search_adults', qAdults); } catch (_) {}
+        }
+        if (childrenInput && qChildren !== null && qChildren !== undefined && qChildren !== '') {
+            childrenInput.value = qChildren;
+            try { sessionStorage.setItem('stayly_search_children', qChildren); } catch (_) {}
+        }
+        if (guestCountInput && adultsInput && childrenInput) {
+            guestCountInput.value = (parseInt(adultsInput.value) || 2) + (parseInt(childrenInput.value) || 0);
+        }
+
+        updateBackToSearchLink();
+
+        const roomSel = document.getElementById('bookingRoomSelect');
+        if (roomSel) {
+            const targetAdults = parseInt(adultsInput ? adultsInput.value : 2) || 2;
+            const targetChildren = parseInt(childrenInput ? childrenInput.value : 0) || 0;
+
+            // Tự động tìm và chọn phòng phù hợp nhất với số người lớn và trẻ em đã tìm kiếm
+            let matchedIdx = -1;
+            for (let i = 0; i < roomSel.options.length; i++) {
+                const opt = roomSel.options[i];
+                const aCap = Number(opt.dataset.adultCapacity || 2);
+                const cCap = Number(opt.dataset.childCapacity || 1);
+                if (aCap >= targetAdults && cCap >= targetChildren) {
+                    matchedIdx = i;
+                    break;
+                }
+            }
+
+            // Nếu không có phòng thỏa cả 2, tìm phòng thỏa ít nhất số người lớn hoặc sức chứa lớn nhất
+            if (matchedIdx === -1 && roomSel.options.length > 0) {
+                let bestScore = -1;
+                for (let i = 0; i < roomSel.options.length; i++) {
+                    const opt = roomSel.options[i];
+                    const aCap = Number(opt.dataset.adultCapacity || 2);
+                    const cCap = Number(opt.dataset.childCapacity || 1);
+                    const score = (aCap >= targetAdults ? 100 : 0) + aCap + cCap;
+                    if (score > bestScore) {
+                        bestScore = score;
+                        matchedIdx = i;
+                    }
+                }
+            }
+
+            if (matchedIdx !== -1) {
+                roomSel.selectedIndex = matchedIdx;
+            }
+
+            onRoomChanged(roomSel, false);
         }
         calculateBookingTotal();
     });
@@ -1091,7 +1289,7 @@
         const roomSelect = document.getElementById('bookingRoomSelect');
         if (roomSelect) {
             roomSelect.value = roomId;
-            onRoomChanged(roomSelect);
+            onRoomChanged(roomSelect, true);
 
             // Smooth scroll to booking widget
             const bookingWidget = document.querySelector('.stayly-sticky-booking-card');
@@ -1101,11 +1299,11 @@
                 setTimeout(() => bookingWidget.classList.remove('border-primary'), 1500);
             }
 
-            showStaylyToast('info', `Đã chọn Phòng ${roomNumber}. Hãy kiểm tra ngày nhận/trả phòng!`);
+            showStaylyToast('info', `Đã chọn Phòng ${roomNumber}. Hãy kiểm tra ngày nhận/trả phòng và số khách!`);
         }
     }
 
-    function onRoomChanged(select) {
+    function onRoomChanged(select, isManualChange = false) {
         const opt = select.options[select.selectedIndex];
         if (!opt) return;
 
@@ -1119,24 +1317,36 @@
         }
 
         const adultsInput = document.getElementById('bookingAdultsCount');
+        const childrenInput = document.getElementById('bookingChildrenCount');
+        const guestInput = document.getElementById('bookingGuestCount');
+
         if (adultsInput) {
-            adultsInput.max = adultCap;
-            if (Number(adultsInput.value) > adultCap) {
-                adultsInput.value = adultCap;
-            }
+            adultsInput.max = Math.max(15, adultCap);
         }
 
-        const childrenInput = document.getElementById('bookingChildrenCount');
         if (childrenInput) {
-            childrenInput.max = childCap;
-            if (Number(childrenInput.value) > childCap) {
-                childrenInput.value = childCap;
-            }
+            childrenInput.max = Math.max(10, childCap);
+        }
+
+        if (guestInput && adultsInput && childrenInput) {
+            guestInput.value = (parseInt(adultsInput.value) || 2) + (parseInt(childrenInput.value) || 0);
         }
 
         const capHint = document.getElementById('roomCapacityHint');
         if (capHint) {
-            capHint.innerHTML = `<i class="bi bi-info-circle text-primary"></i> Sức chứa phòng: <strong>${adultCap} người lớn</strong> &bull; <strong>${childCap} trẻ em</strong>`;
+            const curAdults = adultsInput ? Number(adultsInput.value) : 2;
+            const curChildren = childrenInput ? Number(childrenInput.value) : 0;
+            const isAdultExceeded = curAdults > adultCap;
+            const isChildExceeded = curChildren > childCap;
+
+            if (isAdultExceeded || isChildExceeded) {
+                capHint.innerHTML = `<i class="bi bi-exclamation-triangle-fill text-warning"></i> Sức chứa phòng: <strong>${adultCap} người lớn</strong> &bull; <strong>${childCap} trẻ em</strong> <span class="badge bg-warning text-dark ms-1">Đang vượt sức chứa</span>`;
+                if (isManualChange) {
+                    showStaylyToast('warning', `Phòng này có sức chứa tối đa ${adultCap} người lớn và ${childCap} trẻ em.`);
+                }
+            } else {
+                capHint.innerHTML = `<i class="bi bi-info-circle text-primary"></i> Sức chứa phòng: <strong>${adultCap} người lớn</strong> &bull; <strong>${childCap} trẻ em</strong>`;
+            }
         }
 
         calculateBookingTotal();

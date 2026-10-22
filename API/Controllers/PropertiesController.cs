@@ -63,10 +63,18 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
             query = query.Where(p => p.LoaiHinh == t);
         }
 
-        // Lọc cơ sở có ít nhất 1 phòng còn mở bán thỏa sức chứa
-        if (adults > 0)
+        // Lọc cơ sở có ít nhất 1 phòng còn mở bán thỏa sức chứa người lớn và trẻ em
+        if (adults > 0 && children > 0)
+        {
+            query = query.Where(p => p.Phongs.Any(r => r.TrangThaiHoatDong && r.SucChuaNguoiLon >= adults && r.SucChuaTreEm >= children));
+        }
+        else if (adults > 0)
         {
             query = query.Where(p => p.Phongs.Any(r => r.TrangThaiHoatDong && r.SucChuaNguoiLon >= adults));
+        }
+        else if (children > 0)
+        {
+            query = query.Where(p => p.Phongs.Any(r => r.TrangThaiHoatDong && r.SucChuaTreEm >= children));
         }
 
         var rawProperties = await query.OrderBy(p => p.TenCoSoLuuTru)
@@ -76,9 +84,17 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
                 p.MaCoSoLuuTru,
                 p.TenCoSoLuuTru,
                 p.DiaChi,
+                p.PhuongXa,
+                p.ThanhPho,
                 p.LoaiHinh,
                 MinPrice = p.Phongs.Where(r => r.TrangThaiHoatDong).Any()
                     ? p.Phongs.Where(r => r.TrangThaiHoatDong).Min(r => r.GiaGoc)
+                    : 0,
+                MaxAdultCapacity = p.Phongs.Where(r => r.TrangThaiHoatDong).Any()
+                    ? p.Phongs.Where(r => r.TrangThaiHoatDong).Max(r => r.SucChuaNguoiLon)
+                    : 0,
+                MaxChildCapacity = p.Phongs.Where(r => r.TrangThaiHoatDong).Any()
+                    ? p.Phongs.Where(r => r.TrangThaiHoatDong).Max(r => r.SucChuaTreEm)
                     : 0,
                 CoverImage = db.HinhAnhs.Where(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru)
                     .Select(i => i.UrlHinhAnh).FirstOrDefault(),
@@ -95,15 +111,18 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
         var properties = rawProperties.Select(p =>
         {
             var rating = p.PropRating.HasValue ? Math.Round(p.PropRating.Value, 1) : 0.0;
+            var fullAddress = FormatFullAddress(p.DiaChi, p.PhuongXa, p.ThanhPho);
             return new PropertySummaryResponse(
                 p.MaCoSoLuuTru,
                 p.TenCoSoLuuTru,
-                p.DiaChi,
+                fullAddress,
                 p.LoaiHinh,
                 p.MinPrice,
                 p.CoverImage,
                 rating,
-                p.ReviewCount);
+                p.ReviewCount,
+                p.MaxAdultCapacity,
+                p.MaxChildCapacity);
         }).ToList();
 
         return Ok(properties);
@@ -155,12 +174,14 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
             s.MaDichVu, s.TenDichVu, s.GiaDichVu, s.MoTa
         )).ToList();
 
+        var fullAddress = FormatFullAddress(property.DiaChi, property.PhuongXa, property.ThanhPho);
+
         return Ok(new PropertyDetailsResponse(
             property.MaCoSoLuuTru,
             property.TenCoSoLuuTru,
             property.DienThoai,
             property.Email,
-            property.DiaChi,
+            fullAddress,
             property.LoaiHinh,
             images,
             roomResponses,
@@ -809,5 +830,15 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
             ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? User.FindFirstValue("nameid");
         return int.Parse(claim!);
+    }
+
+    private static string FormatFullAddress(string? diaChi, string? phuongXa, string? thanhPho)
+    {
+        var parts = new[] { diaChi, phuongXa, thanhPho }
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s!.Trim())
+            .Distinct();
+        var full = string.Join(", ", parts);
+        return string.IsNullOrWhiteSpace(full) ? (diaChi ?? thanhPho ?? "Việt Nam") : full;
     }
 }

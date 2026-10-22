@@ -571,6 +571,7 @@
         initDestinationAutocomplete,
         initPropertyAddressAutocomplete,
         POPULAR_DESTINATIONS,
-        VIETNAM_PROVINCES
+        VIETNAM_PROVINCES,
+        removeVietnameseTones
     };
 })(window);

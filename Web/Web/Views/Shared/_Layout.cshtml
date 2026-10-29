@@ -231,7 +231,7 @@
                                     <input class="form-check-input" type="checkbox" id="rememberMe" checked>
                                     <label class="form-check-label text-muted small" for="rememberMe">Ghi nhớ đăng nhập</label>
                                 </div>
-                                <a href="javascript:void(0)" onclick="showFeatureNotice('Quên mật khẩu')" class="small text-decoration-none">Quên mật khẩu?</a>
+                                <a href="javascript:void(0)" onclick="openForgotPasswordModal()" class="small text-decoration-none">Quên mật khẩu?</a>
                             </div>
 
                             <button type="submit" class="btn-modal-submit" id="loginSubmitBtn">
@@ -362,6 +362,120 @@
                         <div class="text-center mt-3 pt-2">
                             <a href="javascript:void(0)" onclick="toggleAuthModalView('register')" class="small text-muted text-decoration-none">
                                 &larr; Quay lại chỉnh sửa thông tin
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         Modal Quên Mật Khẩu (Xác thực qua OTP gửi về Email)
+         ========================================================================== -->
+    <div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 460px;">
+            <div class="modal-content stayly-modal">
+                <div class="modal-header-accent"></div>
+                <div class="modal-body stayly-modal-body position-relative">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                    <!-- Alert message container inside modal -->
+                    <div id="modalForgotAlert" class="stayly-alert stayly-alert-error d-none mb-3"></div>
+
+                    <!-- BƯỚC 1: NHẬP EMAIL ĐỂ GỬI MÃ OTP -->
+                    <div id="forgotStep1Container">
+                        <div class="modal-brand-header">
+                            <span class="brand-icon"><i class="bi bi-key-fill"></i></span>
+                            <h4 id="forgotPasswordTitle">Quên mật khẩu?</h4>
+                            <p>Nhập email tài khoản Stayly của bạn để nhận mã xác thực OTP đặt lại mật khẩu.</p>
+                        </div>
+
+                        <form id="ajaxForgotEmailForm" onsubmit="handleRequestForgotOtp(event)" novalidate>
+                            <div class="modal-form-group">
+                                <label class="modal-form-label" for="forgotEmail">Địa chỉ Email đăng ký <span class="text-danger">*</span></label>
+                                <input type="email" id="forgotEmail" class="modal-input-field" placeholder="vidu@gmail.com" required autocomplete="email">
+                                <div class="field-error-text" id="forgotEmailError"></div>
+                            </div>
+
+                            <button type="submit" class="btn-modal-submit" id="forgotEmailSubmitBtn">
+                                <span>Gửi mã xác thực OTP</span>
+                            </button>
+                        </form>
+
+                        <div class="modal-switch-prompt mt-3 text-center">
+                            Bạn đã nhớ mật khẩu? 
+                            <a href="javascript:void(0)" onclick="backToLoginFromForgot()">Đăng nhập ngay</a>
+                        </div>
+                    </div>
+
+                    <!-- BƯỚC 2: NHẬP MÃ OTP & MẬT KHẨU MỚI -->
+                    <div id="forgotStep2Container" class="d-none">
+                        <div class="modal-brand-header">
+                            <span class="brand-icon"><i class="bi bi-shield-lock-fill"></i></span>
+                            <h4>Đặt lại mật khẩu</h4>
+                            <p>
+                                Mã OTP 6 chữ số đã được gửi đến email:
+                                <br><strong id="forgotEmailDisplay" class="text-navy"></strong>
+                            </p>
+                        </div>
+
+                        <form id="ajaxResetPasswordForm" onsubmit="handleResetPasswordSubmit(event)" novalidate>
+                            <div class="modal-form-group text-center">
+                                <label class="modal-form-label mb-2" for="forgotOtpInput">Nhập mã OTP 6 chữ số <span class="text-danger">*</span></label>
+                                <input type="text"
+                                       id="forgotOtpInput"
+                                       class="modal-input-field text-center fw-bold fs-3"
+                                       maxlength="6"
+                                       inputmode="numeric"
+                                       pattern="[0-9]{6}"
+                                       placeholder="· · · · · ·"
+                                       style="letter-spacing: 10px; font-family: monospace;"
+                                       autocomplete="one-time-code">
+                                <div class="field-error-text text-center" id="forgotOtpInputError"></div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-3 small text-muted">
+                                <span>Hết hạn trong: <strong id="forgotOtpCountdown" class="text-primary">10:00</strong></span>
+                                <button type="button" class="btn btn-link p-0 text-decoration-none small" id="forgotResendOtpBtn" onclick="resendForgotOtp()" disabled>
+                                    Gửi lại mã (<span id="forgotResendCount">60s</span>)
+                                </button>
+                            </div>
+
+                            <div class="modal-form-group">
+                                <label class="modal-form-label" for="forgotNewPassword">Mật khẩu mới <span class="text-danger">*</span></label>
+                                <div class="password-field-wrapper">
+                                    <input type="password" id="forgotNewPassword" minlength="8" maxlength="20" class="modal-input-field" placeholder="Ví dụ: Stayly@2026" autocomplete="new-password">
+                                    <button type="button" class="btn-toggle-password" data-target="forgotNewPassword" title="Hiện mật khẩu" tabindex="-1">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="field-error-text" id="forgotNewPasswordError"></div>
+                                <div class="small text-muted mt-1" style="font-size: 0.78rem;">Từ 8-20 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.</div>
+                            </div>
+
+                            <div class="modal-form-group">
+                                <label class="modal-form-label" for="forgotConfirmPassword">Xác nhận mật khẩu mới <span class="text-danger">*</span></label>
+                                <div class="password-field-wrapper">
+                                    <input type="password" id="forgotConfirmPassword" minlength="8" maxlength="20" class="modal-input-field" placeholder="Nhập lại mật khẩu mới" autocomplete="new-password">
+                                    <button type="button" class="btn-toggle-password" data-target="forgotConfirmPassword" title="Hiện mật khẩu" tabindex="-1">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="field-error-text" id="forgotConfirmPasswordError"></div>
+                            </div>
+
+                            <button type="submit" class="btn-modal-submit" id="resetPasswordSubmitBtn">
+                                <span>Xác nhận &amp; Đổi mật khẩu</span>
+                            </button>
+                        </form>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2">
+                            <a href="javascript:void(0)" onclick="toggleForgotStep(1)" class="small text-muted text-decoration-none">
+                                &larr; Thay đổi email
+                            </a>
+                            <a href="javascript:void(0)" onclick="backToLoginFromForgot()" class="small text-muted text-decoration-none">
+                                Quay lại Đăng nhập
                             </a>
                         </div>
                     </div>
@@ -530,6 +644,10 @@
 
         // Vanilla JS Toggle between Login, Register, and OTP views inside Auth Modal
         function toggleAuthModalView(view) {
+            if (view === 'forgot') {
+                openForgotPasswordModal();
+                return;
+            }
             const loginBox = document.getElementById('loginFormContainer');
             const registerBox = document.getElementById('registerFormContainer');
             const otpBox = document.getElementById('registerOtpContainer');
@@ -1061,6 +1179,317 @@
                     if (resendCount) resendCount.textContent = `${cooldownSeconds}s`;
                 }
             }, 1000);
+        }
+
+        /* ==========================================================================
+           Forgot Password Modal Management & Handlers
+           ========================================================================== */
+        let pendingForgotEmail = '';
+        let forgotOtpCountdownTimer = null;
+        let forgotResendCooldownTimer = null;
+
+        function openForgotPasswordModal() {
+            const authModalEl = document.getElementById('authModal');
+            if (authModalEl) {
+                const modal = bootstrap.Modal.getInstance(authModalEl);
+                if (modal) modal.hide();
+            }
+
+            const loginEmailInput = document.getElementById('loginEmail');
+            const forgotEmailInput = document.getElementById('forgotEmail');
+            if (loginEmailInput && forgotEmailInput && loginEmailInput.value.trim()) {
+                forgotEmailInput.value = loginEmailInput.value.trim();
+            }
+
+            toggleForgotStep(1);
+
+            const alertBox = document.getElementById('modalForgotAlert');
+            if (alertBox) {
+                alertBox.classList.add('d-none');
+                alertBox.textContent = '';
+            }
+            clearFieldError('forgotEmail', 'forgotEmailError');
+            clearFieldError('forgotOtpInput', 'forgotOtpInputError');
+            clearFieldError('forgotNewPassword', 'forgotNewPasswordError');
+            clearFieldError('forgotConfirmPassword', 'forgotConfirmPasswordError');
+
+            const forgotModalEl = document.getElementById('forgotPasswordModal');
+            if (forgotModalEl) {
+                const modal = bootstrap.Modal.getOrCreateInstance(forgotModalEl);
+                modal.show();
+            }
+        }
+
+        function backToLoginFromForgot() {
+            const forgotModalEl = document.getElementById('forgotPasswordModal');
+            if (forgotModalEl) {
+                const modal = bootstrap.Modal.getInstance(forgotModalEl);
+                if (modal) modal.hide();
+            }
+
+            const authModalEl = document.getElementById('authModal');
+            if (authModalEl) {
+                toggleAuthModalView('login');
+                const forgotEmailInput = document.getElementById('forgotEmail');
+                const loginEmailInput = document.getElementById('loginEmail');
+                if (forgotEmailInput && loginEmailInput && forgotEmailInput.value.trim()) {
+                    loginEmailInput.value = forgotEmailInput.value.trim();
+                }
+                const modal = bootstrap.Modal.getOrCreateInstance(authModalEl);
+                modal.show();
+            }
+        }
+
+        function toggleForgotStep(step) {
+            const step1 = document.getElementById('forgotStep1Container');
+            const step2 = document.getElementById('forgotStep2Container');
+            const alertBox = document.getElementById('modalForgotAlert');
+            if (alertBox) {
+                alertBox.classList.add('d-none');
+                alertBox.textContent = '';
+            }
+
+            if (step === 2) {
+                if (step1) step1.classList.add('d-none');
+                if (step2) step2.classList.remove('d-none');
+                const otpInput = document.getElementById('forgotOtpInput');
+                if (otpInput) setTimeout(() => otpInput.focus(), 150);
+            } else {
+                if (step2) step2.classList.add('d-none');
+                if (step1) step1.classList.remove('d-none');
+                clearInterval(forgotOtpCountdownTimer);
+                clearInterval(forgotResendCooldownTimer);
+                const emailInput = document.getElementById('forgotEmail');
+                if (emailInput) setTimeout(() => emailInput.focus(), 150);
+            }
+        }
+
+        async function handleRequestForgotOtp(event) {
+            event.preventDefault();
+            clearFieldError('forgotEmail', 'forgotEmailError');
+
+            const emailInput = document.getElementById('forgotEmail');
+            const email = emailInput ? emailInput.value.trim() : '';
+            const submitBtn = document.getElementById('forgotEmailSubmitBtn');
+            const alertBox = document.getElementById('modalForgotAlert');
+            if (alertBox) {
+                alertBox.classList.add('d-none');
+                alertBox.textContent = '';
+            }
+
+            const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+            if (!email || !emailRegex.test(email)) {
+                setFieldError('forgotEmail', 'forgotEmailError', 'Vui lòng nhập địa chỉ email hợp lệ.');
+                return;
+            }
+
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang gửi mã OTP...';
+
+            try {
+                const response = await fetch('/Home/RequestForgotPasswordOtp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, purpose: 'ForgotPassword' })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    pendingForgotEmail = email;
+                    document.getElementById('forgotEmailDisplay').textContent = email;
+                    toggleForgotStep(2);
+                    startForgotOtpTimers();
+                    showStaylyToast('info', `Mã OTP đã được gửi đến email ${email}. Vui lòng kiểm tra hộp thư!`);
+                } else {
+                    if (alertBox) {
+                        alertBox.textContent = data.message || 'Không thể gửi mã xác thực OTP. Vui lòng kiểm tra lại email.';
+                        alertBox.classList.remove('d-none');
+                    }
+                }
+            } catch (err) {
+                if (alertBox) {
+                    alertBox.textContent = 'Lỗi kết nối máy chủ khi gửi mã OTP.';
+                    alertBox.classList.remove('d-none');
+                }
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        }
+
+        async function resendForgotOtp() {
+            if (!pendingForgotEmail) return;
+
+            const resendBtn = document.getElementById('forgotResendOtpBtn');
+            resendBtn.disabled = true;
+
+            try {
+                const res = await fetch('/Home/RequestForgotPasswordOtp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: pendingForgotEmail, purpose: 'ForgotPassword' })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    startForgotOtpTimers();
+                    showStaylyToast('info', 'Mã OTP mới đã được gửi lại vào email của bạn!');
+                    clearFieldError('forgotOtpInput', 'forgotOtpInputError');
+                    const otpInput = document.getElementById('forgotOtpInput');
+                    if (otpInput) {
+                        otpInput.value = '';
+                        otpInput.focus();
+                    }
+                } else {
+                    showStaylyToast('info', data.message || 'Không thể gửi lại mã OTP.');
+                }
+            } catch (e) {
+                showStaylyToast('info', 'Lỗi kết nối khi gửi lại mã OTP.');
+            }
+        }
+
+        function startForgotOtpTimers() {
+            clearInterval(forgotOtpCountdownTimer);
+            clearInterval(forgotResendCooldownTimer);
+
+            let expireSeconds = 600; // 10 minutes
+            const countdownEl = document.getElementById('forgotOtpCountdown');
+
+            forgotOtpCountdownTimer = setInterval(() => {
+                expireSeconds--;
+                if (expireSeconds <= 0) {
+                    clearInterval(forgotOtpCountdownTimer);
+                    if (countdownEl) countdownEl.textContent = '00:00 (Hết hạn)';
+                } else {
+                    const mins = String(Math.floor(expireSeconds / 60)).padStart(2, '0');
+                    const secs = String(expireSeconds % 60).padStart(2, '0');
+                    if (countdownEl) countdownEl.textContent = `${mins}:${secs}`;
+                }
+            }, 1000);
+
+            let cooldownSeconds = 60;
+            const resendBtn = document.getElementById('forgotResendOtpBtn');
+            const resendCount = document.getElementById('forgotResendCount');
+            if (resendBtn) resendBtn.disabled = true;
+
+            forgotResendCooldownTimer = setInterval(() => {
+                cooldownSeconds--;
+                if (cooldownSeconds <= 0) {
+                    clearInterval(forgotResendCooldownTimer);
+                    if (resendBtn) resendBtn.disabled = false;
+                    if (resendCount) resendCount.textContent = 'Gửi lại ngay';
+                } else {
+                    if (resendCount) resendCount.textContent = `${cooldownSeconds}s`;
+                }
+            }, 1000);
+        }
+
+        async function handleResetPasswordSubmit(event) {
+            event.preventDefault();
+            clearFieldError('forgotOtpInput', 'forgotOtpInputError');
+            clearFieldError('forgotNewPassword', 'forgotNewPasswordError');
+            clearFieldError('forgotConfirmPassword', 'forgotConfirmPasswordError');
+
+            const alertBox = document.getElementById('modalForgotAlert');
+            if (alertBox) {
+                alertBox.classList.add('d-none');
+                alertBox.textContent = '';
+            }
+
+            const otpInput = document.getElementById('forgotOtpInput');
+            const newPassInput = document.getElementById('forgotNewPassword');
+            const confirmPassInput = document.getElementById('forgotConfirmPassword');
+            const submitBtn = document.getElementById('resetPasswordSubmitBtn');
+
+            const code = otpInput ? otpInput.value.trim() : '';
+            const newPassword = newPassInput ? newPassInput.value : '';
+            const confirmPassword = confirmPassInput ? confirmPassInput.value : '';
+
+            let hasError = false;
+
+            if (!code || code.length !== 6 || !/^\d{6}$/.test(code)) {
+                setFieldError('forgotOtpInput', 'forgotOtpInputError', 'Vui lòng nhập đủ 6 chữ số của mã OTP.');
+                hasError = true;
+            }
+
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$/;
+            if (!newPassword || !passwordRegex.test(newPassword)) {
+                setFieldError('forgotNewPassword', 'forgotNewPasswordError', 'Mật khẩu phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.');
+                hasError = true;
+            }
+
+            if (!confirmPassword) {
+                setFieldError('forgotConfirmPassword', 'forgotConfirmPasswordError', 'Vui lòng xác nhận lại mật khẩu.');
+                hasError = true;
+            } else if (newPassword !== confirmPassword) {
+                setFieldError('forgotConfirmPassword', 'forgotConfirmPasswordError', 'Mật khẩu xác nhận không khớp.');
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
+
+            try {
+                const response = await fetch('/Home/AjaxResetPassword', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: pendingForgotEmail,
+                        otpCode: code,
+                        newPassword: newPassword
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    clearInterval(forgotOtpCountdownTimer);
+                    clearInterval(forgotResendCooldownTimer);
+
+                    const forgotModalEl = document.getElementById('forgotPasswordModal');
+                    const modal = bootstrap.Modal.getInstance(forgotModalEl);
+                    if (modal) modal.hide();
+
+                    showStaylyToast('success', data.message || 'Đặt lại mật khẩu thành công! Vui lòng đăng nhập với mật khẩu mới.');
+
+                    setTimeout(() => {
+                        const authModalEl = document.getElementById('authModal');
+                        if (authModalEl) {
+                            toggleAuthModalView('login');
+                            const loginEmail = document.getElementById('loginEmail');
+                            if (loginEmail) loginEmail.value = pendingForgotEmail;
+                            const loginPass = document.getElementById('loginPassword');
+                            if (loginPass) {
+                                loginPass.value = '';
+                                loginPass.focus();
+                            }
+                            bootstrap.Modal.getOrCreateInstance(authModalEl).show();
+                        }
+                    }, 400);
+
+                    pendingForgotEmail = '';
+                } else {
+                    if (data.message && (data.message.toLowerCase().includes('otp') || data.message.toLowerCase().includes('hết hiệu lực'))) {
+                        setFieldError('forgotOtpInput', 'forgotOtpInputError', data.message);
+                    } else if (alertBox) {
+                        alertBox.textContent = data.message || 'Đặt lại mật khẩu không thành công. Vui lòng thử lại.';
+                        alertBox.classList.remove('d-none');
+                    }
+                }
+            } catch (err) {
+                if (alertBox) {
+                    alertBox.textContent = 'Lỗi kết nối máy chủ khi đặt lại mật khẩu.';
+                    alertBox.classList.remove('d-none');
+                }
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
         }
 
         // Client-side Logout Handler

@@ -408,6 +408,62 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
         return Ok(new { message });
     }
 
+    [HttpPost]
+    public async Task<IActionResult> RequestForgotPasswordOtp(
+        [FromBody] SendOtpRequestModel? model,
+        CancellationToken cancellationToken)
+    {
+        if (model == null || string.IsNullOrWhiteSpace(model.Email))
+            return BadRequest(new { success = false, message = "Vui lòng nhập địa chỉ email của bạn." });
+
+        var (success, message, error) = await api.SendOtpAsync(model.Email.Trim(), model.FullName, "ForgotPassword", cancellationToken);
+        if (!success)
+        {
+            var errMessage = error ?? "Không thể gửi mã xác thực OTP. Vui lòng kiểm tra lại email.";
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(error ?? "{}");
+                if (doc.RootElement.TryGetProperty("message", out var m))
+                    errMessage = m.GetString() ?? errMessage;
+            }
+            catch { }
+            return BadRequest(new { success = false, message = errMessage });
+        }
+
+        return Ok(new { success = true, message = message ?? "Mã xác thực OTP đã được gửi về email của bạn." });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AjaxResetPassword(
+        [FromBody] ResetPasswordInput? input,
+        CancellationToken cancellationToken)
+    {
+        if (input == null || string.IsNullOrWhiteSpace(input.Email))
+            return BadRequest(new { success = false, message = "Email không được để trống." });
+
+        if (string.IsNullOrWhiteSpace(input.OtpCode) || input.OtpCode.Trim().Length != 6)
+            return BadRequest(new { success = false, message = "Vui lòng nhập đúng mã OTP 6 chữ số." });
+
+        if (string.IsNullOrWhiteSpace(input.NewPassword))
+            return BadRequest(new { success = false, message = "Vui lòng nhập mật khẩu mới." });
+
+        var (success, message, error) = await api.ResetPasswordAsync(input.Email.Trim(), input.OtpCode.Trim(), input.NewPassword, cancellationToken);
+        if (!success)
+        {
+            var errMessage = error ?? "Đặt lại mật khẩu không thành công. Vui lòng thử lại.";
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(error ?? "{}");
+                if (doc.RootElement.TryGetProperty("message", out var m))
+                    errMessage = m.GetString() ?? errMessage;
+            }
+            catch { }
+            return BadRequest(new { success = false, message = errMessage });
+        }
+
+        return Ok(new { success = true, message = message ?? "Đặt lại mật khẩu thành công! Vui lòng đăng nhập với mật khẩu mới." });
+    }
+
     [HttpGet]
     public async Task<IActionResult> CheckContactAvailability(string? email, string? phone, CancellationToken cancellationToken)
     {

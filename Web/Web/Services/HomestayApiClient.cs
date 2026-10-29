@@ -122,6 +122,37 @@ public sealed class HomestayApiClient(HttpClient http)
         }
     }
 
+    public async Task<(bool Success, string? Message, string? Error)> ResetPasswordAsync(
+        string email,
+        string otpCode,
+        string newPassword,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await http.PostAsJsonAsync("auth/reset-password", new
+            {
+                email,
+                otpCode,
+                newPassword
+            }, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var data = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>(cancellationToken: cancellationToken);
+                var message = data.TryGetProperty("message", out var m) ? m.GetString() : "Đặt lại mật khẩu thành công.";
+                return (true, message, null);
+            }
+
+            var error = await response.Content.ReadAsStringAsync(cancellationToken);
+            return (false, null, error);
+        }
+        catch (Exception ex)
+        {
+            return (false, null, ex.Message);
+        }
+    }
+
     public async Task<(bool Success, Profile? Result, string? Error, int StatusCode)> GetProfileAsync(
         string token,
         CancellationToken cancellationToken = default)

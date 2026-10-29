@@ -32,6 +32,22 @@ public sealed class AuthController(
             if (alreadyRegistered)
                 return Conflict("Email này đã được sử dụng cho một tài khoản khác.");
         }
+        else if (string.Equals(request.Purpose, "ForgotPassword", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(request.Purpose, "ResetPassword", StringComparison.OrdinalIgnoreCase))
+        {
+            var existingUser = await db.NguoiDungs.FirstOrDefaultAsync(a => a.Email == email, cancellationToken);
+            if (existingUser == null)
+            {
+                return NotFound(new { message = "Không tìm thấy tài khoản nào gắn với địa chỉ email này trên hệ thống." });
+            }
+
+            if (!existingUser.TrangThai || string.Equals(existingUser.TrangThaiDuyet, "BiKhoa", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new { message = "Tài khoản của bạn hiện đang bị khóa hoặc ngừng hoạt động. Vui lòng liên hệ ban quản trị." });
+            }
+
+            request.FullName ??= existingUser.HoTen;
+        }
 
         await otpService.GenerateAndSendOtpAsync(
             email,
@@ -269,6 +285,38 @@ public sealed class AuthController(
         }
 
         return Ok(CreateAuthResponse(account));
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        var email = request.Email.Trim().ToLowerInvariant();
+
+        var account = await db.NguoiDungs
+            .SingleOrDefaultAsync(a => a.Email == email, cancellationToken);
+
+        if (account is null)
+        {
+            return NotFound(new { message = "Không tìm thấy tài khoản nào gắn với địa chỉ email này trên hệ thống." });
+        }
+
+        if (!account.TrangThai || string.Equals(account.TrangThaiDuyet, "BiKhoa", StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(new { message = "Tài khoản của bạn hiện đang bị khóa hoặc ngừng hoạt động. Vui lòng liên hệ ban quản trị." });
+        }
+
+        var isOtpValid = otpService.VerifyOtp(email, request.OtpCode.Trim(), "ForgotPassword");
+        if (!isOtpValid)
+        {
+            return BadRequest(new { message = "Mã xác thực OTP không chính xác hoặc đã hết hiệu lực. Vui lòng kiểm tra lại." });
+        }
+
+        account.MatKhau = passwordHasher.HashPassword(account, request.NewPassword);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { message = "Đặt lại mật khẩu thành công. Vui lòng đăng nhập với mật khẩu mới." });
     }
 
     private async Task<bool> IsContactAlreadyRegistered(

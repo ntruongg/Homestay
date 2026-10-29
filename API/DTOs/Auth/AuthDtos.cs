@@ -127,6 +127,22 @@ public sealed class LoginRequest
     public string Password { get; set; } = string.Empty;
 }
 
+public sealed class ResetPasswordRequest
+{
+    [Required(ErrorMessage = "Email là bắt buộc"), EmailAddress(ErrorMessage = "Email không hợp lệ"), StringLength(100)]
+    public string Email { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Mã xác thực OTP là bắt buộc")]
+    [RegularExpression(@"^\d{6}$", ErrorMessage = "Mã OTP phải đúng 6 chữ số")]
+    public string OtpCode { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Mật khẩu mới là bắt buộc")]
+    [StringLength(20, MinimumLength = 8, ErrorMessage = "Mật khẩu mới phải từ 8 đến 20 ký tự")]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$", 
+        ErrorMessage = "Mật khẩu mới phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt")]
+    public string NewPassword { get; set; } = string.Empty;
+}
+
 public sealed record UserResponse(int Id, string Email, string FullName, string Role);
 
 public sealed record AuthResponse(string AccessToken, DateTime ExpiresAt, UserResponse User);

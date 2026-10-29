@@ -4,7 +4,8 @@ public sealed record AccountOtpEmailModel(
     string RecipientName,
     string OtpCode,
     int ExpireMinutes = 10,
-    string SupportEmail = "support@stayly.com"
+    string SupportEmail = "support@stayly.com",
+    string PurposeText = "Xác thực tài khoản"
 );
 
 public sealed record BookingConfirmedEmailModel(

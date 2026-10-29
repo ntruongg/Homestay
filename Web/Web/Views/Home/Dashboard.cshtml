@@ -570,68 +570,71 @@
                                  data-amount="@b.TotalAmount.ToString("N0") ₫">
                             <div class="row align-items-center g-3">
                                 <!-- Info 1: Mã đơn & Tên khách hàng -->
-                                <div class="col-md-3">
-                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                <div class="col-12 col-md-6 col-xl-3">
+                                    <div class="d-flex align-items-center gap-2 mb-1" style="min-width: 0;">
                                         <span class="booking-code-pill">#@b.Id</span>
-                                        <strong class="text-navy">@b.GuestName</strong>
+                                        <strong class="text-navy booking-guest-name" title="@b.GuestName">@b.GuestName</strong>
                                     </div>
-                                    <div class="text-muted small">
-                                        <i class="bi bi-telephone me-1 text-primary"></i> @b.GuestPhone
+                                    <div class="text-muted small text-nowrap">
+                                        <i class="bi bi-telephone me-1 text-primary"></i> <span>@b.GuestPhone</span>
                                     </div>
                                 </div>
 
                                 <!-- Info 2: Tên cơ sở & Phòng -->
-                                <div class="col-md-3">
-                                    <div class="fw-bold text-dark small mb-1">@b.PropertyName</div>
-                                    <div class="text-muted small">
-                                        <i class="bi bi-door-open me-1 text-primary"></i>
-                                        Phòng: <strong>@(b.RoomNumbers.Count > 0 ? string.Join(", ", b.RoomNumbers) : "Nguyên căn")</strong>
+                                <div class="col-12 col-md-6 col-xl-3">
+                                    <div class="fw-bold text-dark small mb-1 booking-text-fixed" title="@b.PropertyName">
+                                        <i class="bi bi-building me-1 text-primary"></i>@b.PropertyName
+                                    </div>
+                                    <div class="text-muted small booking-text-fixed" title="Phòng: @(b.RoomNumbers.Count > 0 ? string.Join(", ", b.RoomNumbers) : "Nguyên căn")">
+                                        <i class="bi bi-door-open me-1 text-primary"></i>Phòng: <strong class="text-dark">@(b.RoomNumbers.Count > 0 ? string.Join(", ", b.RoomNumbers) : "Nguyên căn")</strong>
                                     </div>
                                 </div>
 
                                 <!-- Info 3: Thời gian check-in / check-out -->
-                                <div class="col-md-3">
-                                    <div class="booking-date-range small">
+                                <div class="col-12 col-md-6 col-xl-3">
+                                    <div class="booking-date-range small text-nowrap mb-1">
                                         <i class="bi bi-calendar-event text-primary me-1"></i>
                                         <span>@b.CheckIn.ToString("dd/MM")</span>
                                         <i class="bi bi-arrow-right mx-1 text-muted"></i>
                                         <span>@b.CheckOut.ToString("dd/MM/yyyy")</span>
                                     </div>
-                                    <div class="text-muted small mt-1">
-                                        Số khách: <strong>@b.GuestCount người</strong>
+                                    <div class="text-muted small text-nowrap mt-1">
+                                        <i class="bi bi-people me-1 text-primary"></i>Số khách: <strong class="text-dark">@b.GuestCount người</strong>
                                     </div>
                                 </div>
 
                                 <!-- Info 4: Tổng tiền & Badge trạng thái -->
-                                <div class="col-md-3 text-md-end">
-                                    <div class="booking-price-text mb-1">
-                                        @b.TotalAmount.ToString("N0") <span class="fs-6">₫</span>
+                                <div class="col-12 col-md-6 col-xl-3">
+                                    <div class="d-flex flex-column align-items-xl-end align-items-md-start justify-content-center">
+                                        <div class="booking-price-text text-nowrap mb-1">
+                                            @b.TotalAmount.ToString("N0") <span class="fs-6 fw-bold">₫</span>
+                                        </div>
+                                        <span class="booking-status-tag @statusClass text-nowrap">
+                                            <i class="bi @statusIcon"></i><span>@statusText</span>
+                                        </span>
                                     </div>
-                                    <span class="booking-status-tag @statusClass mb-2">
-                                        <i class="bi @statusIcon"></i> @statusText
-                                    </span>
                                 </div>
                             </div>
 
                             <!-- Actions Row: Xem chi tiết & Duyệt đơn -->
-                            <div class="d-flex align-items-center justify-content-between pt-3 mt-3 border-top flex-wrap gap-2">
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openBookingDetailModal(this)">
+                            <div class="booking-card-footer d-flex align-items-center justify-content-between pt-3 mt-3 border-top flex-wrap gap-2 w-100">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 text-nowrap" onclick="openBookingDetailModal(this)">
                                     <i class="bi bi-receipt me-1"></i>Chi tiết
                                 </button>
 
-                                <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
                                     @if (b.Status is "Pending" or "ChoDuyet")
                                     {
                                         <form asp-action="UpdateBookingStatus" method="post" class="d-inline">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="bookingId" value="@b.Id">
                                             <input type="hidden" name="status" value="DaDuyet">
-                                            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
+                                            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold text-nowrap">
                                                 <i class="bi bi-check2-circle me-1"></i> Xác nhận đơn
                                             </button>
                                         </form>
 
-                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="openRejectBookingModal(@b.Id)">
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 text-nowrap" onclick="openRejectBookingModal(@b.Id)">
                                             <i class="bi bi-x-circle me-1"></i> Từ chối
                                         </button>
                                     }
@@ -641,8 +644,8 @@
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="bookingId" value="@b.Id">
                                             <input type="hidden" name="status" value="DaHoanTat">
-                                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-bold">
-                                                <i class="bi bi-check-all me-1"></i>Hoàn tất
+                                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-bold text-nowrap">
+                                                <i class="bi bi-check-all me-1"></i> Hoàn tất
                                             </button>
                                         </form>
                                     }

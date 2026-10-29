@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using API.DTOs.Properties;
 
 namespace API.DTOs.Admin;
@@ -20,7 +20,9 @@ public sealed record AdminPropertySummaryResponse(
     string OwnerPhone,
     string? CoverImageUrl,
     double Rating = 0,
-    int BookingCount = 0
+    int BookingCount = 0,
+    decimal MinPrice = 0,
+    decimal MaxPrice = 0
 );
 
 public sealed record AdminOwnerContact(
@@ -119,7 +121,12 @@ public sealed record AdminBookingSummaryResponse(
     DateTime? RefundRequestedAt = null,
     string? GuestBankName = null,
     string? GuestAccountNumber = null,
-    string? GuestAccountHolder = null
+    string? GuestAccountHolder = null,
+    string? TrangThaiQuyetToan = null,
+    string? MaGiaoDichQuyetToan = null,
+    DateTime? NgayQuyetToan = null,
+    decimal? SoTienQuyetToan = null,
+    string? GhiChuQuyetToan = null
 );
 
 public sealed record AdminGuestInfo(
@@ -238,6 +245,7 @@ public sealed class RecordPayoutRequest
 public sealed class SettleBookingRequest
 {
     public string? TransactionNo { get; set; }
+    public string? TransferCode { get; set; }
     public decimal? Amount { get; set; }
     public string? Note { get; set; }
 }

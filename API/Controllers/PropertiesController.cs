@@ -51,10 +51,8 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
         if (!string.IsNullOrWhiteSpace(location))
         {
             var loc = location.Trim();
-            query = query.Where(p => (p.DiaChi ?? "").Contains(loc) ||
-                                     (p.PhuongXa ?? "").Contains(loc) ||
-                                     (p.ThanhPho ?? "").Contains(loc) ||
-                                     p.TenCoSoLuuTru.Contains(loc));
+            query = query.Where(p => (p.PhuongXa ?? "").Contains(loc) ||
+                                     (p.ThanhPho ?? "").Contains(loc));
         }
 
         if (!string.IsNullOrWhiteSpace(type))

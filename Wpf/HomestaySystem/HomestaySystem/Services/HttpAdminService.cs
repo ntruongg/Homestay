@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -575,12 +575,15 @@ namespace HomestaySystem.Services
                             TongTien = b.TotalAmount,
                             TrangThai = b.Status,
                             ThoiGianTao = b.BookingDate,
-                            TrangThaiQuyetToan = b.PaymentStatus == "Paid" ? "DaQuyetToan" : "ChuaQuyetToan",
+                            TrangThaiQuyetToan = !string.IsNullOrWhiteSpace(b.TrangThaiQuyetToan) ? b.TrangThaiQuyetToan : "ChuaQuyetToan",
                             TenNganHangKhach = b.GuestBankName,
                             SoTaiKhoanKhach = b.GuestAccountNumber,
                             TenChuTaiKhoanKhach = b.GuestAccountHolder,
                             LyDoHoanTien = b.RefundReason,
-                            ThoiGianYeuCauHoan = b.RefundRequestedAt
+                            ThoiGianYeuCauHoan = b.RefundRequestedAt,
+                            MaGiaoDichQuyetToan = b.MaGiaoDichQuyetToan,
+                            NgayQuyetToan = b.NgayQuyetToan,
+                            GhiChuQuyetToan = b.GhiChuQuyetToan
                         }).ToList();
                     }
                     return new List<DonDatPhong>();
@@ -1353,6 +1356,8 @@ namespace HomestaySystem.Services
                 },
                 HinhAnhDaiDien = NormalizeImageUrl(dto.CoverImageUrl),
                 TongSoPhong = dto.TotalRooms,
+                GiaThapNhat = dto.MinPrice,
+                GiaCaoNhat = dto.MaxPrice > 0 ? dto.MaxPrice : dto.MinPrice,
                 DanhGia = dto.Rating,
                 SoLuotDat = dto.BookingCount,
                 NgayGuiDuyet = DateTime.Now
@@ -1369,7 +1374,7 @@ namespace HomestaySystem.Services
 
         #region Internal API DTO Records
         private record AuthResultDto(string AccessToken, DateTime ExpiresAt);
-        private record ApiPropertySummaryDto(int Id, string Name, string? Address, string? City, string? Type, bool IsActive, string ApprovalStatus, string? RejectionReason, int TotalRooms, int OwnerId, string OwnerName, string OwnerEmail, string OwnerPhone, string? CoverImageUrl, double Rating = 0, int BookingCount = 0);
+        private record ApiPropertySummaryDto(int Id, string Name, string? Address, string? City, string? Type, bool IsActive, string ApprovalStatus, string? RejectionReason, int TotalRooms, int OwnerId, string OwnerName, string OwnerEmail, string OwnerPhone, string? CoverImageUrl, double Rating = 0, int BookingCount = 0, decimal MinPrice = 0, decimal MaxPrice = 0);
         private record ApiPropertyDetailsDto(int Id, string Name, string? Phone, string? Email, string? Address, string? Ward, string? City, string? Type, string? Policy, bool IsActive, string ApprovalStatus, string? RejectionReason, string? BusinessLicenseUrl, string? FireSafetyDocumentUrl, string? SecurityDocumentUrl, ApiOwnerContactDto? Owner, List<string>? Photos, List<ApiRoomDetailsDto>? Rooms, List<ApiApprovalHistoryDto>? ApprovalHistory, double Rating = 0, int BookingCount = 0);
         private record ApiOwnerContactDto(int Id, string FullName, string Email, string Phone, string? CitizenId, string? BankInformation, string? BankName = null, string? AccountNumber = null, string? AccountHolder = null);
         private record ApiRoomDetailsDto(int RoomId, string RoomNumber, int Capacity, decimal BasePrice, string Status, string? RoomType, List<string>? Photos);

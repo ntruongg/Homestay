@@ -1,4 +1,4 @@
-<UserControl x:Class="HomestaySystem.Views.KiemDuyetHomestayView"
+﻿<UserControl x:Class="HomestaySystem.Views.KiemDuyetHomestayView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -241,7 +241,7 @@
                             </DataGridTemplateColumn>
 
                             <!-- Cột 6: GIÁ ĐÊM (Tự động canh theo độ dài đơn giá) -->
-                            <DataGridTextColumn Header="GIÁ THAM KHẢO" Binding="{Binding GiaCoSo, StringFormat='{}{0:N0} đ/đêm'}" Width="Auto" MinWidth="140">
+                            <DataGridTextColumn Header="GIÁ THAM KHẢO" Binding="{Binding KhoangGiaHienThi}" Width="Auto" MinWidth="140">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="FontWeight" Value="SemiBold"/>

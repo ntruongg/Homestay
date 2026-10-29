@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.Data;
 using API.DTOs.Admin;
@@ -126,6 +126,9 @@ public sealed class AdminController(
             var approvalStatus = p.TrangThaiDuyet;
             var rejectionReason = latestHistory?.LyDoTuChoi;
             var coverUrl = coverImages.FirstOrDefault(i => i.MaCoSoLuuTru == p.MaCoSoLuuTru)?.UrlHinhAnh;
+            var activeRooms = p.Phongs.Where(r => r.TrangThaiHoatDong).ToList();
+            var minPrice = activeRooms.Count > 0 ? activeRooms.Min(r => r.GiaGoc) : (p.Phongs.Count > 0 ? p.Phongs.Min(r => r.GiaGoc) : 0m);
+            var maxPrice = activeRooms.Count > 0 ? activeRooms.Max(r => r.GiaGoc) : (p.Phongs.Count > 0 ? p.Phongs.Max(r => r.GiaGoc) : 0m);
 
             return new AdminPropertySummaryResponse(
                 p.MaCoSoLuuTru,
@@ -143,7 +146,9 @@ public sealed class AdminController(
                 p.ChuCoSoLuuTru.DienThoai,
                 coverUrl,
                 reviewRatings.GetValueOrDefault(p.MaCoSoLuuTru, 0.0),
-                bookingCounts.GetValueOrDefault(p.MaCoSoLuuTru, 0)
+                bookingCounts.GetValueOrDefault(p.MaCoSoLuuTru, 0),
+                minPrice,
+                maxPrice
             );
         }).ToList();
 
@@ -458,7 +463,12 @@ public sealed class AdminController(
                 b.ThoiGianYeuCauHoan,
                 b.KhachHang.NganHang,
                 b.KhachHang.SoTaiKhoan,
-                b.KhachHang.TenNguoiThuHuong
+                b.KhachHang.TenNguoiThuHuong,
+                b.ThanhToan?.TrangThaiQuyetToan ?? "ChuaQuyetToan",
+                b.ThanhToan?.MaGiaoDichQuyetToan,
+                b.ThanhToan?.NgayQuyetToan,
+                b.ThanhToan?.SoTienQuyetToan,
+                b.ThanhToan?.GhiChuQuyetToan
             );
         }).ToList();
 
@@ -780,10 +790,12 @@ public sealed class AdminController(
         var comm = booking.ThanhToan.TienHoaHong > 0 ? booking.ThanhToan.TienHoaHong : Math.Round(total * 0.15m, 2);
         var calculatedPayout = booking.ThanhToan.TienThucNhanChu > 0 ? booking.ThanhToan.TienThucNhanChu : (total - comm);
 
+        var txCode = !string.IsNullOrWhiteSpace(request.TransactionNo)
+            ? request.TransactionNo.Trim()
+            : (!string.IsNullOrWhiteSpace(request.TransferCode) ? request.TransferCode.Trim() : $"PAYOUT-{id}-{DateTime.UtcNow:yyyyMMddHHmmss}");
+
         booking.ThanhToan.TrangThaiQuyetToan = "DaQuyetToan";
-        booking.ThanhToan.MaGiaoDichQuyetToan = string.IsNullOrWhiteSpace(request.TransactionNo)
-            ? $"PAYOUT-{id}-{DateTime.UtcNow:yyyyMMddHHmmss}"
-            : request.TransactionNo.Trim();
+        booking.ThanhToan.MaGiaoDichQuyetToan = txCode;
         booking.ThanhToan.NgayQuyetToan = DateTime.UtcNow;
         booking.ThanhToan.SoTienQuyetToan = request.Amount.HasValue && request.Amount.Value > 0
             ? request.Amount.Value

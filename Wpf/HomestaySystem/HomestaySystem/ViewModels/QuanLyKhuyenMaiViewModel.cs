@@ -113,7 +113,7 @@ namespace HomestaySystem.ViewModels
         public int SoVoucherDangHoatDong => System.Linq.Enumerable.Count(_tatCaKhuyenMai, v => v.TrangThai == "HoatDong");
         public int SoVoucherDaKhoa => System.Linq.Enumerable.Count(_tatCaKhuyenMai, v => v.TrangThai == "Khoa");
         public int SoLuotApDung => System.Linq.Enumerable.Sum(_tatCaKhuyenMai, v => v.SoLuongDaDung);
-        public string TongNganSachDaChi => $"{System.Linq.Enumerable.Sum(_tatCaKhuyenMai, v => v.SoLuongDaDung * 120000):N0} đ";
+        public string TongNganSachDaChi => $"{System.Linq.Enumerable.Sum(_tatCaKhuyenMai, v => (decimal)v.SoLuongDaDung * (v.GiamToiDa > 0 ? v.GiamToiDa : 0)):N0} đ";
 
         // Commands
         public ICommand TaiDuLieuCommand { get; }

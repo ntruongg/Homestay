@@ -22,7 +22,8 @@
                     <RowDefinition Height="Auto"/> <!-- Hàng 1: 4 Thẻ KPI Metrics -->
                     <RowDefinition Height="Auto"/> <!-- Hàng 2: Lịch sao lưu tự động & Chính sách lưu trữ -->
                     <RowDefinition Height="Auto"/> <!-- Hàng 3: Thanh công cụ sao lưu nhanh -->
-                    <RowDefinition Height="Auto"/> <!-- Hàng 4: Danh sách bản sao lưu & Nhật ký -->
+                    <RowDefinition Height="Auto"/> <!-- Hàng 4: Danh sách bản sao lưu máy chủ -->
+                    <RowDefinition Height="Auto"/> <!-- Hàng 5: Nhật ký bảo trì & Audit Log CSDL -->
                 </Grid.RowDefinitions>
 
                 <!-- ================= HÀNG 0: HEADER & ACTIONS ================= -->
@@ -130,7 +131,7 @@
                                 <TextBlock Text="{Binding SoBang}" FontSize="24" FontWeight="Bold" Foreground="#0F172A"/>
                                 <TextBlock Text=" bảng" FontSize="14" FontWeight="SemiBold" Foreground="#64748B" Margin="4,0,0,3" VerticalAlignment="Bottom"/>
                             </StackPanel>
-                            <TextBlock Text="{Binding PhienBanMayChu}" FontSize="11" Foreground="#64748B" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding PhienBanMayChu}" FontSize="11" Foreground="#64748B" TextWrapping="Wrap" MaxHeight="32" ToolTip="{Binding PhienBanMayChu}"/>
                         </StackPanel>
                     </Border>
 
@@ -176,7 +177,7 @@
                 </Grid>
 
                 <!-- ================= HÀNG 2: LỊCH SAO LƯU TỰ ĐỘNG & CHÍNH SÁCH LƯU TRỮ ================= -->
-                <Border Grid.Row="2" Background="#F0FDF4" CornerRadius="12" BorderBrush="#BBF7D0" BorderThickness="1" Padding="18,14" Margin="0,0,0,16">
+                <Border Grid.Row="2" Background="#F0FDF4" CornerRadius="12" BorderBrush="#BBF7D0" BorderThickness="1" Padding="20,14" Margin="0,0,0,16">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -184,18 +185,21 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <Border Grid.Column="0" Width="40" Height="40" Background="#DCFCE7" CornerRadius="10" Margin="0,0,14,0" VerticalAlignment="Center">
-                            <TextBlock Text="⏰" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <!-- Icon chuông/đồng hồ -->
+                        <Border Grid.Column="0" Width="44" Height="44" Background="#DCFCE7" CornerRadius="10" Margin="0,0,14,0" VerticalAlignment="Center">
+                            <TextBlock Text="⏰" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
 
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="Lịch sao lưu tự động &amp; Chính sách dọn dẹp đĩa (Retention Policy)" FontSize="13.5" FontWeight="Bold" Foreground="#14532D"/>
-                                <Border Background="#DCFCE7" CornerRadius="8" Padding="8,2" Margin="10,0,0,0">
+                        <!-- Tiêu đề và thông tin lịch sao lưu -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                            <WrapPanel VerticalAlignment="Center" Margin="0,0,0,4">
+                                <TextBlock Text="Lịch sao lưu tự động &amp; Chính sách dọn dẹp đĩa" FontSize="14" FontWeight="Bold" Foreground="#14532D" VerticalAlignment="Center"/>
+                                <TextBlock Text="(Retention Policy)" FontSize="12.5" FontWeight="SemiBold" Foreground="#166534" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                <Border Background="#DCFCE7" CornerRadius="8" Padding="8,2" Margin="10,0,0,0" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding TrangThaiLichText}" FontSize="11" FontWeight="Bold" Foreground="#15803D"/>
                                 </Border>
-                            </StackPanel>
-                            <TextBlock FontSize="12" Foreground="#166534" Margin="0,3,0,0">
+                            </WrapPanel>
+                            <TextBlock FontSize="12" Foreground="#166534" TextWrapping="Wrap" LineHeight="18">
                                 <Run Text="Lần chạy tới: "/>
                                 <Run Text="{Binding LanChayTiepTheoText, Mode=OneWay}" FontWeight="Bold"/>
                                 <Run Text=" | Chính sách: "/>
@@ -203,38 +207,45 @@
                             </TextBlock>
                         </StackPanel>
 
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                            <CheckBox IsChecked="{Binding LichTuDongBat}" VerticalAlignment="Center" Margin="0,0,12,0" Cursor="Hand">
-                                <TextBlock Text="Bật lịch tự động" FontSize="12" FontWeight="SemiBold" Foreground="#14532D"/>
-                            </CheckBox>
+                        <!-- Bảng điều khiển cấu hình xếp 2 hàng gọn gàng, không bị ép chữ -->
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
+                            <!-- Hàng 1: Checkbox & Ô nhập số ngày lưu trữ -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,8">
+                                <CheckBox IsChecked="{Binding LichTuDongBat}" VerticalAlignment="Center" Margin="0,0,16,0" Cursor="Hand">
+                                    <TextBlock Text="Bật lịch tự động" FontSize="12" FontWeight="SemiBold" Foreground="#14532D"/>
+                                </CheckBox>
 
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
-                                <TextBlock Text="Lưu trữ:" FontSize="12" Foreground="#14532D" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <Border Background="White" CornerRadius="6" BorderBrush="#86EFAC" BorderThickness="1" Padding="6,3">
-                                    <TextBox Text="{Binding SoNgayLuuTru, UpdateSourceTrigger=PropertyChanged}" Width="32" FontSize="12" FontWeight="Bold" Foreground="#14532D" BorderThickness="0" Background="Transparent" TextAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="ngày" FontSize="12" Foreground="#14532D" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Lưu trữ:" FontSize="12" Foreground="#14532D" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <Border Background="White" CornerRadius="6" BorderBrush="#86EFAC" BorderThickness="1" Padding="6,2">
+                                        <TextBox Text="{Binding SoNgayLuuTru, UpdateSourceTrigger=PropertyChanged}" Width="36" FontSize="12" FontWeight="Bold" Foreground="#14532D" BorderThickness="0" Background="Transparent" TextAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="ngày" FontSize="12" Foreground="#14532D" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                </StackPanel>
                             </StackPanel>
 
-                            <Button Command="{Binding LuuLichSaoLuuCommand}" Cursor="Hand"
-                                    Background="#16A34A" Foreground="White" BorderThickness="0" Padding="12,6" Margin="0,0,8,0">
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="6"/>
-                                    </Style>
-                                </Button.Resources>
-                                <TextBlock Text="💾 Lưu cấu hình" FontSize="11.5" FontWeight="Bold"/>
-                            </Button>
+                            <!-- Hàng 2: Các nút hành động Lưu & Chạy thử -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Command="{Binding LuuLichSaoLuuCommand}" Cursor="Hand"
+                                        Background="#16A34A" Foreground="White" BorderThickness="0" Padding="12,5" Margin="0,0,8,0">
+                                    <Button.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="6"/>
+                                        </Style>
+                                    </Button.Resources>
+                                    <TextBlock Text="💾 Lưu cấu hình" FontSize="11.5" FontWeight="Bold"/>
+                                </Button>
 
-                            <Button Command="{Binding KichHoatSaoLuuTuDongNgayCommand}" Cursor="Hand" ToolTip="Chạy thử chu kỳ sao lưu và dọn dẹp tự động ngay lập tức"
-                                    Background="White" BorderBrush="#86EFAC" BorderThickness="1" Foreground="#15803D" Padding="12,6">
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="6"/>
-                                    </Style>
-                                </Button.Resources>
-                                <TextBlock Text="▶ Chạy thử ngay" FontSize="11.5" FontWeight="SemiBold"/>
-                            </Button>
+                                <Button Command="{Binding KichHoatSaoLuuTuDongNgayCommand}" Cursor="Hand" ToolTip="Chạy thử chu kỳ sao lưu và dọn dẹp tự động ngay lập tức"
+                                        Background="White" BorderBrush="#86EFAC" BorderThickness="1" Foreground="#15803D" Padding="12,5">
+                                    <Button.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="6"/>
+                                        </Style>
+                                    </Button.Resources>
+                                    <TextBlock Text="▶ Chạy thử ngay" FontSize="11.5" FontWeight="SemiBold"/>
+                                </Button>
+                            </StackPanel>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -321,200 +332,232 @@
                     </Grid>
                 </Border>
 
-                <!-- ================= HÀNG 4: DANH SÁCH BẢN SAO LƯU & AUDIT LOG ================= -->
-                <Grid Grid.Row="4">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="7*"/>
-                        <ColumnDefinition Width="18"/>
-                        <ColumnDefinition Width="3*"/>
-                    </Grid.ColumnDefinitions>
+                <!-- ================= HÀNG 4: DANH SÁCH BẢN SAO LƯU TRÊN MÁY CHỦ (FULL-WIDTH) ================= -->
+                <Border Grid.Row="4" Background="White" CornerRadius="12" BorderBrush="#E2E8F0" BorderThickness="1" Padding="20" Margin="0,0,0,20">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
 
-                    <!-- CỘT TRÁI: DATAGRID BẢN SAO LƯU MÁY CHỦ -->
-                    <Border Grid.Column="0" Background="White" CornerRadius="12" BorderBrush="#E2E8F0" BorderThickness="1" Padding="18">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
+                        <Grid Grid.Row="0" Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                            <Grid Grid.Row="0" Margin="0,0,0,14">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="Danh sách bản sao lưu trên máy chủ" FontSize="15" FontWeight="Bold" Foreground="#0F172A"/>
-                                    <Border Background="#F1F5F9" CornerRadius="10" Padding="8,2" Margin="10,0,0,0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding DanhSachBanSaoLuu.Count, StringFormat='{}{0} tệp'}" FontSize="11" FontWeight="Bold" Foreground="#475569"/>
-                                    </Border>
-                                </StackPanel>
-                            </Grid>
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Width="28" Height="28" Background="#EFF6FF" CornerRadius="6" Margin="0,0,10,0" VerticalAlignment="Center">
+                                    <TextBlock Text="🗄️" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Danh sách bản sao lưu trên máy chủ" FontSize="15" FontWeight="Bold" Foreground="#0F172A" VerticalAlignment="Center"/>
+                                <Border Background="#EFF6FF" CornerRadius="10" Padding="10,3" Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DanhSachBanSaoLuu.Count, StringFormat='{}{0} tệp .bak'}" FontSize="11.5" FontWeight="Bold" Foreground="#0284C7"/>
+                                </Border>
+                            </StackPanel>
 
-                            <!-- DataGrid hiển thị các bản sao lưu -->
-                            <DataGrid Grid.Row="1" ItemsSource="{Binding DanhSachBanSaoLuu}"
-                                      SelectedItem="{Binding SelectedBackupItem}"
-                                      AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
-                                      IsReadOnly="True" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F1F5F9"
-                                      HeadersVisibility="Column" Background="Transparent" BorderThickness="0"
-                                      RowHeight="46" MinHeight="260">
-                                <DataGrid.ColumnHeaderStyle>
-                                    <Style TargetType="DataGridColumnHeader">
-                                        <Setter Property="Background" Value="#F8FAFC"/>
-                                        <Setter Property="Foreground" Value="#475569"/>
-                                        <Setter Property="FontWeight" Value="SemiBold"/>
-                                        <Setter Property="FontSize" Value="12"/>
-                                        <Setter Property="Padding" Value="12,10"/>
-                                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                                        <Setter Property="BorderBrush" Value="#E2E8F0"/>
-                                    </Style>
-                                </DataGrid.ColumnHeaderStyle>
+                            <TextBlock Grid.Column="1" Text="Lưu trữ an toàn tại thư mục Backup của SQL Server" FontSize="11.5" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                        </Grid>
 
-                                <DataGrid.RowStyle>
-                                    <Style TargetType="DataGridRow">
-                                        <Setter Property="Background" Value="Transparent"/>
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="#F8FAFC"/>
-                                            </Trigger>
-                                            <Trigger Property="IsSelected" Value="True">
-                                                <Setter Property="Background" Value="#E0F2FE"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGrid.RowStyle>
+                        <!-- DataGrid hiển thị các bản sao lưu với độ rộng cột tối ưu, không bị cắt chữ -->
+                        <DataGrid Grid.Row="1" ItemsSource="{Binding DanhSachBanSaoLuu}"
+                                  SelectedItem="{Binding SelectedBackupItem}"
+                                  AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                                  IsReadOnly="True" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F1F5F9"
+                                  HeadersVisibility="Column" Background="Transparent" BorderThickness="0"
+                                  CanUserResizeColumns="True"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto"
+                                  RowHeight="50" MinHeight="220">
+                            <DataGrid.ColumnHeaderStyle>
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Background" Value="#F8FAFC"/>
+                                    <Setter Property="Foreground" Value="#475569"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                    <Setter Property="FontSize" Value="12"/>
+                                    <Setter Property="Padding" Value="14,10"/>
+                                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                    <Setter Property="BorderBrush" Value="#E2E8F0"/>
+                                </Style>
+                            </DataGrid.ColumnHeaderStyle>
 
-                                <DataGrid.Columns>
-                                    <!-- Tên tệp -->
-                                    <DataGridTemplateColumn Header="TÊN TỆP SAO LƯU (.BAK)" Width="2.2*">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
-                                                    <TextBlock Text="🗄️" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                                    <TextBlock Text="{Binding FileName}" FontSize="12.5" FontWeight="SemiBold" Foreground="#0F172A" VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#F8FAFC"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="#E0F2FE"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
 
-                                    <!-- Kích thước -->
-                                    <DataGridTemplateColumn Header="DUNG LƯỢNG" Width="1.1*">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Border Background="#F1F5F9" CornerRadius="6" Padding="8,4" HorizontalAlignment="Left" Margin="8,0" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding FormattedSize}" FontSize="11.5" FontWeight="SemiBold" Foreground="#334155"/>
+                            <DataGrid.Columns>
+                                <!-- Tên tệp sao lưu -->
+                                <DataGridTemplateColumn Header="TÊN TỆP SAO LƯU (.BAK)" Width="2.8*" MinWidth="260">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0" ToolTip="{Binding FileName}">
+                                                <Border Width="26" Height="26" Background="#F1F5F9" CornerRadius="6" Margin="0,0,8,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="💾" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 </Border>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
+                                                <TextBlock Text="{Binding FileName}" FontSize="12.5" FontWeight="SemiBold" Foreground="#0F172A" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
 
-                                    <!-- Ngày tạo -->
-                                    <DataGridTemplateColumn Header="NGÀY TẠO" Width="1.5*">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding NgayTaoText}" FontSize="12" Foreground="#475569" Margin="8,0" VerticalAlignment="Center"/>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
+                                <!-- Kích thước -->
+                                <DataGridTemplateColumn Header="DUNG LƯỢNG" Width="Auto" MinWidth="110">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#F1F5F9" CornerRadius="6" Padding="10,4" HorizontalAlignment="Left" Margin="10,0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding FormattedSize}" FontSize="11.5" FontWeight="Bold" Foreground="#334155"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
 
-                                    <!-- Loại -->
-                                    <DataGridTemplateColumn Header="LOẠI" Width="1.3*">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding LoaiSaoLuuText}" FontSize="11.5" Foreground="#64748B" Margin="8,0" VerticalAlignment="Center"/>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
+                                <!-- Ngày tạo -->
+                                <DataGridTemplateColumn Header="NGÀY TẠO" Width="Auto" MinWidth="150">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding NgayTaoText}" FontSize="12" Foreground="#475569" Margin="12,0" VerticalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
 
-                                    <!-- Mô tả -->
-                                    <DataGridTemplateColumn Header="MÔ TẢ" Width="2*">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#64748B" Margin="8,0"
-                                                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
+                                <!-- Loại sao lưu -->
+                                <DataGridTemplateColumn Header="LOẠI SAO LƯU" Width="Auto" MinWidth="140">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#ECFDF5" CornerRadius="6" Padding="8,3" HorizontalAlignment="Left" Margin="10,0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding LoaiSaoLuuText}" FontSize="11" FontWeight="SemiBold" Foreground="#047857"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
 
-                                    <!-- Hành động -->
-                                    <DataGridTemplateColumn Header="THAO TÁC" Width="2*">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,10,0">
-                                                    <!-- Tải về máy trạm -->
-                                                    <Button Command="{Binding DataContext.TaiBanSaoLuuVeMayCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                            CommandParameter="{Binding}"
-                                                            Cursor="Hand" ToolTip="Tải tệp sao lưu này về máy trạm"
-                                                            Background="White" BorderBrush="#BAE6FD" BorderThickness="1"
-                                                            Padding="8,4" Margin="0,0,6,0">
-                                                        <Button.Resources>
-                                                            <Style TargetType="Border">
-                                                                <Setter Property="CornerRadius" Value="6"/>
-                                                            </Style>
-                                                        </Button.Resources>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <TextBlock Text="⬇️" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                                                            <TextBlock Text="Tải về" FontSize="11" FontWeight="SemiBold" Foreground="#0284C7"/>
-                                                        </StackPanel>
-                                                    </Button>
+                                <!-- Mô tả -->
+                                <DataGridTemplateColumn Header="MÔ TẢ CHI TIẾT" Width="2.2*" MinWidth="180">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#64748B" Margin="10,0"
+                                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Description}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
 
-                                                    <!-- Phục hồi CSDL -->
-                                                    <Button Command="{Binding DataContext.MoXacNhanPhucHoiMayChuCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                            CommandParameter="{Binding}"
-                                                            Cursor="Hand" ToolTip="Khôi phục CSDL từ bản sao lưu này"
-                                                            Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1"
-                                                            Padding="8,4" Margin="0,0,6,0">
-                                                        <Button.Resources>
-                                                            <Style TargetType="Border">
-                                                                <Setter Property="CornerRadius" Value="6"/>
-                                                            </Style>
-                                                        </Button.Resources>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <TextBlock Text="⚠️" FontSize="10" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                                                            <TextBlock Text="Phục hồi" FontSize="11" FontWeight="SemiBold" Foreground="#DC2626"/>
-                                                        </StackPanel>
-                                                    </Button>
+                                <!-- Hành động / Thao tác -->
+                                <DataGridTemplateColumn Header="THAO TÁC" Width="Auto" MinWidth="240">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0">
+                                                <!-- Tải về máy trạm -->
+                                                <Button Command="{Binding DataContext.TaiBanSaoLuuVeMayCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                        CommandParameter="{Binding}"
+                                                        Cursor="Hand" ToolTip="Tải tệp sao lưu này về máy trạm"
+                                                        Background="White" BorderBrush="#BAE6FD" BorderThickness="1"
+                                                        Padding="10,5" Margin="0,0,6,0">
+                                                    <Button.Resources>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="CornerRadius" Value="6"/>
+                                                        </Style>
+                                                    </Button.Resources>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="⬇️" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="Tải về" FontSize="11.5" FontWeight="SemiBold" Foreground="#0284C7"/>
+                                                    </StackPanel>
+                                                </Button>
 
-                                                    <!-- Xóa bản sao lưu -->
-                                                    <Button Command="{Binding DataContext.XoaBanSaoLuuCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                            CommandParameter="{Binding}"
-                                                            Cursor="Hand" ToolTip="Xóa tệp sao lưu này trên máy chủ"
-                                                            Background="White" BorderBrush="#E2E8F0" BorderThickness="1"
-                                                            Padding="8,4">
-                                                        <Button.Resources>
-                                                            <Style TargetType="Border">
-                                                                <Setter Property="CornerRadius" Value="6"/>
-                                                            </Style>
-                                                        </Button.Resources>
-                                                        <TextBlock Text="🗑️" FontSize="11" Foreground="#64748B"/>
-                                                    </Button>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                </DataGrid.Columns>
-                            </DataGrid>
+                                                <!-- Phục hồi CSDL -->
+                                                <Button Command="{Binding DataContext.MoXacNhanPhucHoiMayChuCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                        CommandParameter="{Binding}"
+                                                        Cursor="Hand" ToolTip="Khôi phục CSDL từ bản sao lưu này"
+                                                        Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1"
+                                                        Padding="10,5" Margin="0,0,6,0">
+                                                    <Button.Resources>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="CornerRadius" Value="6"/>
+                                                        </Style>
+                                                    </Button.Resources>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="⚠️" FontSize="10.5" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="Phục hồi" FontSize="11.5" FontWeight="Bold" Foreground="#DC2626"/>
+                                                    </StackPanel>
+                                                </Button>
+
+                                                <!-- Xóa bản sao lưu -->
+                                                <Button Command="{Binding DataContext.XoaBanSaoLuuCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                        CommandParameter="{Binding}"
+                                                        Cursor="Hand" ToolTip="Xóa tệp sao lưu này trên máy chủ"
+                                                        Background="White" BorderBrush="#E2E8F0" BorderThickness="1"
+                                                        Padding="10,5">
+                                                    <Button.Resources>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="CornerRadius" Value="6"/>
+                                                        </Style>
+                                                    </Button.Resources>
+                                                    <TextBlock Text="🗑️" FontSize="12" Foreground="#64748B"/>
+                                                </Button>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Border>
+
+                <!-- ================= HÀNG 5: NHẬT KÝ BẢO TRÌ & AUDIT LOG CSDL (FULL-WIDTH) ================= -->
+                <Border Grid.Row="5" Background="White" CornerRadius="12" BorderBrush="#E2E8F0" BorderThickness="1" Padding="20">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Width="28" Height="28" Background="#F8FAFC" CornerRadius="6" Margin="0,0,10,0" VerticalAlignment="Center">
+                                    <TextBlock Text="📋" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Nhật ký bảo trì &amp; Audit Log CSDL" FontSize="15" FontWeight="Bold" Foreground="#0F172A" VerticalAlignment="Center"/>
+                                <Border Background="#F1F5F9" CornerRadius="10" Padding="10,3" Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DanhSachNhatKy.Count, StringFormat='{}{0} bản ghi'}" FontSize="11.5" FontWeight="Bold" Foreground="#475569"/>
+                                </Border>
+                            </StackPanel>
+
+                            <TextBlock Grid.Column="1" Text="Tự động ghi nhận mọi sự kiện sao lưu, phục hồi và dọn dẹp hệ thống" FontSize="11.5" Foreground="#94A3B8" VerticalAlignment="Center"/>
                         </Grid>
-                    </Border>
 
-                    <!-- CỘT PHẢI: NHẬT KÝ BẢO TRÌ & AUDIT LOG -->
-                    <Border Grid.Column="2" Background="White" CornerRadius="12" BorderBrush="#E2E8F0" BorderThickness="1" Padding="18">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-
-                            <TextBlock Grid.Row="0" Text="Nhật ký bảo trì &amp; Audit Log" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,12"/>
-
-                            <ListBox Grid.Row="1" ItemsSource="{Binding DanhSachNhatKy}"
-                                     BorderThickness="0" Background="Transparent" ScrollViewer.VerticalScrollBarVisibility="Auto" MinHeight="260">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Background="#F8FAFC" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1" Padding="12,10" Margin="0,0,0,8">
-                                            <TextBlock Text="{Binding}" FontSize="12" Foreground="#334155" TextWrapping="Wrap" LineHeight="17"/>
-                                        </Border>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
-                        </Grid>
-                    </Border>
-                </Grid>
+                        <!-- Danh sách sự kiện Audit Log - TextWrapping và ngăn cuộn ngang -->
+                        <ListBox Grid.Row="1" ItemsSource="{Binding DanhSachNhatKy}"
+                                 BorderThickness="0" Background="Transparent"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 HorizontalContentAlignment="Stretch"
+                                 MaxHeight="260" MinHeight="140">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#F8FAFC" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1" Padding="14,10" Margin="0,0,0,8">
+                                        <TextBlock Text="{Binding}" FontSize="12.5" Foreground="#334155" TextWrapping="Wrap" LineHeight="19"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </Border>
             </Grid>
         </ScrollViewer>
 

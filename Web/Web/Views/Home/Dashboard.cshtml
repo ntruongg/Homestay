@@ -34,6 +34,9 @@
 
     <!-- Custom CSS (Soft & Harmonious Monochromatic Ocean Blue) -->
     <link rel="stylesheet" href="/css/site.css" asp-append-version="true">
+
+    <!-- Chart.js for Revenue & Analytics Visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="dashboard-body-wrapper">
     <div id="dashboardToastContainer" class="dashboard-toast-container"></div>
@@ -50,7 +53,7 @@
             </a>
             <span class="dashboard-sidebar-tag">Host Dashboard</span>
 
-            <!-- 3 Tabs dạng menu dọc -->
+            <!-- Tabs dạng menu dọc -->
             <nav class="dashboard-nav-tabs">
                 <!-- Tab 1: Cơ sở (Mặc định active) -->
                 <button type="button" class="dashboard-tab-link @(Model.ActiveTab == "properties" ? "active" : "")" data-tab-target="tabProperties" id="tabBtnProperties" onclick="switchDashboardTab('tabProperties', this)">
@@ -77,6 +80,12 @@
                 <button type="button" class="dashboard-tab-link @(Model.ActiveTab == "reviews" ? "active" : "")" data-tab-target="tabReviews" id="tabBtnReviews" onclick="switchDashboardTab('tabReviews', this)">
                     <i class="bi bi-chat-square-quote-fill"></i>
                     <span>Đánh giá</span>
+                </button>
+
+                <!-- Tab 5: Thống kê doanh thu -->
+                <button type="button" class="dashboard-tab-link @(Model.ActiveTab == "revenue" ? "active" : "")" data-tab-target="tabRevenue" id="tabBtnRevenue" onclick="switchDashboardTab('tabRevenue', this)">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    <span>Thống kê doanh thu</span>
                 </button>
             </nav>
         </div>
@@ -607,7 +616,7 @@
                             <!-- Actions Row: Xem chi tiết & Duyệt đơn -->
                             <div class="d-flex align-items-center justify-content-between pt-3 mt-3 border-top flex-wrap gap-2">
                                 <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openBookingDetailModal(this)">
-                                    <i class="bi bi-receipt me-1"></i> Xem chi tiết thanh toán
+                                    <i class="bi bi-receipt me-1"></i>Chi tiết
                                 </button>
 
                                 <div class="d-flex align-items-center gap-2">
@@ -633,7 +642,7 @@
                                             <input type="hidden" name="bookingId" value="@b.Id">
                                             <input type="hidden" name="status" value="DaHoanTat">
                                             <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-bold">
-                                                <i class="bi bi-check-all me-1"></i> Hoàn tất kỳ nghỉ (Trả phòng)
+                                                <i class="bi bi-check-all me-1"></i>Hoàn tất
                                             </button>
                                         </form>
                                     }
@@ -801,6 +810,304 @@
                         </article>
                     }
                 }
+            </div>
+        </section>
+
+        <!-- ==========================================================================
+             TAB 5: THỐNG KÊ DOANH THU (Revenue & Analytics)
+             ========================================================================== -->
+        <section class="dashboard-tab-view @(Model.ActiveTab == "revenue" ? "active" : "")" id="tabRevenue">
+            <!-- Filter Pill Bar: Cơ sở, Chế độ thời gian, Pickers, Nút Reset & Xuất file -->
+            <div class="revenue-filter-card mb-4">
+                <div class="revenue-filter-toolbar">
+                    <!-- Dropdown 1: Cơ sở -->
+                    <div class="rev-filter-item rev-filter-property">
+                        <label for="revFilterProperty" class="rev-field-label">
+                            <i class="bi bi-buildings text-primary me-1"></i> Cơ sở lưu trú
+                        </label>
+                        <select id="revFilterProperty" class="rev-control-input" onchange="applyRevenueFilters()">
+                            <option value="all">Tất cả cơ sở (@Model.Properties.Count)</option>
+                            @foreach (var p in Model.Properties)
+                            {
+                                <option value="@p.Name">@p.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Dropdown 2: Chế độ thời gian -->
+                    <div class="rev-filter-item rev-filter-mode">
+                        <label for="revPeriodMode" class="rev-field-label">
+                            <i class="bi bi-calendar3 text-primary me-1"></i> Chu kỳ thống kê
+                        </label>
+                        <select id="revPeriodMode" class="rev-control-input" onchange="onRevenuePeriodModeChange()">
+                            <option value="all">Toàn bộ thời gian</option>
+                            <option value="today">Hôm nay</option>
+                            <option value="7days">7 ngày qua</option>
+                            <option value="30days">30 ngày qua</option>
+                            <option value="month" selected>Theo Tháng cụ thể</option>
+                            <option value="year">Theo Năm</option>
+                            <option value="custom">Khoảng ngày tùy chọn</option>
+                        </select>
+                    </div>
+
+                    <!-- Dynamic Controls: Tháng/Năm hoặc Khoảng ngày -->
+                    <div class="rev-filter-item rev-filter-dynamic" id="revDynamicTimeControls">
+                        <!-- Group A: Tháng & Năm (Mặc định) -->
+                        <div id="revMonthYearGroup" class="rev-dynamic-row">
+                            <div class="rev-dynamic-sub">
+                                <label class="rev-field-label">Chọn Tháng</label>
+                                <select id="revMonthSelect" class="rev-control-input" onchange="applyRevenueFilters()">
+                                    @for (int m = 1; m <= 12; m++)
+                                    {
+                                        var isCurr = (m == DateTime.Now.Month);
+                                        <option value="@m" selected="@isCurr">Tháng @m</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="rev-dynamic-sub" style="min-width: 95px;">
+                                <label class="rev-field-label">Năm</label>
+                                <select id="revYearSelect" class="rev-control-input" onchange="applyRevenueFilters()">
+                                    @for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 3; y--)
+                                    {
+                                        <option value="@y">@y</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Group B: Khoảng ngày tùy chọn (From - To) -->
+                        <div id="revCustomDateGroup" class="rev-dynamic-row d-none">
+                            <div class="rev-dynamic-sub">
+                                <label class="rev-field-label">Từ ngày</label>
+                                <input type="date" id="revDateFrom" class="rev-control-input" onchange="applyRevenueFilters()" />
+                            </div>
+                            <div class="rev-dynamic-sub">
+                                <label class="rev-field-label">Đến ngày</label>
+                                <input type="date" id="revDateTo" class="rev-control-input" onchange="applyRevenueFilters()" />
+                            </div>
+                        </div>
+
+                        <!-- Group C: Chỉ chọn Năm -->
+                        <div id="revOnlyYearGroup" class="rev-dynamic-row d-none">
+                            <div class="rev-dynamic-sub w-100">
+                                <label class="rev-field-label">Chọn Năm</label>
+                                <select id="revOnlyYearSelect" class="rev-control-input" onchange="applyRevenueFilters()">
+                                    @for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 3; y--)
+                                    {
+                                        <option value="@y">Năm @y</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nút Hành động: Đặt lại & Xuất file -->
+                    <div class="rev-filter-item rev-filter-actions">
+                        <label class="rev-field-label d-none d-lg-block">&nbsp;</label>
+                        <div class="rev-btn-group">
+                            <button type="button" class="btn rev-btn rev-btn-reset" onclick="resetRevenueFilters()" title="Đặt lại bộ lọc về mặc định">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                                <span>Đặt lại</span>
+                            </button>
+                            <button type="button" class="btn rev-btn rev-btn-export" onclick="exportRevenueReportCsv()" title="Tải báo cáo doanh thu CSV">
+                                <i class="bi bi-file-earmark-excel-fill"></i>
+                                <span>Xuất file</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Period Presets Pills -->
+                <div class="rev-quick-bar">
+                    <div class="rev-quick-chips-group">
+                        <span class="rev-quick-label">
+                            <i class="bi bi-lightning-charge-fill text-warning me-1"></i>Lọc nhanh:
+                        </span>
+                        <button type="button" class="btn rev-quick-chip active" id="chipMonth" onclick="setRevQuickPeriod('month')">Tháng này</button>
+                        <button type="button" class="btn rev-quick-chip" id="chipToday" onclick="setRevQuickPeriod('today')">Hôm nay</button>
+                        <button type="button" class="btn rev-quick-chip" id="chip7days" onclick="setRevQuickPeriod('7days')">7 ngày qua</button>
+                        <button type="button" class="btn rev-quick-chip" id="chip30days" onclick="setRevQuickPeriod('30days')">30 ngày qua</button>
+                        <button type="button" class="btn rev-quick-chip" id="chipYear" onclick="setRevQuickPeriod('year')">Năm @DateTime.Now.Year</button>
+                        <button type="button" class="btn rev-quick-chip" id="chipAll" onclick="setRevQuickPeriod('all')">Tất cả thời gian</button>
+                    </div>
+                    <div class="rev-period-indicator" id="revPeriodSubtitleText">
+                        Đang xem: Tháng @DateTime.Now.Month/@DateTime.Now.Year
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4 Thẻ chỉ số tổng quan (KPI Metrics) -->
+            <div class="row g-3 mb-4">
+                <!-- KPI 1: Doanh thu thực nhận -->
+                <div class="col-xl-3 col-sm-6">
+                    <div class="revenue-kpi-card h-100">
+                        <div class="kpi-top">
+                            <span class="kpi-label">Doanh thu thực nhận</span>
+                            <div class="kpi-icon-circle bg-primary-subtle text-primary">
+                                <i class="bi bi-cash-stack"></i>
+                            </div>
+                        </div>
+                        <div class="kpi-value text-primary">
+                            <span id="kpiNetRevenue">0</span>
+                            <span class="kpi-unit">₫</span>
+                        </div>
+                        <div class="kpi-meta text-muted">
+                            <i class="bi bi-shield-check text-success"></i>
+                            <span>Thực nhận sau phí &amp; chiết khấu</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI 2: Tổng giá trị đặt phòng (Gross) -->
+                <div class="col-xl-3 col-sm-6">
+                    <div class="revenue-kpi-card h-100">
+                        <div class="kpi-top">
+                            <span class="kpi-label">Tổng giá trị đơn (Gộp)</span>
+                            <div class="kpi-icon-circle bg-info-subtle text-info">
+                                <i class="bi bi-receipt-cutoff"></i>
+                            </div>
+                        </div>
+                        <div class="kpi-value text-dark">
+                            <span id="kpiGrossRevenue">0</span>
+                            <span class="kpi-unit">₫</span>
+                        </div>
+                        <div class="kpi-meta text-muted">
+                            <i class="bi bi-info-circle text-info"></i>
+                            <span>Tổng giá trị đơn đặt ban đầu</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI 3: Số lượng đơn thành công -->
+                <div class="col-xl-3 col-sm-6">
+                    <div class="revenue-kpi-card h-100">
+                        <div class="kpi-top">
+                            <span class="kpi-label">Đơn phòng hoàn tất</span>
+                            <div class="kpi-icon-circle bg-success-subtle text-success">
+                                <i class="bi bi-calendar2-check-fill"></i>
+                            </div>
+                        </div>
+                        <div class="kpi-value text-success">
+                            <span id="kpiBookingCount">0</span>
+                            <span class="kpi-unit">đơn</span>
+                        </div>
+                        <div class="kpi-meta text-muted">
+                            <i class="bi bi-check2-circle text-success"></i>
+                            <span id="kpiCompletedRateText">Đã xác nhận &amp; hoàn tất</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI 4: Doanh thu trung bình mỗi đơn (AOV) -->
+                <div class="col-xl-3 col-sm-6">
+                    <div class="revenue-kpi-card h-100">
+                        <div class="kpi-top">
+                            <span class="kpi-label">Doanh thu TB / Đơn (AOV)</span>
+                            <div class="kpi-icon-circle bg-warning-subtle text-warning">
+                                <i class="bi bi-speedometer2"></i>
+                            </div>
+                        </div>
+                        <div class="kpi-value text-navy">
+                            <span id="kpiAovValue">0</span>
+                            <span class="kpi-unit">₫</span>
+                        </div>
+                        <div class="kpi-meta text-muted">
+                            <i class="bi bi-bar-chart-fill text-primary"></i>
+                            <span>Giá trị sinh lời bình quân</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hàng Biểu đồ trực quan hóa (2 biểu đồ song song) -->
+            <div class="row g-4 mb-4">
+                <!-- Biểu đồ 1: Xu hướng Doanh thu (Area Spline Chart) -->
+                <div class="col-lg-8">
+                    <div class="revenue-chart-card h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                            <div>
+                                <h6 class="fw-bold text-navy mb-0 d-flex align-items-center gap-2">
+                                    <i class="bi bi-graph-up text-primary"></i>
+                                    <span>Biểu đồ xu hướng doanh thu</span>
+                                </h6>
+                                <small class="text-muted" id="trendChartSubtitle">Biểu diễn biến động dòng tiền theo thời gian</small>
+                            </div>
+                            <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1.5 small fw-semibold">
+                                <i class="bi bi-activity me-1"></i>Thời gian thực
+                            </span>
+                        </div>
+                        <div class="chart-canvas-wrapper" style="position: relative; height: 270px;">
+                            <canvas id="revTrendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Biểu đồ 2: Cơ cấu Doanh thu theo Cơ sở (Donut Chart) -->
+                <div class="col-lg-4">
+                    <div class="revenue-chart-card h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div>
+                                <h6 class="fw-bold text-navy mb-0 d-flex align-items-center gap-2">
+                                    <i class="bi bi-pie-chart-fill text-primary"></i>
+                                    <span>Tỷ trọng doanh thu</span>
+                                </h6>
+                                <small class="text-muted">Đóng góp của từng cơ sở</small>
+                            </div>
+                        </div>
+                        <div class="chart-canvas-wrapper d-flex align-items-center justify-content-center" style="position: relative; height: 190px;">
+                            <canvas id="revPropertyChart"></canvas>
+                        </div>
+                        <div id="revPropertyLegend" class="mt-3 pt-2 border-top small"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bảng chi tiết danh sách giao dịch doanh thu -->
+            <div class="revenue-table-card">
+                <div class="revenue-table-header">
+                    <div>
+                        <h6 class="fw-bold text-navy mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-receipt text-primary"></i>
+                            <span>Bảng kê giao dịch doanh thu chi tiết</span>
+                            <span class="badge bg-light text-primary border rounded-pill px-2 py-1 ms-1" id="revTableIndicatorText" style="font-size: 0.75rem;">
+                                0 giao dịch
+                            </span>
+                        </h6>
+                    </div>
+                    <div class="rev-search-wrapper">
+                        <i class="bi bi-search rev-search-icon"></i>
+                        <input type="text" id="revTableSearchInput" class="rev-search-input" placeholder="Tìm theo tên khách, mã đơn..." oninput="filterRevenueTable()">
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle custom-dashboard-table rev-table mb-0" id="revTransactionsTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 85px;">Mã đơn</th>
+                                <th>Cơ sở lưu trú</th>
+                                <th>Khách hàng</th>
+                                <th style="width: 140px;">Thời gian</th>
+                                <th style="width: 130px;">Phương thức</th>
+                                <th style="width: 115px;">Trạng thái</th>
+                                <th class="text-end" style="width: 160px;">Doanh thu thực nhận</th>
+                            </tr>
+                        </thead>
+                        <tbody id="revTransactionsTableBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty state khi không có giao dịch trong kỳ -->
+                <div id="revNoDataBox" class="p-5 text-center d-none">
+                    <div class="mb-3 text-muted display-5"><i class="bi bi-inbox"></i></div>
+                    <h6 class="fw-bold text-navy">Không có giao dịch doanh thu nào trong chu kỳ này</h6>
+                    <p class="text-muted small mb-3">Thử nới lỏng bộ lọc thời gian hoặc chọn "Tất cả cơ sở" để xem thêm số liệu.</p>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4" onclick="resetRevenueFilters()">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Đặt lại toàn bộ thời gian
+                    </button>
+                </div>
             </div>
         </section>
     </main>
@@ -971,12 +1278,19 @@
                             <div class="tab-pane fade" id="step3" role="tabpanel">
                                 <div class="p-4 bg-light rounded-4 mb-3 border">
                                     <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-stars text-primary me-1"></i> Tiện ích chung của cơ sở</h6>
-                                    <div class="d-flex flex-wrap gap-2 mb-4">
+                                    <div class="row g-2 mb-4">
                                         @foreach (var a in Model.AvailableAmenities)
                                         {
-                                            <div class="form-check form-check-inline amenity-chip m-0">
-                                                <input class="form-check-input" type="checkbox" name="AmenityIds" value="@a.Id" id="createAmenity_@a.Id">
-                                                <label class="form-check-label small" for="createAmenity_@a.Id">@a.Name</label>
+                                            var isPreChecked = (a.Name.Contains("Bảo vệ", StringComparison.OrdinalIgnoreCase) ||
+                                                                a.Name.Contains("Lễ tân", StringComparison.OrdinalIgnoreCase) ||
+                                                                a.Name.Contains("24/7", StringComparison.OrdinalIgnoreCase)) ||
+                                                               (a.Name.Contains("đỗ xe", StringComparison.OrdinalIgnoreCase) ||
+                                                                a.Name.Contains("Bãi đỗ", StringComparison.OrdinalIgnoreCase));
+                                            <div class="col-6">
+                                                <div class="form-check amenity-chip p-2 px-3 bg-white rounded-3 border d-flex align-items-center gap-2 m-0 h-100 shadow-sm">
+                                                    <input class="form-check-input m-0 flex-shrink-0" type="checkbox" name="AmenityIds" value="@a.Id" id="createAmenity_@a.Id" @(isPreChecked ? "checked" : "")>
+                                                    <label class="form-check-label small fw-medium text-dark text-truncate mb-0 w-100" for="createAmenity_@a.Id">@a.Name</label>
+                                                </div>
                                             </div>
                                         }
                                     </div>
@@ -1200,12 +1514,14 @@
                                 <h6 class="fw-bold text-navy small mb-3"><i class="bi bi-stars text-primary me-1"></i> 4. Tiện ích &amp; Quy định</h6>
                                 <div class="mb-3">
                                     <label class="form-label small fw-bold d-block mb-2">Tiện ích cơ sở</label>
-                                    <div class="d-flex flex-wrap gap-2">
+                                    <div class="row g-2">
                                         @foreach (var a in Model.AvailableAmenities)
                                         {
-                                            <div class="form-check form-check-inline amenity-chip m-0">
-                                                <input class="form-check-input opd-edit-amenity-cb" type="checkbox" name="AmenityIds" value="@a.Id" id="opdAmenity_@a.Id">
-                                                <label class="form-check-label small" for="opdAmenity_@a.Id">@a.Name</label>
+                                            <div class="col-6">
+                                                <div class="form-check amenity-chip p-2 px-3 bg-white rounded-3 border d-flex align-items-center gap-2 m-0 h-100 shadow-sm">
+                                                    <input class="form-check-input opd-edit-amenity-cb m-0 flex-shrink-0" type="checkbox" name="AmenityIds" value="@a.Id" id="opdAmenity_@a.Id">
+                                                    <label class="form-check-label small fw-medium text-dark text-truncate mb-0 w-100" for="opdAmenity_@a.Id">@a.Name</label>
+                                                </div>
                                             </div>
                                         }
                                     </div>
@@ -1380,12 +1696,14 @@
                             <h6 class="fw-bold text-navy small mb-3">5. Tiện ích &amp; Chính sách</h6>
                             <div class="mb-3">
                                 <label class="form-label small fw-bold d-block mb-2">Tiện ích</label>
-                                <div class="d-flex flex-wrap gap-2" id="resubmitAmenitiesBox">
+                                <div class="row g-2" id="resubmitAmenitiesBox">
                                     @foreach (var a in Model.AvailableAmenities)
                                     {
-                                        <div class="form-check form-check-inline amenity-chip m-0">
-                                            <input class="form-check-input resubmit-amenity-cb" type="checkbox" name="AmenityIds" value="@a.Id" id="resubmitAmenity_@a.Id">
-                                            <label class="form-check-label small" for="resubmitAmenity_@a.Id">@a.Name</label>
+                                        <div class="col-6">
+                                            <div class="form-check amenity-chip p-2 px-3 bg-white rounded-3 border d-flex align-items-center gap-2 m-0 h-100 shadow-sm">
+                                                <input class="form-check-input resubmit-amenity-cb m-0 flex-shrink-0" type="checkbox" name="AmenityIds" value="@a.Id" id="resubmitAmenity_@a.Id">
+                                                <label class="form-check-label small fw-medium text-dark text-truncate mb-0 w-100" for="resubmitAmenity_@a.Id">@a.Name</label>
+                                            </div>
                                         </div>
                                     }
                                 </div>
@@ -1672,6 +1990,12 @@
             } else if (tabParam === 'reviews') {
                 const btn = document.getElementById('tabBtnReviews');
                 if (btn) switchDashboardTab('tabReviews', btn);
+            } else if (tabParam === 'services') {
+                const btn = document.getElementById('tabBtnServices');
+                if (btn) switchDashboardTab('tabServices', btn);
+            } else if (tabParam === 'revenue') {
+                const btn = document.getElementById('tabBtnRevenue');
+                if (btn) switchDashboardTab('tabRevenue', btn);
             }
 
             @if (TempData["OpenModal"] as string == "createPropertyModal")
@@ -1727,9 +2051,18 @@
             } else if (tabId === 'tabBookings') {
                 if (titleEl) titleEl.textContent = 'Quản lý đơn đặt phòng';
                 if (subEl) subEl.textContent = 'Danh sách các đơn đặt phòng từ khách hàng, lọc theo cơ sở và trạng thái thanh toán.';
+            } else if (tabId === 'tabServices') {
+                if (titleEl) titleEl.textContent = 'Quản lý dịch vụ';
+                if (subEl) subEl.textContent = 'Thiết lập danh mục dịch vụ bổ sung cho các cơ sở của bạn.';
             } else if (tabId === 'tabReviews') {
                 if (titleEl) titleEl.textContent = 'Quản lý đánh giá khách hàng';
                 if (subEl) subEl.textContent = 'Lắng nghe phản hồi từ khách lưu trú để nâng cao chất lượng dịch vụ của bạn.';
+            } else if (tabId === 'tabRevenue') {
+                if (titleEl) titleEl.textContent = 'Thống kê doanh thu & Phân tích';
+                if (subEl) subEl.textContent = 'Báo cáo trực quan hóa doanh thu tổng hợp và từng cơ sở theo ngày, tháng, năm.';
+                if (typeof initOrUpdateRevenueDashboard === 'function') {
+                    initOrUpdateRevenueDashboard();
+                }
             }
         }
 
@@ -2833,6 +3166,668 @@
                 }
             }, 30000);
         });
+
+        // ==================== REVENUE & ANALYTICS DASHBOARD ====================
+        let rawInvoicesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Invoices.Select(inv => new {
+            id = inv.Id,
+            bookingId = inv.BookingId,
+            property = inv.PropertyName,
+            guest = inv.GuestName,
+            date = inv.CreatedDate.ToString("yyyy-MM-ddTHH:mm:ss"),
+            dateOnly = inv.CreatedDate.ToString("yyyy-MM-dd"),
+            year = inv.CreatedDate.Year,
+            month = inv.CreatedDate.Month,
+            day = inv.CreatedDate.Day,
+            netAmount = inv.TotalAmount,
+            grossAmount = inv.OriginalAmount > 0 ? inv.OriginalAmount : inv.TotalAmount,
+            paymentMethod = string.IsNullOrWhiteSpace(inv.PaymentMethod) ? "VNPay" : inv.PaymentMethod
+        })));
+
+        let rawBookingsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Bookings.Select(b => new {
+            id = b.Id,
+            property = b.PropertyName,
+            rooms = b.RoomNumbers,
+            guest = b.GuestName,
+            phone = b.GuestPhone,
+            checkIn = b.CheckIn.ToString("yyyy-MM-dd"),
+            checkOut = b.CheckOut.ToString("yyyy-MM-dd"),
+            date = b.CreatedDate.ToString("yyyy-MM-ddTHH:mm:ss"),
+            dateOnly = b.CreatedDate.ToString("yyyy-MM-dd"),
+            year = b.CreatedDate.Year,
+            month = b.CreatedDate.Month,
+            day = b.CreatedDate.Day,
+            status = b.Status,
+            totalAmount = b.TotalAmount
+        })));
+
+        let revenueRecords = [];
+        let filteredRevenueRecords = [];
+        let revTrendChartInstance = null;
+        let revPropertyChartInstance = null;
+        let revenueDashboardInitialized = false;
+
+        function buildUnifiedRevenueRecords() {
+            revenueRecords = [];
+            const invoiceMap = new Map();
+            (rawInvoicesData || []).forEach(inv => {
+                invoiceMap.set(inv.bookingId, inv);
+            });
+
+            // Process bookings
+            (rawBookingsData || []).forEach(b => {
+                const isPaidOrValid = ['Confirmed', 'DaDuyet', 'CheckedIn', 'DangLuuTru', 'Completed', 'DaHoanTat'].includes(b.status);
+                const inv = invoiceMap.get(b.id);
+
+                if (inv) {
+                    revenueRecords.push({
+                        id: b.id,
+                        property: b.property || inv.property || 'Homestay',
+                        guest: b.guest || inv.guest || 'Khách lưu trú',
+                        phone: b.phone || '',
+                        date: new Date(inv.date || b.date),
+                        dateOnly: inv.dateOnly || b.dateOnly,
+                        year: inv.year || b.year,
+                        month: inv.month || b.month,
+                        day: inv.day || b.day,
+                        netAmount: Number(inv.netAmount > 0 ? inv.netAmount : inv.grossAmount),
+                        grossAmount: Number(inv.grossAmount > 0 ? inv.grossAmount : b.totalAmount),
+                        paymentMethod: inv.paymentMethod || 'VNPay',
+                        status: b.status || 'DaDuyet'
+                    });
+                    invoiceMap.delete(b.id);
+                } else if (isPaidOrValid) {
+                    revenueRecords.push({
+                        id: b.id,
+                        property: b.property || 'Homestay',
+                        guest: b.guest || 'Khách lưu trú',
+                        phone: b.phone || '',
+                        date: new Date(b.date),
+                        dateOnly: b.dateOnly,
+                        year: b.year,
+                        month: b.month,
+                        day: b.day,
+                        netAmount: Number(b.totalAmount),
+                        grossAmount: Number(b.totalAmount),
+                        paymentMethod: 'Trực tuyến / VNPay',
+                        status: b.status
+                    });
+                }
+            });
+
+            // Add any remaining invoices
+            invoiceMap.forEach((inv, bId) => {
+                revenueRecords.push({
+                    id: bId || inv.id,
+                    property: inv.property || 'Homestay',
+                    guest: inv.guest || 'Khách lưu trú',
+                    phone: '',
+                    date: new Date(inv.date),
+                    dateOnly: inv.dateOnly,
+                    year: inv.year,
+                    month: inv.month,
+                    day: inv.day,
+                    netAmount: Number(inv.netAmount > 0 ? inv.netAmount : inv.grossAmount),
+                    grossAmount: Number(inv.grossAmount > 0 ? inv.grossAmount : inv.netAmount),
+                    paymentMethod: inv.paymentMethod || 'VNPay',
+                    status: 'DaHoanTat'
+                });
+            });
+
+            // Sort descending by date
+            revenueRecords.sort((a, b) => b.date - a.date);
+        }
+
+        function initOrUpdateRevenueDashboard() {
+            if (!revenueDashboardInitialized) {
+                buildUnifiedRevenueRecords();
+                revenueDashboardInitialized = true;
+            }
+            applyRevenueFilters();
+        }
+
+        function onRevenuePeriodModeChange() {
+            const mode = document.getElementById('revPeriodMode').value;
+            const monthYearGroup = document.getElementById('revMonthYearGroup');
+            const customDateGroup = document.getElementById('revCustomDateGroup');
+            const onlyYearGroup = document.getElementById('revOnlyYearGroup');
+
+            if (monthYearGroup) monthYearGroup.classList.add('d-none');
+            if (customDateGroup) customDateGroup.classList.add('d-none');
+            if (onlyYearGroup) onlyYearGroup.classList.add('d-none');
+
+            document.querySelectorAll('.rev-quick-chip').forEach(c => c.classList.remove('active'));
+
+            if (mode === 'month') {
+                if (monthYearGroup) monthYearGroup.classList.remove('d-none');
+                const chip = document.getElementById('chipMonth');
+                if (chip) chip.classList.add('active');
+            } else if (mode === 'year') {
+                if (onlyYearGroup) onlyYearGroup.classList.remove('d-none');
+                const chip = document.getElementById('chipYear');
+                if (chip) chip.classList.add('active');
+            } else if (mode === 'custom') {
+                if (customDateGroup) customDateGroup.classList.remove('d-none');
+            } else if (mode === 'today') {
+                const chip = document.getElementById('chipToday');
+                if (chip) chip.classList.add('active');
+            } else if (mode === '7days') {
+                const chip = document.getElementById('chip7days');
+                if (chip) chip.classList.add('active');
+            } else if (mode === '30days') {
+                const chip = document.getElementById('chip30days');
+                if (chip) chip.classList.add('active');
+            } else if (mode === 'all') {
+                const chip = document.getElementById('chipAll');
+                if (chip) chip.classList.add('active');
+            }
+
+            applyRevenueFilters();
+        }
+
+        function setRevQuickPeriod(period) {
+            const modeSelect = document.getElementById('revPeriodMode');
+            if (!modeSelect) return;
+
+            document.querySelectorAll('.rev-quick-chip').forEach(c => c.classList.remove('active'));
+            const chip = document.getElementById('chip' + period.charAt(0).toUpperCase() + period.slice(1));
+            if (chip) chip.classList.add('active');
+
+            if (period === 'month') {
+                modeSelect.value = 'month';
+                const monthSelect = document.getElementById('revMonthSelect');
+                const yearSelect = document.getElementById('revYearSelect');
+                const now = new Date();
+                if (monthSelect) monthSelect.value = now.getMonth() + 1;
+                if (yearSelect) yearSelect.value = now.getFullYear();
+            } else if (period === 'year') {
+                modeSelect.value = 'year';
+                const onlyYearSelect = document.getElementById('revOnlyYearSelect');
+                if (onlyYearSelect) onlyYearSelect.value = new Date().getFullYear();
+            } else {
+                modeSelect.value = period;
+            }
+
+            onRevenuePeriodModeChange();
+        }
+
+        function resetRevenueFilters() {
+            const propSelect = document.getElementById('revFilterProperty');
+            if (propSelect) propSelect.value = 'all';
+            setRevQuickPeriod('all');
+        }
+
+        function applyRevenueFilters() {
+            if (!revenueDashboardInitialized) {
+                buildUnifiedRevenueRecords();
+                revenueDashboardInitialized = true;
+            }
+
+            const propFilter = document.getElementById('revFilterProperty')?.value || 'all';
+            const periodMode = document.getElementById('revPeriodMode')?.value || 'all';
+
+            const now = new Date();
+            const todayStr = now.toISOString().slice(0, 10);
+
+            let subtitleText = '';
+            filteredRevenueRecords = revenueRecords.filter(r => {
+                // 1. Property filter
+                if (propFilter !== 'all' && r.property !== propFilter) {
+                    return false;
+                }
+
+                // 2. Period filter
+                if (periodMode === 'all') {
+                    subtitleText = 'Đang xem: Toàn bộ thời gian';
+                    return true;
+                }
+
+                if (periodMode === 'today') {
+                    subtitleText = `Đang xem: Hôm nay (${now.toLocaleDateString('vi-VN')})`;
+                    return r.dateOnly === todayStr;
+                }
+
+                if (periodMode === '7days') {
+                    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    subtitleText = 'Đang xem: 7 ngày gần nhất';
+                    return r.date >= sevenDaysAgo;
+                }
+
+                if (periodMode === '30days') {
+                    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    subtitleText = 'Đang xem: 30 ngày gần nhất';
+                    return r.date >= thirtyDaysAgo;
+                }
+
+                if (periodMode === 'month') {
+                    const selMonth = parseInt(document.getElementById('revMonthSelect')?.value) || (now.getMonth() + 1);
+                    const selYear = parseInt(document.getElementById('revYearSelect')?.value) || now.getFullYear();
+                    subtitleText = `Đang xem: Tháng ${selMonth}/${selYear}`;
+                    return r.month === selMonth && r.year === selYear;
+                }
+
+                if (periodMode === 'year') {
+                    const selYear = parseInt(document.getElementById('revOnlyYearSelect')?.value) || now.getFullYear();
+                    subtitleText = `Đang xem: Năm ${selYear}`;
+                    return r.year === selYear;
+                }
+
+                if (periodMode === 'custom') {
+                    const fromStr = document.getElementById('revDateFrom')?.value;
+                    const toStr = document.getElementById('revDateTo')?.value;
+                    subtitleText = `Đang xem: Từ ${fromStr ? fromStr : 'bắt đầu'} đến ${toStr ? toStr : 'hiện tại'}`;
+                    if (fromStr && r.dateOnly < fromStr) return false;
+                    if (toStr && r.dateOnly > toStr) return false;
+                    return true;
+                }
+
+                return true;
+            });
+
+            const subtitleEl = document.getElementById('revPeriodSubtitleText');
+            if (subtitleEl) subtitleEl.textContent = subtitleText;
+
+            // Recalculate KPIs
+            updateRevenueKpis(filteredRevenueRecords);
+
+            // Re-render Visualizations (Charts)
+            renderRevenueCharts(filteredRevenueRecords, periodMode);
+
+            // Re-render Transactions Table
+            renderRevenueTable(filteredRevenueRecords);
+        }
+
+        function updateRevenueKpis(records) {
+            const totalNet = records.reduce((sum, r) => sum + r.netAmount, 0);
+            const totalGross = records.reduce((sum, r) => sum + r.grossAmount, 0);
+            const count = records.length;
+            const aov = count > 0 ? Math.round(totalNet / count) : 0;
+
+            const netEl = document.getElementById('kpiNetRevenue');
+            const grossEl = document.getElementById('kpiGrossRevenue');
+            const countEl = document.getElementById('kpiBookingCount');
+            const aovEl = document.getElementById('kpiAovValue');
+
+            if (netEl) netEl.textContent = totalNet.toLocaleString('vi-VN');
+            if (grossEl) grossEl.textContent = totalGross.toLocaleString('vi-VN');
+            if (countEl) countEl.textContent = count.toLocaleString('vi-VN');
+            if (aovEl) aovEl.textContent = aov.toLocaleString('vi-VN');
+        }
+
+        function renderRevenueCharts(records, periodMode) {
+            renderTrendChart(records, periodMode);
+            renderPropertyShareChart(records);
+        }
+
+        function renderTrendChart(records, periodMode) {
+            const canvas = document.getElementById('revTrendChart');
+            if (!canvas) return;
+
+            if (revTrendChartInstance) {
+                revTrendChartInstance.destroy();
+                revTrendChartInstance = null;
+            }
+
+            const ctx = canvas.getContext('2d');
+            const trendSubtitle = document.getElementById('trendChartSubtitle');
+
+            let labels = [];
+            let dataPoints = [];
+
+            if (periodMode === 'month') {
+                const selMonth = parseInt(document.getElementById('revMonthSelect')?.value) || (new Date().getMonth() + 1);
+                const selYear = parseInt(document.getElementById('revYearSelect')?.value) || new Date().getFullYear();
+                const daysInMonth = new Date(selYear, selMonth, 0).getDate();
+
+                if (trendSubtitle) trendSubtitle.textContent = `Doanh thu từng ngày trong Tháng ${selMonth}/${selYear}`;
+
+                const dailyMap = {};
+                for (let d = 1; d <= daysInMonth; d++) {
+                    dailyMap[d] = 0;
+                    labels.push(`${d}/${selMonth}`);
+                }
+
+                records.forEach(r => {
+                    if (dailyMap.hasOwnProperty(r.day)) {
+                        dailyMap[r.day] += r.netAmount;
+                    }
+                });
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    dataPoints.push(dailyMap[d]);
+                }
+            } else if (periodMode === 'year') {
+                const selYear = parseInt(document.getElementById('revOnlyYearSelect')?.value) || new Date().getFullYear();
+                if (trendSubtitle) trendSubtitle.textContent = `Doanh thu các tháng trong Năm ${selYear}`;
+
+                const monthlyMap = {};
+                for (let m = 1; m <= 12; m++) {
+                    monthlyMap[m] = 0;
+                    labels.push(`Tháng ${m}`);
+                }
+
+                records.forEach(r => {
+                    if (monthlyMap.hasOwnProperty(r.month)) {
+                        monthlyMap[r.month] += r.netAmount;
+                    }
+                });
+
+                for (let m = 1; m <= 12; m++) {
+                    dataPoints.push(monthlyMap[m]);
+                }
+            } else {
+                if (trendSubtitle) trendSubtitle.textContent = `Doanh thu phân bổ theo các mốc thời gian`;
+
+                const dateMap = {};
+                records.slice().sort((a, b) => a.date - b.date).forEach(r => {
+                    const dStr = r.dateOnly;
+                    dateMap[dStr] = (dateMap[dStr] || 0) + r.netAmount;
+                });
+
+                const sortedDates = Object.keys(dateMap).sort();
+                if (sortedDates.length === 0) {
+                    labels = ['Chưa có dữ liệu'];
+                    dataPoints = [0];
+                } else {
+                    sortedDates.forEach(dStr => {
+                        const parts = dStr.split('-');
+                        labels.push(`${parts[2]}/${parts[1]}`);
+                        dataPoints.push(dateMap[dStr]);
+                    });
+                }
+            }
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 260);
+            gradient.addColorStop(0, 'rgba(0, 119, 182, 0.35)');
+            gradient.addColorStop(1, 'rgba(0, 119, 182, 0.00)');
+
+            revTrendChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Doanh thu thực nhận (VNĐ)',
+                        data: dataPoints,
+                        borderColor: '#0077b6',
+                        borderWidth: 2.5,
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#0077b6',
+                        pointBorderWidth: 2,
+                        pointRadius: 3.5,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: '#0077b6',
+                        pointHoverBorderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            left: 6,
+                            right: 14,
+                            top: 10,
+                            bottom: 6
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#03045e',
+                            titleFont: { family: 'Be Vietnam Pro', size: 12, weight: 'bold' },
+                            bodyFont: { family: 'Be Vietnam Pro', size: 12 },
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Doanh thu: ' + Number(context.raw || 0).toLocaleString('vi-VN') + ' ₫';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                font: { family: 'Be Vietnam Pro', size: 10 },
+                                callback: function(value) {
+                                    if (value >= 1000000) return (value / 1000000).toFixed(1) + ' tr';
+                                    if (value >= 1000) return (value / 1000).toFixed(0) + ' k';
+                                    return value;
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 119, 182, 0.06)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: { family: 'Be Vietnam Pro', size: 10 },
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 14
+                            },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderPropertyShareChart(records) {
+            const canvas = document.getElementById('revPropertyChart');
+            const legendContainer = document.getElementById('revPropertyLegend');
+            if (!canvas) return;
+
+            if (revPropertyChartInstance) {
+                revPropertyChartInstance.destroy();
+                revPropertyChartInstance = null;
+            }
+
+            const propRevenueMap = {};
+            records.forEach(r => {
+                const name = r.property || 'Khác';
+                propRevenueMap[name] = (propRevenueMap[name] || 0) + r.netAmount;
+            });
+
+            const propNames = Object.keys(propRevenueMap);
+            const revenues = Object.values(propRevenueMap);
+            const total = revenues.reduce((a, b) => a + b, 0);
+
+            const palette = [
+                '#0077b6', '#0096c7', '#00b4d8', '#48cae4',
+                '#03045e', '#06d6a0', '#f77f00', '#7209b7'
+            ];
+
+            const ctx = canvas.getContext('2d');
+
+            if (propNames.length === 0 || total === 0) {
+                if (legendContainer) legendContainer.innerHTML = '<div class="text-center text-muted small py-2">Chưa có doanh thu trong kỳ</div>';
+                revPropertyChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Chưa có dữ liệu'],
+                        datasets: [{ data: [1], backgroundColor: ['#e2e8f0'] }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } }
+                    }
+                });
+                return;
+            }
+
+            revPropertyChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: propNames,
+                    datasets: [{
+                        data: revenues,
+                        backgroundColor: palette.slice(0, propNames.length),
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '68%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#03045e',
+                            titleFont: { family: 'Be Vietnam Pro', size: 12, weight: 'bold' },
+                            bodyFont: { family: 'Be Vietnam Pro', size: 12 },
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    const val = context.raw || 0;
+                                    const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                                    return ` ${val.toLocaleString('vi-VN')} ₫ (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Build Custom Legend with clean tabular columns
+            if (legendContainer) {
+                let legendHtml = '<div class="d-flex flex-column gap-1">';
+                propNames.forEach((name, idx) => {
+                    const color = palette[idx % palette.length];
+                    const rev = propRevenueMap[name];
+                    const pct = total > 0 ? ((rev / total) * 100).toFixed(1) : 0;
+                    legendHtml += `
+                        <div class="property-legend-item">
+                            <div class="legend-left">
+                                <span class="legend-dot" style="background-color: ${color};"></span>
+                                <span class="legend-name" title="${name}">${name}</span>
+                            </div>
+                            <div class="legend-right">
+                                <span class="legend-pct">${pct}%</span>
+                                <span class="legend-val">(${rev.toLocaleString('vi-VN')} ₫)</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                legendHtml += '</div>';
+                legendContainer.innerHTML = legendHtml;
+            }
+        }
+
+        function renderRevenueTable(records) {
+            const tbody = document.getElementById('revTransactionsTableBody');
+            const noDataBox = document.getElementById('revNoDataBox');
+            const indicator = document.getElementById('revTableIndicatorText');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            if (records.length === 0) {
+                if (noDataBox) noDataBox.classList.remove('d-none');
+                if (indicator) indicator.textContent = '0 giao dịch';
+                return;
+            }
+
+            if (noDataBox) noDataBox.classList.add('d-none');
+            if (indicator) indicator.textContent = `${records.length} giao dịch`;
+
+            records.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.className = 'rev-table-row';
+                tr.setAttribute('data-search-text', `${r.id} ${r.property} ${r.guest} ${r.phone} ${r.paymentMethod}`.toLowerCase());
+
+                const dateDisplay = r.date.toLocaleDateString('vi-VN');
+                const timeDisplay = r.date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+                tr.innerHTML = `
+                    <td><span class="rev-code-badge">#${r.id}</span></td>
+                    <td>
+                        <div class="fw-semibold text-dark text-truncate" style="max-width: 200px;" title="${r.property}">${r.property}</div>
+                    </td>
+                    <td>
+                        <div class="fw-medium text-dark">${r.guest}</div>
+                        ${r.phone ? `<div class="text-muted" style="font-size: 0.75rem;">${r.phone}</div>` : ''}
+                    </td>
+                    <td>
+                        <div class="text-dark">${dateDisplay}</div>
+                        <div class="text-muted" style="font-size: 0.75rem;">${timeDisplay}</div>
+                    </td>
+                    <td>
+                        <span class="rev-pill-badge rev-pill-method">
+                            <i class="bi bi-credit-card me-1 text-primary"></i>${r.paymentMethod}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="rev-pill-badge rev-pill-success">
+                            <i class="bi bi-check2 me-1"></i>Thành công
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <span class="rev-amount-cell">${r.netAmount.toLocaleString('vi-VN')} ₫</span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterRevenueTable() {
+            const query = (document.getElementById('revTableSearchInput')?.value || '').toLowerCase().trim();
+            const rows = document.querySelectorAll('#revTransactionsTableBody .rev-table-row');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const text = row.getAttribute('data-search-text') || '';
+                if (!query || text.includes(query)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            const indicator = document.getElementById('revTableIndicatorText');
+            if (indicator) {
+                indicator.textContent = `${visibleCount} / ${rows.length} giao dịch`;
+            }
+        }
+
+        function exportRevenueReportCsv() {
+            if (!filteredRevenueRecords || filteredRevenueRecords.length === 0) {
+                alert('Không có dữ liệu giao dịch trong khoảng thời gian đã chọn để xuất file.');
+                return;
+            }
+
+            const headers = ['Mã đơn', 'Cơ sở lưu trú', 'Khách hàng', 'Số điện thoại', 'Ngày thanh toán', 'Phương thức', 'Trạng thái', 'Doanh thu thực nhận (VNĐ)', 'Giá trị gộp (VNĐ)'];
+            const rows = filteredRevenueRecords.map(r => [
+                `"#${r.id}"`,
+                `"${(r.property || '').replace(/"/g, '""')}"`,
+                `"${(r.guest || '').replace(/"/g, '""')}"`,
+                `"${(r.phone || '').replace(/"/g, '""')}"`,
+                `"${r.date.toLocaleDateString('vi-VN')} ${r.date.toLocaleTimeString('vi-VN')}"`,
+                `"${(r.paymentMethod || '').replace(/"/g, '""')}"`,
+                `"Thành công"`,
+                r.netAmount,
+                r.grossAmount
+            ]);
+
+            const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `BaoCao_DoanhThu_Stayly_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
     </script>
 </body>
 </html>

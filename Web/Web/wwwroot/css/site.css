@@ -3000,3 +3000,501 @@ textarea.form-control.is-invalid:focus {
         transform: translateX(0) scale(1);
     }
 }
+
+/* Amenity Checkbox Chips (2-column grid in Modals) */
+.amenity-chip {
+    transition: all 0.2s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+.amenity-chip:hover {
+    border-color: var(--stayly-primary) !important;
+    background-color: #f0f9ff !important;
+    transform: translateY(-1px);
+}
+
+.amenity-chip:has(.form-check-input:checked) {
+    background-color: #e0f2fe !important;
+    border-color: var(--stayly-primary) !important;
+    box-shadow: 0 0 0 1px var(--stayly-primary) !important;
+}
+
+.amenity-chip .form-check-input {
+    cursor: pointer;
+}
+
+.amenity-chip .form-check-label {
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   REVENUE & ANALYTICS DASHBOARD STYLES (Tab 5) - REDESIGNED & COMPACT
+   ========================================================================== */
+
+/* 1. Filter Card & Toolbar */
+.revenue-filter-card {
+    background: #ffffff;
+    border-radius: var(--radius-card);
+    box-shadow: var(--stayly-shadow);
+    border: 1px solid rgba(0, 119, 182, 0.08);
+    padding: 16px 20px;
+}
+
+.revenue-filter-toolbar {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.rev-filter-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.rev-filter-property {
+    flex: 1 1 200px;
+    min-width: 180px;
+}
+
+.rev-filter-mode {
+    flex: 1 1 170px;
+    min-width: 160px;
+}
+
+.rev-filter-dynamic {
+    flex: 1 1 220px;
+    min-width: 200px;
+}
+
+.rev-filter-actions {
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+
+.rev-field-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #03045e;
+    margin-bottom: 6px;
+    display: block;
+    line-height: 18px;
+    height: 18px;
+    white-space: nowrap;
+}
+
+.rev-control-input {
+    height: 38px;
+    width: 100%;
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 0 12px;
+    font-size: 0.84rem;
+    font-weight: 500;
+    color: #0f172a;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+}
+
+.rev-control-input:focus {
+    background-color: #ffffff;
+    border-color: var(--stayly-primary);
+    box-shadow: 0 0 0 3px rgba(0, 119, 182, 0.12);
+    outline: none;
+}
+
+.rev-dynamic-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    width: 100%;
+}
+
+.rev-dynamic-sub {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Action Button Group */
+.rev-btn-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rev-btn {
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 10px;
+    font-size: 0.83rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.rev-btn-reset {
+    background-color: #f8fafc;
+    color: #475569;
+    border-color: #cbd5e1;
+}
+
+.rev-btn-reset:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+.rev-btn-export {
+    background-color: #10b981;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+}
+
+.rev-btn-export:hover {
+    background-color: #059669;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
+}
+
+/* Quick Bar (Chips & Indicator) */
+.rev-quick-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+    flex-wrap: wrap;
+}
+
+.rev-quick-chips-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.rev-quick-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+    margin-right: 4px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.rev-quick-chip {
+    height: 28px;
+    padding: 0 11px;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
+    font-size: 0.76rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.rev-quick-chip:hover {
+    background: #e2e8f0;
+    color: var(--stayly-primary);
+}
+
+.rev-quick-chip.active {
+    background: var(--stayly-primary) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(0, 119, 182, 0.25);
+}
+
+.rev-period-indicator {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--stayly-primary);
+    background: rgba(0, 119, 182, 0.08);
+    padding: 4px 12px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+/* 2. KPI Cards */
+.revenue-kpi-card {
+    background: #ffffff;
+    border-radius: var(--radius-card);
+    box-shadow: var(--stayly-shadow);
+    border: 1px solid rgba(0, 119, 182, 0.08);
+    padding: 16px 18px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.revenue-kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--stayly-shadow-hover);
+}
+
+.revenue-kpi-card .kpi-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.revenue-kpi-card .kpi-label {
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    line-height: 1.2;
+}
+
+.revenue-kpi-card .kpi-icon-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.revenue-kpi-card .kpi-value {
+    font-size: 1.45rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.revenue-kpi-card .kpi-unit {
+    font-size: 0.92rem;
+    font-weight: 600;
+    opacity: 0.85;
+}
+
+.revenue-kpi-card .kpi-meta {
+    font-size: 0.76rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    line-height: 1.2;
+    color: #64748b;
+    margin-top: auto;
+}
+
+/* 3. Chart Cards */
+.revenue-chart-card {
+    background: #ffffff;
+    border-radius: var(--radius-card);
+    box-shadow: var(--stayly-shadow);
+    border: 1px solid rgba(0, 119, 182, 0.08);
+    padding: 18px 20px;
+    transition: box-shadow 0.2s ease;
+}
+
+.revenue-chart-card:hover {
+    box-shadow: var(--stayly-shadow-hover);
+}
+
+.property-legend-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 4px;
+    border-bottom: 1px dashed #f1f5f9;
+    font-size: 0.8rem;
+}
+
+.property-legend-item:last-child {
+    border-bottom: none;
+}
+
+.property-legend-item .legend-left {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    flex: 1;
+    margin-right: 10px;
+}
+
+.property-legend-item .legend-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.property-legend-item .legend-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.property-legend-item .legend-pct {
+    font-weight: 700;
+    color: var(--stayly-primary);
+    min-width: 44px;
+    text-align: right;
+}
+
+.property-legend-item .legend-val {
+    color: #64748b;
+    font-size: 0.76rem;
+    min-width: 90px;
+    text-align: right;
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+/* 4. Table Card */
+.revenue-table-card {
+    background: #ffffff;
+    border-radius: var(--radius-card);
+    box-shadow: var(--stayly-shadow);
+    border: 1px solid rgba(0, 119, 182, 0.08);
+    padding: 18px 20px;
+}
+
+.revenue-table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.rev-search-wrapper {
+    position: relative;
+    width: 250px;
+}
+
+.rev-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 0.85rem;
+    pointer-events: none;
+}
+
+.rev-search-input {
+    width: 100%;
+    height: 36px;
+    padding: 0 12px 0 34px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-family: inherit;
+    color: #0f172a;
+    transition: all 0.2s ease;
+}
+
+.rev-search-input:focus {
+    background: #ffffff;
+    border-color: var(--stayly-primary);
+    box-shadow: 0 0 0 3px rgba(0, 119, 182, 0.12);
+    outline: none;
+}
+
+/* Table Elements */
+.rev-table th {
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    background: #f8fafc;
+    padding: 10px 14px;
+    border-top: none;
+    white-space: nowrap;
+}
+
+.rev-table td {
+    padding: 10px 14px;
+    font-size: 0.84rem;
+    vertical-align: middle;
+}
+
+.rev-code-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    background: #f1f5f9;
+    color: #0f172a;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border-radius: 6px;
+    font-variant-numeric: tabular-nums;
+    border: 1px solid #e2e8f0;
+}
+
+.rev-pill-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.rev-pill-method {
+    background: #f8fafc;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+}
+
+.rev-pill-success {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.rev-amount-cell {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--stayly-primary);
+    font-variant-numeric: tabular-nums;
+}

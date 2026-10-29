@@ -31,13 +31,19 @@ public sealed class OtpService(
             "Generated OTP for {Email} (Purpose: {Purpose}). Valid for {Minutes} minutes.",
             normalizedEmail, normalizedPurpose, ExpirationMinutes);
 
+        var isForgot = string.Equals(normalizedPurpose, "forgotpassword", StringComparison.OrdinalIgnoreCase) ||
+                       string.Equals(normalizedPurpose, "resetpassword", StringComparison.OrdinalIgnoreCase);
+
         var model = new AccountOtpEmailModel(
             RecipientName: string.IsNullOrWhiteSpace(recipientName) ? "Quý khách" : recipientName.Trim(),
             OtpCode: code,
-            ExpireMinutes: ExpirationMinutes
+            ExpireMinutes: ExpirationMinutes,
+            PurposeText: isForgot ? "Đặt lại mật khẩu" : "Xác thực tài khoản"
         );
 
-        var subject = $"[Stayly] Mã xác thực OTP: {code}";
+        var subject = isForgot
+            ? $"[Stayly] Mã OTP đặt lại mật khẩu: {code}"
+            : $"[Stayly] Mã xác thực OTP: {code}";
 
         // Ghi đè mã OTP vào file txt duy nhất để phục vụ auto-testing
         try

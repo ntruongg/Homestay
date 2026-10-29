@@ -527,6 +527,13 @@ public sealed class SendOtpRequestModel
     public string Purpose { get; set; } = "Register";
 }
 
+public sealed class ResetPasswordInput
+{
+    public string Email { get; set; } = string.Empty;
+    public string OtpCode { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+}
+
 public sealed record ReviewItem(
     int Id,
     int BookingId,

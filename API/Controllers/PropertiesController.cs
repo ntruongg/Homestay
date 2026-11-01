@@ -184,7 +184,8 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
             images,
             roomResponses,
             propertyAmenities,
-            propertyServices
+            propertyServices,
+            property.ChinhSach
         ));
     }
 

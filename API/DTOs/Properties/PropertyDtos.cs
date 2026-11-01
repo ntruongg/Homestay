@@ -190,7 +190,8 @@ public sealed record PropertyDetailsResponse(
     int Id, string Name, string? Phone, string? Email, string? Address, string? Type,
     IReadOnlyList<string> Images, IReadOnlyList<RoomResponse> Rooms,
     IReadOnlyList<AmenityDto>? Amenities = null,
-    IReadOnlyList<ServiceDto>? Services = null);
+    IReadOnlyList<ServiceDto>? Services = null,
+    string? Policy = null);
 
 public sealed record ServiceDto(int Id, string Name, decimal Price, string? Description);
 

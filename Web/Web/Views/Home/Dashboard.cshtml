@@ -11,7 +11,7 @@
     var approvedProps = Model.Properties.Where(p => isAppr(p.ApprovalStatus)).ToList();
     var pendingProps = Model.Properties.Where(p => isPend(p.ApprovalStatus)).ToList();
     var rejectedProps = Model.Properties.Where(p => isRej(p.ApprovalStatus)).ToList();
-    var pendingBookingsCount = Model.Bookings.Count(b => b.Status is "Pending" or "ChoDuyet" or "YeuCauHoanTien");
+    var pendingBookingsCount = Model.Bookings.Count(b => b.Status is "Pending" or "ChoDuyet");
 }
 
 <!doctype html>

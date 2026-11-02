@@ -1185,7 +1185,18 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
         var tmnCode = configuration["VnPay:TmnCode"] ?? "YOUR_VNP_TMNCODE";
         var hashSecret = configuration["VnPay:HashSecret"] ?? "YOUR_VNP_HASHSECRET";
         var baseUrl = configuration["VnPay:BaseUrl"] ?? "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-        var returnUrl = configuration["VnPay:ReturnUrl"] ?? $"{Request.Scheme}://{Request.Host}/Home/VNPayReturn";
+        var configuredReturnUrl = configuration["VnPay:ReturnUrl"];
+        string returnUrl;
+        if (!string.IsNullOrWhiteSpace(configuredReturnUrl))
+        {
+            returnUrl = configuredReturnUrl;
+        }
+        else
+        {
+            var scheme = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? Request.Scheme;
+            var host = Request.Headers["X-Forwarded-Host"].FirstOrDefault() ?? Request.Host.Value;
+            returnUrl = $"{scheme}://{host}/Home/VNPayReturn";
+        }
 
         var vnpay = new VnPayLibrary();
         vnpay.AddRequestData("vnp_Version", configuration["VnPay:Version"] ?? "2.1.0");

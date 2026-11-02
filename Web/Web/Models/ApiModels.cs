@@ -28,7 +28,8 @@ public sealed record PropertyDetails(
     IReadOnlyList<string> Images,
     IReadOnlyList<Room> Rooms,
     IReadOnlyList<RoomAmenityItem>? Amenities = null,
-    IReadOnlyList<ServiceItem>? Services = null);
+    IReadOnlyList<ServiceItem>? Services = null,
+    string? Policy = null);
 
 public sealed record ServiceItem(int Id, string Name, decimal Price, string? Description);
 

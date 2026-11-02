@@ -1061,10 +1061,47 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
         CancellationToken cancellationToken)
     {
         var token = HttpContext.Session.GetString("token");
+        var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || (Request.Headers.Accept.ToString()?.Contains("application/json") ?? false);
+
         if (token is null)
+        {
+            if (isAjax)
+                return Unauthorized(new { success = false, message = "Vui lòng đăng nhập lại." });
             return RedirectToAction(nameof(Login));
+        }
+
+        // 1. Tổng hợp ảnh: Bắt đầu từ danh sách ảnh cũ được giữ lại
+        var finalPhotoUrls = new List<string>(input.ExistingPhotoUrls.Where(u => !string.IsNullOrWhiteSpace(u)));
+
+        // 2. Tải lên ảnh mới nếu có
+        if (input.PhotoFiles != null && input.PhotoFiles.Count > 0)
+        {
+            var (photosOk, uploadedUrls, uploadErr) = await api.UploadImagesAsync(input.PhotoFiles, $"stayly/rooms/{input.PropertyId}", token, cancellationToken);
+            if (photosOk && uploadedUrls.Count > 0)
+            {
+                finalPhotoUrls.AddRange(uploadedUrls);
+            }
+        }
+
+        if (input.PhotoUrls != null && input.PhotoUrls.Count > 0)
+        {
+            foreach (var u in input.PhotoUrls)
+            {
+                if (!string.IsNullOrWhiteSpace(u) && !finalPhotoUrls.Contains(u))
+                    finalPhotoUrls.Add(u);
+            }
+        }
+
+        input.PhotoUrls = finalPhotoUrls;
 
         var result = await api.UpdateRoomAsync(input, token, cancellationToken);
+        if (isAjax)
+        {
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Error ?? "Không thể cập nhật phòng." });
+            return Ok(new { success = true, message = $"Phòng '{input.RoomNumber}' đã được cập nhật thành công.", photoUrls = finalPhotoUrls });
+        }
+
         if (!result.Success)
             TempData["Error"] = result.Error ?? "Không thể cập nhật phòng.";
         else

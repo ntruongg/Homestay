@@ -488,7 +488,11 @@ public sealed record RoomDetailItem(
     string? RoomType,
     IReadOnlyList<string> Images,
     int AdultCapacity = 2,
-    int ChildCapacity = 1
+    int ChildCapacity = 1,
+    string? Description = null,
+    bool IsActive = true,
+    IReadOnlyList<AmenityItem>? Amenities = null,
+    int? RoomTypeId = null
 );
 
 public sealed class CreateRoomInput
@@ -499,7 +503,7 @@ public sealed class CreateRoomInput
     public string RoomNumber { get; set; } = string.Empty;
     public int Capacity { get; set; } = 2;
     public decimal OriginalPrice { get; set; } = 500000;
-    public string Status { get; set; } = "Trống";
+    public string Status { get; set; } = "DangTrong";
     public int? RoomTypeId { get; set; }
     public List<int> AmenityIds { get; set; } = [];
     public List<IFormFile>? PhotoFiles { get; set; }
@@ -515,10 +519,17 @@ public sealed class UpdateRoomInput
     [Required(ErrorMessage = "Vui lòng nhập số phòng hoặc tên phòng.")]
     public string RoomNumber { get; set; } = string.Empty;
     public int Capacity { get; set; } = 2;
+    public int AdultCapacity { get; set; } = 2;
+    public int ChildCapacity { get; set; } = 0;
     public decimal OriginalPrice { get; set; } = 500000;
-    public string Status { get; set; } = "Trống";
+    public string Status { get; set; } = "DangTrong";
     public int? RoomTypeId { get; set; }
+    public string? Description { get; set; }
+    public bool IsActive { get; set; } = true;
     public List<int> AmenityIds { get; set; } = [];
+    public List<IFormFile>? PhotoFiles { get; set; }
+    public List<string> PhotoUrls { get; set; } = [];
+    public List<string> ExistingPhotoUrls { get; set; } = [];
 }
 
 public sealed class SendOtpRequestModel

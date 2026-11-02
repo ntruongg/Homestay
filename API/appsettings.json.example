@@ -23,10 +23,10 @@
     "RequireOtp": false
   },
   "AdminAccount": {
-    "Email": "admin@stayly.com",
-    "Password": "Admin@123456",
+    "Email": "example_admin@gmail.com",
+    "Password": "example_admin_password",
     "FullName": "System Administrator",
-    "Phone": "0938110271"
+    "Phone": "your_phone_number"
   },
   "Logging": {
     "LogLevel": {

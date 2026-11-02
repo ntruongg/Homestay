@@ -287,7 +287,8 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
             r.SucChuaTreEm,
             r.MoTaPhong,
             r.TrangThaiHoatDong,
-            r.TienNghis.Select(rt => new AmenityDto(rt.MaTienNghi, rt.TienNghiPhong.TenTienNghi)).ToList()
+            r.TienNghis.Select(rt => new AmenityDto(rt.MaTienNghi, rt.TienNghiPhong.TenTienNghi)).ToList(),
+            r.MaLoaiPhong
         )).ToList();
 
         var amenities = property.TienNghis.Select(pt => new AmenityDto(
@@ -684,7 +685,7 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
             SucChuaTreEm = request.ChildCapacity >= 0 ? request.ChildCapacity : 1,
             MaLoaiPhong = request.RoomTypeId,
             MoTaPhong = request.Description,
-            TinhTrang = string.IsNullOrWhiteSpace(request.Status) ? "DangTrong" : request.Status,
+            TinhTrang = NormalizeRoomStatus(request.Status),
             GiaGoc = request.OriginalPrice,
             TrangThaiHoatDong = request.IsActive
         };
@@ -714,7 +715,7 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
             {
                 db.HinhAnhs.Add(new HinhAnh
                 {
-                    MaCoSoLuuTru = propertyId,
+                    MaCoSoLuuTru = null,
                     Phong = room,
                     UrlHinhAnh = photoUrl.Trim()
                 });
@@ -751,7 +752,7 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
         room.SucChuaTreEm = request.ChildCapacity >= 0 ? request.ChildCapacity : 1;
         room.MaLoaiPhong = request.RoomTypeId;
         room.MoTaPhong = request.Description;
-        room.TinhTrang = string.IsNullOrWhiteSpace(request.Status) ? "DangTrong" : request.Status;
+        room.TinhTrang = NormalizeRoomStatus(request.Status);
         room.GiaGoc = request.OriginalPrice;
         room.TrangThaiHoatDong = request.IsActive;
 
@@ -784,6 +785,33 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
                         SoLuong = 1
                     });
                 }
+            }
+        }
+
+        if (request.PhotoUrls != null)
+        {
+            var existingRoomImages = await db.HinhAnhs
+                .Where(i => i.MaPhong == roomId)
+                .ToListAsync(cancellationToken);
+
+            var targetUrls = request.PhotoUrls.Where(u => !string.IsNullOrWhiteSpace(u)).Select(u => u.Trim()).Distinct().ToList();
+
+            var toRemove = existingRoomImages.Where(i => !targetUrls.Contains(i.UrlHinhAnh)).ToList();
+            foreach (var img in toRemove)
+            {
+                db.HinhAnhs.Remove(img);
+            }
+
+            var currentUrls = existingRoomImages.Select(i => i.UrlHinhAnh).ToList();
+            var toAdd = targetUrls.Where(u => !currentUrls.Contains(u)).ToList();
+            foreach (var url in toAdd)
+            {
+                db.HinhAnhs.Add(new HinhAnh
+                {
+                    MaCoSoLuuTru = null,
+                    Phong = room,
+                    UrlHinhAnh = url
+                });
             }
         }
 
@@ -839,5 +867,14 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
             .Distinct();
         var full = string.Join(", ", parts);
         return string.IsNullOrWhiteSpace(full) ? (diaChi ?? thanhPho ?? "Việt Nam") : full;
+    }
+
+    private static string NormalizeRoomStatus(string? status)
+    {
+        if (string.IsNullOrWhiteSpace(status)) return "DangTrong";
+        var s = status.Trim().ToLowerInvariant();
+        if (s.Contains("khach") || s == "dangcokhach") return "DangCoKhach";
+        if (s.Contains("sua") || s.Contains("tri") || s == "dangsuachua") return "DangSuaChua";
+        return "DangTrong";
     }
 }

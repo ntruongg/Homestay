@@ -171,11 +171,11 @@ public sealed class UpdateRoomRequest
     [Range(0, double.MaxValue)]
     public decimal OriginalPrice { get; set; }
     [StringLength(1000)]
-    [MinLength(20, ErrorMessage = "Mô tả phải có ít nhất 20 ký tự")]
     public string? Description { get; set; }
     public bool IsActive { get; set; } = true;
 
     public List<int>? AmenityIds { get; set; }
+    public List<string>? PhotoUrls { get; set; }
 }
 
 public sealed record AmenityDto(int Id, string Name);
@@ -199,7 +199,8 @@ public sealed record RoomResponse(
     int Id, string RoomNumber, int Capacity, decimal OriginalPrice,
     string? RoomStatus, string? RoomType, IReadOnlyList<string> Images,
     int AdultCapacity = 2, int ChildCapacity = 1, string? Description = null, bool IsActive = true,
-    IReadOnlyList<AmenityDto>? Amenities = null);
+    IReadOnlyList<AmenityDto>? Amenities = null,
+    int? RoomTypeId = null);
 
 public sealed record OwnerPropertyDetailsResponse(
     int Id,

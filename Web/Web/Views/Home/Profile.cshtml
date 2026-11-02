@@ -10,104 +10,299 @@
     var activeTab = string.IsNullOrWhiteSpace(Model.ActiveTab) ? "personal" : Model.ActiveTab.ToLowerInvariant();
 }
 
-<div class="stayly-profile-page py-4" style="background-color: #f8f9fc; min-height: calc(100vh - 120px);">
-    <div class="container py-2">
-        <!-- Breadcrumb / Quay lại -->
-        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-            <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-2 d-inline-flex align-items-center gap-2">
-                <i class="bi bi-arrow-left"></i>
-                <span>Quay lại trang chủ</span>
-            </a>
-            @if (isOwner)
-            {
-                <a asp-action="Dashboard" class="btn btn-sm btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
-                    <i class="bi bi-speedometer2"></i>
-                    <span>Bảng điều khiển chủ cơ sở</span>
-                </a>
-            }
-            else
-            {
-                <a asp-action="Trips" class="btn btn-sm btn-outline-primary rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center gap-2">
-                    <i class="bi bi-briefcase-fill"></i>
-                    <span>Đơn đặt phòng của tôi</span>
-                </a>
-            }
-        </div>
-
-        <!-- 1. Top Banner Profile (Thẻ Squircle bo góc 24px, Soft Ocean Blue) -->
-        <div class="card border-0 mb-4 p-4 p-md-5" style="border-radius: 24px; box-shadow: var(--stayly-shadow); background: #ffffff;">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-4">
-                <div class="d-flex align-items-center gap-4">
-                    <!-- Avatar tròn lớn với chữ cái đầu -->
-                    <div class="d-flex align-items-center justify-content-center text-white fw-bold shadow-sm" 
-                         style="width: 84px; height: 84px; border-radius: 50%; font-size: 2.2rem; background: linear-gradient(135deg, var(--stayly-primary) 0%, #0096c7 100%); flex-shrink: 0;">
-                        @initials
-                    </div>
-                    <div>
-                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                            <h2 class="fs-4 fw-bold text-navy mb-0">@profile.FullName</h2>
-                            @if (isOwner)
-                            {
-                                <span class="badge rounded-pill px-3 py-1 bg-primary text-white small fw-bold">
-                                    <i class="bi bi-patch-check-fill me-1"></i> Chủ cơ sở lưu trú
-                                </span>
-                            }
-                            else
-                            {
-                                <span class="px-3 py-1 rounded-pill bg-light text-primary border small fw-bold">
-                                    <i class="bi bi-person-heart me-1"></i> Khách hàng du lịch
-                                </span>
-                            }
-                        </div>
-                        <div class="text-muted small d-flex align-items-center gap-3 flex-wrap">
-                            <span><i class="bi bi-envelope-fill text-primary me-1"></i> @profile.Email</span>
-                            <span>•</span>
-                            <span><i class="bi bi-telephone-fill text-primary me-1"></i> @(string.IsNullOrWhiteSpace(profile.Phone) ? "Chưa cập nhật SĐT" : profile.Phone)</span>
-                            <span>•</span>
-                            <span>Mã tài khoản: <strong>#ND-@profile.Id</strong></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="d-flex gap-2">
-                    @if (isOwner)
-                    {
-                        <span class="px-3 py-2 rounded-pill bg-light text-success border small fw-semibold d-inline-flex align-items-center gap-1">
-                            <i class="bi bi-shield-fill-check fs-6 text-success"></i>
-                            <span>Tài khoản đối tác đã kích hoạt</span>
-                        </span>
-                    }
-                    else
-                    {
-                        <span class="px-3 py-2 rounded-pill bg-light text-navy border small fw-semibold d-inline-flex align-items-center gap-1">
-                            <i class="bi bi-check-circle-fill fs-6 text-primary"></i>
-                            <span>Thành viên Stayly</span>
-                        </span>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <!-- Thông báo Toast / Alert nếu có -->
+<div class="stayly-profile-page py-3 py-lg-4">
+    <div class="container py-1 py-lg-2">
+        <!-- Toast / Alerts -->
         @if (TempData["Success"] != null)
         {
-            <div class="alert alert-success border-0 rounded-4 shadow-sm mb-4 d-flex align-items-center gap-2">
+            <div class="alert alert-success border-0 rounded-4 shadow-sm mb-3 mb-lg-4 d-flex align-items-center gap-2">
                 <i class="bi bi-check-circle-fill fs-5 text-success"></i>
-                <div>@TempData["Success"]</div>
+                <div class="fw-semibold">@TempData["Success"]</div>
             </div>
         }
         @if (TempData["Error"] != null)
         {
-            <div class="alert alert-danger border-0 rounded-4 shadow-sm mb-4 d-flex align-items-center gap-2">
+            <div class="alert alert-danger border-0 rounded-4 shadow-sm mb-3 mb-lg-4 d-flex align-items-center gap-2">
                 <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
-                <div>@TempData["Error"]</div>
+                <div class="fw-semibold">@TempData["Error"]</div>
             </div>
         }
 
-        <!-- 2. Bố cục 2 cột (Tabs Sidebar trái + Nội dung Form phải) -->
-        <div class="row g-4">
-            <!-- Cột trái: Menu Tabs -->
-            <div class="col-lg-4">
+        <!-- =====================================================================
+             1. MOBILE HUB VIEW (Chỉ hiển thị trên Mobile < 992px phong cách Native App)
+             ===================================================================== -->
+        <div id="mobileProfileHub" class="d-block d-lg-none">
+            <!-- Mobile Header Profile Hero Card -->
+            <div class="mobile-profile-hero-card mb-3 p-3 bg-white rounded-4 shadow-sm border">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="mobile-avatar-circle">
+                        @initials
+                        <div class="mobile-avatar-badge" title="Tài khoản Stayly">
+                            <i class="bi bi-check-lg"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <h3 class="fs-5 fw-bold text-navy mb-0 text-truncate">@profile.FullName</h3>
+                        </div>
+                        <div class="mt-1">
+                            @if (isOwner)
+                            {
+                                <span class="badge bg-primary text-white rounded-pill px-2.5 py-1 small fw-semibold">
+                                    <i class="bi bi-patch-check-fill me-1"></i> Đối tác Chủ cơ sở
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-light text-primary border rounded-pill px-2.5 py-1 small fw-semibold">
+                                    <i class="bi bi-person-heart me-1"></i> Khách hàng Stayly
+                                </span>
+                            }
+                        </div>
+                        <div class="text-muted small mt-1 text-truncate">
+                            <i class="bi bi-envelope me-1"></i> @profile.Email
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <!-- Mobile Grouped Settings List (iOS / Android Style) -->
+            <!-- Group 1: Tài khoản & Định danh -->
+            <div class="mobile-settings-group mb-3">
+                <div class="settings-group-header">Tài khoản &amp; Định danh</div>
+                <div class="settings-card-group bg-white rounded-4 border overflow-hidden">
+                    <div class="settings-item-row" onclick="openMobileSubView('tab-personal', 'Thông tin cá nhân')">
+                        <div class="settings-item-icon bg-blue-light text-primary">
+                            <i class="bi bi-person-vcard-fill"></i>
+                        </div>
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Thông tin cá nhân</div>
+                            <div class="settings-item-subtitle">Họ tên, SĐT, ngày sinh, giới tính</div>
+                        </div>
+                        <i class="bi bi-chevron-right settings-item-arrow"></i>
+                    </div>
+
+                    <div class="settings-item-row" onclick="openMobileSubView('tab-personal', 'Tài khoản ngân hàng', '#bankSection')">
+                        <div class="settings-item-icon bg-green-light text-success">
+                            <i class="bi bi-bank2"></i>
+                        </div>
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Tài khoản ngân hàng</div>
+                            <div class="settings-item-subtitle">@(isOwner ? "Nhận doanh thu thanh toán" : "Nhận tiền hoàn khi hủy phòng")</div>
+                        </div>
+                        <i class="bi bi-chevron-right settings-item-arrow"></i>
+                    </div>
+
+                    @if (isOwner)
+                    {
+                        <div class="settings-item-row" onclick="openMobileSubView('tab-personal', 'Căn cước công dân', '#citizenSection')">
+                            <div class="settings-item-icon bg-purple-light text-purple">
+                                <i class="bi bi-card-heading"></i>
+                            </div>
+                            <div class="settings-item-content">
+                                <div class="settings-item-title">Căn cước công dân (CCCD)</div>
+                                <div class="settings-item-subtitle">@(string.IsNullOrWhiteSpace(profile.CitizenId) ? "Chưa cập nhật định danh" : profile.CitizenId)</div>
+                            </div>
+                            <i class="bi bi-chevron-right settings-item-arrow"></i>
+                        </div>
+                    }
+
+                    <div class="settings-item-row" onclick="openMobileSubView('tab-account', 'Tổng quan tài khoản')">
+                        <div class="settings-item-icon bg-cyan-light text-info">
+                            <i class="bi bi-grid-fill"></i>
+                        </div>
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Tổng quan tài khoản</div>
+                            <div class="settings-item-subtitle">Mã định danh #ND-@profile.Id, vai trò</div>
+                        </div>
+                        <i class="bi bi-chevron-right settings-item-arrow"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Group 2: An toàn & Đăng nhập -->
+            <div class="mobile-settings-group mb-3">
+                <div class="settings-group-header">An toàn &amp; Đăng nhập</div>
+                <div class="settings-card-group bg-white rounded-4 border overflow-hidden">
+                    <div class="settings-item-row" onclick="openMobileSubView('tab-security', 'Bảo mật & Mật khẩu')">
+                        <div class="settings-item-icon bg-amber-light text-warning">
+                            <i class="bi bi-shield-lock-fill"></i>
+                        </div>
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Đổi mật khẩu</div>
+                            <div class="settings-item-subtitle">Bảo vệ tài khoản với OTP email</div>
+                        </div>
+                        <i class="bi bi-chevron-right settings-item-arrow"></i>
+                    </div>
+
+                    <div class="settings-item-row" onclick="openMobileSubView('tab-security', 'Cập nhật Email', '#changeEmailSection')">
+                        <div class="settings-item-icon bg-teal-light text-teal">
+                            <i class="bi bi-envelope-at-fill"></i>
+                        </div>
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Cập nhật địa chỉ Email</div>
+                            <div class="settings-item-subtitle">@profile.Email</div>
+                        </div>
+                        <i class="bi bi-chevron-right settings-item-arrow"></i>
+                    </div>
+                </div>
+            </div>
+
+            @if (isOwner)
+            {
+                <!-- Group 3: Dành cho Chủ cơ sở -->
+                <div class="mobile-settings-group mb-3">
+                    <div class="settings-group-header">Quản trị Cơ sở lưu trú</div>
+                    <div class="settings-card-group bg-white rounded-4 border overflow-hidden">
+                        <a asp-action="Dashboard" class="settings-item-row text-decoration-none">
+                            <div class="settings-item-icon bg-primary text-white">
+                                <i class="bi bi-speedometer2"></i>
+                            </div>
+                            <div class="settings-item-content">
+                                <div class="settings-item-title text-navy">Bảng điều khiển kinh doanh</div>
+                                <div class="settings-item-subtitle">Cơ sở, phòng, hóa đơn &amp; doanh thu</div>
+                            </div>
+                            <i class="bi bi-arrow-up-right settings-item-arrow text-primary"></i>
+                        </a>
+                    </div>
+                </div>
+            }
+
+            <!-- Group 4: Hỗ trợ & Ứng dụng -->
+            <div class="mobile-settings-group mb-4">
+                <div class="settings-group-header">Hỗ trợ &amp; Ứng dụng</div>
+                <div class="settings-card-group bg-white rounded-4 border overflow-hidden">
+                    <a href="tel:19006868" class="settings-item-row text-decoration-none">
+                        <div class="settings-item-icon bg-indigo-light text-indigo">
+                            <i class="bi bi-telephone-outbound-fill"></i>
+                        </div>
+                        <div class="settings-item-content">
+                            <div class="settings-item-title text-navy">Hotline hỗ trợ 24/7</div>
+                            <div class="settings-item-subtitle">1900 6868 (Bấm để gọi ngay)</div>
+                        </div>
+                        <i class="bi bi-telephone-forward settings-item-arrow"></i>
+                    </a>
+
+                    <div class="settings-item-row" onclick="showStaylyToast('info', 'Stayly cam kết bảo vệ tuyệt đối thông tin khách hàng và tuân thủ pháp luật Việt Nam.');">
+                        <div class="settings-item-icon bg-slate-light text-secondary">
+                            <i class="bi bi-file-earmark-lock-fill"></i>
+                        </div>
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Chính sách bảo mật &amp; Quy định</div>
+                            <div class="settings-item-subtitle">Điều khoản sử dụng dịch vụ Stayly</div>
+                        </div>
+                        <i class="bi bi-chevron-right settings-item-arrow"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nút Đăng xuất Mobile -->
+            <button type="button" class="btn btn-outline-danger w-100 rounded-pill py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm mb-4" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Đăng xuất tài khoản</span>
+            </button>
+        </div>
+
+        <!-- =====================================================================
+             2. MOBILE SUBVIEW HEADER (Khi mở form chỉnh sửa trên Mobile < 992px)
+             ===================================================================== -->
+        <div id="mobileSubviewHeader" class="d-none mb-3 align-items-center justify-content-between pb-2 border-bottom">
+            <button type="button" class="btn btn-sm btn-light rounded-pill px-3 py-1.5 border d-inline-flex align-items-center gap-1.5" onclick="returnToMobileHub()">
+                <i class="bi bi-arrow-left"></i>
+                <span class="fw-semibold">Tài khoản</span>
+            </button>
+            <h5 class="fw-bold text-navy mb-0" id="mobileSubviewTitle">Chỉnh sửa hồ sơ</h5>
+            <div style="width: 80px;"></div>
+        </div>
+
+        <!-- =====================================================================
+             3. DESKTOP HEADER (Chỉ hiển thị trên Desktop >= 992px)
+             ===================================================================== -->
+        <div class="d-none d-lg-block">
+            <!-- Breadcrumb / Quay lại -->
+            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-2 d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-arrow-left"></i>
+                    <span>Quay lại trang chủ</span>
+                </a>
+                @if (isOwner)
+                {
+                    <a asp-action="Dashboard" class="btn btn-sm btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Bảng điều khiển chủ cơ sở</span>
+                    </a>
+                }
+                else
+                {
+                    <a asp-action="Trips" class="btn btn-sm btn-outline-primary rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-briefcase-fill"></i>
+                        <span>Đơn đặt phòng của tôi</span>
+                    </a>
+                }
+            </div>
+
+            <!-- Top Banner Profile Desktop (Squircle 24px, Ocean Blue Gradient) -->
+            <div class="card border-0 mb-4 p-4 p-md-5" style="border-radius: 24px; box-shadow: var(--stayly-shadow); background: #ffffff;">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-4">
+                    <div class="d-flex align-items-center gap-4">
+                        <div class="d-flex align-items-center justify-content-center text-white fw-bold shadow-sm" 
+                             style="width: 84px; height: 84px; border-radius: 50%; font-size: 2.2rem; background: linear-gradient(135deg, var(--stayly-primary) 0%, #0096c7 100%); flex-shrink: 0;">
+                            @initials
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                <h2 class="fs-4 fw-bold text-navy mb-0">@profile.FullName</h2>
+                                @if (isOwner)
+                                {
+                                    <span class="badge rounded-pill px-3 py-1 bg-primary text-white small fw-bold">
+                                        <i class="bi bi-patch-check-fill me-1"></i> Chủ cơ sở lưu trú
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="px-3 py-1 rounded-pill bg-light text-primary border small fw-bold">
+                                        <i class="bi bi-person-heart me-1"></i> Khách hàng du lịch
+                                    </span>
+                                }
+                            </div>
+                            <div class="text-muted small d-flex align-items-center gap-3 flex-wrap">
+                                <span><i class="bi bi-envelope-fill text-primary me-1"></i> @profile.Email</span>
+                                <span>•</span>
+                                <span><i class="bi bi-telephone-fill text-primary me-1"></i> @(string.IsNullOrWhiteSpace(profile.Phone) ? "Chưa cập nhật SĐT" : profile.Phone)</span>
+                                <span>•</span>
+                                <span>Mã tài khoản: <strong>#ND-@profile.Id</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        @if (isOwner)
+                        {
+                            <span class="px-3 py-2 rounded-pill bg-light text-success border small fw-semibold d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-shield-fill-check fs-6 text-success"></i>
+                                <span>Tài khoản đối tác đã kích hoạt</span>
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="px-3 py-2 rounded-pill bg-light text-navy border small fw-semibold d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-check-circle-fill fs-6 text-primary"></i>
+                                <span>Thành viên Stayly</span>
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =====================================================================
+             4. MAIN WORKSPACE (2 Cột trên Desktop, hoặc Form Subview trên Mobile)
+             ===================================================================== -->
+        <div class="row g-4" id="mainWorkspaceRow">
+            <!-- Cột trái Desktop: Tabs Sidebar (Ẩn trên mobile < 992px) -->
+            <div class="col-lg-4 d-none d-lg-block">
                 <div class="card border-0 p-3" style="border-radius: 20px; box-shadow: var(--stayly-shadow); background: #ffffff;">
                     <div class="p-2 text-muted fw-bold small text-uppercase" style="letter-spacing: 0.05em;">
                         Quản lý tài khoản
@@ -118,7 +313,7 @@
                                 <span class="profile-tab-icon"><i class="bi bi-person-lines-fill"></i></span>
                                 <div>
                                     <div class="fw-bold profile-tab-title">Thông tin cá nhân</div>
-                                    <small class="text-muted">Họ tên, liên hệ &amp; định danh</small>
+                                    <small class="text-muted">Họ tên, liên hệ &amp; ngân hàng</small>
                                 </div>
                             </div>
                             <i class="bi bi-chevron-right text-muted small"></i>
@@ -129,7 +324,7 @@
                                 <span class="profile-tab-icon"><i class="bi bi-shield-lock-fill"></i></span>
                                 <div>
                                     <div class="fw-bold profile-tab-title">Bảo mật &amp; Mật khẩu</div>
-                                    <small class="text-muted">Đổi mật khẩu tài khoản</small>
+                                    <small class="text-muted">Đổi mật khẩu &amp; email với OTP</small>
                                 </div>
                             </div>
                             <i class="bi bi-chevron-right text-muted small"></i>
@@ -140,7 +335,7 @@
                                 <span class="profile-tab-icon"><i class="bi bi-grid-fill"></i></span>
                                 <div>
                                     <div class="fw-bold profile-tab-title">Tổng quan tài khoản</div>
-                                    <small class="text-muted">Vai trò &amp; thông tin hệ thống</small>
+                                    <small class="text-muted">Mã định danh, vai trò hệ thống</small>
                                 </div>
                             </div>
                             <i class="bi bi-chevron-right text-muted small"></i>
@@ -151,14 +346,21 @@
                         <i class="bi bi-lightbulb-fill text-warning me-1"></i>
                         <strong>Mẹo:</strong> Hãy luôn cập nhật số điện thoại và email chính xác để nhận thông báo đặt phòng tức thì từ Stayly.
                     </div>
+
+                    <div class="pt-3 mt-3 border-top">
+                        <button type="button" class="btn btn-outline-danger w-100 rounded-pill py-2 small fw-bold d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Đăng xuất tài khoản</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Cột phải: Khối Nội dung Form tương ứng Tab -->
-            <div class="col-lg-8">
-                <!-- TAB 1: Thông tin cá nhân -->
+            <div class="col-lg-8" id="profileContentArea">
+                <!-- TAB 1: Thông tin cá nhân & Ngân hàng -->
                 <div id="tab-personal" class="tab-pane-content @(activeTab == "personal" ? "active" : "d-none")">
-                    <div class="card border-0 p-4 p-md-5" style="border-radius: 20px; box-shadow: var(--stayly-shadow); background: #ffffff;">
+                    <div class="card border-0 p-3 p-md-4 p-lg-5" style="border-radius: 20px; box-shadow: var(--stayly-shadow); background: #ffffff;">
                         <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom flex-wrap gap-2">
                             <div>
                                 <h3 class="fs-5 fw-bold text-navy mb-1">
@@ -182,55 +384,77 @@
                             <div class="row g-3 mb-4">
                                 <div class="col-md-12">
                                     <label class="form-label small fw-bold">Họ và tên đầy đủ *</label>
-                                    <input asp-for="Input.FullName" class="form-control rounded-pill px-3 py-2" required placeholder="Ví dụ: Nguyễn Văn An" />
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light rounded-start-pill border-end-0"><i class="bi bi-person-fill text-primary"></i></span>
+                                        <input asp-for="Input.FullName" class="form-control rounded-end-pill border-start-0 px-3 py-2" required placeholder="Ví dụ: Nguyễn Văn An" />
+                                    </div>
                                     <span asp-validation-for="Input.FullName" class="text-danger small"></span>
                                 </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Ngày sinh</label>
-                                    <input asp-for="Input.DateOfBirth" type="date" class="form-control rounded-pill px-3 py-2" />
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light rounded-start-pill border-end-0"><i class="bi bi-calendar3 text-primary"></i></span>
+                                        <input asp-for="Input.DateOfBirth" type="date" class="form-control rounded-end-pill border-start-0 px-3 py-2" />
+                                    </div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Giới tính</label>
-                                    <select asp-for="Input.Gender" class="form-select rounded-pill px-3 py-2">
-                                        <option value="">Chọn giới tính</option>
-                                        <option value="M">Nam</option>
-                                        <option value="F">Nữ</option>
-                                        <option value="O">Khác</option>
-                                    </select>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light rounded-start-pill border-end-0"><i class="bi bi-gender-ambiguous text-primary"></i></span>
+                                        <select asp-for="Input.Gender" class="form-select rounded-end-pill border-start-0 px-3 py-2">
+                                            <option value="">Chọn giới tính</option>
+                                            <option value="M">Nam</option>
+                                            <option value="F">Nữ</option>
+                                            <option value="O">Khác</option>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Số điện thoại *</label>
-                                    <input asp-for="Input.Phone" type="tel" class="form-control rounded-pill px-3 py-2" required placeholder="0901234567" />
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light rounded-start-pill border-end-0"><i class="bi bi-telephone-fill text-primary"></i></span>
+                                        <input asp-for="Input.Phone" type="tel" class="form-control rounded-end-pill border-start-0 px-3 py-2" required placeholder="0901234567" />
+                                    </div>
                                     <span asp-validation-for="Input.Phone" class="text-danger small"></span>
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Địa chỉ Email (Chỉ đọc)</label>
-                                    <input asp-for="Input.Email" type="email" class="form-control rounded-pill px-3 py-2 bg-light" readonly />
-                                    <span class="text-muted small">Vui lòng sang tab <strong>Bảo mật</strong> để đổi email.</span>
+                                    <label class="form-label small fw-bold">Địa chỉ Email</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light rounded-start-pill border-end-0"><i class="bi bi-envelope-fill text-muted"></i></span>
+                                        <input asp-for="Input.Email" type="email" class="form-control rounded-end-pill border-start-0 px-3 py-2 bg-light" readonly />
+                                    </div>
+                                    <span class="text-muted small">Vui lòng sang mục <strong>Bảo mật</strong> để đổi email.</span>
                                 </div>
                             </div>
 
                             <!-- Khối 2: Dành riêng cho Chủ cơ sở lưu trú (CCCD & Ngân hàng) -->
                             @if (isOwner)
                             {
-                                <div class="p-3 bg-light rounded-4 mb-4">
+                                <div class="p-3 p-md-4 bg-light rounded-4 mb-4" id="citizenSection">
                                     <h6 class="fw-bold text-navy small mb-3">
-                                        <i class="bi bi-bank2 text-primary me-1"></i> Thông tin pháp lý &amp; Thanh toán thụ hưởng của Chủ cơ sở
+                                        <i class="bi bi-card-heading text-primary me-1"></i> 1. Căn cước công dân (CCCD) định danh Chủ nhà
                                     </h6>
                                     <div class="row g-3">
-                                        <div class="col-md-12">
+                                        <div class="col-12">
                                             <label class="form-label small fw-bold">Số CCCD định danh cá nhân (12 số, bắt đầu bằng 0) *</label>
-                                            <input asp-for="Input.CitizenId" class="form-control rounded-pill px-3 py-2" required maxlength="12" pattern="0[0-9]{11}" title="CCCD phải gồm đúng 12 chữ số và bắt đầu bằng số 0" placeholder="Ví dụ: 001201009999" />
+                                            <input asp-for="Input.CitizenId" class="form-control rounded-pill px-3 py-2 bg-white" required maxlength="12" pattern="0[0-9]{11}" title="CCCD phải gồm đúng 12 chữ số và bắt đầu bằng số 0" placeholder="Ví dụ: 001201009999" />
                                             <span asp-validation-for="Input.CitizenId" class="text-danger small"></span>
                                         </div>
+                                    </div>
+                                </div>
 
+                                <div class="p-3 p-md-4 bg-light rounded-4 mb-4" id="bankSection">
+                                    <h6 class="fw-bold text-navy small mb-3">
+                                        <i class="bi bi-bank2 text-primary me-1"></i> 2. Tài khoản ngân hàng thụ hưởng nhận doanh thu *
+                                    </h6>
+                                    <div class="row g-3">
                                         <div class="col-md-6">
                                             <label class="form-label small fw-bold">Ngân hàng thụ hưởng *</label>
-                                            <select asp-for="Input.BankName" class="form-select rounded-pill px-3 py-2" required>
+                                            <select asp-for="Input.BankName" class="form-select rounded-pill px-3 py-2 bg-white" required>
                                                 <option value="">-- Chọn ngân hàng hỗ trợ --</option>
                                                 <option value="Vietcombank (VCB)">Vietcombank (Ngân hàng Ngoại thương)</option>
                                                 <option value="VietinBank (CTG)">VietinBank (Ngân hàng Công thương)</option>
@@ -258,13 +482,13 @@
 
                                         <div class="col-md-6">
                                             <label class="form-label small fw-bold">Số tài khoản *</label>
-                                            <input asp-for="Input.AccountNumber" class="form-control rounded-pill px-3 py-2" required placeholder="Nhập số tài khoản" pattern="\d{6,20}" />
+                                            <input asp-for="Input.AccountNumber" class="form-control rounded-pill px-3 py-2 bg-white" required placeholder="Nhập số tài khoản" pattern="\d{6,20}" />
                                             <span asp-validation-for="Input.AccountNumber" class="text-danger small"></span>
                                         </div>
 
                                         <div class="col-md-12">
-                                            <label class="form-label small fw-bold">Tên chủ tài khoản *</label>
-                                            <input asp-for="Input.AccountHolder" class="form-control rounded-pill px-3 py-2" required placeholder="Ví dụ: NGUYEN VAN AN" pattern="^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂưăạảấầẩẫậắằẳẵặẹẻẽềềểỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ\s]+$" />
+                                            <label class="form-label small fw-bold">Tên chủ tài khoản (Viết hoa, không dấu) *</label>
+                                            <input asp-for="Input.AccountHolder" class="form-control rounded-pill px-3 py-2 bg-white text-uppercase" required placeholder="Ví dụ: NGUYEN VAN AN" pattern="^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂưăạảấầẩẫậắằẳẵặẹẻẽềềểỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ\s]+$" />
                                             <span asp-validation-for="Input.AccountHolder" class="text-danger small"></span>
                                         </div>
                                     </div>
@@ -272,15 +496,15 @@
                             }
                             else
                             {
-                                <div class="p-3 bg-light rounded-4 mb-4">
+                                <div class="p-3 p-md-4 bg-light rounded-4 mb-4" id="bankSection">
                                     <h6 class="fw-bold text-navy small mb-1">
                                         <i class="bi bi-bank2 text-primary me-1"></i> Tài khoản ngân hàng nhận hoàn tiền (Tùy chọn)
                                     </h6>
-                                    <p class="text-muted small mb-3">Lưu sẵn thông tin ngân hàng để tự động điền khi bạn hủy đơn hoặc yêu cầu hoàn tiền.</p>
+                                    <p class="text-muted small mb-3">Lưu sẵn thông tin ngân hàng để hệ thống tự động điền khi bạn hủy đơn hoặc yêu cầu hoàn tiền.</p>
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <label class="form-label small fw-bold">Ngân hàng thụ hưởng</label>
-                                            <select asp-for="Input.BankName" class="form-select rounded-pill px-3 py-2">
+                                            <select asp-for="Input.BankName" class="form-select rounded-pill px-3 py-2 bg-white">
                                                 <option value="">-- Chọn ngân hàng hỗ trợ --</option>
                                                 <option value="Vietcombank (VCB)">Vietcombank (Ngân hàng Ngoại thương)</option>
                                                 <option value="VietinBank (CTG)">VietinBank (Ngân hàng Công thương)</option>
@@ -306,19 +530,22 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label small fw-bold">Số tài khoản</label>
-                                            <input asp-for="Input.AccountNumber" class="form-control rounded-pill px-3 py-2" placeholder="Nhập số tài khoản" />
+                                            <input asp-for="Input.AccountNumber" class="form-control rounded-pill px-3 py-2 bg-white" placeholder="Nhập số tài khoản" />
                                         </div>
                                         <div class="col-md-12">
                                             <label class="form-label small fw-bold">Tên chủ tài khoản</label>
-                                            <input asp-for="Input.AccountHolder" class="form-control rounded-pill px-3 py-2" placeholder="Ví dụ: NGUYEN VAN AN" />
+                                            <input asp-for="Input.AccountHolder" class="form-control rounded-pill px-3 py-2 bg-white text-uppercase" placeholder="Ví dụ: NGUYEN VAN AN" />
                                         </div>
                                     </div>
                                 </div>
                             }
 
                             <!-- Nút Lưu -->
-                            <div class="d-flex align-items-center justify-content-end gap-3 pt-3 border-top">
-                                <button type="reset" class="btn btn-light rounded-pill px-4 py-2 border">Hủy thay đổi</button>
+                            <div class="d-flex align-items-center justify-content-between gap-3 pt-3 border-top flex-wrap">
+                                <button type="button" class="btn btn-light rounded-pill px-4 py-2 border d-lg-none" onclick="returnToMobileHub()">
+                                    <i class="bi bi-arrow-left me-1"></i> Quay lại
+                                </button>
+                                <button type="reset" class="btn btn-light rounded-pill px-4 py-2 border d-none d-lg-inline-block">Hủy thay đổi</button>
                                 <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
                                     <i class="bi bi-check2-circle"></i>
                                     <span>Lưu thông tin</span>
@@ -330,97 +557,118 @@
 
                 <!-- TAB 2: Bảo mật & Mật khẩu -->
                 <div id="tab-security" class="tab-pane-content @(activeTab == "security" ? "active" : "d-none")">
-                    <div class="card border-0 p-4 p-md-5" style="border-radius: 20px; box-shadow: var(--stayly-shadow); background: #ffffff;">
+                    <div class="card border-0 p-3 p-md-4 p-lg-5" style="border-radius: 20px; box-shadow: var(--stayly-shadow); background: #ffffff;">
                         <div class="mb-4 pb-3 border-bottom">
                             <h3 class="fs-5 fw-bold text-navy mb-1">
                                 <i class="bi bi-shield-lock text-primary me-2"></i> Bảo mật &amp; Đổi mật khẩu
                             </h3>
-                            <p class="text-muted small mb-0">Thay đổi mật khẩu đăng nhập để bảo vệ an toàn cho tài khoản Stayly của bạn.</p>
+                            <p class="text-muted small mb-0">Thay đổi mật khẩu đăng nhập và địa chỉ email để bảo vệ tài khoản Stayly của bạn.</p>
                         </div>
 
-                        <div class="alert alert-info py-2 px-3 small rounded-3 mb-4 d-flex align-items-center gap-2">
-                            <i class="bi bi-shield-lock-fill text-primary fs-5"></i>
-                            <div><strong>Quy định bảo mật mật khẩu:</strong> Độ dài từ 8 đến 20 ký tự, bắt buộc bao gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.</div>
+                        <div class="alert alert-info py-2.5 px-3 small rounded-4 mb-4 d-flex align-items-center gap-2">
+                            <i class="bi bi-shield-lock-fill text-primary fs-5 flex-shrink-0"></i>
+                            <div><strong>Quy định mật khẩu an toàn:</strong> Độ dài 8-20 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.</div>
                         </div>
 
                         <div class="row g-4">
-                            <div class="col-md-6">
-                                <h4 class="fw-bold text-navy mb-3">Đổi mật khẩu</h4>
-                                <form asp-action="ChangePassword" method="post">
-                                    @Html.AntiForgeryToken()
+                            <!-- Cột Đổi Mật Khẩu -->
+                            <div class="col-lg-6 col-12">
+                                <div class="p-3 p-md-4 bg-light rounded-4 h-100">
+                                    <h5 class="fw-bold text-navy mb-3 fs-6 d-flex align-items-center gap-2">
+                                        <i class="bi bi-key-fill text-primary"></i> Đổi mật khẩu
+                                    </h5>
+                                    <form asp-action="ChangePassword" method="post" id="changePasswordForm">
+                                        @Html.AntiForgeryToken()
 
-                                    <div class="mb-3">
-                                        <label class="form-label small fw-bold">Mật khẩu hiện tại *</label>
-                                        <div class="password-field-wrapper">
-                                            <input asp-for="PasswordInput.CurrentPassword" id="currentPasswordInput" type="password" class="form-control rounded-pill px-3 py-2" required />
-                                            <button type="button" class="btn-toggle-password" data-target="currentPasswordInput" title="Hiện mật khẩu" tabindex="-1">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold">Mật khẩu hiện tại *</label>
+                                            <div class="password-field-wrapper">
+                                                <input asp-for="PasswordInput.CurrentPassword" id="currentPasswordInput" type="password" class="form-control rounded-pill px-3 py-2 bg-white" required />
+                                                <button type="button" class="btn-toggle-password" data-target="currentPasswordInput" title="Hiện mật khẩu" tabindex="-1">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div class="mb-3">
-                                        <label class="form-label small fw-bold">Mật khẩu mới</label>
-                                        <div class="password-field-wrapper">
-                                            <input asp-for="PasswordInput.NewPassword" id="newPasswordInput" type="password" class="form-control rounded-pill px-3 py-2" required minlength="8" maxlength="20" placeholder="Ví dụ: Stayly@2026" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$" title="Mật khẩu mới phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt" />
-                                            <button type="button" class="btn-toggle-password" data-target="newPasswordInput" title="Hiện mật khẩu" tabindex="-1">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold">Mật khẩu mới *</label>
+                                            <div class="password-field-wrapper">
+                                                <input asp-for="PasswordInput.NewPassword" id="newPasswordInput" type="password" class="form-control rounded-pill px-3 py-2 bg-white" required minlength="8" maxlength="20" placeholder="Ví dụ: Stayly@2026" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s])\S{8,20}$" title="Mật khẩu mới phải từ 8-20 ký tự, gồm ít nhất 1 chữ in hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt" />
+                                                <button type="button" class="btn-toggle-password" data-target="newPasswordInput" title="Hiện mật khẩu" tabindex="-1">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                            </div>
+                                            <span asp-validation-for="PasswordInput.NewPassword" class="text-danger small"></span>
                                         </div>
-                                        <span asp-validation-for="PasswordInput.NewPassword" class="text-danger small"></span>
-                                    </div>
 
-                                    <div class="mb-3">
-                                        <label class="form-label small fw-bold">Xác nhận mật khẩu mới *</label>
-                                        <div class="password-field-wrapper">
-                                            <input asp-for="PasswordInput.ConfirmPassword" id="confirmPasswordInput" type="password" class="form-control rounded-pill px-3 py-2" required />
-                                            <button type="button" class="btn-toggle-password" data-target="confirmPasswordInput" title="Hiện mật khẩu" tabindex="-1">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold">Xác nhận mật khẩu mới *</label>
+                                            <div class="password-field-wrapper">
+                                                <input asp-for="PasswordInput.ConfirmPassword" id="confirmPasswordInput" type="password" class="form-control rounded-pill px-3 py-2 bg-white" required />
+                                                <button type="button" class="btn-toggle-password" data-target="confirmPasswordInput" title="Hiện mật khẩu" tabindex="-1">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                            </div>
+                                            <span asp-validation-for="PasswordInput.ConfirmPassword" class="text-danger small"></span>
                                         </div>
-                                        <span asp-validation-for="PasswordInput.ConfirmPassword" class="text-danger small"></span>
-                                    </div>
 
-                                    <div class="mb-4">
-                                        <label class="form-label small fw-bold">Mã xác thực OTP (gửi về email hiện tại) *</label>
-                                        <div class="input-group">
-                                            <input asp-for="PasswordInput.OtpCode" type="text" class="form-control rounded-start-pill px-3 py-2" required />
-                                            <button type="button" class="btn btn-outline-primary rounded-end-pill px-3 fw-bold" onclick="sendProfileOtp('ChangePassword', this)">Gửi mã</button>
+                                        <div class="mb-4">
+                                            <label class="form-label small fw-bold">Mã xác thực OTP (gửi về email) *</label>
+                                            <div class="input-group">
+                                                <input asp-for="PasswordInput.OtpCode" type="text" class="form-control rounded-start-pill px-3 py-2 bg-white" required placeholder="Nhập mã OTP" />
+                                                <button type="button" class="btn btn-primary rounded-end-pill px-3 fw-bold" onclick="sendProfileOtp('ChangePassword', this)">Gửi mã</button>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 fw-bold w-100 shadow-sm">Cập nhật mật khẩu</button>
-                                </form>
+                                        <button type="submit" class="btn btn-primary rounded-pill px-4 py-2.5 fw-bold w-100 shadow-sm">
+                                            <i class="bi bi-check2-circle me-1"></i> Cập nhật mật khẩu
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
 
-                            <div class="col-md-6">
-                                <h4 class="fw-bold text-navy mb-3">Đổi địa chỉ Email</h4>
-                                <form asp-action="ChangeEmail" method="post">
-                                    @Html.AntiForgeryToken()
+                            <!-- Cột Đổi Email -->
+                            <div class="col-lg-6 col-12" id="changeEmailSection">
+                                <div class="p-3 p-md-4 bg-light rounded-4 h-100">
+                                    <h5 class="fw-bold text-navy mb-3 fs-6 d-flex align-items-center gap-2">
+                                        <i class="bi bi-envelope-at-fill text-primary"></i> Đổi địa chỉ Email
+                                    </h5>
+                                    <form asp-action="ChangeEmail" method="post" id="changeEmailForm">
+                                        @Html.AntiForgeryToken()
 
-                                    <div class="mb-3">
-                                        <label class="form-label small fw-bold">Địa chỉ Email mới *</label>
-                                        <input asp-for="EmailInput.NewEmail" type="email" class="form-control rounded-pill px-3 py-2" required placeholder="nhap.email.moi@domain.com" />
-                                    </div>
-
-                                    <div class="mb-4">
-                                        <label class="form-label small fw-bold">Mã xác thực OTP (gửi về email CŨ) *</label>
-                                        <div class="input-group">
-                                            <input asp-for="EmailInput.OtpCode" type="text" class="form-control rounded-start-pill px-3 py-2" required />
-                                            <button type="button" class="btn btn-outline-primary rounded-end-pill px-3 fw-bold" onclick="sendProfileOtp('ChangeEmail', this)">Gửi mã</button>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold">Địa chỉ Email mới *</label>
+                                            <input asp-for="EmailInput.NewEmail" type="email" class="form-control rounded-pill px-3 py-2 bg-white" required placeholder="nhap.email.moi@domain.com" />
                                         </div>
-                                    </div>
 
-                                    <button type="submit" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold w-100 shadow-sm">Cập nhật Email</button>
-                                </form>
+                                        <div class="mb-4">
+                                            <label class="form-label small fw-bold">Mã xác thực OTP (gửi về email CŨ) *</label>
+                                            <div class="input-group">
+                                                <input asp-for="EmailInput.OtpCode" type="text" class="form-control rounded-start-pill px-3 py-2 bg-white" required placeholder="Nhập mã OTP" />
+                                                <button type="button" class="btn btn-outline-primary rounded-end-pill px-3 fw-bold" onclick="sendProfileOtp('ChangeEmail', this)">Gửi mã</button>
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" class="btn btn-outline-primary rounded-pill px-4 py-2.5 fw-bold w-100 shadow-sm">
+                                            <i class="bi bi-envelope-check me-1"></i> Cập nhật Email
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
+                        </div>
+
+                        <div class="pt-3 mt-4 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <button type="button" class="btn btn-light rounded-pill px-4 py-2 border d-lg-none" onclick="returnToMobileHub()">
+                                <i class="bi bi-arrow-left me-1"></i> Quay lại
+                            </button>
+                            <span class="text-muted small">Cần hỗ trợ đổi email hoặc lấy lại tài khoản? Hotline: <strong>1900 6868</strong></span>
                         </div>
                     </div>
                 </div>
 
                 <!-- TAB 3: Tổng quan tài khoản -->
                 <div id="tab-account" class="tab-pane-content @(activeTab == "account" ? "active" : "d-none")">
-                    <div class="card border-0 p-4 p-md-5" style="border-radius: 20px; box-shadow: var(--stayly-shadow); background: #ffffff;">
+                    <div class="card border-0 p-3 p-md-4 p-lg-5" style="border-radius: 20px; box-shadow: var(--stayly-shadow); background: #ffffff;">
                         <div class="mb-4 pb-3 border-bottom">
                             <h3 class="fs-5 fw-bold text-navy mb-1">
                                 <i class="bi bi-person-badge text-primary me-2"></i> Tổng quan tài khoản Stayly
@@ -429,14 +677,14 @@
                         </div>
 
                         <div class="row g-3 mb-4">
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-12">
                                 <div class="p-3 bg-light rounded-4">
                                     <div class="text-muted small">Mã định danh (ID)</div>
                                     <div class="fw-bold fs-6 text-navy">#ND-@profile.Id</div>
                                 </div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-12">
                                 <div class="p-3 bg-light rounded-4">
                                     <div class="text-muted small">Loại tài khoản / Vai trò</div>
                                     <div class="fw-bold fs-6">
@@ -452,14 +700,14 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-12">
                                 <div class="p-3 bg-light rounded-4">
                                     <div class="text-muted small">Email xác thực</div>
                                     <div class="fw-bold fs-6 text-navy">@profile.Email</div>
                                 </div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-12">
                                 <div class="p-3 bg-light rounded-4">
                                     <div class="text-muted small">Số điện thoại liên hệ</div>
                                     <div class="fw-bold fs-6 text-navy">@(string.IsNullOrWhiteSpace(profile.Phone) ? "Chưa cung cấp" : profile.Phone)</div>
@@ -468,16 +716,16 @@
 
                             @if (isOwner)
                             {
-                                <div class="col-md-6">
+                                <div class="col-md-6 col-12">
                                     <div class="p-3 bg-light rounded-4">
                                         <div class="text-muted small">Số căn cước công dân (CCCD)</div>
                                         <div class="fw-bold fs-6 text-navy">@(string.IsNullOrWhiteSpace(profile.CitizenId) ? "Chưa cung cấp" : profile.CitizenId)</div>
                                     </div>
                                 </div>
 
-                                <div class="col-md-6">
+                                <div class="col-md-6 col-12">
                                     <div class="p-3 bg-light rounded-4">
-                                        <div class="text-muted small">Tài khoản ngân hàng</div>
+                                        <div class="text-muted small">Tài khoản ngân hàng thụ hưởng</div>
                                         <div class="fw-bold fs-6 text-navy text-truncate" title="@profile.BankName - @profile.AccountNumber - @profile.AccountHolder">@(string.IsNullOrWhiteSpace(profile.BankName) ? "Chưa cung cấp" : $"{profile.BankName} - {profile.AccountNumber} - {profile.AccountHolder}")</div>
                                     </div>
                                 </div>
@@ -485,11 +733,14 @@
                         </div>
 
                         <div class="d-flex align-items-center gap-3 pt-3 border-top flex-wrap">
+                            <button type="button" class="btn btn-light rounded-pill px-4 py-2 border d-lg-none" onclick="returnToMobileHub()">
+                                <i class="bi bi-arrow-left me-1"></i> Quay lại
+                            </button>
                             @if (isOwner)
                             {
                                 <a asp-action="Dashboard" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
                                     <i class="bi bi-house-gear-fill"></i>
-                                    <span>Mở Bảng điều khiển Quản trị Cơ sở</span>
+                                    <span>Mở Bảng điều khiển Quản trị</span>
                                 </a>
                             }
                             <a asp-action="Trips" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center gap-2">
@@ -504,7 +755,30 @@
     </div>
 </div>
 
+<!-- Modal Xác nhận Đăng xuất (Chung cho Desktop & Mobile) -->
+<div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+        <div class="modal-content rounded-4 border-0 shadow-lg p-3">
+            <div class="modal-body text-center p-3 p-md-4">
+                <div class="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle bg-danger-subtle text-danger" style="width: 60px; height: 60px;">
+                    <i class="bi bi-box-arrow-right fs-2"></i>
+                </div>
+                <h5 class="fw-bold text-navy mb-2" id="logoutConfirmModalLabel">Đăng xuất khỏi Stayly?</h5>
+                <p class="text-muted small mb-4">Bạn sẽ cần đăng nhập lại để xem lịch sử đặt phòng và quản lý tài khoản của mình.</p>
+                <div class="d-flex gap-2 justify-content-center">
+                    <button type="button" class="btn btn-light rounded-pill px-4 py-2 border flex-grow-1" data-bs-dismiss="modal">Ở lại</button>
+                    <form asp-action="Logout" method="post" class="d-inline flex-grow-1">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-danger rounded-pill px-4 py-2 fw-bold w-100 shadow-sm" onclick="localStorage.removeItem('guestUser'); localStorage.removeItem('guestToken');">Đăng xuất</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
+    /* Profile Desktop Tabs */
     .profile-tab-btn {
         border: 1.5px solid transparent;
         background: #f8fafc;
@@ -538,37 +812,312 @@
         background: var(--stayly-primary);
         color: #ffffff;
     }
+
+    .stayly-profile-page {
+        background-color: #f8f9fc;
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
+
+    /* Mobile Hub Elements */
+    .mobile-avatar-circle {
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0077b6 0%, #0096c7 100%);
+        color: #ffffff;
+        font-size: 1.8rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(0, 119, 182, 0.2);
+    }
+
+    .mobile-avatar-badge {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #10b981;
+        border: 2px solid #ffffff;
+        color: #ffffff;
+        font-size: 0.7rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+
+
+    /* Mobile Settings Group List */
+    .settings-group-header {
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        margin-bottom: 8px;
+        padding-left: 4px;
+    }
+
+    .settings-card-group {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .settings-item-row {
+        display: flex;
+        align-items: center;
+        padding: 13px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+    .settings-item-row:last-child {
+        border-bottom: none;
+    }
+    .settings-item-row:active {
+        background-color: #f8fafc;
+    }
+
+    .settings-item-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        flex-shrink: 0;
+        margin-right: 14px;
+    }
+
+    .settings-item-content {
+        flex-grow: 1;
+        min-width: 0;
+    }
+
+    .settings-item-title {
+        font-weight: 600;
+        font-size: 0.93rem;
+        color: #0f172a;
+        line-height: 1.25;
+    }
+
+    .settings-item-subtitle {
+        font-size: 0.76rem;
+        color: #64748b;
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .settings-item-arrow {
+        color: #94a3b8;
+        font-size: 0.85rem;
+        margin-left: 10px;
+        flex-shrink: 0;
+    }
+
+    /* Soft Pastel Icon Backgrounds */
+    .bg-blue-light { background-color: #e0f2fe; }
+    .bg-green-light { background-color: #dcfce7; }
+    .bg-purple-light { background-color: #f3e8ff; }
+    .bg-cyan-light { background-color: #cffafe; }
+    .bg-amber-light { background-color: #fef3c7; }
+    .bg-teal-light { background-color: #ccfbf1; }
+    .bg-indigo-light { background-color: #e0e7ff; }
+    .bg-slate-light { background-color: #f1f5f9; }
+
+    .text-purple { color: #9333ea; }
+    .text-teal { color: #0d9488; }
+    .text-indigo { color: #4f46e5; }
+
+    @@media (max-width: 991.98px) {
+        .stayly-profile-page {
+            padding-bottom: 85px !important;
+        }
+    }
 </style>
 
 @section Scripts {
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const navButtons = document.querySelectorAll("#profileTabsNav .profile-tab-btn");
-            const panes = document.querySelectorAll(".tab-pane-content");
+        function openMobileSubView(tabId, title, scrollTarget) {
+            const isMobile = window.innerWidth < 992;
+            const mobileHub = document.getElementById('mobileProfileHub');
+            const subviewHeader = document.getElementById('mobileSubviewHeader');
+            const subviewTitle = document.getElementById('mobileSubviewTitle');
+            const panes = document.querySelectorAll('.tab-pane-content');
+            const navButtons = document.querySelectorAll('#profileTabsNav .profile-tab-btn');
 
-            navButtons.forEach(btn => {
-                btn.addEventListener("click", function () {
-                    const targetId = this.getAttribute("data-tab");
+            panes.forEach(p => {
+                p.classList.remove('active');
+                p.classList.add('d-none');
+            });
 
-                    navButtons.forEach(b => b.classList.remove("active"));
-                    panes.forEach(p => {
-                        p.classList.remove("active");
-                        p.classList.add("d-none");
-                    });
+            const targetPane = document.getElementById(tabId);
+            if (targetPane) {
+                targetPane.classList.remove('d-none');
+                targetPane.classList.add('active');
+            }
 
-                    this.classList.add("active");
-                    const targetPane = document.getElementById(targetId);
-                    if (targetPane) {
-                        targetPane.classList.remove("d-none");
-                        targetPane.classList.add("active");
+            navButtons.forEach(b => {
+                if (b.getAttribute('data-tab') === tabId) {
+                    b.classList.add('active');
+                } else {
+                    b.classList.remove('active');
+                }
+            });
+
+            if (isMobile) {
+                if (mobileHub) mobileHub.classList.add('d-none');
+                if (subviewHeader) {
+                    subviewHeader.classList.remove('d-none');
+                    subviewHeader.classList.add('d-flex');
+                }
+                if (subviewTitle) subviewTitle.textContent = title;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            if (scrollTarget) {
+                setTimeout(() => {
+                    const el = document.querySelector(scrollTarget);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        el.classList.add('border-primary');
+                        setTimeout(() => el.classList.remove('border-primary'), 1500);
                     }
+                }, 150);
+            }
 
-                    // Update URL without reload
-                    const tabKey = targetId.replace("tab-", "");
-                    const newUrl = new URL(window.location);
-                    newUrl.searchParams.set("tab", tabKey);
-                    window.history.replaceState({}, "", newUrl);
+            const tabKey = tabId.replace('tab-', '');
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('tab', tabKey);
+            window.history.replaceState({}, '', newUrl);
+        }
+
+        function returnToMobileHub() {
+            const mobileHub = document.getElementById('mobileProfileHub');
+            const subviewHeader = document.getElementById('mobileSubviewHeader');
+            const panes = document.querySelectorAll('.tab-pane-content');
+
+            panes.forEach(p => {
+                p.classList.remove('active');
+                p.classList.add('d-none');
+            });
+
+            if (subviewHeader) {
+                subviewHeader.classList.remove('d-flex');
+                subviewHeader.classList.add('d-none');
+            }
+            if (mobileHub) {
+                mobileHub.classList.remove('d-none');
+            }
+
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.delete('tab');
+            window.history.replaceState({}, '', newUrl);
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const isMobile = window.innerWidth < 992;
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+
+            if (isMobile) {
+                if (tabParam === 'personal') {
+                    openMobileSubView('tab-personal', 'Thông tin cá nhân');
+                } else if (tabParam === 'security') {
+                    openMobileSubView('tab-security', 'Bảo mật & Mật khẩu');
+                } else if (tabParam === 'account') {
+                    openMobileSubView('tab-account', 'Tổng quan tài khoản');
+                } else {
+                    returnToMobileHub();
+                }
+            } else {
+                // Desktop: standard tabs
+                const navButtons = document.querySelectorAll("#profileTabsNav .profile-tab-btn");
+                const panes = document.querySelectorAll(".tab-pane-content");
+
+                navButtons.forEach(btn => {
+                    btn.addEventListener("click", function () {
+                        const targetId = this.getAttribute("data-tab");
+
+                        navButtons.forEach(b => b.classList.remove("active"));
+                        panes.forEach(p => {
+                            p.classList.remove("active");
+                            p.classList.add("d-none");
+                        });
+
+                        this.classList.add("active");
+                        const targetPane = document.getElementById(targetId);
+                        if (targetPane) {
+                            targetPane.classList.remove("d-none");
+                            targetPane.classList.add("active");
+                        }
+
+                        const tabKey = targetId.replace("tab-", "");
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set("tab", tabKey);
+                        window.history.replaceState({}, "", newUrl);
+                    });
                 });
+            }
+
+            // Password Toggle Visibility
+            document.querySelectorAll('.btn-toggle-password').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const targetId = this.getAttribute('data-target');
+                    const input = document.getElementById(targetId);
+                    const icon = this.querySelector('i');
+                    if (input) {
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            if (icon) {
+                                icon.classList.remove('bi-eye');
+                                icon.classList.add('bi-eye-slash');
+                            }
+                        } else {
+                            input.type = 'password';
+                            if (icon) {
+                                icon.classList.remove('bi-eye-slash');
+                                icon.classList.add('bi-eye');
+                            }
+                        }
+                    }
+                });
+            });
+
+            // Smooth resize handler
+            window.addEventListener('resize', function () {
+                const currentlyMobile = window.innerWidth < 992;
+                const mobileHub = document.getElementById('mobileProfileHub');
+                const subviewHeader = document.getElementById('mobileSubviewHeader');
+                const panes = document.querySelectorAll('.tab-pane-content');
+
+                if (!currentlyMobile) {
+                    if (mobileHub) mobileHub.classList.add('d-none');
+                    if (subviewHeader) subviewHeader.classList.add('d-none');
+                    const activeBtn = document.querySelector('#profileTabsNav .profile-tab-btn.active');
+                    const activeTarget = activeBtn ? activeBtn.getAttribute('data-tab') : 'tab-personal';
+                    panes.forEach(p => {
+                        if (p.id === activeTarget) {
+                            p.classList.remove('d-none');
+                            p.classList.add('active');
+                        } else {
+                            p.classList.remove('active');
+                            p.classList.add('d-none');
+                        }
+                    });
+                }
             });
         });
 

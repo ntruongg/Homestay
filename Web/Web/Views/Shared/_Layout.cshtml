@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>@(ViewData["Title"] ?? "Stayly - Kỳ nghỉ trong mơ bắt đầu từ đây")</title>
     
     <!-- Google Fonts: Be Vietnam Pro with full Vietnamese typography support -->
@@ -187,6 +187,53 @@
                 </div>
             </div>
         </footer>
+    }
+
+    <!-- ==========================================================================
+         Mobile Bottom Navigation Bar (Visible only on screens < 768px, hidden on Details page)
+         ========================================================================== -->
+    @if (!string.Equals(currentAction, "Details", StringComparison.OrdinalIgnoreCase))
+    {
+        <nav class="stayly-bottom-nav d-md-none" aria-label="Mobile Navigation">
+            <a asp-controller="Home" asp-action="Index" class="bottom-nav-item @(string.Equals(currentAction, "Index", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                <i class="bi bi-compass-fill"></i>
+                <span>Khám phá</span>
+            </a>
+            <a href="javascript:void(0)" onclick="handleMobileSearchNav()" class="bottom-nav-item">
+                <i class="bi bi-search"></i>
+                <span>Tìm kiếm</span>
+            </a>
+            <a asp-controller="Home" asp-action="Trips" class="bottom-nav-item @(string.Equals(currentAction, "Trips", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                <i class="bi bi-luggage-fill"></i>
+                <span>Chuyến đi</span>
+            </a>
+            <div id="bottomNavAuthContainer" class="d-contents">
+                @if (Context.Session.GetString("userName") is string mbUserName)
+                {
+                    @if (Context.Session.GetString("role") == "OWNER")
+                    {
+                        <a asp-controller="Home" asp-action="Dashboard" class="bottom-nav-item @(string.Equals(currentAction, "Dashboard", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                            <i class="bi bi-grid-fill"></i>
+                            <span>Quản lý</span>
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Home" asp-action="Profile" class="bottom-nav-item @(string.Equals(currentAction, "Profile", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                            <i class="bi bi-person-circle"></i>
+                            <span>Tài khoản</span>
+                        </a>
+                    }
+                }
+                else
+                {
+                    <a href="javascript:void(0)" class="bottom-nav-item" data-bs-toggle="modal" data-bs-target="#authModal">
+                        <i class="bi bi-person-circle"></i>
+                        <span>Đăng nhập</span>
+                    </a>
+                }
+            </div>
+        </nav>
     }
 
     <!-- ==========================================================================
@@ -789,6 +836,19 @@
             syncNavbarAuth();
         });
 
+        
+        // Mobile Search Navigation helper
+        function handleMobileSearchNav() {
+            const searchInput = document.getElementById('searchInputLocation');
+            const searchBar = document.querySelector('.floating-search-bar') || document.querySelector('.search-box-outer');
+            if (searchBar && searchInput) {
+                searchBar.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => searchInput.focus(), 500);
+            } else {
+                window.location.href = '/?focusSearch=true';
+            }
+        }
+
         function syncNavbarAuth(isAfterLogin = false) {
             const serverUserStr = '@Html.Raw(Context.Session.GetString("userName") ?? "")';
             if (!serverUserStr && !isAfterLogin) {
@@ -807,6 +867,16 @@
                     const displayName = user.fullName || user.email || 'Thành viên';
                     const initial = displayName.trim().charAt(0).toUpperCase();
                     const isOwner = user.role === 'OWNER';
+
+                    const bottomNavAuth = document.getElementById('bottomNavAuthContainer');
+                    if (bottomNavAuth) {
+                        bottomNavAuth.innerHTML = `
+                            <a href="${isOwner ? '/Home/Dashboard' : '/Home/Profile'}" class="bottom-nav-item">
+                                <i class="bi ${isOwner ? 'bi-grid-fill' : 'bi-person-circle'}"></i>
+                                <span>${isOwner ? 'Quản lý' : 'Tài khoản'}</span>
+                            </a>
+                        `;
+                    }
 
                     navAuthArea.innerHTML = `
                         ${isOwner ? `
@@ -1510,6 +1580,16 @@
                         <i class="bi bi-person-circle"></i>
                         <span>Đăng nhập</span>
                     </button>
+                `;
+            }
+
+            const bottomNavAuth = document.getElementById('bottomNavAuthContainer');
+            if (bottomNavAuth) {
+                bottomNavAuth.innerHTML = `
+                    <a href="javascript:void(0)" class="bottom-nav-item" data-bs-toggle="modal" data-bs-target="#authModal">
+                        <i class="bi bi-person-circle"></i>
+                        <span>Đăng nhập</span>
+                    </a>
                 `;
             }
 

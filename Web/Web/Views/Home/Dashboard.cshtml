@@ -18,7 +18,7 @@
 <html lang="vi">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>@ViewData["Title"]</title>
 
     <!-- Google Fonts: Be Vietnam Pro with full Vietnamese typography support -->
@@ -45,26 +45,33 @@
          1. Sidebar (Cột trái, rộng ~250px, fixed, nền #caf0f8, góc phải bo tròn 24px)
          ========================================================================== -->
     <aside class="dashboard-sidebar-fixed">
-        <div>
-            <!-- Logo Stayly to, in đậm, màu Primary -->
-            <a href="/" class="dashboard-sidebar-logo">
-                <span class="brand-icon"><i class="bi bi-water"></i></span>
-                <span>Stayly</span>
-            </a>
-            <span class="dashboard-sidebar-tag">Host Dashboard</span>
+        <div class="dashboard-sidebar-inner">
+            <div class="dashboard-sidebar-brand-box">
+                <a href="/" class="dashboard-sidebar-logo">
+                    <span class="brand-icon"><i class="bi bi-water"></i></span>
+                    <span>Stayly</span>
+                </a>
+                <span class="dashboard-sidebar-tag d-none d-lg-inline-block">Host Dashboard</span>
+                <div class="dashboard-mobile-quick-actions d-flex align-items-center gap-2 d-lg-none">
+                    <a href="/" class="btn btn-sm btn-light rounded-pill px-3 py-1 text-primary fw-semibold" title="Về trang chủ">
+                        <i class="bi bi-house-door-fill me-1"></i>Trang chủ
+                    </a>
+                </div>
+            </div>
 
-            <!-- Tabs dạng menu dọc -->
-            <nav class="dashboard-nav-tabs">
+            <!-- Tabs dạng menu dọc (desktop) / thanh cuộn ngang (mobile) -->
+            <!-- Tabs menu: Dọc trên desktop, trên mobile ẩn đi và dùng thanh đáy host-bottom-nav -->
+            <nav class="dashboard-nav-tabs d-none d-lg-flex">
                 <!-- Tab 1: Cơ sở (Mặc định active) -->
                 <button type="button" class="dashboard-tab-link @(Model.ActiveTab == "properties" ? "active" : "")" data-tab-target="tabProperties" id="tabBtnProperties" onclick="switchDashboardTab('tabProperties', this)">
                     <i class="bi bi-houses-fill"></i>
                     <span>Cơ sở</span>
                 </button>
 
-                <!-- Tab 2: Đơn đặt phòng -->
+                <!-- Tab 2: Đơn đặt -->
                 <button type="button" class="dashboard-tab-link @(Model.ActiveTab == "bookings" ? "active" : "")" data-tab-target="tabBookings" id="tabBtnBookings" onclick="switchDashboardTab('tabBookings', this)">
                     <i class="bi bi-calendar2-check-fill"></i>
-                    <span>Đơn đặt phòng</span>
+                    <span>Đơn đặt</span>
                     <span class="dashboard-sidebar-badge @(pendingBookingsCount > 0 ? "" : "d-none")" id="sidebarBookingBadge">
                         @(pendingBookingsCount > 99 ? "99+" : pendingBookingsCount.ToString())
                     </span>
@@ -82,21 +89,16 @@
                     <span>Đánh giá</span>
                 </button>
 
-                <!-- Tab 5: Thống kê doanh thu -->
+                <!-- Tab 5: Doanh thu -->
                 <button type="button" class="dashboard-tab-link @(Model.ActiveTab == "revenue" ? "active" : "")" data-tab-target="tabRevenue" id="tabBtnRevenue" onclick="switchDashboardTab('tabRevenue', this)">
                     <i class="bi bi-graph-up-arrow"></i>
-                    <span>Thống kê doanh thu</span>
+                    <span>Doanh thu</span>
                 </button>
             </nav>
         </div>
 
         <!-- Đáy Sidebar: Nút Về trang chủ & Nút Đăng xuất -->
         <div class="dashboard-sidebar-footer">
-            <a href="/" class="btn-dashboard-home">
-                <i class="bi bi-arrow-left"></i>
-                <span>Về trang chủ</span>
-            </a>
-
             <form asp-controller="Home" asp-action="Logout" method="post" id="dashboardLogoutForm">
                 <button type="submit" class="btn-dashboard-logout" onclick="handleDashboardLogout()">
                     <i class="bi bi-box-arrow-right"></i>
@@ -267,9 +269,9 @@
              ========================================================================== -->
         <section class="dashboard-tab-view @(Model.ActiveTab == "properties" ? "active" : "")" id="tabProperties">
             <!-- Top row (Thống kê): 3 khối hình chữ nhật bo tròn 16px, nền #caf0f8, chữ & số to màu #0077b6 -->
-            <div class="row g-4 mb-4">
+            <div class="row g-2 g-md-4 mb-4">
                 <!-- Khối 1: Cơ sở đang hoạt động -->
-                <div class="col-md-4">
+                <div class="col-4">
                     <div class="stat-card-harmonious">
                         <div class="stat-number-prominent">@approvedProps.Count</div>
                         <p class="stat-label-text">Đang hoạt động</p>
@@ -277,18 +279,18 @@
                 </div>
 
                 <!-- Khối 2: Đang chờ duyệt -->
-                <div class="col-md-4">
+                <div class="col-4">
                     <div class="stat-card-harmonious">
                         <div class="stat-number-prominent">@pendingProps.Count</div>
-                        <p class="stat-label-text">Đang chờ duyệt</p>
+                        <p class="stat-label-text">Chờ duyệt</p>
                     </div>
                 </div>
 
-                <!-- Khối 3: Bị từ chối duyệt -->
-                <div class="col-md-4">
+                <!-- Khối 3: Bị từ chối -->
+                <div class="col-4">
                     <div class="stat-card-harmonious">
                         <div class="stat-number-prominent">@rejectedProps.Count</div>
-                        <p class="stat-label-text">Bị từ chối duyệt</p>
+                        <p class="stat-label-text">Bị từ chối</p>
                     </div>
                 </div>
             </div>
@@ -568,15 +570,17 @@
                                  data-checkin="@b.CheckIn.ToString("dd/MM/yyyy")"
                                  data-checkout="@b.CheckOut.ToString("dd/MM/yyyy")"
                                  data-amount="@b.TotalAmount.ToString("N0") ₫">
-                            <div class="row align-items-center g-3">
+                            <div class="row align-items-center g-2 g-md-3">
                                 <!-- Info 1: Mã đơn & Tên khách hàng -->
-                                <div class="col-12 col-md-6 col-xl-3">
+                                <div class="col-12 col-sm-6 col-xl-3" style="min-width: 0;">
                                     <div class="d-flex align-items-center gap-2 mb-1" style="min-width: 0;">
                                         <span class="booking-code-pill">#@b.Id</span>
                                         <strong class="text-navy booking-guest-name" title="@b.GuestName">@b.GuestName</strong>
                                     </div>
-                                    <div class="text-muted small text-nowrap">
-                                        <i class="bi bi-telephone me-1 text-primary"></i> <span>@b.GuestPhone</span>
+                                    <div class="small text-nowrap">
+                                        <a href="tel:@b.GuestPhone" class="text-decoration-none text-muted" title="Bấm để gọi điện cho khách">
+                                            <i class="bi bi-telephone-fill me-1 text-success"></i><span class="text-primary fw-semibold">@b.GuestPhone</span>
+                                        </a>
                                     </div>
                                 </div>
 
@@ -630,7 +634,7 @@
                                             <input type="hidden" name="bookingId" value="@b.Id">
                                             <input type="hidden" name="status" value="DaDuyet">
                                             <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold text-nowrap">
-                                                <i class="bi bi-check2-circle me-1"></i> Xác nhận đơn
+                                                <i class="bi bi-check2-circle me-1"></i> Xác nhận
                                             </button>
                                         </form>
 
@@ -683,15 +687,16 @@
 
             <!-- List Services -->
             <div class="prop-detail-card" style="min-height: 400px;">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle custom-dashboard-table">
+                <!-- Desktop Table View (>= 992px) -->
+                <div class="table-responsive d-none d-lg-block">
+                    <table class="table table-hover align-middle custom-dashboard-table" style="table-layout: fixed; width: 100%; min-width: 620px;">
                         <thead>
                             <tr>
-                                <th>Tên Dịch Vụ</th>
-                                <th>Mô tả</th>
-                                <th>Giá (VNĐ)</th>
-                                <th>Trạng Thái</th>
-                                <th class="text-end">Hành động</th>
+                                <th style="width: 25%;">Dịch vụ</th>
+                                <th style="width: 35%;">Mô tả</th>
+                                <th style="width: 15%;" class="text-nowrap">Đơn giá</th>
+                                <th style="width: 15%;" class="text-nowrap">Trạng thái</th>
+                                <th style="width: 10%;" class="text-end text-nowrap">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody id="servicesTableBody">
@@ -700,6 +705,14 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Mobile Services List (< 992px) -->
+                <div id="mobileServicesContainer" class="d-block d-lg-none mt-2">
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-box2-heart fs-1 opacity-50 d-block mb-2 text-primary"></i>
+                        Vui lòng chọn cơ sở để xem danh sách dịch vụ
+                    </div>
                 </div>
             </div>
         </section>
@@ -940,9 +953,9 @@
             </div>
 
             <!-- 4 Thẻ chỉ số tổng quan (KPI Metrics) -->
-            <div class="row g-3 mb-4">
+            <div class="row g-2 g-md-3 mb-4">
                 <!-- KPI 1: Doanh thu thực nhận -->
-                <div class="col-xl-3 col-sm-6">
+                <div class="col-6 col-xl-3">
                     <div class="revenue-kpi-card h-100">
                         <div class="kpi-top">
                             <span class="kpi-label">Doanh thu thực nhận</span>
@@ -962,7 +975,7 @@
                 </div>
 
                 <!-- KPI 2: Tổng giá trị đặt phòng (Gross) -->
-                <div class="col-xl-3 col-sm-6">
+                <div class="col-6 col-xl-3">
                     <div class="revenue-kpi-card h-100">
                         <div class="kpi-top">
                             <span class="kpi-label">Tổng giá trị đơn (Gộp)</span>
@@ -982,7 +995,7 @@
                 </div>
 
                 <!-- KPI 3: Số lượng đơn thành công -->
-                <div class="col-xl-3 col-sm-6">
+                <div class="col-6 col-xl-3">
                     <div class="revenue-kpi-card h-100">
                         <div class="kpi-top">
                             <span class="kpi-label">Đơn phòng hoàn tất</span>
@@ -1002,7 +1015,7 @@
                 </div>
 
                 <!-- KPI 4: Doanh thu trung bình mỗi đơn (AOV) -->
-                <div class="col-xl-3 col-sm-6">
+                <div class="col-6 col-xl-3">
                     <div class="revenue-kpi-card h-100">
                         <div class="kpi-top">
                             <span class="kpi-label">Doanh thu TB / Đơn (AOV)</span>
@@ -1083,23 +1096,29 @@
                     </div>
                 </div>
 
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle custom-dashboard-table rev-table mb-0" id="revTransactionsTable">
+                <!-- Desktop Table View (>= 992px) -->
+                <div class="table-responsive d-none d-lg-block">
+                    <table class="table table-hover align-middle custom-dashboard-table rev-table mb-0" id="revTransactionsTable" style="table-layout: fixed; width: 100%; min-width: 780px;">
                         <thead>
                             <tr>
-                                <th style="width: 85px;">Mã đơn</th>
-                                <th>Cơ sở lưu trú</th>
-                                <th>Khách hàng</th>
-                                <th style="width: 140px;">Thời gian</th>
-                                <th style="width: 130px;">Phương thức</th>
-                                <th style="width: 115px;">Trạng thái</th>
-                                <th class="text-end" style="width: 160px;">Doanh thu thực nhận</th>
+                                <th style="width: 75px;" class="text-nowrap">Mã đơn</th>
+                                <th style="width: 22%;">Cơ sở</th>
+                                <th style="width: 18%;">Khách hàng</th>
+                                <th style="width: 110px;" class="text-nowrap">Thời gian</th>
+                                <th style="width: 100px;" class="text-nowrap">Phương thức</th>
+                                <th style="width: 100px;" class="text-nowrap">Trạng thái</th>
+                                <th class="text-end text-nowrap" style="width: 125px;">Thực nhận</th>
                             </tr>
                         </thead>
                         <tbody id="revTransactionsTableBody">
                             <!-- Populated by JS -->
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Mobile Transactions Timeline (< 992px) -->
+                <div id="revTransactionsMobileContainer" class="d-block d-lg-none mt-2">
+                    <!-- Populated by JS -->
                 </div>
 
                 <!-- Empty state khi không có giao dịch trong kỳ -->
@@ -1800,6 +1819,124 @@
         </div>
     </div>
 
+    <!-- ==================== MODAL CHỈNH SỬA THÔNG TIN PHÒNG ==================== -->
+    <div class="modal fade" id="editRoomModal" tabindex="-1" aria-labelledby="editRoomModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content stayly-modal">
+                <div class="modal-header-accent"></div>
+                <div class="modal-body stayly-modal-body p-4 position-relative">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="brand-icon" style="width: 34px; height: 34px; font-size: 1.05rem;"><i class="bi bi-pencil-square"></i></span>
+                        <h4 class="fs-5 fw-bold text-navy mb-0" id="editRoomModalLabel">Chỉnh sửa thông tin phòng</h4>
+                    </div>
+                    <p class="text-muted small mb-3">Cơ sở: <strong class="text-primary" id="editRoomPropertyName">--</strong></p>
+
+                    <form asp-action="UpdateRoom" method="post" enctype="multipart/form-data" id="editRoomForm" onsubmit="submitEditRoomForm(event)">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="PropertyId" id="editRoomPropertyId" value="0" />
+                        <input type="hidden" name="RoomId" id="editRoomId" value="0" />
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Tên hoặc Số phòng *</label>
+                            <input name="RoomNumber" id="editRoomNumber" class="form-control rounded-pill" placeholder="Ví dụ: Phòng 101, Suite 202, Nguyên căn..." required />
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label small fw-bold">Loại phòng</label>
+                                <select name="RoomTypeId" id="editRoomTypeId" class="form-select rounded-pill">
+                                    @foreach (var rt in Model.AvailableRoomTypes)
+                                    {
+                                        <option value="@rt.Id">@rt.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label small fw-bold">Tình trạng phòng</label>
+                                <select name="Status" id="editRoomStatus" class="form-select rounded-pill">
+                                    <option value="DangTrong">Trống (Sẵn sàng đón khách)</option>
+                                    <option value="DangCoKhach">Đang có khách</option>
+                                    <option value="DangSuaChua">Đang sửa chữa / Bảo trì</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Sức chứa Người lớn *</label>
+                                <input name="AdultCapacity" id="editRoomAdultCapacity" type="number" min="1" max="50" value="2" class="form-control rounded-pill" required />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Sức chứa Trẻ em</label>
+                                <input name="ChildCapacity" id="editRoomChildCapacity" type="number" min="0" max="30" value="0" class="form-control rounded-pill" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Giá mỗi đêm (₫) *</label>
+                            <input name="OriginalPrice" id="editRoomOriginalPrice" type="number" step="10000" min="50000" value="500000" class="form-control rounded-pill" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Mô tả phòng (tùy chọn)</label>
+                            <textarea name="Description" id="editRoomDescription" class="form-control rounded-4" rows="2" placeholder="Ví dụ: Phòng có ban công view biển, giường đôi king size..."></textarea>
+                        </div>
+
+                        <!-- Quản lý hình ảnh của phòng -->
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <label class="form-label small fw-bold mb-0">
+                                    <i class="bi bi-images text-primary me-1"></i> Hình ảnh của phòng
+                                </label>
+                                <span class="badge bg-light text-primary border rounded-pill px-2.5 py-1 small" id="editRoomPhotoCount">0 ảnh</span>
+                            </div>
+
+                            <!-- Khung chứa ảnh hiện tại của phòng -->
+                            <div id="editRoomExistingPhotosWrapper" class="mb-2">
+                                <div class="text-muted small mb-1.5" style="font-size: 0.75rem;">
+                                    <i class="bi bi-info-circle me-1"></i>Ảnh hiện có (bấm nút <span class="text-danger fw-bold"><i class="bi bi-x-circle-fill"></i></span> trên ảnh để gỡ bỏ):
+                                </div>
+                                <div id="editRoomExistingPhotosList" class="d-flex gap-2 flex-wrap p-2 bg-light rounded-4 border"></div>
+                            </div>
+
+                            <!-- Hidden inputs for existing photos retained -->
+                            <div id="editRoomExistingPhotosInputs"></div>
+
+                            <!-- Khu vực chọn tải thêm ảnh mới -->
+                            <div class="upload-zone-wrapper p-3 border rounded-4 text-center bg-white mt-2">
+                                <input type="file" name="PhotoFiles" id="editRoomPhotoFiles" class="d-none" multiple accept="image/*" onchange="handleEditRoomNewPhotos(event)" />
+                                <label for="editRoomPhotoFiles" class="btn btn-sm btn-outline-primary rounded-pill px-3 cursor-pointer mb-1">
+                                    <i class="bi bi-cloud-arrow-up-fill me-1"></i> Chọn tải thêm ảnh phòng
+                                </label>
+                                <div class="text-muted small" style="font-size: 0.72rem;">Hỗ trợ định dạng JPG, PNG, WEBP (có thể chọn nhiều ảnh cùng lúc)</div>
+                            </div>
+
+                            <!-- Khung preview các ảnh mới được chọn -->
+                            <div id="editRoomNewPhotosPreviewWrapper" class="mt-2 d-none">
+                                <div class="text-success small mb-1 fw-semibold" style="font-size: 0.75rem;">
+                                    <i class="bi bi-check-circle me-1"></i>Ảnh mới chọn sẵn sàng tải lên:
+                                </div>
+                                <div id="editRoomNewPhotosPreview" class="d-flex gap-2 flex-wrap p-2 bg-success bg-opacity-10 rounded-4 border border-success-subtle"></div>
+                            </div>
+                        </div>
+
+                        <div id="editRoomAlert" class="alert alert-danger d-none py-2 px-3 small rounded-3 mb-3"></div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnSaveEditRoom">
+                                <span class="spinner-border spinner-border-sm me-1 d-none" id="editRoomSpinner"></span>
+                                <i class="bi bi-check-lg me-1"></i> Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal 5: Lịch sử thẩm định (Approval History Modal) -->
     <div class="modal fade" id="approvalHistoryModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -2036,9 +2173,10 @@
         // ==================== VALIDATION & HIGHLIGHT FORM TẠO CƠ SỞ ====================
         // Implementation moved to property_wizard.js
 
-        // Tab Switching
+        // Tab Switching: Đồng bộ cả Sidebar Desktop lẫn Host Bottom Navigation Bar Mobile
         function switchDashboardTab(tabId, element) {
-            document.querySelectorAll('.dashboard-tab-link').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.dashboard-tab-link, .host-bottom-nav-item').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll(`[data-tab-target="${tabId}"]`).forEach(btn => btn.classList.add('active'));
             if (element) element.classList.add('active');
 
             document.querySelectorAll('.dashboard-tab-view').forEach(pane => pane.classList.remove('active'));
@@ -2057,6 +2195,11 @@
             } else if (tabId === 'tabServices') {
                 if (titleEl) titleEl.textContent = 'Quản lý dịch vụ';
                 if (subEl) subEl.textContent = 'Thiết lập danh mục dịch vụ bổ sung cho các cơ sở của bạn.';
+                const propSel = document.getElementById('filterServiceProperty');
+                if (propSel && !propSel.value && propSel.options.length > 1) {
+                    propSel.selectedIndex = 1;
+                    loadServicesList();
+                }
             } else if (tabId === 'tabReviews') {
                 if (titleEl) titleEl.textContent = 'Quản lý đánh giá khách hàng';
                 if (subEl) subEl.textContent = 'Lắng nghe phản hồi từ khách lưu trú để nâng cao chất lượng dịch vụ của bạn.';
@@ -2066,6 +2209,11 @@
                 if (typeof initOrUpdateRevenueDashboard === 'function') {
                     initOrUpdateRevenueDashboard();
                 }
+            }
+
+            // Cuộn mượt lên đỉnh nội dung khi chuyển tab trên thiết bị di động
+            if (window.innerWidth < 992) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
 
@@ -2228,16 +2376,6 @@
                 const statusBadge = document.getElementById('opdStatusBadge');
                 const toggleEditBtn = document.getElementById('opdEditToggleBtn');
 
-                if (status === 'pending') {
-                    statusBadge.className = 'property-status-pill status-pending';
-                    statusBadge.innerHTML = '<i class="bi bi-clock-fill"></i> Đang chờ duyệt (WPF Admin)';
-                    if (toggleEditBtn) toggleEditBtn.classList.add('d-none');
-                } else {
-                    statusBadge.className = 'property-status-pill status-approved';
-                    statusBadge.innerHTML = '<i class="bi bi-check-circle-fill"></i> Đang hoạt động';
-                    if (toggleEditBtn) toggleEditBtn.classList.remove('d-none');
-                }
-
                 let html = '';
 
                 // TRƯỜNG HỢP 1: CHỜ DUYỆT (PENDING)
@@ -2246,10 +2384,10 @@
                         <div class="alert alert-warning rounded-4 p-3 mb-3">
                             <div class="d-flex align-items-center gap-2 mb-1">
                                 <i class="bi bi-shield-exclamation fs-5 text-warning"></i>
-                                <strong class="text-dark">Hồ sơ đang chờ Ban Quản trị (Admin WPF) thẩm định:</strong>
+                                <strong class="text-dark">Hồ sơ đang chờ Admin thẩm định:</strong>
                             </div>
                             <p class="small text-muted mb-0">
-                                Cơ sở của bạn đã gửi thành công và đang được xét duyệt hồ sơ pháp lý. Khi được Admin duyệt, cơ sở sẽ tự động xuất hiện trên website và sẵn sàng đón khách.
+                                Cơ sở của bạn đã gửi thành công và đang được xét duyệt hồ sơ pháp lý.
                             </p>
                         </div>
                     `;
@@ -2346,41 +2484,87 @@
                     `;
                 } else {
                     html += `
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0 small">
+                        <!-- Desktop Table View (>= 768px) -->
+                        <div class="table-responsive d-none d-md-block">
+                            <table class="table table-hover align-middle mb-0 small" style="table-layout: fixed; width: 100%; min-width: 560px;">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>Tên / Số phòng</th>
-                                        <th>Loại phòng</th>
-                                        <th>Sức chứa</th>
-                                        <th>Giá / đêm</th>
-                                        <th>Trạng thái</th>
-                                        ${(isHotel && status === 'approved') ? '<th class="text-end">Thao tác</th>' : ''}
+                                        <th style="width: 22%;">Phòng</th>
+                                        <th style="width: 18%;">Loại phòng</th>
+                                        <th style="width: 20%;">Sức chứa</th>
+                                        <th style="width: 18%;" class="text-nowrap">Giá / đêm</th>
+                                        <th style="width: 12%;" class="text-nowrap">Trạng thái</th>
+                                        <th class="text-end text-nowrap" style="width: 10%;">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${rooms.map(r => `
                                         <tr>
-                                            <td><strong>${r.roomNumber}</strong></td>
-                                            <td><span class="badge bg-light text-primary border rounded-pill px-2 py-1">${r.roomType || 'Tiêu chuẩn'}</span></td>
-                                            <td>${r.adultCapacity} Lớn, ${r.childCapacity} Trẻ em</td>
+                                            <td><strong class="text-navy">${escapeJs(r.roomNumber)}</strong></td>
+                                            <td><span class="badge bg-light text-primary border rounded-pill px-2.5 py-1">${escapeJs(r.roomType || 'Tiêu chuẩn')}</span></td>
+                                            <td>${r.adultCapacity || r.capacity} Lớn, ${r.childCapacity || 0} Trẻ em</td>
                                             <td><strong class="text-primary">${Number(r.originalPrice).toLocaleString('vi-VN')} ₫</strong></td>
-                                            <td><span class="badge ${r.roomStatus === 'Trống' ? 'bg-success' : 'bg-secondary'} rounded-pill px-2 py-1">${r.roomStatus || 'Trống'}</span></td>
-                                            ${(isHotel && status === 'approved') ? `
-                                                <td class="text-end">
+                                            <td><span class="badge ${r.roomStatus === 'Trống' || r.roomStatus === 'DangTrong' ? 'bg-success' : 'bg-secondary'} rounded-pill px-2.5 py-1">${formatRoomStatus(r.roomStatus)}</span></td>
+                                            <td class="text-end text-nowrap">
+                                                <button type="button" class="btn btn-sm btn-outline-primary rounded-circle me-1" title="Chỉnh sửa thông tin phòng" onclick="triggerEditRoom(${data.id}, '${escapeJs(data.name)}', ${escapeRoomJson(r)})">
+                                                    <i class="bi bi-pencil-fill"></i>
+                                                </button>
+                                                ${(isHotel && status === 'approved') ? `
                                                     <form action="/Home/DeleteRoom" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phòng này?');">
                                                         <input type="hidden" name="propertyId" value="${data.id}" />
                                                         <input type="hidden" name="roomId" value="${r.id}" />
-                                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" title="Xóa phòng">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle" title="Xóa phòng">
                                                             <i class="bi bi-trash-fill"></i>
                                                         </button>
                                                     </form>
-                                                </td>
-                                            ` : ''}
+                                                ` : ''}
+                                            </td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
                             </table>
+                        </div>
+
+                        <!-- Mobile Cards View (< 768px) -->
+                        <div class="d-block d-md-none">
+                            ${rooms.map(r => `
+                                <div class="room-mobile-card p-3 mb-2 bg-light rounded-4 border">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <strong class="text-navy fs-6"><i class="bi bi-door-closed-fill text-primary me-1"></i>${escapeJs(r.roomNumber)}</strong>
+                                        <span class="badge ${r.roomStatus === 'Trống' || r.roomStatus === 'DangTrong' ? 'bg-success-subtle text-success border border-success' : 'bg-secondary-subtle text-secondary border'} rounded-pill px-2.5 py-1 small">
+                                            ${formatRoomStatus(r.roomStatus)}
+                                        </span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                                        <span class="badge bg-white text-primary border rounded-pill px-2.5 py-1 small">
+                                            <i class="bi bi-tag-fill me-1"></i>${escapeJs(r.roomType || 'Tiêu chuẩn')}
+                                        </span>
+                                        <span class="badge bg-white text-dark border rounded-pill px-2.5 py-1 small">
+                                            <i class="bi bi-people-fill me-1 text-primary"></i>${r.adultCapacity || r.capacity} lớn, ${r.childCapacity || 0} trẻ em
+                                        </span>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                                        <div>
+                                            <span class="text-muted small d-block" style="font-size: 0.72rem;">Giá mỗi đêm</span>
+                                            <strong class="text-primary fs-6">${Number(r.originalPrice).toLocaleString('vi-VN')} ₫</strong>
+                                        </div>
+                                        <div class="d-flex gap-1">
+                                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" onclick="triggerEditRoom(${data.id}, '${escapeJs(data.name)}', ${escapeRoomJson(r)})">
+                                                <i class="bi bi-pencil me-1"></i> Sửa
+                                            </button>
+                                            ${(isHotel && status === 'approved') ? `
+                                                <form action="/Home/DeleteRoom" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phòng này?');">
+                                                    <input type="hidden" name="propertyId" value="${data.id}" />
+                                                    <input type="hidden" name="roomId" value="${r.id}" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2.5" title="Xóa phòng">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
                         </div>
                     `;
                 }
@@ -2812,8 +2996,10 @@
         function loadServicesList() {
             const propId = document.getElementById('filterServiceProperty').value;
             const tbody = document.getElementById('servicesTableBody');
+            const mobileContainer = document.getElementById('mobileServicesContainer');
             if (!propId) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">Vui lòng chọn cơ sở để xem dịch vụ</td></tr>';
+                if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">Vui lòng chọn cơ sở để xem dịch vụ</td></tr>';
+                if (mobileContainer) mobileContainer.innerHTML = '<div class="text-center py-5 text-muted"><i class="bi bi-box2-heart fs-1 opacity-50 d-block mb-2 text-primary"></i>Vui lòng chọn cơ sở để xem danh sách dịch vụ</div>';
                 return;
             }
             
@@ -2821,29 +3007,60 @@
                 .then(res => res.json())
                 .then(res => {
                     if (res.success && res.data && res.data.length > 0) {
-                        tbody.innerHTML = res.data.map(s => `
-                            <tr>
-                                <td class="fw-medium text-dark">${escapeJs(s.name)}</td>
-                                <td class="text-muted small">${escapeJs(s.description || '')}</td>
-                                <td class="text-primary fw-bold">${Number(s.price).toLocaleString('vi-VN')} ₫</td>
-                                <td>
-                                    <span class="badge ${s.isActive ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} rounded-pill">
-                                        ${s.isActive ? 'Đang hoạt động' : 'Tạm ngưng'}
-                                    </span>
-                                </td>
-                                <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-primary rounded-circle" onclick="editService(${s.id}, '${escapeJs(s.name)}', ${s.price}, '${escapeJs(s.description || '')}', ${s.isActive})">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        `).join('');
+                        if (tbody) {
+                            tbody.innerHTML = res.data.map(s => `
+                                <tr>
+                                    <td class="fw-medium text-dark text-truncate" title="${escapeJs(s.name)}">${escapeJs(s.name)}</td>
+                                    <td class="text-muted small text-truncate" title="${escapeJs(s.description || '')}">${escapeJs(s.description || '-')}</td>
+                                    <td class="text-primary fw-bold text-nowrap">${Number(s.price).toLocaleString('vi-VN')} ₫</td>
+                                    <td class="text-nowrap">
+                                        <span class="badge ${s.isActive ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} rounded-pill text-nowrap">
+                                            ${s.isActive ? 'Hoạt động' : 'Tạm ngưng'}
+                                        </span>
+                                    </td>
+                                    <td class="text-end text-nowrap">
+                                        <button class="btn btn-sm btn-outline-primary rounded-circle" onclick="editService(${s.id}, '${escapeJs(s.name)}', ${s.price}, '${escapeJs(s.description || '')}', ${s.isActive})" title="Sửa dịch vụ">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }
+                        if (mobileContainer) {
+                            mobileContainer.innerHTML = res.data.map(s => `
+                                <div class="host-service-card-mobile">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div class="fw-bold text-navy fs-6 d-flex align-items-center gap-2">
+                                            <span class="badge bg-primary-subtle text-primary rounded-circle p-2" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
+                                                <i class="bi bi-box-seam-fill"></i>
+                                            </span>
+                                            <span>${escapeJs(s.name)}</span>
+                                        </div>
+                                        <span class="badge ${s.isActive ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} rounded-pill">
+                                            ${s.isActive ? 'Hoạt động' : 'Tạm ngưng'}
+                                        </span>
+                                    </div>
+                                    <p class="text-muted small mb-2">${escapeJs(s.description || 'Không có mô tả chi tiết')}</p>
+                                    <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                                        <div>
+                                            <span class="text-muted small d-block" style="font-size: 0.72rem;">Đơn giá dịch vụ</span>
+                                            <span class="text-primary fw-bold fs-6">${Number(s.price).toLocaleString('vi-VN')} ₫</span>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" onclick="editService(${s.id}, '${escapeJs(s.name)}', ${s.price}, '${escapeJs(s.description || '')}', ${s.isActive})">
+                                            <i class="bi bi-pencil me-1"></i>Sửa
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('');
+                        }
                     } else {
-                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">Cơ sở này chưa có dịch vụ nào</td></tr>';
+                        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">Cơ sở này chưa có dịch vụ nào</td></tr>';
+                        if (mobileContainer) mobileContainer.innerHTML = '<div class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1 opacity-50 d-block mb-2 text-primary"></i>Cơ sở này chưa có dịch vụ nào</div>';
                     }
                 })
                 .catch(err => {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-danger">Lỗi tải danh sách dịch vụ</td></tr>';
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-danger">Lỗi tải danh sách dịch vụ</td></tr>';
+                    if (mobileContainer) mobileContainer.innerHTML = '<div class="text-center py-5 text-danger"><i class="bi bi-exclamation-triangle fs-1 d-block mb-2"></i>Lỗi tải danh sách dịch vụ</div>';
                 });
         }
 
@@ -3726,11 +3943,13 @@
 
         function renderRevenueTable(records) {
             const tbody = document.getElementById('revTransactionsTableBody');
+            const mobileContainer = document.getElementById('revTransactionsMobileContainer');
             const noDataBox = document.getElementById('revNoDataBox');
             const indicator = document.getElementById('revTableIndicatorText');
             if (!tbody) return;
 
             tbody.innerHTML = '';
+            if (mobileContainer) mobileContainer.innerHTML = '';
 
             if (records.length === 0) {
                 if (noDataBox) noDataBox.classList.remove('d-none');
@@ -3742,25 +3961,26 @@
             if (indicator) indicator.textContent = `${records.length} giao dịch`;
 
             records.forEach(r => {
-                const tr = document.createElement('tr');
-                tr.className = 'rev-table-row';
-                tr.setAttribute('data-search-text', `${r.id} ${r.property} ${r.guest} ${r.phone} ${r.paymentMethod}`.toLowerCase());
-
                 const dateDisplay = r.date.toLocaleDateString('vi-VN');
                 const timeDisplay = r.date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                const searchText = `${r.id} ${r.property} ${r.guest} ${r.phone} ${r.paymentMethod}`.toLowerCase();
 
+                // Desktop row
+                const tr = document.createElement('tr');
+                tr.className = 'rev-table-row';
+                tr.setAttribute('data-search-text', searchText);
                 tr.innerHTML = `
-                    <td><span class="rev-code-badge">#${r.id}</span></td>
+                    <td><span class="rev-code-badge text-nowrap">#${r.id}</span></td>
                     <td>
-                        <div class="fw-semibold text-dark text-truncate" style="max-width: 200px;" title="${r.property}">${r.property}</div>
+                        <div class="fw-semibold text-dark text-truncate" title="${r.property}">${r.property}</div>
                     </td>
                     <td>
-                        <div class="fw-medium text-dark">${r.guest}</div>
-                        ${r.phone ? `<div class="text-muted" style="font-size: 0.75rem;">${r.phone}</div>` : ''}
+                        <div class="fw-medium text-dark text-truncate" title="${r.guest}">${r.guest}</div>
+                        ${r.phone ? `<div class="text-muted text-nowrap" style="font-size: 0.75rem;">${r.phone}</div>` : ''}
                     </td>
                     <td>
-                        <div class="text-dark">${dateDisplay}</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">${timeDisplay}</div>
+                        <div class="text-dark text-nowrap">${dateDisplay}</div>
+                        <div class="text-muted text-nowrap" style="font-size: 0.75rem;">${timeDisplay}</div>
                     </td>
                     <td>
                         <span class="rev-pill-badge rev-pill-method">
@@ -3777,12 +3997,46 @@
                     </td>
                 `;
                 tbody.appendChild(tr);
+
+                // Mobile Card (< 992px)
+                if (mobileContainer) {
+                    const card = document.createElement('div');
+                    card.className = 'rev-mobile-card';
+                    card.setAttribute('data-search-text', searchText);
+                    card.innerHTML = `
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1 fw-bold small">#${r.id}</span>
+                                <span class="badge bg-success-subtle text-success rounded-pill px-2 py-0.5 small">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Thành công
+                                </span>
+                            </div>
+                            <span class="fw-bold text-success fs-6">+${r.netAmount.toLocaleString('vi-VN')} ₫</span>
+                        </div>
+                        <div class="fw-bold text-dark small mb-1 text-truncate">${r.property}</div>
+                        <div class="d-flex align-items-center justify-content-between text-muted small">
+                            <div>
+                                <i class="bi bi-person me-1 text-primary"></i><span>${r.guest}</span>
+                                ${r.phone ? `<span class="ms-1 text-secondary">(${r.phone})</span>` : ''}
+                            </div>
+                            <div>
+                                <i class="bi bi-credit-card me-1"></i><span>${r.paymentMethod}</span>
+                            </div>
+                        </div>
+                        <div class="mt-2 pt-2 border-top d-flex align-items-center justify-content-between text-muted" style="font-size: 0.75rem;">
+                            <span><i class="bi bi-calendar3 me-1"></i>${dateDisplay} ${timeDisplay}</span>
+                            <span class="text-muted">Gộp: ${r.grossAmount.toLocaleString('vi-VN')} ₫</span>
+                        </div>
+                    `;
+                    mobileContainer.appendChild(card);
+                }
             });
         }
 
         function filterRevenueTable() {
             const query = (document.getElementById('revTableSearchInput')?.value || '').toLowerCase().trim();
             const rows = document.querySelectorAll('#revTransactionsTableBody .rev-table-row');
+            const mobileCards = document.querySelectorAll('#revTransactionsMobileContainer .rev-mobile-card');
             let visibleCount = 0;
 
             rows.forEach(row => {
@@ -3795,9 +4049,19 @@
                 }
             });
 
+            mobileCards.forEach(card => {
+                const text = card.getAttribute('data-search-text') || '';
+                if (!query || text.includes(query)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
             const indicator = document.getElementById('revTableIndicatorText');
             if (indicator) {
-                indicator.textContent = `${visibleCount} / ${rows.length} giao dịch`;
+                const total = rows.length > 0 ? rows.length : mobileCards.length;
+                indicator.textContent = `${visibleCount} / ${total} giao dịch`;
             }
         }
 
@@ -3831,6 +4095,308 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
+
+        // ==================== QUẢN LÝ & CHỈNH SỬA PHÒNG ====================
+        let editRoomCurrentExistingPhotos = [];
+
+        function escapeRoomJson(r) {
+            const safeObj = {
+                id: r.id,
+                roomNumber: r.roomNumber || '',
+                roomType: r.roomType || '',
+                roomTypeId: r.roomTypeId || null,
+                capacity: r.capacity || 2,
+                adultCapacity: r.adultCapacity || r.capacity || 2,
+                childCapacity: r.childCapacity || 0,
+                originalPrice: r.originalPrice || 500000,
+                roomStatus: r.roomStatus || 'DangTrong',
+                description: r.description || '',
+                images: Array.isArray(r.images) ? r.images : []
+            };
+            return JSON.stringify(safeObj).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+        }
+
+        function formatRoomStatus(status) {
+            if (!status) return 'Trống';
+            const s = String(status).toLowerCase();
+            if (s === 'dangtrong' || s === 'trống' || s === 'trong') return 'Trống';
+            if (s === 'dangcokhach' || s === 'đang có khách' || s === 'cokhach') return 'Đang có khách';
+            if (s === 'dangsuachua' || s === 'đang sửa chữa' || s === 'suachua' || s === 'đang bảo trì' || s === 'baotri') return 'Đang sửa chữa';
+            return status;
+        }
+
+        function triggerEditRoom(propertyId, propertyName, roomObj) {
+            if (typeof roomObj === 'string') {
+                try { roomObj = JSON.parse(roomObj); } catch(e) {}
+            }
+            document.getElementById('editRoomPropertyId').value = propertyId;
+            document.getElementById('editRoomId').value = roomObj.id;
+            document.getElementById('editRoomPropertyName').textContent = propertyName || '--';
+            document.getElementById('editRoomNumber').value = roomObj.roomNumber || '';
+
+            // Match Room Type
+            const typeSelect = document.getElementById('editRoomTypeId');
+            if (typeSelect) {
+                if (roomObj.roomTypeId) {
+                    typeSelect.value = roomObj.roomTypeId;
+                } else if (roomObj.roomType) {
+                    const matchedOpt = Array.from(typeSelect.options).find(o => o.text.trim().toLowerCase() === String(roomObj.roomType).trim().toLowerCase());
+                    if (matchedOpt) typeSelect.value = matchedOpt.value;
+                }
+            }
+
+            // Capacity
+            const adultVal = roomObj.adultCapacity || roomObj.capacity || 2;
+            document.getElementById('editRoomAdultCapacity').value = adultVal;
+            document.getElementById('editRoomChildCapacity').value = roomObj.childCapacity || 0;
+
+            // Price
+            document.getElementById('editRoomOriginalPrice').value = roomObj.originalPrice || 500000;
+
+            // Status
+            let stVal = 'DangTrong';
+            const rawSt = String(roomObj.roomStatus || '').toLowerCase();
+            if (rawSt.includes('khach') || rawSt.includes('khách')) stVal = 'DangCoKhach';
+            else if (rawSt.includes('sua') || rawSt.includes('sửa') || rawSt.includes('tri') || rawSt.includes('trì')) stVal = 'DangSuaChua';
+            document.getElementById('editRoomStatus').value = stVal;
+
+            // Description
+            document.getElementById('editRoomDescription').value = roomObj.description || '';
+
+            // Reset Photos
+            editRoomCurrentExistingPhotos = Array.isArray(roomObj.images) ? [...roomObj.images] : [];
+            renderEditRoomExistingPhotos();
+
+            // Clear file input & preview
+            const fileInput = document.getElementById('editRoomPhotoFiles');
+            if (fileInput) fileInput.value = '';
+            const previewWrapper = document.getElementById('editRoomNewPhotosPreviewWrapper');
+            const previewContainer = document.getElementById('editRoomNewPhotosPreview');
+            if (previewWrapper) previewWrapper.classList.add('d-none');
+            if (previewContainer) previewContainer.innerHTML = '';
+
+            // Clear alert
+            document.getElementById('editRoomAlert').classList.add('d-none');
+
+            // Mở modal chỉnh sửa phòng
+            const editModal = new bootstrap.Modal(document.getElementById('editRoomModal'));
+            editModal.show();
+        }
+
+        function renderEditRoomExistingPhotos() {
+            const listEl = document.getElementById('editRoomExistingPhotosList');
+            const inputsEl = document.getElementById('editRoomExistingPhotosInputs');
+            const countEl = document.getElementById('editRoomPhotoCount');
+            if (!listEl || !inputsEl) return;
+
+            listEl.innerHTML = '';
+            inputsEl.innerHTML = '';
+
+            if (editRoomCurrentExistingPhotos.length === 0) {
+                listEl.innerHTML = '<div class="text-muted small py-2 w-100 text-center"><i class="bi bi-image text-secondary me-1"></i>Chưa có ảnh riêng cho phòng này. Hãy bấm tải ảnh phía dưới!</div>';
+            } else {
+                editRoomCurrentExistingPhotos.forEach((url, idx) => {
+                    const item = document.createElement('div');
+                    item.className = 'position-relative d-inline-block rounded-3 overflow-hidden border shadow-xs';
+                    item.style = 'width: 76px; height: 60px; flex-shrink: 0;';
+                    item.innerHTML = `
+                        <img src="${url}" class="w-100 h-100" style="object-fit: cover;" alt="Room photo ${idx+1}" />
+                        <button type="button" class="btn btn-danger btn-sm rounded-circle position-absolute top-0 end-0 m-1 p-0 d-flex align-items-center justify-content-center shadow-sm" style="width: 20px; height: 20px; font-size: 0.7rem; line-height: 1;" onclick="removeEditRoomExistingPhoto(${idx})" title="Gỡ ảnh này">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    `;
+                    listEl.appendChild(item);
+
+                    const hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'ExistingPhotoUrls';
+                    hidden.value = url;
+                    inputsEl.appendChild(hidden);
+                });
+            }
+
+            if (countEl) {
+                countEl.textContent = `${editRoomCurrentExistingPhotos.length} ảnh`;
+            }
+        }
+
+        function removeEditRoomExistingPhoto(idx) {
+            if (idx >= 0 && idx < editRoomCurrentExistingPhotos.length) {
+                editRoomCurrentExistingPhotos.splice(idx, 1);
+                renderEditRoomExistingPhotos();
+            }
+        }
+
+        function handleEditRoomNewPhotos(e) {
+            const files = e.target.files;
+            const previewWrapper = document.getElementById('editRoomNewPhotosPreviewWrapper');
+            const previewContainer = document.getElementById('editRoomNewPhotosPreview');
+            if (!previewWrapper || !previewContainer) return;
+
+            previewContainer.innerHTML = '';
+            if (!files || files.length === 0) {
+                previewWrapper.classList.add('d-none');
+                return;
+            }
+
+            previewWrapper.classList.remove('d-none');
+            Array.from(files).forEach((file, i) => {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const card = document.createElement('div');
+                    card.className = 'position-relative d-inline-block rounded-3 overflow-hidden border border-success shadow-xs';
+                    card.style = 'width: 76px; height: 60px; flex-shrink: 0;';
+                    card.innerHTML = `
+                        <img src="${evt.target.result}" class="w-100 h-100" style="object-fit: cover;" alt="New preview ${i+1}" />
+                        <span class="badge bg-success position-absolute bottom-0 start-0 m-1 px-1 py-0.5" style="font-size: 0.6rem;">Mới</span>
+                    `;
+                    previewContainer.appendChild(card);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function submitEditRoomForm(e) {
+            e.preventDefault();
+            const form = document.getElementById('editRoomForm');
+            const alertEl = document.getElementById('editRoomAlert');
+            const btn = document.getElementById('btnSaveEditRoom');
+            const spinner = document.getElementById('editRoomSpinner');
+
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            alertEl.classList.add('d-none');
+            btn.disabled = true;
+            if (spinner) spinner.classList.remove('d-none');
+
+            const formData = new FormData(form);
+            const propId = document.getElementById('editRoomPropertyId').value;
+
+            try {
+                const res = await fetch('/Home/UpdateRoom', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    // Đóng modal edit room
+                    const editModalEl = document.getElementById('editRoomModal');
+                    const editModal = bootstrap.Modal.getInstance(editModalEl);
+                    if (editModal) editModal.hide();
+
+                    // Hiển thị toast thông báo thành công
+                    showNotificationToast(data.message || 'Cập nhật thông tin phòng thành công!', 'success');
+
+                    // Cập nhật lại modal chi tiết cơ sở ngay lập tức
+                    if (propId) {
+                        await openOwnerPropertyDetails(propId);
+                    }
+                } else {
+                    alertEl.textContent = data.message || 'Không thể cập nhật thông tin phòng.';
+                    alertEl.classList.remove('d-none');
+                }
+            } catch (err) {
+                form.submit();
+            } finally {
+                btn.disabled = false;
+                if (spinner) spinner.classList.add('d-none');
+            }
+        }
+
+        function showNotificationToast(message, type = 'success') {
+            const container = document.getElementById('dashboardToastContainer');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = 'dashboard-toast-card';
+            const isSuccess = type === 'success';
+            toast.innerHTML = `
+                <div class="rounded-circle d-flex align-items-center justify-content-center ${isSuccess ? 'bg-success text-white' : 'bg-danger text-white'}" style="width: 36px; height: 36px; font-size: 1rem; flex-shrink: 0;">
+                    <i class="bi ${isSuccess ? 'bi-check-lg' : 'bi-exclamation-triangle-fill'}"></i>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div class="fw-bold text-navy small mb-0">${message}</div>
+                </div>
+                <button type="button" class="btn-close btn-close-sm" style="font-size: 0.65rem;" onclick="this.parentElement.remove()"></button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const editModalEl = document.getElementById('editRoomModal');
+            if (editModalEl) {
+                editModalEl.addEventListener('hidden.bs.modal', function () {
+                    const opdModalEl = document.getElementById('ownerPropertyDetailsModal');
+                    if (opdModalEl && opdModalEl.classList.contains('show')) {
+                        document.body.classList.add('modal-open');
+                    }
+                });
+            }
+        });
     </script>
+
+    <!-- ==========================================================================
+         HOST MOBILE BOTTOM NAVIGATION BAR (< 992px)
+         Chuẩn ứng dụng quản lý lưu trú di động (Airbnb Host / Booking Pulse)
+         ========================================================================== -->
+    <nav class="host-bottom-nav d-flex d-lg-none" id="hostBottomNav">
+        <!-- Tab 1: Cơ sở -->
+        <button type="button" class="host-bottom-nav-item @(Model.ActiveTab == "properties" ? "active" : "")" 
+                data-tab-target="tabProperties" 
+                onclick="switchDashboardTab('tabProperties', this)">
+            <i class="bi bi-houses-fill"></i>
+            <span>Cơ sở</span>
+        </button>
+
+        <!-- Tab 2: Đơn đặt -->
+        <button type="button" class="host-bottom-nav-item @(Model.ActiveTab == "bookings" ? "active" : "")" 
+                data-tab-target="tabBookings" 
+                onclick="switchDashboardTab('tabBookings', this)">
+            <div class="position-relative d-inline-block">
+                <i class="bi bi-calendar2-check-fill"></i>
+                <span class="host-nav-badge @(pendingBookingsCount > 0 ? "" : "d-none")" id="mobileHostBookingBadge">
+                    @(pendingBookingsCount > 99 ? "99+" : pendingBookingsCount.ToString())
+                </span>
+            </div>
+            <span>Đơn đặt</span>
+        </button>
+
+        <!-- Tab 3: Dịch vụ -->
+        <button type="button" class="host-bottom-nav-item @(Model.ActiveTab == "services" ? "active" : "")" 
+                data-tab-target="tabServices" 
+                onclick="switchDashboardTab('tabServices', this)">
+            <i class="bi bi-box2-heart-fill"></i>
+            <span>Dịch vụ</span>
+        </button>
+
+        <!-- Tab 4: Đánh giá -->
+        <button type="button" class="host-bottom-nav-item @(Model.ActiveTab == "reviews" ? "active" : "")" 
+                data-tab-target="tabReviews" 
+                onclick="switchDashboardTab('tabReviews', this)">
+            <i class="bi bi-chat-square-quote-fill"></i>
+            <span>Đánh giá</span>
+        </button>
+
+        <!-- Tab 5: Doanh thu -->
+        <button type="button" class="host-bottom-nav-item @(Model.ActiveTab == "revenue" ? "active" : "")" 
+                data-tab-target="tabRevenue" 
+                onclick="switchDashboardTab('tabRevenue', this)">
+            <i class="bi bi-graph-up-arrow"></i>
+            <span>Doanh thu</span>
+        </button>
+    </nav>
 </body>
 </html>

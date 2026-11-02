@@ -731,11 +731,16 @@ public sealed class HomestayApiClient(HttpClient http)
         var body = new
         {
             input.RoomNumber,
-            input.Capacity,
+            Capacity = (input.AdultCapacity > 0 ? input.AdultCapacity : input.Capacity) + input.ChildCapacity,
+            input.AdultCapacity,
+            input.ChildCapacity,
             input.OriginalPrice,
             input.Status,
             input.RoomTypeId,
-            input.AmenityIds
+            input.Description,
+            input.IsActive,
+            input.AmenityIds,
+            input.PhotoUrls
         };
         using var request = CreateAuthorizedRequest(HttpMethod.Put, $"properties/{input.PropertyId}/rooms/{input.RoomId}", token);
         request.Content = JsonContent.Create(body);

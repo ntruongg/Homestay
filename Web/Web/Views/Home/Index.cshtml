@@ -8,16 +8,16 @@
 <section class="hero-wrapper">
     <div class="container-fluid px-3 px-md-4 px-xl-5">
         <!-- Hero Banner: Bo tròn góc lớn ~24px, Padding 2 bên, Ảnh thiên nhiên và Gradient overlay -->
-        <div class="hero-banner-card">
+        <div class="hero-banner-card d-none d-md-flex">
             <div class="hero-gradient-overlay"></div>
             <div class="hero-text-content">
                 <div class="hero-tag">
                     <i class="bi bi-compass"></i>
-                    <span>Trải nghiệm nghỉ dưỡng Soft &amp; Harmonious</span>
+                    <span class="d-none d-md-inline">Trải nghiệm nghỉ dưỡng Soft &amp; Harmonious</span>
+                    <span class="d-inline d-md-none">Nghỉ dưỡng lý tưởng</span>
                 </div>
                 <h1 class="hero-title">
-                    Kỳ nghỉ trong mơ<br>
-                    bắt đầu từ Stayly
+                    <span>Kỳ nghỉ trong mơ</span><br class="d-none d-md-inline"> <span>bắt đầu từ Stayly</span>
                 </h1>
                 <p class="hero-subtitle">
                     Khám phá hàng trăm homestay và biệt thự nghỉ dưỡng độc đáo, ấm cúng và ngập tràn cảm hứng cho chuyến đi của bạn.
@@ -34,31 +34,32 @@
                         <i class="bi bi-geo-alt-fill"></i>
                         <span>Điểm đến</span>
                     </label>
-                    <input type="text" id="searchInputLocation" name="location" value="@ViewBag.Location" placeholder="Bạn muốn đến đâu? (Đà Lạt, Hội An...)" autocomplete="off">
+                    <input type="text" id="searchInputLocation" name="location" value="@ViewBag.Location" placeholder="Bạn muốn đến đâu?" autocomplete="off">
                     <!-- Dropdown Autocomplete gợi ý tỉnh thành phố Việt Nam -->
                     <div class="destination-autocomplete-dropdown d-none" id="destinationAutocompleteDropdown"></div>
                 </div>
 
                 <div class="search-divider d-none d-md-block"></div>
 
-                <!-- 2. Ngày nhận -->
-                <div class="search-field">
-                    <label class="search-field-label">
-                        <i class="bi bi-calendar-check-fill"></i>
-                        <span>Ngày nhận</span>
-                    </label>
-                    <input type="date" id="searchInputCheckIn" name="checkIn" value="@(ViewBag.CheckIn ?? "")">
-                </div>
+                <!-- 2 & 3: Ngày nhận & Ngày trả (2 cột trên mobile, dàn ngang trên desktop) -->
+                <div class="search-dates-group">
+                    <div class="search-field">
+                        <label class="search-field-label">
+                            <i class="bi bi-calendar-check-fill"></i>
+                            <span>Ngày nhận</span>
+                        </label>
+                        <input type="date" id="searchInputCheckIn" name="checkIn" value="@(ViewBag.CheckIn ?? "")">
+                    </div>
 
-                <div class="search-divider d-none d-md-block"></div>
+                    <div class="search-divider d-none d-md-block"></div>
 
-                <!-- 3. Ngày trả -->
-                <div class="search-field">
-                    <label class="search-field-label">
-                        <i class="bi bi-calendar-x-fill"></i>
-                        <span>Ngày trả</span>
-                    </label>
-                    <input type="date" id="searchInputCheckOut" name="checkOut" value="@(ViewBag.CheckOut ?? "")">
+                    <div class="search-field">
+                        <label class="search-field-label">
+                            <i class="bi bi-calendar-x-fill"></i>
+                            <span>Ngày trả</span>
+                        </label>
+                        <input type="date" id="searchInputCheckOut" name="checkOut" value="@(ViewBag.CheckOut ?? "")">
+                    </div>
                 </div>
 
                 <div class="search-divider d-none d-md-block"></div>
@@ -156,11 +157,11 @@
 <section class="main-content-section">
     <div class="container-fluid px-3 px-md-4 px-xl-5">
         <div class="row g-4">
-            <!-- Cột trái (Col-lg-3) - Bộ lọc (Filters) -->
-            <div class="col-lg-3">
+            <!-- Cột trái (Col-lg-3) - Bộ lọc Desktop (Giữ nguyên 100% desktop) -->
+            <div class="col-lg-3 d-none d-lg-block">
                 <aside class="filter-card">
-                    <div class="filter-header">
-                        <h3><i class="bi bi-sliders text-primary"></i> Bộ lọc tìm kiếm</h3>
+                    <div class="filter-header d-flex align-items-center justify-content-between mb-3">
+                        <h3 class="mb-0"><i class="bi bi-sliders text-primary"></i> Bộ lọc tìm kiếm</h3>
                         <button type="button" class="btn-reset-filter" onclick="resetAllFilters()">
                             <i class="bi bi-arrow-counterclockwise"></i> Đặt lại
                         </button>
@@ -175,7 +176,7 @@
                         <div class="price-slider-box p-3 mb-2 rounded-3 bg-light border">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="small text-muted">Giá tối đa:</span>
-                                <span class="fw-bold text-primary small" id="maxPriceDisplay">Tất cả (Không giới hạn)</span>
+                                <span class="fw-bold text-primary small" id="maxPriceDisplay">Tất cả</span>
                             </div>
                             <input type="range" class="form-range" id="priceRangeSlider" min="200000" max="5000000" step="100000" value="5000000" oninput="handlePriceSliderInput(this.value)">
                             <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
@@ -292,13 +293,22 @@
                             </button>
                         </div>
                     </div>
+
                 </aside>
             </div>
 
             <!-- Cột phải (Col-lg-9) - Danh sách kết quả (Room List) -->
             <div class="col-lg-9">
-                <!-- Results Header Bar -->
-                <div class="results-header-bar">
+                <!-- Mobile Filter Trigger Button (< 992px) -->
+                <div class="d-lg-none mb-3">
+                    <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm mobile-filter-trigger-btn" data-bs-toggle="modal" data-bs-target="#filterModal">
+                        <i class="bi bi-sliders text-white"></i>
+                        <span>Bộ lọc tìm kiếm</span>
+                        <span class="badge bg-white text-primary rounded-pill px-2 ms-1" id="mobileFilterBadge">Tất cả</span>
+                    </button>
+                </div>
+                <!-- Results Header Bar (Ẩn trên mobile, chỉ hiện trên desktop) -->
+                <div class="results-header-bar d-none d-lg-flex">
                     <div class="results-count" id="resultsCountDisplay">
                         Đang tìm kiếm homestay phù hợp...
                     </div>
@@ -329,6 +339,161 @@
             </div>
         </div>
     </div>
+
+<!-- ==========================================================================
+     Modal Bộ Lọc Cho Mobile Web (< 992px, Chuẩn Bootstrap Modal, Không Bể UI)
+     ========================================================================== -->
+<div class="modal fade d-lg-none" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header border-bottom py-3 px-4 bg-white">
+                <h5 class="modal-title fw-bold text-navy" id="filterModalLabel">
+                    <i class="bi bi-sliders text-primary me-2"></i> Bộ lọc tìm kiếm
+                </h5>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="resetAllFilters()">
+                        <i class="bi bi-arrow-counterclockwise"></i> Đặt lại
+                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+            </div>
+            <div class="modal-body p-3 p-md-4">
+                <!-- 1. Mức giá -->
+                <div class="filter-group">
+                    <div class="filter-group-title">
+                        <i class="bi bi-cash-stack text-primary"></i>
+                        <span>Mức giá mỗi đêm</span>
+                    </div>
+                    <div class="price-slider-box p-3 mb-2 rounded-3 bg-light border">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small text-muted">Giá tối đa:</span>
+                            <span class="fw-bold text-primary small stayly-max-price-display" id="maxPriceDisplayModal">Tất cả</span>
+                        </div>
+                        <input type="range" class="form-range stayly-price-slider" id="priceRangeSliderModal" min="200000" max="5000000" step="100000" value="5000000" oninput="handlePriceSliderInput(this.value)">
+                        <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+                            <span>200k</span>
+                            <span>2.5tr</span>
+                            <span>5tr+</span>
+                        </div>
+                    </div>
+                    <div class="toggle-pills-wrap">
+                        <button type="button" class="filter-pill-btn active" data-filter="price" data-value="all" onclick="setPriceFilter(this, 'all')">Tất cả</button>
+                        <button type="button" class="filter-pill-btn" data-filter="price" data-value="under500k" onclick="setPriceFilter(this, 'under500k')">&lt; 500k</button>
+                        <button type="button" class="filter-pill-btn" data-filter="price" data-value="500k-1m" onclick="setPriceFilter(this, '500k-1m')">500k - 1tr</button>
+                        <button type="button" class="filter-pill-btn" data-filter="price" data-value="1m-2m" onclick="setPriceFilter(this, '1m-2m')">1tr - 2tr</button>
+                        <button type="button" class="filter-pill-btn" data-filter="price" data-value="over2m" onclick="setPriceFilter(this, 'over2m')">&gt; 2tr</button>
+                    </div>
+                </div>
+
+                <!-- 2. Loại hình lưu trú -->
+                <div class="filter-group">
+                    <div class="filter-group-title">
+                        <i class="bi bi-house-heart text-primary"></i>
+                        <span>Loại hình lưu trú</span>
+                    </div>
+                    <div class="toggle-pills-wrap">
+                        <button type="button" class="filter-pill-btn active" data-filter="type" data-value="all" onclick="setTypeFilter(this, 'all')">
+                            <i class="bi bi-grid-fill me-1 small"></i>Tất cả
+                        </button>
+                        <button type="button" class="filter-pill-btn" data-filter="type" data-value="Homestay" onclick="setTypeFilter(this, 'Homestay')">
+                            <i class="bi bi-house-heart-fill me-1 small"></i>Homestay
+                        </button>
+                        <button type="button" class="filter-pill-btn" data-filter="type" data-value="Hotel" onclick="setTypeFilter(this, 'Hotel')">
+                            <i class="bi bi-building-fill me-1 small"></i>Khách sạn (Hotel)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. Tiện nghi phổ biến -->
+                <div class="filter-group">
+                    <div class="filter-group-title">
+                        <i class="bi bi-stars text-primary"></i>
+                        <span>Tiện nghi phổ biến</span>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        <label class="soft-switch-item">
+                            <span>Wifi tốc độ cao</span>
+                            <div class="switch-control">
+                                <input type="checkbox" class="amenity-checkbox" value="Wifi" onchange="handleAmenityChange(this)">
+                                <span class="switch-slider"></span>
+                            </div>
+                        </label>
+                        <label class="soft-switch-item">
+                            <span>Hồ bơi riêng / vô cực</span>
+                            <div class="switch-control">
+                                <input type="checkbox" class="amenity-checkbox" value="Hồ bơi" onchange="handleAmenityChange(this)">
+                                <span class="switch-slider"></span>
+                            </div>
+                        </label>
+                        <label class="soft-switch-item">
+                            <span>Điều hòa nhiệt độ</span>
+                            <div class="switch-control">
+                                <input type="checkbox" class="amenity-checkbox" value="Điều hòa" onchange="handleAmenityChange(this)">
+                                <span class="switch-slider"></span>
+                            </div>
+                        </label>
+                        <label class="soft-switch-item">
+                            <span>Bếp nấu gia đình</span>
+                            <div class="switch-control">
+                                <input type="checkbox" class="amenity-checkbox" value="Bếp" onchange="handleAmenityChange(this)">
+                                <span class="switch-slider"></span>
+                            </div>
+                        </label>
+                        <label class="soft-switch-item">
+                            <span>Ban công view đẹp</span>
+                            <div class="switch-control">
+                                <input type="checkbox" class="amenity-checkbox" value="Ban công" onchange="handleAmenityChange(this)">
+                                <span class="switch-slider"></span>
+                            </div>
+                        </label>
+                        <label class="soft-switch-item">
+                            <span>Chỗ đỗ xe miễn phí</span>
+                            <div class="switch-control">
+                                <input type="checkbox" class="amenity-checkbox" value="Chỗ đỗ xe" onchange="handleAmenityChange(this)">
+                                <span class="switch-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 4. Đánh giá sao -->
+                <div class="filter-group mb-0">
+                    <div class="filter-group-title">
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <span>Đánh giá sao</span>
+                    </div>
+                    <div class="toggle-pills-wrap">
+                        <button type="button" class="filter-pill-btn active" data-filter="rating" data-value="0" onclick="setRatingFilter(this, 0)">Tất cả</button>
+                        <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="5" onclick="setRatingFilter(this, 5)">
+                            <i class="bi bi-star-fill text-warning"></i> 5 sao
+                        </button>
+                        <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="4" onclick="setRatingFilter(this, 4)">
+                            <i class="bi bi-star-fill text-warning"></i> 4 sao
+                        </button>
+                        <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="3" onclick="setRatingFilter(this, 3)">
+                            <i class="bi bi-star-fill text-warning"></i> 3 sao
+                        </button>
+                        <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="2" onclick="setRatingFilter(this, 2)">
+                            <i class="bi bi-star-fill text-warning"></i> 2 sao
+                        </button>
+                        <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="1" onclick="setRatingFilter(this, 1)">
+                            <i class="bi bi-star-fill text-warning"></i> 1 sao
+                        </button>
+                        <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="none" onclick="setRatingFilter(this, 'none')">
+                            <i class="bi bi-star text-muted"></i> Chưa có đánh giá
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top p-3 bg-white">
+                <button type="button" class="btn btn-primary w-100 rounded-pill py-2.5 fw-bold shadow-sm" data-bs-dismiss="modal">
+                    <i class="bi bi-check2-circle me-1"></i> Áp dụng bộ lọc
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </section>
 
 @section Scripts {
@@ -745,12 +910,17 @@
                     <span class="amenity-tag">${escapeHtml(amenity)}</span>
                 `).join('');
 
-                // Rating badge: Chưa có đánh giá thì hiện rõ "Chưa có đánh giá"
+                // Rating badge: Chưa có đánh giá thì hiện rõ "Chưa có đánh giá", có nửa sao cho điểm ở giữa (4.3 -> 4,5 sao)
                 let ratingBadgeHtml = '';
                 if (room.reviewCount > 0 && room.rating > 0) {
+                    const rawScore = Number(room.rating);
+                    const roundedScore = Math.round(rawScore * 2) / 2;
+                    const hasHalfStar = (roundedScore % 1 !== 0);
+                    const formattedScore = (hasHalfStar ? roundedScore.toFixed(1) : roundedScore.toString()).replace('.', ',');
+                    const starIcon = hasHalfStar ? 'bi-star-half' : 'bi-star-fill';
                     ratingBadgeHtml = `
                         <span class="rating-badge">
-                            <i class="bi bi-star-fill text-warning"></i> ${Number(room.rating).toFixed(1)} <small class="text-muted">(${room.reviewCount} đánh giá)</small>
+                            <i class="bi ${starIcon} text-warning"></i> ${formattedScore} sao <small class="text-muted">(${room.reviewCount} đánh giá)</small>
                         </span>
                     `;
                 } else {
@@ -767,6 +937,9 @@
                             <!-- Khối Ảnh (Col-md-5): Ảnh tỉ lệ cố định 16:10 -->
                             <div class="col-md-5 position-relative">
                                 <span class="room-badge-type">${escapeHtml(room.type)}</span>
+                                <button type="button" class="room-wishlist-btn" onclick="toggleCardWishlist(event, ${room.id})" title="Yêu thích">
+                                    <i class="bi bi-heart"></i>
+                                </button>
                                 ${imageBlockHtml}
                             </div>
 
@@ -1085,7 +1258,7 @@
             activeFilters.maxSliderPrice = num;
             const displayEl = document.getElementById('maxPriceDisplay');
             if (num >= 5000000) {
-                if (displayEl) displayEl.textContent = 'Tất cả (Không giới hạn)';
+                if (displayEl) displayEl.textContent = 'Tất cả';
             } else {
                 if (displayEl) displayEl.textContent = `${new Intl.NumberFormat('vi-VN').format(num)} ₫ / đêm`;
             }
@@ -1095,35 +1268,51 @@
             applyFiltersAndRender(true);
         };
 
+        window.handlePriceSliderInput = function (val) {
+            const num = Number(val);
+            const slider1 = document.getElementById('priceRangeSlider');
+            const slider2 = document.getElementById('priceRangeSliderModal');
+            if (slider1) slider1.value = num;
+            if (slider2) slider2.value = num;
+
+            const text = num >= 5000000 ? 'Tất cả' : num.toLocaleString('vi-VN') + ' ₫';
+            const disp1 = document.getElementById('maxPriceDisplay');
+            const disp2 = document.getElementById('maxPriceDisplayModal');
+            if (disp1) disp1.textContent = text;
+            if (disp2) disp2.textContent = text;
+
+            activeFilters.maxSliderPrice = num;
+            applyFiltersAndRender(true);
+        };
+
         window.setPriceFilter = function (btn, range) {
             document.querySelectorAll('[data-filter="price"]').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            document.querySelectorAll(`[data-filter="price"][data-value="${range}"]`).forEach(b => b.classList.add('active'));
             activeFilters.priceRange = range;
             
-            // Sync slider display
-            const sliderEl = document.getElementById('priceRangeSlider');
-            const displayEl = document.getElementById('maxPriceDisplay');
-            if (range === 'all') {
-                if (sliderEl) sliderEl.value = 5000000;
-                if (displayEl) displayEl.textContent = 'Tất cả (Không giới hạn)';
-                activeFilters.maxSliderPrice = 5000000;
-            } else if (range === 'under500k') {
-                if (sliderEl) sliderEl.value = 500000;
-                if (displayEl) displayEl.textContent = 'Dưới 500.000 ₫';
-                activeFilters.maxSliderPrice = 500000;
+            // Sync slider displays
+            const sliders = [document.getElementById('priceRangeSlider'), document.getElementById('priceRangeSliderModal')];
+            const displays = [document.getElementById('maxPriceDisplay'), document.getElementById('maxPriceDisplayModal')];
+            
+            let targetVal = 5000000;
+            let targetText = 'Tất cả';
+            if (range === 'under500k') {
+                targetVal = 500000;
+                targetText = 'Dưới 500.000';
             } else if (range === '500k-1m') {
-                if (sliderEl) sliderEl.value = 1000000;
-                if (displayEl) displayEl.textContent = '500.000 - 1.000.000 ₫';
-                activeFilters.maxSliderPrice = 1000000;
+                targetVal = 1000000;
+                targetText = '500.000 - 1.000.000';
             } else if (range === '1m-2m') {
-                if (sliderEl) sliderEl.value = 2000000;
-                if (displayEl) displayEl.textContent = '1.000.000 - 2.000.000 ₫';
-                activeFilters.maxSliderPrice = 2000000;
+                targetVal = 2000000;
+                targetText = '1.000.000 - 2.000.000';
             } else if (range === 'over2m') {
-                if (sliderEl) sliderEl.value = 5000000;
-                if (displayEl) displayEl.textContent = 'Trên 2.000.000 ₫';
-                activeFilters.maxSliderPrice = 5000000;
+                targetVal = 5000000;
+                targetText = 'Trên 2.000.000';
             }
+
+            sliders.forEach(s => { if (s) s.value = targetVal; });
+            displays.forEach(d => { if (d) d.textContent = targetText; });
+            activeFilters.maxSliderPrice = targetVal;
 
             applyFiltersAndRender(true);
         };
@@ -1135,10 +1324,17 @@
             applyFiltersAndRender(true);
         };
 
-        window.handleAmenityChange = function () {
+        window.handleAmenityChange = function (changedCb) {
+            if (changedCb) {
+                document.querySelectorAll(`.amenity-checkbox[value="${changedCb.value}"]`).forEach(cb => {
+                    cb.checked = changedCb.checked;
+                });
+            }
             const checked = [];
             document.querySelectorAll('.amenity-checkbox:checked').forEach(cb => {
-                checked.push(cb.value);
+                if (!checked.includes(cb.value)) {
+                    checked.push(cb.value);
+                }
             });
             activeFilters.amenities = checked;
             applyFiltersAndRender(true);
@@ -1192,10 +1388,8 @@
             const locInput = document.getElementById('searchInputLocation');
             if (locInput) locInput.value = '';
 
-            const sliderEl = document.getElementById('priceRangeSlider');
-            if (sliderEl) sliderEl.value = 5000000;
-            const maxPriceDisplay = document.getElementById('maxPriceDisplay');
-            if (maxPriceDisplay) maxPriceDisplay.textContent = 'Tất cả (Không giới hạn)';
+            [document.getElementById('priceRangeSlider'), document.getElementById('priceRangeSliderModal')].forEach(s => { if (s) s.value = 5000000; });
+            [document.getElementById('maxPriceDisplay'), document.getElementById('maxPriceDisplayModal')].forEach(d => { if (d) d.textContent = 'Tất cả (Không giới hạn)'; });
 
             document.querySelectorAll('[data-filter="price"]').forEach(b => b.classList.remove('active'));
             document.querySelector('[data-filter="price"][data-value="all"]')?.classList.add('active');
@@ -1240,5 +1434,37 @@
             }, 500);
         }
     })();
+
+        // Wishlist Toggle Handler on Room Card
+        window.toggleCardWishlist = function (e, roomId) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            const btn = e.currentTarget || e.target.closest('.room-wishlist-btn');
+            if (btn) {
+                btn.classList.toggle('active');
+                const isLiked = btn.classList.contains('active');
+                if (typeof showStaylyToast === 'function') {
+                    showStaylyToast(isLiked ? 'success' : 'info', isLiked ? 'Đã thêm vào danh sách yêu thích!' : 'Đã xóa khỏi danh sách yêu thích');
+                }
+            }
+        };
+
+        // Auto focus search when navigating from mobile bottom nav
+        document.addEventListener('DOMContentLoaded', function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('focusSearch') === 'true') {
+                const searchInput = document.getElementById('searchInputLocation');
+                const searchBar = document.querySelector('.floating-search-bar') || document.querySelector('.search-box-outer');
+                if (searchBar) {
+                    searchBar.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (searchInput) {
+                        setTimeout(() => searchInput.focus(), 600);
+                    }
+                }
+            }
+        });
+
 </script>
 }

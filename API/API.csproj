@@ -26,8 +26,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Templates\**">
+    <None Include="Templates\**\*.cshtml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </None>
   </ItemGroup>
 

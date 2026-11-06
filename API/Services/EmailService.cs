@@ -25,7 +25,34 @@ public sealed class EmailService(
         TModel model,
         CancellationToken cancellationToken = default)
     {
-        var bodyHtml = await templateRenderer.RenderTemplateAsync(templateName, model);
+        string bodyHtml;
+        try
+        {
+            bodyHtml = await templateRenderer.RenderTemplateAsync(templateName, model);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to render Razor template '{TemplateName}'. Falling back to default HTML format.", templateName);
+            if (model is API.DTOs.Email.AccountOtpEmailModel otpModel)
+            {
+                bodyHtml = $@"<div style='font-family: Arial, sans-serif; padding: 24px; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                    <h2 style='color: #0d6efd;'>Stayly - {otpModel.PurposeText}</h2>
+                    <p>Xin chào <strong>{otpModel.RecipientName}</strong>,</p>
+                    <p>Mã xác thực OTP của bạn là:</p>
+                    <div style='text-align: center; margin: 24px 0;'>
+                        <span style='display: inline-block; font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #0d6efd; background: #e7f1ff; padding: 12px 24px; border-radius: 8px;'>{otpModel.OtpCode}</span>
+                    </div>
+                    <p style='color: #64748b;'>Mã có hiệu lực trong {otpModel.ExpireMinutes} phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.</p>
+                    <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;'/>
+                    <p style='font-size: 12px; color: #94a3b8;'>Đội ngũ hỗ trợ Stayly</p>
+                </div>";
+            }
+            else
+            {
+                throw;
+            }
+        }
+
         await SendEmailAsync(toEmail, subject, bodyHtml, cancellationToken);
     }
 

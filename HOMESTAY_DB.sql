@@ -1,24 +1,43 @@
 -- =========================================================================
 -- DATABASE: HOMESTAY_DB (BẢN CHUẨN HÓA V2 - DỮ LIỆU ĐẦY ĐỦ 55+ KHÁCH SẠN TRAVELOKA)
+-- HỖ TRỢ CHẠY 1 LẦN DUY NHẤT (F5) TRÊN CẢ AZURE SQL DATABASE VÀ LOCAL SQL SERVER
+-- =========================================================================
+-- HƯỚNG DẪN CHẠY:
+-- 1. Trong SSMS, kết nối tới Azure SQL Server (hoặc Localhost)
+-- 2. Chọn Database là: HOMESTAY_DB (ở dropdown database trên thanh công cụ)
+-- 3. Nhấn F5 (hoặc nút Execute) để chạy 1 lần.
 -- =========================================================================
 
-USE master;
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
 GO
 
-IF EXISTS (SELECT name FROM sys.databases WHERE name = 'HOMESTAY_DB')
-BEGIN
-    ALTER DATABASE HOMESTAY_DB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE HOMESTAY_DB;
-END
+-- TỰ ĐỘNG DỌN DẸP BẢNG CŨ (NẾU CÓ) THEO ĐÚNG THỨ TỰ KHÓA NGOẠI ĐỂ CÓ THỂ CHẠY LẠI NHIỀU LẦN (IDEMPOTENT)
+DROP TABLE IF EXISTS NhatKyHoatDong;
+DROP TABLE IF EXISTS LichSuDuyet;
+DROP TABLE IF EXISTS DanhGia;
+DROP TABLE IF EXISTS ThanhToan;
+DROP TABLE IF EXISTS DonDatPhongDichVu;
+DROP TABLE IF EXISTS ChiTietDon;
+DROP TABLE IF EXISTS DonDatPhong;
+DROP TABLE IF EXISTS GiamGia;
+DROP TABLE IF EXISTS LichLuuTru;
+DROP TABLE IF EXISTS HinhAnh;
+DROP TABLE IF EXISTS Phong_TienNghi;
+DROP TABLE IF EXISTS TienNghiPhong;
+DROP TABLE IF EXISTS CoSoLuuTru_TienNghi;
+DROP TABLE IF EXISTS TienNghiCoSo;
+DROP TABLE IF EXISTS DichVu;
+DROP TABLE IF EXISTS Phong;
+DROP TABLE IF EXISTS LoaiPhong;
+DROP TABLE IF EXISTS CoSoLuuTru;
+DROP TABLE IF EXISTS NguoiDung;
+DROP TABLE IF EXISTS VaiTro;
+DROP TABLE IF EXISTS [__EFMigrationsHistory];
 GO
 
-CREATE DATABASE HOMESTAY_DB;
-GO
-
-USE HOMESTAY_DB;
-GO
-
--- 0. BẢNG MIGRATION CỦA EF CORE (ĐỒNG BỘ ĐỂ API CHẠY KHÔNG GẶP LỖI MIGRATE)
+-- 0. BẢNG MIGRATION CỦA EF CORE (ĐỒNG BỘ ĐẦY ĐỦ 5 MIGRATION ĐỂ API CHẠY KHÔNG GẶP LỖI)
 CREATE TABLE [__EFMigrationsHistory] (
     [MigrationId] nvarchar(150) NOT NULL,
     [ProductVersion] nvarchar(32) NOT NULL,
@@ -29,7 +48,8 @@ INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES
 ('20260925114954_InitialNormalizedV2', '8.0.31'),
 ('20260927084643_AddExclusiveOwnerConstraint', '8.0.31'),
 ('20260930074019_UpdateDichVuModel', '8.0.31'),
-('20261004080250_AddRefundAndBankAccountFields', '8.0.31');
+('20261004080250_AddRefundAndBankAccountFields', '8.0.31'),
+('20261015095439_UpdatePromotionAndPaymentSchema', '8.0.31');
 GO
 
 -- 1. BẢNG PHÂN QUYỀN VAI TRÒ

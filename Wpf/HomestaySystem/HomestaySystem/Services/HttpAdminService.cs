@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -31,8 +31,17 @@ namespace HomestaySystem.Services
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
 
-        public HttpAdminService(string baseUrl = "http://localhost:5176/", string adminEmail = "admin@stayly.com", string adminPassword = "Admin@123456")
+        public HttpAdminService(string baseUrl = "https://stayly-api-eebmfxd8cphdcegm.eastasia-01.azurewebsites.net/", string adminEmail = "admin@stayly.com", string adminPassword = "Admin@123456")
         {
+            if (!baseUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !baseUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                baseUrl = "https://" + baseUrl;
+            }
+            if (!baseUrl.EndsWith("/"))
+            {
+                baseUrl += "/";
+            }
+
             _adminEmail = adminEmail;
             _adminPassword = adminPassword;
             _http = new HttpClient

@@ -60,7 +60,7 @@
                                 <i class="bi bi-grid-fill me-1"></i> Dashboard
                             </a>
                         }
-                        <a asp-controller="Home" asp-action="Profile" class="user-profile-badge" id="navUserProfileLink">
+                        <a asp-controller="Home" asp-action="Profile" class="user-profile-badge d-none d-md-inline-flex" id="navUserProfileLink">
                             <span class="user-avatar-circle">@(name.Length > 0 ? name[0].ToString().ToUpper() : "U")</span>
                             <span id="navUserName">@name</span>
                         </a>
@@ -884,7 +884,7 @@
                                 <i class="bi bi-grid-fill me-1"></i> Dashboard
                             </a>
                         ` : ''}
-                        <a href="/Home/Profile" class="user-profile-badge" id="navUserProfileLink" title="Xem hồ sơ cá nhân">
+                        <a href="/Home/Profile" class="user-profile-badge d-none d-md-inline-flex" id="navUserProfileLink" title="Xem hồ sơ cá nhân">
                             <span class="user-avatar-circle">${initial}</span>
                             <span id="navUserName">${escapeHtml(displayName)}</span>
                         </a>

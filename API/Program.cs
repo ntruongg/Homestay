@@ -27,7 +27,7 @@ builder.Services.AddHostedService<ExpiredBookingCleanupService>();
 builder.Services.AddHostedService<API.Services.Database.AutomatedBackupHostedService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("Jwt:Key is not configured.");
+    ?? throw new InvalidOperationException("Jwt:Key is not configured. Vui lòng cấu hình biến môi trường 'Jwt__Key' trên Azure App Service.");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -46,7 +46,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 builder.Services.AddCors(options => options.AddPolicy("WebClient", policy =>
-    policy.WithOrigins("http://localhost:5500", "http://127.0.0.1:5500", "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5280", "https://localhost:5280")
+    policy.AllowAnyOrigin()
         .AllowAnyHeader()
         .AllowAnyMethod()));
 // Add services to the container.
@@ -100,11 +100,9 @@ using (var scope = app.Services.CreateScope())
     }
 }
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();

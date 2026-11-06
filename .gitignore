@@ -108,3 +108,9 @@ Desktop.ini
 *.cache
 *.bak
 *.swp
+
+# Publishing and deployment output
+publish/
+[Pp]ublish/
+ServiceDependencies/
+*.PublishSettings

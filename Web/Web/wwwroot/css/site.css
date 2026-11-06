@@ -3938,89 +3938,105 @@ textarea.form-control.is-invalid:focus {
     }
 
     .site-navbar {
-        min-height: 58px !important;
+        min-height: 52px !important;
         padding: 4px 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: nowrap !important;
+        gap: 8px !important;
     }
 
     .stayly-brand {
         display: inline-flex !important;
         align-items: center !important;
-        gap: 8px !important;
+        gap: 6px !important;
         white-space: nowrap !important;
         flex-shrink: 0 !important;
+        text-decoration: none !important;
+    }
+
+    .stayly-brand span:not(.brand-icon) {
+        font-size: 1.3rem !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.02em !important;
+        white-space: nowrap !important;
+        line-height: 1 !important;
     }
 
     .brand-icon {
-        width: 36px !important;
-        height: 36px !important;
-        min-width: 36px !important;
-        min-height: 36px !important;
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        min-height: 32px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         flex-shrink: 0 !important;
+        font-size: 0.95rem !important;
+    }
+
+    /* Bỏ nút profile badge trên header navbar ở mobile web để tránh chiếm chỗ và che chữ */
+    .user-profile-badge,
+    #navUserProfileLink {
+        display: none !important;
+    }
+
+    .nav-auth-area {
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .nav-auth-area .btn-outline-primary,
+    .nav-auth-area a[href*="Dashboard"] {
+        height: 32px !important;
+        min-height: 32px !important;
+        padding: 0 10px !important;
+        font-size: 0.78rem !important;
+        font-weight: 600 !important;
+        border-radius: 50px !important;
+        white-space: nowrap !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+        margin-right: 0 !important;
     }
 
     .btn-stayly-login {
-        height: 38px !important;
-        min-height: 38px !important;
-        padding: 0 16px !important;
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 0 12px !important;
         white-space: nowrap !important;
         flex-shrink: 0 !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        gap: 6px !important;
+        gap: 5px !important;
         border-radius: 50px !important;
         font-weight: 600 !important;
-        font-size: 0.85rem !important;
+        font-size: 0.82rem !important;
     }
 
     .btn-stayly-login i {
-        font-size: 1.1rem !important;
+        font-size: 0.95rem !important;
         flex-shrink: 0 !important;
         line-height: 1 !important;
     }
 
-    .user-profile-badge {
-        height: 38px !important;
-        white-space: nowrap !important;
-        flex-shrink: 0 !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        gap: 8px !important;
-        padding: 0 12px !important;
-    }
-
-    #navUserName {
-        max-width: 90px !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        white-space: nowrap !important;
-        display: inline-block !important;
-    }
-
-    .user-avatar-circle {
-        width: 30px !important;
-        height: 30px !important;
-        min-width: 30px !important;
-        min-height: 30px !important;
-        flex-shrink: 0 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 0.85rem !important;
-    }
-
     .btn-stayly-logout {
-        height: 36px !important;
+        height: 32px !important;
+        min-height: 32px !important;
         white-space: nowrap !important;
         flex-shrink: 0 !important;
         display: inline-flex !important;
         align-items: center !important;
         gap: 4px !important;
         padding: 0 10px !important;
-        font-size: 0.82rem !important;
+        font-size: 0.78rem !important;
+        font-weight: 600 !important;
+        border-radius: 50px !important;
     }
 
     /* 2. REMOVE BANNER ON MOBILE */

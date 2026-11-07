@@ -14,7 +14,8 @@ public sealed record PropertySummary(
     double Rating = 0.0,
     int ReviewCount = 0,
     int MaxAdultCapacity = 2,
-    int MaxChildCapacity = 1);
+    int MaxChildCapacity = 1,
+    IReadOnlyList<string>? Amenities = null);
 
 public sealed record RoomAmenityItem(int Id, string Name);
 

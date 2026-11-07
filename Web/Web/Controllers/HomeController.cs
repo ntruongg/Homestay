@@ -24,6 +24,15 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
 
         try
         {
+            ViewBag.AvailableAmenities = await api.GetAllAmenitiesAsync(cancellationToken);
+        }
+        catch
+        {
+            ViewBag.AvailableAmenities = Array.Empty<AmenityItem>();
+        }
+
+        try
+        {
             return View(await api.GetPropertiesAsync(location, adults, children, cancellationToken));
         }
         catch (Exception ex)

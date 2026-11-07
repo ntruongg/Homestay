@@ -102,7 +102,11 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
                 PropRating = db.DanhGias
                     .Where(d => d.DonDatPhong.ChiTietDons.Any(c => c.Phong.MaCoSoLuuTru == p.MaCoSoLuuTru))
                     .Select(d => (double?)d.DiemSo)
-                    .Average()
+                    .Average(),
+                PropertyAmenities = p.TienNghis.Select(t => t.TienNghiCoSo.TenTienNghi).ToList(),
+                RoomAmenities = p.Phongs.Where(r => r.TrangThaiHoatDong)
+                    .SelectMany(r => r.TienNghis.Select(rt => rt.TienNghiPhong.TenTienNghi))
+                    .ToList()
             })
             .ToListAsync(cancellationToken);
 
@@ -110,6 +114,13 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
         {
             var rating = p.PropRating.HasValue ? Math.Round(p.PropRating.Value, 1) : 0.0;
             var fullAddress = FormatFullAddress(p.DiaChi, p.PhuongXa, p.ThanhPho);
+            var combinedAmenities = p.PropertyAmenities
+                .Concat(p.RoomAmenities)
+                .Where(a => !string.IsNullOrWhiteSpace(a))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(a => a)
+                .ToList();
+
             return new PropertySummaryResponse(
                 p.MaCoSoLuuTru,
                 p.TenCoSoLuuTru,
@@ -120,7 +131,8 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
                 rating,
                 p.ReviewCount,
                 p.MaxAdultCapacity,
-                p.MaxChildCapacity);
+                p.MaxChildCapacity,
+                combinedAmenities);
         }).ToList();
 
         return Ok(properties);
@@ -209,6 +221,26 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
             .ToListAsync(cancellationToken);
 
         return Ok(amenities);
+    }
+
+    [HttpGet("all-amenities")]
+    public async Task<ActionResult<IReadOnlyList<AmenityDto>>> GetAllAmenities(CancellationToken cancellationToken)
+    {
+        var coSo = await db.TienNghiCoSos.AsNoTracking()
+            .Select(a => new AmenityDto(a.MaTienNghi, a.TenTienNghi))
+            .ToListAsync(cancellationToken);
+
+        var phong = await db.TienNghiPhongs.AsNoTracking()
+            .Select(a => new AmenityDto(a.MaTienNghi, a.TenTienNghi))
+            .ToListAsync(cancellationToken);
+
+        var all = coSo.Concat(phong)
+            .GroupBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .OrderBy(a => a.Name)
+            .ToList();
+
+        return Ok(all);
     }
 
     [HttpGet("room-types")]

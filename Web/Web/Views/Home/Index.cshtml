@@ -167,7 +167,7 @@
                         </button>
                     </div>
 
-                    <!-- 1. Mức giá (Range Slider & Quick Filter Pills) -->
+                    <!-- 1. Mức giá (Range Slider) -->
                     <div class="filter-group">
                         <div class="filter-group-title">
                             <i class="bi bi-cash-stack text-primary"></i>
@@ -178,19 +178,12 @@
                                 <span class="small text-muted">Giá tối đa:</span>
                                 <span class="fw-bold text-primary small" id="maxPriceDisplay">Tất cả</span>
                             </div>
-                            <input type="range" class="form-range" id="priceRangeSlider" min="200000" max="5000000" step="100000" value="5000000" oninput="handlePriceSliderInput(this.value)">
+                            <input type="range" class="form-range" id="priceRangeSlider" min="200000" max="10000000" step="100000" value="10000000" oninput="handlePriceSliderInput(this.value)">
                             <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
                                 <span>200k</span>
-                                <span>2.5tr</span>
-                                <span>5tr+</span>
+                                <span>5tr</span>
+                                <span>10tr+</span>
                             </div>
-                        </div>
-                        <div class="toggle-pills-wrap">
-                            <button type="button" class="filter-pill-btn active" data-filter="price" data-value="all" onclick="setPriceFilter(this, 'all')">Tất cả</button>
-                            <button type="button" class="filter-pill-btn" data-filter="price" data-value="under500k" onclick="setPriceFilter(this, 'under500k')">&lt; 500k</button>
-                            <button type="button" class="filter-pill-btn" data-filter="price" data-value="500k-1m" onclick="setPriceFilter(this, '500k-1m')">500k - 1tr</button>
-                            <button type="button" class="filter-pill-btn" data-filter="price" data-value="1m-2m" onclick="setPriceFilter(this, '1m-2m')">1tr - 2tr</button>
-                            <button type="button" class="filter-pill-btn" data-filter="price" data-value="over2m" onclick="setPriceFilter(this, 'over2m')">&gt; 2tr</button>
                         </div>
                     </div>
 
@@ -213,52 +206,45 @@
                         </div>
                     </div>
 
-                    <!-- 3. Tiện nghi (Custom Checkbox thành dạng công tắc Switch mềm mại) -->
+                    <!-- 3. Tiện nghi phổ biến (5 tiện nghi chính) -->
                     <div class="filter-group">
                         <div class="filter-group-title">
                             <i class="bi bi-stars text-primary"></i>
                             <span>Tiện nghi phổ biến</span>
                         </div>
                         <div class="d-flex flex-column gap-1">
-                            <label class="soft-switch-item">
-                                <span>Wifi tốc độ cao</span>
+                            <label class="soft-switch-item py-1">
+                                <span>Wifi</span>
                                 <div class="switch-control">
-                                    <input type="checkbox" class="amenity-checkbox" value="Wifi" onchange="handleAmenityChange()">
+                                    <input type="checkbox" class="amenity-checkbox" value="wifi" onchange="handleAmenityChange(this)">
                                     <span class="switch-slider"></span>
                                 </div>
                             </label>
-                            <label class="soft-switch-item">
-                                <span>Hồ bơi riêng / vô cực</span>
+                            <label class="soft-switch-item py-1">
+                                <span>Điều hòa</span>
                                 <div class="switch-control">
-                                    <input type="checkbox" class="amenity-checkbox" value="Hồ bơi" onchange="handleAmenityChange()">
+                                    <input type="checkbox" class="amenity-checkbox" value="điều hòa" onchange="handleAmenityChange(this)">
                                     <span class="switch-slider"></span>
                                 </div>
                             </label>
-                            <label class="soft-switch-item">
-                                <span>Điều hòa nhiệt độ</span>
+                            <label class="soft-switch-item py-1">
+                                <span>Bể bơi</span>
                                 <div class="switch-control">
-                                    <input type="checkbox" class="amenity-checkbox" value="Điều hòa" onchange="handleAmenityChange()">
+                                    <input type="checkbox" class="amenity-checkbox" value="bể bơi" onchange="handleAmenityChange(this)">
                                     <span class="switch-slider"></span>
                                 </div>
                             </label>
-                            <label class="soft-switch-item">
-                                <span>Bếp nấu gia đình</span>
+                            <label class="soft-switch-item py-1">
+                                <span>Khu vực bếp</span>
                                 <div class="switch-control">
-                                    <input type="checkbox" class="amenity-checkbox" value="Bếp" onchange="handleAmenityChange()">
+                                    <input type="checkbox" class="amenity-checkbox" value="bếp" onchange="handleAmenityChange(this)">
                                     <span class="switch-slider"></span>
                                 </div>
                             </label>
-                            <label class="soft-switch-item">
-                                <span>Ban công view đẹp</span>
+                            <label class="soft-switch-item py-1">
+                                <span>Cho phép mang thú cưng</span>
                                 <div class="switch-control">
-                                    <input type="checkbox" class="amenity-checkbox" value="Ban công" onchange="handleAmenityChange()">
-                                    <span class="switch-slider"></span>
-                                </div>
-                            </label>
-                            <label class="soft-switch-item">
-                                <span>Chỗ đỗ xe miễn phí</span>
-                                <div class="switch-control">
-                                    <input type="checkbox" class="amenity-checkbox" value="Chỗ đỗ xe" onchange="handleAmenityChange()">
+                                    <input type="checkbox" class="amenity-checkbox" value="thú cưng" onchange="handleAmenityChange(this)">
                                     <span class="switch-slider"></span>
                                 </div>
                             </label>
@@ -274,19 +260,19 @@
                         <div class="toggle-pills-wrap">
                             <button type="button" class="filter-pill-btn active" data-filter="rating" data-value="0" onclick="setRatingFilter(this, 0)">Tất cả</button>
                             <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="5" onclick="setRatingFilter(this, 5)">
-                                <i class="bi bi-star-fill text-warning"></i> 5 sao
+                                5 <i class="bi bi-star-fill text-warning"></i>
                             </button>
                             <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="4" onclick="setRatingFilter(this, 4)">
-                                <i class="bi bi-star-fill text-warning"></i> 4 sao
+                                4 <i class="bi bi-star-fill text-warning"></i>
                             </button>
                             <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="3" onclick="setRatingFilter(this, 3)">
-                                <i class="bi bi-star-fill text-warning"></i> 3 sao
+                                3 <i class="bi bi-star-fill text-warning"></i>
                             </button>
                             <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="2" onclick="setRatingFilter(this, 2)">
-                                <i class="bi bi-star-fill text-warning"></i> 2 sao
+                                2 <i class="bi bi-star-fill text-warning"></i>
                             </button>
                             <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="1" onclick="setRatingFilter(this, 1)">
-                                <i class="bi bi-star-fill text-warning"></i> 1 sao
+                                1 <i class="bi bi-star-fill text-warning"></i>
                             </button>
                             <button type="button" class="filter-pill-btn star-btn" data-filter="rating" data-value="none" onclick="setRatingFilter(this, 'none')">
                                 <i class="bi bi-star text-muted"></i> Chưa có đánh giá
@@ -340,9 +326,7 @@
         </div>
     </div>
 
-<!-- ==========================================================================
-     Modal Bộ Lọc Cho Mobile Web (< 992px, Chuẩn Bootstrap Modal, Không Bể UI)
-     ========================================================================== -->
+
 <div class="modal fade d-lg-none" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
@@ -369,19 +353,12 @@
                             <span class="small text-muted">Giá tối đa:</span>
                             <span class="fw-bold text-primary small stayly-max-price-display" id="maxPriceDisplayModal">Tất cả</span>
                         </div>
-                        <input type="range" class="form-range stayly-price-slider" id="priceRangeSliderModal" min="200000" max="5000000" step="100000" value="5000000" oninput="handlePriceSliderInput(this.value)">
+                        <input type="range" class="form-range stayly-price-slider" id="priceRangeSliderModal" min="200000" max="10000000" step="100000" value="10000000" oninput="handlePriceSliderInput(this.value)">
                         <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
                             <span>200k</span>
-                            <span>2.5tr</span>
-                            <span>5tr+</span>
+                            <span>5tr</span>
+                            <span>10tr+</span>
                         </div>
-                    </div>
-                    <div class="toggle-pills-wrap">
-                        <button type="button" class="filter-pill-btn active" data-filter="price" data-value="all" onclick="setPriceFilter(this, 'all')">Tất cả</button>
-                        <button type="button" class="filter-pill-btn" data-filter="price" data-value="under500k" onclick="setPriceFilter(this, 'under500k')">&lt; 500k</button>
-                        <button type="button" class="filter-pill-btn" data-filter="price" data-value="500k-1m" onclick="setPriceFilter(this, '500k-1m')">500k - 1tr</button>
-                        <button type="button" class="filter-pill-btn" data-filter="price" data-value="1m-2m" onclick="setPriceFilter(this, '1m-2m')">1tr - 2tr</button>
-                        <button type="button" class="filter-pill-btn" data-filter="price" data-value="over2m" onclick="setPriceFilter(this, 'over2m')">&gt; 2tr</button>
                     </div>
                 </div>
 
@@ -404,52 +381,45 @@
                     </div>
                 </div>
 
-                <!-- 3. Tiện nghi phổ biến -->
+                <!-- 3. Tiện nghi phổ biến (5 tiện nghi chính) -->
                 <div class="filter-group">
                     <div class="filter-group-title">
                         <i class="bi bi-stars text-primary"></i>
                         <span>Tiện nghi phổ biến</span>
                     </div>
-                    <div class="d-flex flex-column gap-2">
-                        <label class="soft-switch-item">
-                            <span>Wifi tốc độ cao</span>
+                    <div class="d-flex flex-column gap-1">
+                        <label class="soft-switch-item py-1">
+                            <span>Wifi</span>
                             <div class="switch-control">
-                                <input type="checkbox" class="amenity-checkbox" value="Wifi" onchange="handleAmenityChange(this)">
+                                <input type="checkbox" class="amenity-checkbox" value="wifi" onchange="handleAmenityChange(this)">
                                 <span class="switch-slider"></span>
                             </div>
                         </label>
-                        <label class="soft-switch-item">
-                            <span>Hồ bơi riêng / vô cực</span>
+                        <label class="soft-switch-item py-1">
+                            <span>Điều hòa</span>
                             <div class="switch-control">
-                                <input type="checkbox" class="amenity-checkbox" value="Hồ bơi" onchange="handleAmenityChange(this)">
+                                <input type="checkbox" class="amenity-checkbox" value="điều hòa" onchange="handleAmenityChange(this)">
                                 <span class="switch-slider"></span>
                             </div>
                         </label>
-                        <label class="soft-switch-item">
-                            <span>Điều hòa nhiệt độ</span>
+                        <label class="soft-switch-item py-1">
+                            <span>Bể bơi</span>
                             <div class="switch-control">
-                                <input type="checkbox" class="amenity-checkbox" value="Điều hòa" onchange="handleAmenityChange(this)">
+                                <input type="checkbox" class="amenity-checkbox" value="bể bơi" onchange="handleAmenityChange(this)">
                                 <span class="switch-slider"></span>
                             </div>
                         </label>
-                        <label class="soft-switch-item">
-                            <span>Bếp nấu gia đình</span>
+                        <label class="soft-switch-item py-1">
+                            <span>Bếp</span>
                             <div class="switch-control">
-                                <input type="checkbox" class="amenity-checkbox" value="Bếp" onchange="handleAmenityChange(this)">
+                                <input type="checkbox" class="amenity-checkbox" value="bếp" onchange="handleAmenityChange(this)">
                                 <span class="switch-slider"></span>
                             </div>
                         </label>
-                        <label class="soft-switch-item">
-                            <span>Ban công view đẹp</span>
+                        <label class="soft-switch-item py-1">
+                            <span>Cho phép mang thú cưng</span>
                             <div class="switch-control">
-                                <input type="checkbox" class="amenity-checkbox" value="Ban công" onchange="handleAmenityChange(this)">
-                                <span class="switch-slider"></span>
-                            </div>
-                        </label>
-                        <label class="soft-switch-item">
-                            <span>Chỗ đỗ xe miễn phí</span>
-                            <div class="switch-control">
-                                <input type="checkbox" class="amenity-checkbox" value="Chỗ đỗ xe" onchange="handleAmenityChange(this)">
+                                <input type="checkbox" class="amenity-checkbox" value="thú cưng" onchange="handleAmenityChange(this)">
                                 <span class="switch-slider"></span>
                             </div>
                         </label>
@@ -460,7 +430,7 @@
                 <div class="filter-group mb-0">
                     <div class="filter-group-title">
                         <i class="bi bi-star-fill text-warning"></i>
-                        <span>Đánh giá sao</span>
+                        <span>Đánh giá</span>
                     </div>
                     <div class="toggle-pills-wrap">
                         <button type="button" class="filter-pill-btn active" data-filter="rating" data-value="0" onclick="setRatingFilter(this, 0)">Tất cả</button>
@@ -640,8 +610,8 @@
         let allRoomsData = [];
         let activeFilters = {
             location: '@(ViewBag.Location ?? "")',
-            priceRange: 'all',
-            maxSliderPrice: 5000000,
+            priceRange: 'slider',
+            maxSliderPrice: 10000000,
             propertyType: 'all',
             amenities: [],
             selectedRating: 0,
@@ -799,7 +769,11 @@
                 const rawRating = item.rating !== undefined && item.rating !== null ? item.rating : (item.Rating !== undefined && item.Rating !== null ? item.Rating : 0);
                 const rating = Number(rawRating) > 0 ? Number(Number(rawRating).toFixed(1)) : 0;
                 const description = item.description || `Không gian lưu trú ${type.toLowerCase()} thanh bình, trang bị đầy đủ tiện nghi tại ${address}.`;
-                const amenities = ['Wifi miễn phí', 'Điều hòa', 'Chỗ đỗ xe'];
+                const rawAmenities = item.amenities || item.Amenities;
+                let amenities = [];
+                if (Array.isArray(rawAmenities)) {
+                    amenities = rawAmenities.map(a => typeof a === 'string' ? a : (a.name || a.Name || '')).filter(Boolean);
+                }
                 const maxAdultCapacity = Number(item.maxAdultCapacity !== undefined ? item.maxAdultCapacity : (item.MaxAdultCapacity !== undefined ? item.MaxAdultCapacity : 2));
                 const maxChildCapacity = Number(item.maxChildCapacity !== undefined ? item.maxChildCapacity : (item.MaxChildCapacity !== undefined ? item.MaxChildCapacity : 1));
 
@@ -1121,19 +1095,9 @@
                 }
             }
 
-            // 2. Price Range (Slider or quick buttons)
-            if (activeFilters.priceRange === 'slider') {
-                if (activeFilters.maxSliderPrice < 5000000) {
-                    filtered = filtered.filter(r => r.price <= activeFilters.maxSliderPrice);
-                }
-            } else if (activeFilters.priceRange === 'under500k') {
-                filtered = filtered.filter(r => r.price < 500000);
-            } else if (activeFilters.priceRange === '500k-1m') {
-                filtered = filtered.filter(r => r.price >= 500000 && r.price <= 1000000);
-            } else if (activeFilters.priceRange === '1m-2m') {
-                filtered = filtered.filter(r => r.price > 1000000 && r.price <= 2000000);
-            } else if (activeFilters.priceRange === 'over2m') {
-                filtered = filtered.filter(r => r.price > 2000000);
+            // 2. Price Range (Slider)
+            if (activeFilters.maxSliderPrice && activeFilters.maxSliderPrice < 10000000) {
+                filtered = filtered.filter(r => r.price <= activeFilters.maxSliderPrice);
             }
 
             // 3. Property Type (Hỗ trợ chuẩn xác Homestay và Hotel/Khách sạn)
@@ -1152,12 +1116,16 @@
             }
 
             // 4. Amenities
-            if (activeFilters.amenities.length > 0) {
+            if (activeFilters.amenities && activeFilters.amenities.length > 0) {
                 filtered = filtered.filter(r => {
                     const roomAmenityStr = (r.amenities || []).join(' ').toLowerCase();
-                    return activeFilters.amenities.every(amenity => 
-                        roomAmenityStr.includes(amenity.toLowerCase())
-                    );
+                    return activeFilters.amenities.every(amenity => {
+                        const am = (amenity || '').toLowerCase();
+                        if (am === 'bể bơi' || am === 'hồ bơi') {
+                            return roomAmenityStr.includes('bể bơi') || roomAmenityStr.includes('hồ bơi');
+                        }
+                        return roomAmenityStr.includes(am);
+                    });
                 });
             }
 
@@ -1255,65 +1223,18 @@
 
         window.handlePriceSliderInput = function (val) {
             const num = Number(val);
-            activeFilters.maxSliderPrice = num;
-            const displayEl = document.getElementById('maxPriceDisplay');
-            if (num >= 5000000) {
-                if (displayEl) displayEl.textContent = 'Tất cả';
-            } else {
-                if (displayEl) displayEl.textContent = `${new Intl.NumberFormat('vi-VN').format(num)} ₫ / đêm`;
-            }
-            // Deactivate price pill buttons when slider moves
-            document.querySelectorAll('[data-filter="price"]').forEach(b => b.classList.remove('active'));
-            activeFilters.priceRange = 'slider';
-            applyFiltersAndRender(true);
-        };
-
-        window.handlePriceSliderInput = function (val) {
-            const num = Number(val);
             const slider1 = document.getElementById('priceRangeSlider');
             const slider2 = document.getElementById('priceRangeSliderModal');
             if (slider1) slider1.value = num;
             if (slider2) slider2.value = num;
 
-            const text = num >= 5000000 ? 'Tất cả' : num.toLocaleString('vi-VN') + ' ₫';
+            const text = num >= 10000000 ? 'Tất cả' : `${new Intl.NumberFormat('vi-VN').format(num)} ₫ / đêm`;
             const disp1 = document.getElementById('maxPriceDisplay');
             const disp2 = document.getElementById('maxPriceDisplayModal');
             if (disp1) disp1.textContent = text;
             if (disp2) disp2.textContent = text;
 
             activeFilters.maxSliderPrice = num;
-            applyFiltersAndRender(true);
-        };
-
-        window.setPriceFilter = function (btn, range) {
-            document.querySelectorAll('[data-filter="price"]').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll(`[data-filter="price"][data-value="${range}"]`).forEach(b => b.classList.add('active'));
-            activeFilters.priceRange = range;
-            
-            // Sync slider displays
-            const sliders = [document.getElementById('priceRangeSlider'), document.getElementById('priceRangeSliderModal')];
-            const displays = [document.getElementById('maxPriceDisplay'), document.getElementById('maxPriceDisplayModal')];
-            
-            let targetVal = 5000000;
-            let targetText = 'Tất cả';
-            if (range === 'under500k') {
-                targetVal = 500000;
-                targetText = 'Dưới 500.000';
-            } else if (range === '500k-1m') {
-                targetVal = 1000000;
-                targetText = '500.000 - 1.000.000';
-            } else if (range === '1m-2m') {
-                targetVal = 2000000;
-                targetText = '1.000.000 - 2.000.000';
-            } else if (range === 'over2m') {
-                targetVal = 5000000;
-                targetText = 'Trên 2.000.000';
-            }
-
-            sliders.forEach(s => { if (s) s.value = targetVal; });
-            displays.forEach(d => { if (d) d.textContent = targetText; });
-            activeFilters.maxSliderPrice = targetVal;
-
             applyFiltersAndRender(true);
         };
 
@@ -1374,8 +1295,8 @@
         window.resetAllFilters = function () {
             activeFilters = {
                 location: '',
-                priceRange: 'all',
-                maxSliderPrice: 5000000,
+                priceRange: 'slider',
+                maxSliderPrice: 10000000,
                 propertyType: 'all',
                 amenities: [],
                 selectedRating: 0,
@@ -1388,11 +1309,8 @@
             const locInput = document.getElementById('searchInputLocation');
             if (locInput) locInput.value = '';
 
-            [document.getElementById('priceRangeSlider'), document.getElementById('priceRangeSliderModal')].forEach(s => { if (s) s.value = 5000000; });
+            [document.getElementById('priceRangeSlider'), document.getElementById('priceRangeSliderModal')].forEach(s => { if (s) s.value = 10000000; });
             [document.getElementById('maxPriceDisplay'), document.getElementById('maxPriceDisplayModal')].forEach(d => { if (d) d.textContent = 'Tất cả'; });
-
-            document.querySelectorAll('[data-filter="price"]').forEach(b => b.classList.remove('active'));
-            document.querySelector('[data-filter="price"][data-value="all"]')?.classList.add('active');
 
             document.querySelectorAll('[data-filter="type"]').forEach(b => b.classList.remove('active'));
             document.querySelector('[data-filter="type"][data-value="all"]')?.classList.add('active');

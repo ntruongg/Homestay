@@ -21,7 +21,8 @@ public sealed record BookingConfirmedEmailModel(
     string PaymentStatus,
     string? OwnerName,
     string? OwnerPhone,
-    string SupportEmail = "support@stayly.com"
+    string SupportEmail = "support@stayly.com",
+    string WebUrl = "https://stayly-web-cpc7fqg4amc5cuh4.eastasia-01.azurewebsites.net"
 );
 
 public sealed record RefundAcceptedEmailModel(

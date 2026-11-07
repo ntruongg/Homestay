@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - ntruong
   workflow_dispatch:
 
 jobs:
@@ -57,3 +56,4 @@ jobs:
           app-name: 'stayly-web'
           publish-profile: ${{ secrets.AZURE_WEBAPP_WEB_PUBLISH_PROFILE }}
           package: ./publish-web
+

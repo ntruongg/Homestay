@@ -225,19 +225,35 @@ namespace HomestaySystem.ViewModels
                 return;
             }
 
-            DangTaiDuLieu = true;
-            bool thanhCong = await _adminService.XacNhanQuyetToanAsync(DonDangChon.MaDon, MaGiaoDichNhap.Trim(), GhiChuNhap.Trim(), DonDangChon.TienChuHomeNhan);
-            DangTaiDuLieu = false;
-
-            if (thanhCong)
+            try
             {
-                HienThiDialogXacNhan = false;
-                MessageBox.Show(
-                    $"Xác nhận quyết toán thành công!\nĐơn: {DonDangChon.MaDonHienThi}\nChủ home: {DonDangChon.TenChuHome}\nSố tiền 85%: {DonDangChon.TienChuHomeNhan:N0} đ\nMã GD: {MaGiaoDichNhap}",
-                    "Quyết toán hoàn tất",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-                await TaiDanhSachQuyetToanAsync();
+                DangTaiDuLieu = true;
+                Mouse.OverrideCursor = Cursors.Wait;
+                bool thanhCong = await _adminService.XacNhanQuyetToanAsync(DonDangChon.MaDon, MaGiaoDichNhap.Trim(), GhiChuNhap.Trim(), DonDangChon.TienChuHomeNhan);
+
+                if (thanhCong)
+                {
+                    HienThiDialogXacNhan = false;
+                    MessageBox.Show(
+                        $"Xác nhận quyết toán thành công!\nĐơn: {DonDangChon.MaDonHienThi}\nChủ home: {DonDangChon.TenChuHome}\nSố tiền 85%: {DonDangChon.TienChuHomeNhan:N0} đ\nMã GD: {MaGiaoDichNhap}",
+                        "Quyết toán hoàn tất",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    await TaiDanhSachQuyetToanAsync();
+                }
+                else
+                {
+                    MessageBox.Show("Xác nhận quyết toán thất bại từ phía máy chủ! Vui lòng thử lại sau.", "Lỗi quyết toán", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi kết nối khi gửi quyết toán: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                DangTaiDuLieu = false;
+                Mouse.OverrideCursor = null;
             }
         }
     }

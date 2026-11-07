@@ -7,6 +7,30 @@ using System.Windows.Media;
 namespace HomestaySystem.Converters
 {
     /// <summary>
+    /// Đảo ngược giá trị boolean (True -> False, False -> True) phục vụ IsEnabled khi đang xử lý.
+    /// </summary>
+    public class PhuDinhBooleanConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool b)
+            {
+                return !b;
+            }
+            return true;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool b)
+            {
+                return !b;
+            }
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Chuyển đổi boolean ngược sang Visibility (True -> Collapsed, False -> Visible)
     /// </summary>
     public class PhuDinhBooleanToVisibilityConverter : IValueConverter

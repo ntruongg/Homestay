@@ -11,6 +11,8 @@
         <!-- Converters toàn cục (Hỗ trợ cả tên chuẩn và tên rút gọn) -->
         <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <conv:PhuDinhBooleanConverter x:Key="InverseBoolConverter"/>
+        <conv:PhuDinhBooleanConverter x:Key="PhuDinhBoolConverter"/>
         <conv:PhuDinhBooleanToVisibilityConverter x:Key="PhuDinhBoolToVisConverter"/>
         <conv:ChuoiMauToBrushConverter x:Key="ChuoiMauToBrushConverter"/>
         <conv:ChuoiMauToBrushConverter x:Key="ColorToBrush"/>

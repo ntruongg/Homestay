@@ -309,22 +309,34 @@ namespace HomestaySystem.ViewModels
                 return;
             }
 
-            DangTaiDuLieu = true;
-            string decisionNote = $"[Mã GD: {MaGiaoDichHoanTien.Trim()}] {GhiChuHoanTien?.Trim()}";
-            bool thanhCong = await _adminService.XuLyHoanTienAsync(DonDangChon.MaDon, SoTienHoan, LyDoHoanTien, decisionNote);
-            DangTaiDuLieu = false;
+            try
+            {
+                DangTaiDuLieu = true;
+                Mouse.OverrideCursor = Cursors.Wait;
+                string decisionNote = $"[Mã GD: {MaGiaoDichHoanTien.Trim()}] {GhiChuHoanTien?.Trim()}";
+                bool thanhCong = await _adminService.XuLyHoanTienAsync(DonDangChon.MaDon, SoTienHoan, LyDoHoanTien, decisionNote);
 
-            if (thanhCong)
-            {
-                string maDon = DonDangChon.MaDonHienThi;
-                HienThiDialogHoanTien = false;
-                DonDangChon = null;
-                MessageBox.Show($"Đã xác nhận hoàn tiền {SoTienHoan:N0} đ (Mã GD: {MaGiaoDichHoanTien}) cho đơn {maDon} thành công! Hệ thống đã gửi email xác nhận hoàn tiền cho khách hàng.", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
-                await TaiDanhSachDonDatAsync();
+                if (thanhCong)
+                {
+                    string maDon = DonDangChon.MaDonHienThi;
+                    HienThiDialogHoanTien = false;
+                    DonDangChon = null;
+                    MessageBox.Show($"Đã xác nhận hoàn tiền {SoTienHoan:N0} đ (Mã GD: {MaGiaoDichHoanTien}) cho đơn {maDon} thành công! Hệ thống đã gửi email xác nhận hoàn tiền cho khách hàng.", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+                    await TaiDanhSachDonDatAsync();
+                }
+                else
+                {
+                    MessageBox.Show("Xử lý hoàn tiền thất bại. Vui lòng kiểm tra lại trạng thái đơn hàng.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Xử lý hoàn tiền thất bại. Vui lòng kiểm tra lại trạng thái đơn hàng.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Lỗi kết nối khi gửi yêu cầu hoàn tiền: {ex.Message}", "Lỗi xử lý", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                DangTaiDuLieu = false;
+                Mouse.OverrideCursor = null;
             }
         }
     }

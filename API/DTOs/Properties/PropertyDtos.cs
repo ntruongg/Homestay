@@ -184,7 +184,8 @@ public sealed record RoomTypeDto(int Id, string Name, string? Description);
 
 public sealed record PropertySummaryResponse(
     int Id, string Name, string? Address, string? Type, decimal MinimumPrice, string? CoverImageUrl,
-    double Rating = 0.0, int ReviewCount = 0, int MaxAdultCapacity = 2, int MaxChildCapacity = 1);
+    double Rating = 0.0, int ReviewCount = 0, int MaxAdultCapacity = 2, int MaxChildCapacity = 1,
+    IReadOnlyList<string>? Amenities = null);
 
 public sealed record PropertyDetailsResponse(
     int Id, string Name, string? Phone, string? Email, string? Address, string? Type,

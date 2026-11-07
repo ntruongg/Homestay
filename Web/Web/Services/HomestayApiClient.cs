@@ -468,6 +468,31 @@ public sealed class HomestayApiClient(HttpClient http)
         }
     }
 
+    public async Task<IReadOnlyList<AmenityItem>> GetAllAmenitiesAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = await http.GetFromJsonAsync<List<AmenityItem>>("properties/all-amenities", cancellationToken);
+            if (result is not null && result.Count > 0) return result;
+        }
+        catch { }
+
+        try
+        {
+            var pList = await http.GetFromJsonAsync<List<AmenityItem>>("properties/amenities", cancellationToken) ?? [];
+            var rList = await http.GetFromJsonAsync<List<AmenityItem>>("properties/room-amenities", cancellationToken) ?? [];
+            var combined = pList.Concat(rList)
+                .GroupBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .OrderBy(a => a.Name)
+                .ToList();
+            if (combined.Count > 0) return combined;
+        }
+        catch { }
+
+        return await GetAmenitiesAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<RoomTypeItem>> GetRoomTypesAsync(CancellationToken cancellationToken = default)
     {
         try

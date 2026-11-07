@@ -332,13 +332,13 @@
                         var thumbUrl = prop.CoverImageUrl;
 
                         <article class="property-card-host">
-                            <div class="row g-0">
-                                <!-- Thumbnail bo góc 16px bên trái (Chỉ hiển thị ảnh thực tế) -->
+                            <div class="row g-0 align-items-center">
+                                <!-- Thumbnail bo góc 16px bên trái (Fixed chiều cao, tránh ảnh quá cao làm bể card) -->
                                 <div class="col-md-4 col-lg-3">
-                                    <div class="property-thumb-container d-flex align-items-center justify-content-center" style="background: #f1f5f9; min-height: 180px; border-radius: 16px 0 0 16px; overflow: hidden;">
+                                    <div class="property-thumb-container d-flex align-items-center justify-content-center" style="background: #f1f5f9; height: 220px; max-height: 220px; border-radius: 16px 0 0 16px; overflow: hidden; position: relative;">
                                         @if (!string.IsNullOrWhiteSpace(thumbUrl))
                                         {
-                                            <img src="@thumbUrl" alt="@prop.Name" class="property-thumb-img" loading="lazy">
+                                            <img src="@thumbUrl" alt="@prop.Name" class="property-thumb-img" loading="lazy" style="width: 100%; height: 100%; max-height: 220px; object-fit: cover; object-position: center; display: block;">
                                         }
                                         else
                                         {

@@ -47,9 +47,69 @@ public sealed class EmailService(
                     <p style='font-size: 12px; color: #94a3b8;'>Đội ngũ hỗ trợ Stayly</p>
                 </div>";
             }
+            else if (model is API.DTOs.Email.BookingConfirmedEmailModel bookingModel)
+            {
+                var webUrl = string.IsNullOrWhiteSpace(bookingModel.WebUrl) ? "https://stayly-web-cpc7fqg4amc5cuh4.eastasia-01.azurewebsites.net" : bookingModel.WebUrl.TrimEnd('/');
+                bodyHtml = $@"<div style='font-family: Arial, sans-serif; padding: 24px; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                    <h2 style='color: #2563eb;'>STAYLY - Xác nhận đặt phòng thành công</h2>
+                    <p>Xin chào <strong>{bookingModel.GuestName}</strong>,</p>
+                    <p>Đơn đặt phòng <strong>#{bookingModel.BookingId}</strong> tại <strong>{bookingModel.PropertyName}</strong> của bạn đã được xác nhận!</p>
+                    <div style='background-color: #eff6ff; border-radius: 8px; padding: 16px; margin: 16px 0; border: 1px solid #bfdbfe;'>
+                        <p style='margin: 4px 0;'><strong>Mã đơn:</strong> #{bookingModel.BookingId}</p>
+                        <p style='margin: 4px 0;'><strong>Cơ sở:</strong> {bookingModel.PropertyName}</p>
+                        <p style='margin: 4px 0;'><strong>Địa chỉ:</strong> {bookingModel.PropertyAddress ?? "Theo thỏa thuận"}</p>
+                        <p style='margin: 4px 0;'><strong>Phòng:</strong> {bookingModel.RoomNumbers ?? "Tất cả phòng đặt"}</p>
+                        <p style='margin: 4px 0;'><strong>Nhận phòng:</strong> {bookingModel.CheckIn:dd/MM/yyyy} (từ 14:00)</p>
+                        <p style='margin: 4px 0;'><strong>Trả phòng:</strong> {bookingModel.CheckOut:dd/MM/yyyy} (trước 12:00)</p>
+                        <p style='margin: 4px 0;'><strong>Số khách:</strong> {bookingModel.TotalGuests} người</p>
+                        <p style='margin: 4px 0;'><strong>Tổng thanh toán:</strong> <strong style='color: #10b981;'>{bookingModel.TotalAmount:N0} VNĐ</strong> ({bookingModel.PaymentStatus})</p>
+                    </div>
+                    {(string.IsNullOrWhiteSpace(bookingModel.OwnerPhone) ? "" : $"<p><strong>Liên hệ chủ nhà:</strong> {bookingModel.OwnerName} - {bookingModel.OwnerPhone}</p>")}
+                    <div style='text-align: center; margin: 24px 0;'>
+                        <a href='{webUrl}/Home/Trips' style='background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;'>Quản lý chuyến đi trên Stayly</a>
+                    </div>
+                    <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;'/>
+                    <p style='font-size: 12px; color: #94a3b8;'>Hỗ trợ khách hàng: {bookingModel.SupportEmail} | Stayly Homestay System</p>
+                </div>";
+            }
+            else if (model is API.DTOs.Email.RefundAcceptedEmailModel refAccModel)
+            {
+                bodyHtml = $@"<div style='font-family: Arial, sans-serif; padding: 24px; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                    <h2 style='color: #10b981;'>STAYLY - Hoàn tiền được chấp thuận</h2>
+                    <p>Xin chào <strong>{refAccModel.GuestName}</strong>,</p>
+                    <p>Yêu cầu hoàn tiền cho đơn đặt phòng <strong>#{refAccModel.BookingId}</strong> tại <strong>{refAccModel.PropertyName}</strong> đã được phê duyệt.</p>
+                    <div style='background-color: #f0fdf4; border-radius: 8px; padding: 16px; margin: 16px 0; border: 1px solid #bbf7d0; text-align: center;'>
+                        <p style='margin: 0; font-size: 14px; color: #15803d;'>Số tiền được hoàn trả:</p>
+                        <h3 style='margin: 8px 0; font-size: 28px; color: #15803d;'>{refAccModel.RefundAmount:N0} VNĐ</h3>
+                        <p style='margin: 0; font-size: 13px; color: #4b5563;'>Thời gian dự kiến nhận: <strong>{refAccModel.EstimatedDays}</strong></p>
+                    </div>
+                    <p><strong>Lý do hoàn:</strong> {refAccModel.Reason}</p>
+                    <p><strong>Ghi chú từ quản trị viên:</strong> {refAccModel.DecisionNote}</p>
+                    <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;'/>
+                    <p style='font-size: 12px; color: #94a3b8;'>Đội ngũ Chăm sóc khách hàng Stayly</p>
+                </div>";
+            }
+            else if (model is API.DTOs.Email.RefundDeniedEmailModel refDenModel)
+            {
+                bodyHtml = $@"<div style='font-family: Arial, sans-serif; padding: 24px; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px;'>
+                    <h2 style='color: #ef4444;'>STAYLY - Thông báo kết quả yêu cầu hoàn tiền</h2>
+                    <p>Xin chào <strong>{refDenModel.GuestName}</strong>,</p>
+                    <p>Yêu cầu hoàn tiền cho đơn đặt phòng <strong>#{refDenModel.BookingId}</strong> tại <strong>{refDenModel.PropertyName}</strong> đã được xem xét và không được chấp thuận.</p>
+                    <div style='background-color: #fef2f2; border-radius: 8px; padding: 16px; margin: 16px 0; border-left: 4px solid #ef4444;'>
+                        <p style='margin: 0; color: #991b1b;'><strong>Lý do từ chối:</strong> {refDenModel.DenialReason}</p>
+                        {(string.IsNullOrWhiteSpace(refDenModel.DecisionNote) ? "" : $"<p style='margin: 8px 0 0; color: #7f1d1d;'><strong>Ghi chú:</strong> {refDenModel.DecisionNote}</p>")}
+                    </div>
+                    <p style='font-size: 13px; color: #64748b;'>Nếu có thắc mắc thêm, vui lòng liên hệ email: {refDenModel.SupportEmail}</p>
+                    <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;'/>
+                    <p style='font-size: 12px; color: #94a3b8;'>Ban Quản trị Stayly</p>
+                </div>";
+            }
             else
             {
-                throw;
+                bodyHtml = $@"<div style='font-family: Arial, sans-serif; padding: 24px;'>
+                    <h2>Stayly - Thông báo</h2>
+                    <p>Email này được gửi tự động từ hệ thống Stayly.</p>
+                </div>";
             }
         }
 

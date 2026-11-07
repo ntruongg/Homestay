@@ -2370,7 +2370,7 @@
                 const isHotel = (data.type || '').toLowerCase() === 'hotel' || (data.type || '').toLowerCase() === 'khách sạn';
                 const isHomestay = !isHotel;
                 const typeBadge = document.getElementById('opdTypeBadge');
-                typeBadge.textContent = isHotel ? 'Khách sạn (Hotel)' : 'Homestay nguyên căn';
+                typeBadge.textContent = isHotel ? 'Khách sạn' : 'Homestay';
                 typeBadge.className = `badge rounded-pill px-3 py-1 fw-bold text-uppercase small ${isHomestay ? 'bg-info bg-opacity-25 text-primary' : 'bg-primary text-white'}`;
 
                 const statusBadge = document.getElementById('opdStatusBadge');

@@ -208,7 +208,7 @@
                                 <i class="bi bi-house-heart-fill me-1 small"></i>Homestay
                             </button>
                             <button type="button" class="filter-pill-btn" data-filter="type" data-value="Hotel" onclick="setTypeFilter(this, 'Hotel')">
-                                <i class="bi bi-building-fill me-1 small"></i>Khách sạn (Hotel)
+                                <i class="bi bi-building-fill me-1 small"></i>Khách sạn
                             </button>
                         </div>
                     </div>
@@ -1389,7 +1389,7 @@
             if (locInput) locInput.value = '';
 
             [document.getElementById('priceRangeSlider'), document.getElementById('priceRangeSliderModal')].forEach(s => { if (s) s.value = 5000000; });
-            [document.getElementById('maxPriceDisplay'), document.getElementById('maxPriceDisplayModal')].forEach(d => { if (d) d.textContent = 'Tất cả (Không giới hạn)'; });
+            [document.getElementById('maxPriceDisplay'), document.getElementById('maxPriceDisplayModal')].forEach(d => { if (d) d.textContent = 'Tất cả'; });
 
             document.querySelectorAll('[data-filter="price"]').forEach(b => b.classList.remove('active'));
             document.querySelector('[data-filter="price"][data-value="all"]')?.classList.add('active');

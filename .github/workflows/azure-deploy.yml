@@ -1,0 +1,59 @@
+name: Build and Deploy to Azure App Service
+
+on:
+  push:
+    branches:
+      - main
+      - ntruong
+  workflow_dispatch:
+
+jobs:
+  deploy-api:
+    name: Build & Deploy Backend API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build and Publish API
+        run: dotnet publish API/API.csproj -c Release -o ./publish-api
+
+      - name: Deploy to Azure API
+        uses: azure/webapps-deploy@v3
+        if: env.HAS_API_SECRET == 'true'
+        env:
+          HAS_API_SECRET: ${{ secrets.AZURE_WEBAPP_API_PUBLISH_PROFILE != '' }}
+        with:
+          app-name: 'stayly-api'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_API_PUBLISH_PROFILE }}
+          package: ./publish-api
+
+  deploy-web:
+    name: Build & Deploy Web Client
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build and Publish Web
+        run: dotnet publish Web/Web/Web.csproj -c Release -o ./publish-web
+
+      - name: Deploy to Azure Web
+        uses: azure/webapps-deploy@v3
+        if: env.HAS_WEB_SECRET == 'true'
+        env:
+          HAS_WEB_SECRET: ${{ secrets.AZURE_WEBAPP_WEB_PUBLISH_PROFILE != '' }}
+        with:
+          app-name: 'stayly-web'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_WEB_PUBLISH_PROFILE }}
+          package: ./publish-web

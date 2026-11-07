@@ -1378,7 +1378,7 @@ namespace HomestaySystem.Services
             if (string.IsNullOrWhiteSpace(url)) return string.Empty;
             if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                 return url;
-            return "http://localhost:5176" + (url.StartsWith("/") ? url : "/" + url);
+            return "https://stayly-api-eebmfxd8cphdcegm.eastasia-01.azurewebsites.net" + (url.StartsWith("/") ? url : "/" + url);
         }
 
         #region Internal API DTO Records

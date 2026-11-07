@@ -122,9 +122,10 @@ public sealed class DatabaseController(
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        if (!string.Equals(request.ConfirmDatabaseName?.Trim(), "HOMESTAY_DB", StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(request.ConfirmDatabaseName?.Trim(), "HOMESTAY_DB", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(request.ConfirmDatabaseName?.Trim(), "homestaydb", StringComparison.OrdinalIgnoreCase))
         {
-            return BadRequest(new { message = "Tên cơ sở dữ liệu xác nhận không chính xác. Vui lòng nhập đúng 'HOMESTAY_DB'." });
+            return BadRequest(new { message = "Tên cơ sở dữ liệu xác nhận không chính xác. Vui lòng nhập đúng 'HOMESTAY_DB' hoặc 'homestaydb'." });
         }
 
         var adminId = GetAccountId();
@@ -184,9 +185,10 @@ public sealed class DatabaseController(
             return BadRequest(new { message = "Tệp tải lên phải có định dạng .bak." });
         }
 
-        if (!string.Equals(confirmDatabaseName?.Trim(), "HOMESTAY_DB", StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(confirmDatabaseName?.Trim(), "HOMESTAY_DB", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(confirmDatabaseName?.Trim(), "homestaydb", StringComparison.OrdinalIgnoreCase))
         {
-            return BadRequest(new { message = "Tên cơ sở dữ liệu xác nhận không chính xác. Vui lòng nhập đúng 'HOMESTAY_DB'." });
+            return BadRequest(new { message = "Tên cơ sở dữ liệu xác nhận không chính xác. Vui lòng nhập đúng 'HOMESTAY_DB' hoặc 'homestaydb'." });
         }
 
         var adminId = GetAccountId();

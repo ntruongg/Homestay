@@ -641,9 +641,19 @@
                         </TextBox>
                     </StackPanel>
 
+                    <!-- Loading feedback bar khi đang từ chối người dùng -->
+                    <Border Grid.Row="3" Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1" CornerRadius="8" Padding="10,6" Margin="0,0,0,12"
+                            Visibility="{Binding DangTaiDuLieu, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <ProgressBar Width="80" Height="4" IsIndeterminate="True" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="⏳ Hệ thống đang cập nhật trạng thái người dùng..." FontSize="12" FontWeight="SemiBold" Foreground="#DC2626" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Nút thao tác xác nhận / hủy -->
                     <DockPanel Grid.Row="4" LastChildFill="False">
                         <Button DockPanel.Dock="Left" Command="{Binding HuyBoTuChoiCommand}" Content="Hủy bỏ" Background="#F1F5F9"
+                                IsEnabled="{Binding DangTaiDuLieu, Converter={StaticResource InverseBoolConverter}}"
                                 BorderThickness="0" Padding="20,9" FontSize="13" FontWeight="SemiBold" Cursor="Hand">
                             <Button.Resources>
                                 <Style TargetType="Border">
@@ -652,6 +662,7 @@
                             </Button.Resources>
                         </Button>
                         <Button DockPanel.Dock="Right" Command="{Binding XacNhanTuChoiCommand}" Content="Xác nhận từ chối tài khoản" Background="{StaticResource MauStaylyRed}"
+                                IsEnabled="{Binding DangTaiDuLieu, Converter={StaticResource InverseBoolConverter}}"
                                 Foreground="White" BorderThickness="0" Padding="22,9" FontSize="13" FontWeight="Bold" Cursor="Hand">
                             <Button.Resources>
                                 <Style TargetType="Border">
@@ -762,9 +773,19 @@
                                    FontSize="11.5" Foreground="#64748B" Margin="2,4,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
 
+                    <!-- Loading bar khi đang lưu thay đổi -->
+                    <Border Grid.Row="1" Background="#E0F2FE" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="8" Padding="10,6" Margin="0,0,0,10"
+                            VerticalAlignment="Bottom" Visibility="{Binding DangTaiDuLieu, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <ProgressBar Width="80" Height="4" IsIndeterminate="True" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="⏳ Đang đồng bộ cập nhật dữ liệu..." FontSize="12" FontWeight="SemiBold" Foreground="#0284C7" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Buttons -->
                     <DockPanel Grid.Row="2" LastChildFill="False">
                         <Button DockPanel.Dock="Left" Command="{Binding HuyDialogChinhSuaCommand}" Content="Hủy bỏ" Background="#F1F5F9"
+                                IsEnabled="{Binding DangTaiDuLieu, Converter={StaticResource InverseBoolConverter}}"
                                 BorderThickness="0" Padding="20,9" FontSize="13" FontWeight="SemiBold" Cursor="Hand">
                             <Button.Resources>
                                 <Style TargetType="Border">
@@ -773,6 +794,7 @@
                             </Button.Resources>
                         </Button>
                         <Button DockPanel.Dock="Right" Command="{Binding XacNhanChinhSuaCommand}" Content="💾 Lưu thay đổi" Background="{StaticResource MauStaylyPrimary}"
+                                IsEnabled="{Binding DangTaiDuLieu, Converter={StaticResource InverseBoolConverter}}"
                                 Foreground="White" BorderThickness="0" Padding="22,9" FontSize="13" FontWeight="Bold" Cursor="Hand">
                             <Button.Resources>
                                 <Style TargetType="Border">
@@ -899,9 +921,19 @@
                         </Grid>
                     </StackPanel>
 
+                    <!-- Loading bar khi đang thêm người dùng mới -->
+                    <Border Grid.Row="1" Background="#ECFDF5" BorderBrush="#A7F3D0" BorderThickness="1" CornerRadius="8" Padding="10,6" Margin="0,0,0,10"
+                            VerticalAlignment="Bottom" Visibility="{Binding DangTaiDuLieu, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <ProgressBar Width="80" Height="4" IsIndeterminate="True" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="⏳ Đang khởi tạo tài khoản người dùng..." FontSize="12" FontWeight="SemiBold" Foreground="#047857" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Buttons -->
                     <DockPanel Grid.Row="2" LastChildFill="False">
                         <Button DockPanel.Dock="Left" Command="{Binding HuyDialogThemMoiCommand}" Content="Hủy bỏ" Background="#F1F5F9"
+                                IsEnabled="{Binding DangTaiDuLieu, Converter={StaticResource InverseBoolConverter}}"
                                 BorderThickness="0" Padding="20,9" FontSize="13" FontWeight="SemiBold" Cursor="Hand">
                             <Button.Resources>
                                 <Style TargetType="Border">
@@ -910,6 +942,7 @@
                             </Button.Resources>
                         </Button>
                         <Button DockPanel.Dock="Right" Command="{Binding XacNhanThemMoiCommand}" Content="✅ Lưu &amp; Kích hoạt" Background="{StaticResource MauStaylyGreen}"
+                                IsEnabled="{Binding DangTaiDuLieu, Converter={StaticResource InverseBoolConverter}}"
                                 Foreground="White" BorderThickness="0" Padding="22,9" FontSize="13" FontWeight="Bold" Cursor="Hand">
                             <Button.Resources>
                                 <Style TargetType="Border">

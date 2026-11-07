@@ -441,8 +441,18 @@
                                  BorderThickness="0" Background="Transparent" FontSize="13.5" Foreground="{StaticResource MauChuChinh}"/>
                     </Border>
 
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+                    <!-- Thanh loading trạng thái khi đang quyết toán -->
+                    <Border Background="#E0F2FE" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="8" Padding="12,7" Margin="0,12,0,0"
+                            Visibility="{Binding DangTaiDuLieu, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <ProgressBar Width="90" Height="4" IsIndeterminate="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="⏳ Hệ thống đang ghi nhận quyết toán dòng tiền &amp; cập nhật ví..." FontSize="12.5" FontWeight="SemiBold" Foreground="#0284C7" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
                         <Button Content="Hủy bỏ" Command="{Binding HuyDialogQuyetToanCommand}" Padding="20,9" Margin="0,0,12,0"
+                                IsEnabled="{Binding DangTaiDuLieu, Converter={StaticResource InverseBoolConverter}}"
                                 Background="#F1F5F9" Foreground="#64748B" FontWeight="SemiBold" FontSize="13" BorderThickness="0" Cursor="Hand" MinWidth="100">
                             <Button.Resources>
                                 <Style TargetType="Border">
@@ -451,6 +461,7 @@
                             </Button.Resources>
                         </Button>
                         <Button Content="✔ Xác nhận hoàn tất quyết toán" Command="{Binding XacNhanQuyetToanCommand}" Padding="22,9"
+                                IsEnabled="{Binding DangTaiDuLieu, Converter={StaticResource InverseBoolConverter}}"
                                 Background="#0E9F6E" Foreground="White" FontWeight="Bold" FontSize="13" BorderThickness="0" Cursor="Hand" MinWidth="220">
                             <Button.Resources>
                                 <Style TargetType="Border">

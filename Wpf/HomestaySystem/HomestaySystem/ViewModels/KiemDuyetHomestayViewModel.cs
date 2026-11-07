@@ -273,6 +273,15 @@ namespace HomestaySystem.ViewModels
                 var chiTiet = await _adminService.LayChiTietCoSoAsync(maCoSo);
                 if (chiTiet != null && CoSoDangChon?.MaCoSo == maCoSo)
                 {
+                    // Cập nhật đầy đủ hồ sơ pháp lý & danh tính chủ nhà
+                    CoSoDangChon.TenChuHome = chiTiet.TenChuHome;
+                    CoSoDangChon.SoDienThoaiChuHome = chiTiet.SoDienThoaiChuHome;
+                    CoSoDangChon.EmailChuHome = chiTiet.EmailChuHome;
+                    CoSoDangChon.SoCCCDChuHome = chiTiet.SoCCCDChuHome;
+                    CoSoDangChon.TenNganHangChuHome = chiTiet.TenNganHangChuHome;
+                    CoSoDangChon.SoTaiKhoanChuHome = chiTiet.SoTaiKhoanChuHome;
+                    CoSoDangChon.ChuTaiKhoanChuHome = chiTiet.ChuTaiKhoanChuHome;
+
                     CoSoDangChon.HinhAnhGiayPhepKinhDoanh = chiTiet.HinhAnhGiayPhepKinhDoanh;
                     CoSoDangChon.HinhAnhPCCC = chiTiet.HinhAnhPCCC;
                     CoSoDangChon.HinhAnhANTT = chiTiet.HinhAnhANTT;
@@ -306,18 +315,26 @@ namespace HomestaySystem.ViewModels
 
             if (result == MessageBoxResult.Yes)
             {
-                DangTaiDuLieu = true;
-                bool thanhCong = await _adminService.PheDuyetCoSoAsync(coSo.MaCoSo, "Admin Tổng");
-                DangTaiDuLieu = false;
-
-                if (thanhCong)
+                try
                 {
-                    // Xóa khỏi danh sách chờ duyệt và đóng khung thẩm định để hiển thị danh sách rõ ràng
-                    DanhSachCoSo.Remove(coSo);
-                    CoSoDangChon = null;
-                    OnPropertyChanged(nameof(SoLuongChoDuyet));
-                    OnPropertyChanged(nameof(DanhSachChoDuyet));
-                    MessageBox.Show($"Đã phê duyệt thành công cơ sở '{coSo.TenCoSo}'!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                    DangTaiDuLieu = true;
+                    Mouse.OverrideCursor = Cursors.Wait;
+                    bool thanhCong = await _adminService.PheDuyetCoSoAsync(coSo.MaCoSo, "Admin Tổng");
+
+                    if (thanhCong)
+                    {
+                        // Xóa khỏi danh sách chờ duyệt và đóng khung thẩm định để hiển thị danh sách rõ ràng
+                        DanhSachCoSo.Remove(coSo);
+                        CoSoDangChon = null;
+                        OnPropertyChanged(nameof(SoLuongChoDuyet));
+                        OnPropertyChanged(nameof(DanhSachChoDuyet));
+                        MessageBox.Show($"Đã phê duyệt thành công cơ sở '{coSo.TenCoSo}'!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+                finally
+                {
+                    DangTaiDuLieu = false;
+                    Mouse.OverrideCursor = null;
                 }
             }
         }
@@ -364,20 +381,28 @@ namespace HomestaySystem.ViewModels
             }
 
             var coSo = CoSoDangChon;
-            DangTaiDuLieu = true;
-            bool thanhCong = await _adminService.TuChoiCoSoAsync(coSo.MaCoSo, LyDoTuChoi.Trim());
-            DangTaiDuLieu = false;
-
-            if (thanhCong)
+            try
             {
-                HienThiDialogTuChoi = false;
-                // Xóa khỏi danh sách chờ duyệt và đóng khung thẩm định để danh sách bung rộng rõ ràng
-                DanhSachCoSo.Remove(coSo);
-                CoSoDangChon = null;
-                LyDoTuChoi = string.Empty;
-                OnPropertyChanged(nameof(SoLuongChoDuyet));
-                OnPropertyChanged(nameof(DanhSachChoDuyet));
-                MessageBox.Show($"Đã gửi thông báo từ chối đến Chủ home '{coSo.TenChuHome}'.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                DangTaiDuLieu = true;
+                Mouse.OverrideCursor = Cursors.Wait;
+                bool thanhCong = await _adminService.TuChoiCoSoAsync(coSo.MaCoSo, LyDoTuChoi.Trim());
+
+                if (thanhCong)
+                {
+                    HienThiDialogTuChoi = false;
+                    // Xóa khỏi danh sách chờ duyệt và đóng khung thẩm định để danh sách bung rộng rõ ràng
+                    DanhSachCoSo.Remove(coSo);
+                    CoSoDangChon = null;
+                    LyDoTuChoi = string.Empty;
+                    OnPropertyChanged(nameof(SoLuongChoDuyet));
+                    OnPropertyChanged(nameof(DanhSachChoDuyet));
+                    MessageBox.Show($"Đã gửi thông báo từ chối đến Chủ home '{coSo.TenChuHome}'.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            finally
+            {
+                DangTaiDuLieu = false;
+                Mouse.OverrideCursor = null;
             }
         }
 

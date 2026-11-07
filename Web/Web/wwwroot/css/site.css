@@ -2129,6 +2129,13 @@ a.button:hover {
     border: 1px solid #fecaca;
 }
 
+.status-unavailable,
+.status-unavailabe {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
 /* Filter Bar Pill (Tabs 2 & 3 Top Row) */
 .filter-bar-pill-card {
     background: #ffffff;

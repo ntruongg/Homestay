@@ -355,9 +355,26 @@
                                     <div class="property-info-container">
                                         <div>
                                             <div class="d-flex align-items-center justify-content-between mb-2">
-                                                <span class="property-status-pill @(isApproved ? "status-approved" : isPending ? "status-pending" : "status-rejected")">
-                                                    <i class="bi @(isApproved ? "bi-check-circle-fill" : isPending ? "bi-clock-fill" : "bi-x-circle-fill")"></i>
-                                                    @(isApproved ? "Đang hoạt động" : isPending ? "Đang chờ duyệt" : "Bị từ chối")
+                                                <span class="property-status-pill @(isApproved ? (prop.IsActive ? "status-approved" : "status-unavailable") : isPending ? "status-pending" : "status-rejected")" id="propStatusBadge_@prop.Id">
+                                                    @if (isApproved)
+                                                    {
+                                                        if (prop.IsActive)
+                                                        {
+                                                            <i class="bi bi-check-circle-fill"></i> <span>Đang hoạt động</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="bi bi-pause-circle-fill"></i> <span>Tạm dừng hoạt động</span>
+                                                        }
+                                                    }
+                                                    else if (isPending)
+                                                    {
+                                                        <i class="bi bi-clock-fill"></i> <span>Đang chờ duyệt</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="bi bi-x-circle-fill"></i> <span>Bị từ chối</span>
+                                                    }
                                                 </span>
                                                 <span class="badge bg-light text-primary rounded-pill px-3 py-1 fw-bold text-uppercase small">
                                                     @(prop.Type ?? "Homestay")
@@ -396,8 +413,11 @@
                                                 <span class="text-muted small">Mã cơ sở: <strong>#CS-@prop.Id</strong></span>
                                                 @if (isApproved)
                                                 {
-                                                    <div class="form-check form-switch m-0" title="Bật/tắt trạng thái hoạt động">
-                                                        <input class="form-check-input" type="checkbox" role="switch" id="propToggle_@prop.Id" @(prop.IsActive ? "checked" : "") onchange="togglePropertyStatus(@prop.Id, this.checked)">
+                                                    <div class="form-check form-switch m-0 d-flex align-items-center gap-2" title="@(prop.IsActive ? "Cơ sở đang mở đón khách. Gạt để tạm dừng." : "Cơ sở đang tạm dừng hoạt động. Gạt để mở lại.")">
+                                                        <input class="form-check-input m-0" type="checkbox" role="switch" id="propToggle_@prop.Id" @(prop.IsActive ? "checked" : "") onchange="togglePropertyStatus(@prop.Id, this.checked)" style="cursor: pointer;">
+                                                        <label class="form-check-label small text-muted user-select-none" for="propToggle_@prop.Id" id="propToggleLabel_@prop.Id" style="cursor: pointer;">
+                                                            @(prop.IsActive ? "Đang đón khách" : "Tạm dừng")
+                                                        </label>
                                                     </div>
                                                 }
                                             </div>
@@ -2318,6 +2338,10 @@
         }
 
         async function togglePropertyStatus(propId, isActive) {
+            const toggle = document.getElementById(`propToggle_${propId}`);
+            const label = document.getElementById(`propToggleLabel_${propId}`);
+            const badge = document.getElementById(`propStatusBadge_${propId}`);
+
             try {
                 const res = await fetch(`/Home/TogglePropertyActive?id=${propId}`, {
                     method: 'PUT'
@@ -2327,17 +2351,36 @@
                     const text = await res.text();
                     alert("Lỗi: " + text);
                     // Revert UI toggle
-                    const toggle = document.getElementById(`propToggle_${propId}`);
                     if (toggle) toggle.checked = !isActive;
                     return;
                 }
                 
                 const data = await res.json();
-                alert(data.message);
+                const newIsActive = (data.isActive !== undefined && data.isActive !== null) ? data.isActive : isActive;
+
+                // Cập nhật thẻ trạng thái hoạt động trên card
+                if (badge) {
+                    if (newIsActive) {
+                        badge.className = 'property-status-pill status-approved';
+                        badge.innerHTML = '<i class="bi bi-check-circle-fill"></i> <span>Đang hoạt động</span>';
+                    } else {
+                        badge.className = 'property-status-pill status-unavailable';
+                        badge.innerHTML = '<i class="bi bi-pause-circle-fill"></i> <span>Tạm dừng hoạt động</span>';
+                    }
+                }
+
+                // Cập nhật nhãn bên cạnh nút gạt
+                if (label) {
+                    label.textContent = newIsActive ? 'Đang đón khách' : 'Tạm dừng';
+                }
+                if (toggle && toggle.parentElement) {
+                    toggle.parentElement.title = newIsActive 
+                        ? 'Cơ sở đang mở đón khách. Gạt để tạm dừng.' 
+                        : 'Cơ sở đang tạm dừng hoạt động. Gạt để mở lại.';
+                }
             } catch (err) {
                 console.error(err);
                 alert("Lỗi hệ thống khi đổi trạng thái cơ sở.");
-                const toggle = document.getElementById(`propToggle_${propId}`);
                 if (toggle) toggle.checked = !isActive;
             }
         }
@@ -2374,6 +2417,24 @@
                 typeBadge.className = `badge rounded-pill px-3 py-1 fw-bold text-uppercase small ${isHomestay ? 'bg-info bg-opacity-25 text-primary' : 'bg-primary text-white'}`;
 
                 const statusBadge = document.getElementById('opdStatusBadge');
+                if (statusBadge) {
+                    if (status === 'pending') {
+                        statusBadge.className = 'property-status-pill status-pending';
+                        statusBadge.innerHTML = '<i class="bi bi-clock-fill"></i> <span>Đang chờ duyệt</span>';
+                    } else if (status === 'rejected') {
+                        statusBadge.className = 'property-status-pill status-rejected';
+                        statusBadge.innerHTML = '<i class="bi bi-x-circle-fill"></i> <span>Bị từ chối</span>';
+                    } else {
+                        if (data.isActive !== false) {
+                            statusBadge.className = 'property-status-pill status-approved';
+                            statusBadge.innerHTML = '<i class="bi bi-check-circle-fill"></i> <span>Đang hoạt động</span>';
+                        } else {
+                            statusBadge.className = 'property-status-pill status-unavailable';
+                            statusBadge.innerHTML = '<i class="bi bi-pause-circle-fill"></i> <span>Tạm dừng hoạt động</span>';
+                        }
+                    }
+                }
+
                 const toggleEditBtn = document.getElementById('opdEditToggleBtn');
 
                 let html = '';

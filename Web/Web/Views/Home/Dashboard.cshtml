@@ -1596,6 +1596,19 @@
                                 </div>
                             </div>
 
+                            <!-- 6. Quản lý hình ảnh khuôn viên cơ sở -->
+                            <div class="p-3 bg-light rounded-4 mb-3">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <div>
+                                        <h6 class="fw-bold text-navy small mb-1"><i class="bi bi-images text-primary me-1"></i> 6. Hình ảnh khuôn viên cơ sở</h6>
+                                        <small class="text-muted">Xem, thêm ảnh mới hoặc xóa bớt ảnh khuôn viên của cơ sở này.</small>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" onclick="triggerEditPropertyPhotosFromModal()">
+                                        <i class="bi bi-pencil-square me-1"></i> Quản lý &amp; Chỉnh sửa ảnh
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="d-flex justify-content-end gap-2 pt-2">
                                 <button type="button" class="btn btn-outline-secondary rounded-pill px-4" onclick="toggleOwnerPropertyEditMode(false)">Hủy chỉnh sửa</button>
                                 <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
@@ -1949,6 +1962,80 @@
                             <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnSaveEditRoom">
                                 <span class="spinner-border spinner-border-sm me-1 d-none" id="editRoomSpinner"></span>
                                 <i class="bi bi-check-lg me-1"></i> Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Chỉnh sửa ảnh cơ sở lưu trú (Edit Property Photos Modal) -->
+    <div class="modal fade" id="editPropertyPhotosModal" tabindex="-1" aria-labelledby="editPropertyPhotosModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content stayly-modal">
+                <div class="modal-header-accent"></div>
+                <div class="modal-body stayly-modal-body p-4 position-relative">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="brand-icon" style="width: 36px; height: 36px; font-size: 1.1rem;"><i class="bi bi-images"></i></span>
+                        <div>
+                            <h4 class="fs-5 fw-bold text-navy mb-0" id="editPropertyPhotosModalLabel">Chỉnh sửa ảnh khuôn viên cơ sở</h4>
+                            <small class="text-muted" id="editPropertyPhotosSubTitle">Cơ sở lưu trú</small>
+                        </div>
+                    </div>
+
+                    <form id="editPropertyPhotosForm" onsubmit="submitEditPropertyPhotos(event)">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="PropertyId" id="eppPropertyId" value="" />
+
+                        <!-- Khung ảnh hiện tại của cơ sở -->
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <label class="form-label small fw-bold mb-0">
+                                    <i class="bi bi-collection-fill text-primary me-1"></i> Ảnh hiện có trên hệ thống
+                                </label>
+                                <span class="badge bg-light text-primary border rounded-pill px-2.5 py-1 small" id="eppPhotoCount">0 ảnh</span>
+                            </div>
+                            <div class="text-muted small mb-2" style="font-size: 0.75rem;">
+                                <i class="bi bi-info-circle me-1"></i>Bấm nút <span class="text-danger fw-bold"><i class="bi bi-x-circle-fill"></i></span> trên ảnh để gỡ bỏ khỏi cơ sở:
+                            </div>
+                            <div id="eppExistingPhotosList" class="d-flex gap-2 flex-wrap p-2.5 bg-light rounded-4 border" style="max-height: 240px; overflow-y: auto;"></div>
+                        </div>
+
+                        <!-- Hidden inputs for existing photos retained -->
+                        <div id="eppExistingPhotosInputs"></div>
+
+                        <!-- Khu vực tải thêm ảnh mới -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold mb-1">
+                                <i class="bi bi-cloud-arrow-up-fill text-primary me-1"></i> Tải thêm ảnh mới
+                            </label>
+                            <div class="upload-zone-wrapper p-3 border rounded-4 text-center bg-white">
+                                <input type="file" name="PhotoFiles" id="eppPhotoFiles" class="d-none" multiple accept="image/*" onchange="handleEppNewPhotos(event)" />
+                                <label for="eppPhotoFiles" class="btn btn-sm btn-outline-primary rounded-pill px-3 cursor-pointer mb-1">
+                                    <i class="bi bi-plus-circle me-1"></i> Chọn tệp ảnh từ máy tính
+                                </label>
+                                <div class="text-muted small" style="font-size: 0.72rem;">Hỗ trợ ảnh định dạng JPG, PNG, WEBP (có thể chọn nhiều ảnh cùng lúc)</div>
+                            </div>
+
+                            <!-- Preview ảnh mới chọn -->
+                            <div id="eppNewPhotosPreviewWrapper" class="mt-2 d-none">
+                                <div class="text-success small mb-1 fw-semibold" style="font-size: 0.75rem;">
+                                    <i class="bi bi-check-circle me-1"></i>Ảnh mới chọn sẵn sàng tải lên Cloud:
+                                </div>
+                                <div id="eppNewPhotosPreview" class="d-flex gap-2 flex-wrap p-2 bg-success bg-opacity-10 rounded-4 border border-success-subtle" style="max-height: 180px; overflow-y: auto;"></div>
+                            </div>
+                        </div>
+
+                        <div id="eppAlert" class="alert alert-danger d-none py-2 px-3 small rounded-3 mb-3"></div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnSavePropertyPhotos">
+                                <span class="spinner-border spinner-border-sm me-1 d-none" id="eppSpinner"></span>
+                                <i class="bi bi-check-lg me-1"></i> Lưu thay đổi ảnh
                             </button>
                         </div>
                     </form>
@@ -2503,16 +2590,29 @@
                     `;
                 }
 
-                if (data.photos && data.photos.length > 0) {
-                    html += `
-                        <div class="mb-3">
-                            <h6 class="fw-bold text-navy small mb-2"><i class="bi bi-images text-primary me-1"></i> Hình ảnh khuôn viên (${data.photos.length}):</h6>
-                            <div class="d-flex gap-2 overflow-auto pb-2">
+                // KHỐI HÌNH ẢNH KHUÔN VIÊN
+                html += `
+                    <div class="mb-3 p-3 bg-light rounded-4 border">
+                        <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                            <h6 class="fw-bold text-navy small mb-0">
+                                <i class="bi bi-images text-primary me-1"></i> Hình ảnh khuôn viên cơ sở (${(data.photos && data.photos.length) ? data.photos.length : 0})
+                            </h6>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold shadow-xs" onclick="openEditPropertyPhotosModal(${data.id}, '${escapeJs(data.name)}')">
+                                <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa ảnh cơ sở
+                            </button>
+                        </div>
+                        ${(data.photos && data.photos.length > 0) ? `
+                            <div class="d-flex gap-2 overflow-auto pb-1" id="opdPhotosContainer">
                                 ${data.photos.map(p => `<img src="${p}" style="width: 130px; height: 90px; object-fit: cover; border-radius: 12px; flex-shrink: 0;" />`).join('')}
                             </div>
-                        </div>
-                    `;
-                }
+                        ` : `
+                            <div class="text-muted small py-2 text-center" id="opdPhotosContainer">
+                                <i class="bi bi-image text-secondary me-1"></i> Chưa có ảnh khuôn viên cho cơ sở này.
+                                <button type="button" class="btn btn-link btn-sm p-0 ms-1 fw-bold text-decoration-underline" onclick="openEditPropertyPhotosModal(${data.id}, '${escapeJs(data.name)}')">Thêm ảnh ngay</button>
+                            </div>
+                        `}
+                    </div>
+                `;
 
                 // KHỐI 3: QUẢN LÝ PHÒNG (ROOMS)
                 const rooms = data.rooms || [];
@@ -2637,11 +2737,16 @@
                         <button type="button" class="btn btn-sm btn-link text-muted p-0" onclick="viewApprovalHistory(${data.id}, '${escapeJs(data.name)}')">
                             <i class="bi bi-clock-history me-1"></i> Xem lịch sử thẩm định của cơ sở này
                         </button>
-                        ${status === 'approved' ? `
-                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="toggleOwnerPropertyEditMode(true)">
-                                <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa thông tin cơ sở này
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" onclick="openEditPropertyPhotosModal(${data.id}, '${escapeJs(data.name)}')">
+                                <i class="bi bi-images me-1"></i> Chỉnh sửa ảnh cơ sở
                             </button>
-                        ` : ''}
+                            ${status === 'approved' ? `
+                                <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="toggleOwnerPropertyEditMode(true)">
+                                    <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa thông tin cơ sở này
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
                 `;
 
@@ -4372,6 +4477,167 @@
             }
         }
 
+        // ==================== EDIT PROPERTY PHOTOS MODAL LOGIC ====================
+        let eppCurrentExistingPhotos = [];
+        let eppCurrentPropertyId = 0;
+
+        function openEditPropertyPhotosModal(propId, propName) {
+            eppCurrentPropertyId = propId;
+            document.getElementById('eppPropertyId').value = propId;
+            document.getElementById('editPropertyPhotosSubTitle').textContent = propName || ('Cơ sở #' + propId);
+
+            // Lấy danh sách ảnh hiện tại từ currentOpdData
+            if (currentOpdData && currentOpdData.id === propId && Array.isArray(currentOpdData.photos)) {
+                eppCurrentExistingPhotos = [...currentOpdData.photos];
+            } else {
+                eppCurrentExistingPhotos = [];
+            }
+            renderEppExistingPhotos();
+
+            // Reset file input & previews
+            const fileInput = document.getElementById('eppPhotoFiles');
+            if (fileInput) fileInput.value = '';
+            const previewWrapper = document.getElementById('eppNewPhotosPreviewWrapper');
+            const previewContainer = document.getElementById('eppNewPhotosPreview');
+            if (previewWrapper) previewWrapper.classList.add('d-none');
+            if (previewContainer) previewContainer.innerHTML = '';
+
+            document.getElementById('eppAlert').classList.add('d-none');
+
+            const modal = new bootstrap.Modal(document.getElementById('editPropertyPhotosModal'));
+            modal.show();
+        }
+
+        function triggerEditPropertyPhotosFromModal() {
+            if (!currentOpdData) return;
+            openEditPropertyPhotosModal(currentOpdData.id, currentOpdData.name);
+        }
+
+        function renderEppExistingPhotos() {
+            const listEl = document.getElementById('eppExistingPhotosList');
+            const inputsEl = document.getElementById('eppExistingPhotosInputs');
+            const countEl = document.getElementById('eppPhotoCount');
+            if (!listEl || !inputsEl) return;
+
+            listEl.innerHTML = '';
+            inputsEl.innerHTML = '';
+
+            if (eppCurrentExistingPhotos.length === 0) {
+                listEl.innerHTML = '<div class="text-muted small py-2 w-100 text-center"><i class="bi bi-image text-secondary me-1"></i>Chưa có ảnh khuôn viên. Hãy bấm tải ảnh phía dưới!</div>';
+            } else {
+                eppCurrentExistingPhotos.forEach((url, idx) => {
+                    const item = document.createElement('div');
+                    item.className = 'position-relative d-inline-block rounded-3 overflow-hidden border shadow-xs';
+                    item.style = 'width: 88px; height: 68px; flex-shrink: 0;';
+                    item.innerHTML = `
+                        <img src="${url}" class="w-100 h-100" style="object-fit: cover;" alt="Photo ${idx+1}" />
+                        <button type="button" class="btn btn-danger btn-sm rounded-circle position-absolute top-0 end-0 m-1 p-0 d-flex align-items-center justify-content-center shadow-sm" style="width: 22px; height: 22px; font-size: 0.72rem; line-height: 1;" onclick="removeEppExistingPhoto(${idx})" title="Gỡ ảnh này">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    `;
+                    listEl.appendChild(item);
+
+                    const hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'ExistingPhotoUrls';
+                    hidden.value = url;
+                    inputsEl.appendChild(hidden);
+                });
+            }
+
+            if (countEl) {
+                countEl.textContent = `${eppCurrentExistingPhotos.length} ảnh`;
+            }
+        }
+
+        function removeEppExistingPhoto(idx) {
+            if (idx >= 0 && idx < eppCurrentExistingPhotos.length) {
+                eppCurrentExistingPhotos.splice(idx, 1);
+                renderEppExistingPhotos();
+            }
+        }
+
+        function handleEppNewPhotos(e) {
+            const files = e.target.files;
+            const previewWrapper = document.getElementById('eppNewPhotosPreviewWrapper');
+            const previewContainer = document.getElementById('eppNewPhotosPreview');
+            if (!previewWrapper || !previewContainer) return;
+
+            previewContainer.innerHTML = '';
+            if (!files || files.length === 0) {
+                previewWrapper.classList.add('d-none');
+                return;
+            }
+
+            previewWrapper.classList.remove('d-none');
+            Array.from(files).forEach((file, i) => {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const card = document.createElement('div');
+                    card.className = 'position-relative d-inline-block rounded-3 overflow-hidden border border-success shadow-xs';
+                    card.style = 'width: 80px; height: 62px; flex-shrink: 0;';
+                    card.innerHTML = `
+                        <img src="${evt.target.result}" class="w-100 h-100" style="object-fit: cover;" alt="New preview ${i+1}" />
+                        <span class="badge bg-success position-absolute bottom-0 start-0 m-1 px-1 py-0.5" style="font-size: 0.6rem;">Mới</span>
+                    `;
+                    previewContainer.appendChild(card);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function submitEditPropertyPhotos(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSavePropertyPhotos');
+            const spinner = document.getElementById('eppSpinner');
+            const alertEl = document.getElementById('eppAlert');
+
+            btn.disabled = true;
+            if (spinner) spinner.classList.remove('d-none');
+            alertEl.classList.add('d-none');
+
+            try {
+                const form = document.getElementById('editPropertyPhotosForm');
+                const formData = new FormData(form);
+
+                const res = await fetch('/Home/UpdatePropertyPhotos', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Cập nhật ảnh cơ sở thất bại.');
+                }
+
+                // Cập nhật mảng ảnh trong currentOpdData
+                if (currentOpdData && currentOpdData.id === eppCurrentPropertyId) {
+                    currentOpdData.photos = data.photoUrls || [];
+                }
+
+                // Đóng modal sửa ảnh
+                const modalEl = document.getElementById('editPropertyPhotosModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+
+                // Hiển thị toast thông báo thành công
+                showNotificationToast(data.message || 'Cập nhật ảnh khuôn viên thành công!', 'success');
+
+                // Tải lại chi tiết cơ sở ngay lập tức
+                await openOwnerPropertyDetails(eppCurrentPropertyId);
+            } catch (err) {
+                console.error(err);
+                alertEl.textContent = err.message || 'Lỗi hệ thống khi cập nhật ảnh cơ sở.';
+                alertEl.classList.remove('d-none');
+            } finally {
+                btn.disabled = false;
+                if (spinner) spinner.classList.add('d-none');
+            }
+        }
+
         function showNotificationToast(message, type = 'success') {
             const container = document.getElementById('dashboardToastContainer');
             if (!container) return;
@@ -4400,6 +4666,16 @@
             const editModalEl = document.getElementById('editRoomModal');
             if (editModalEl) {
                 editModalEl.addEventListener('hidden.bs.modal', function () {
+                    const opdModalEl = document.getElementById('ownerPropertyDetailsModal');
+                    if (opdModalEl && opdModalEl.classList.contains('show')) {
+                        document.body.classList.add('modal-open');
+                    }
+                });
+            }
+
+            const eppModalEl = document.getElementById('editPropertyPhotosModal');
+            if (eppModalEl) {
+                eppModalEl.addEventListener('hidden.bs.modal', function () {
                     const opdModalEl = document.getElementById('ownerPropertyDetailsModal');
                     if (opdModalEl && opdModalEl.classList.contains('show')) {
                         document.body.classList.add('modal-open');

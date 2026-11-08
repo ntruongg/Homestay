@@ -1,24 +1,15 @@
 @echo off
-chcp 65001 >nul
 echo =========================================================================
-echo STAYLY - DỌN DẸP CÁC THƯ MỤC TẠM (BIN, OBJ, .VS) ĐỂ NÉN NỘP ĐỒ ÁN
+echo STAYLY - DANG DON DEP BIN, OBJ, .VS, PUBLISH DE NEN NOP PROJECT
 echo =========================================================================
 echo.
-echo Đang tiến hành dọn dẹp các thư mục bin, obj, .vs trong toàn bộ solution...
-
-cd /d "%~dp0\.."
-
-for /d /r . %%d in (bin,obj,.vs) do (
-    if exist "%%d" (
-        echo - Đang xóa: %%d
-        rd /s /q "%%d" 2>nul
-    )
-)
-
+echo Vui long dam bao ban da DONG Visual Studio, VS Code hoac tien trinh .NET dang chay...
+echo.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-ChildItem -Path '%~dp0..' -Include bin, obj, .vs, publish -Recurse -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue; Write-Host '-> Da xoa sach tat ca thu muc bin, obj, .vs, publish thanh cong!' -ForegroundColor Green"
 echo.
 echo =========================================================================
-echo ĐÃ DỌN DẸP HOÀN TẤT!
-echo Thư mục dự án hiện đã siêu nhẹ và sạch sẽ, sẵn sàng nén thành file .ZIP để nộp.
+echo HOAN TAT! Thu muc du an da cuc ky nhe va sach se.
+echo Ban co the chuot phai vao thu muc Homestay de nen thanh file .zip!
 echo =========================================================================
 echo.
 pause

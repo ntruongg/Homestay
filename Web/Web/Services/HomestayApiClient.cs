@@ -691,7 +691,8 @@ public sealed class HomestayApiClient(HttpClient http)
             input.HomestayAdultCapacity,
             input.HomestayChildCapacity,
             input.HomestayRoomTypeId,
-            input.Resubmit
+            input.Resubmit,
+            input.PhotoUrls
         };
         using var request = CreateAuthorizedRequest(HttpMethod.Put, $"properties/{input.Id}", token);
         request.Content = JsonContent.Create(body);
@@ -703,6 +704,31 @@ public sealed class HomestayApiClient(HttpClient http)
             return (false, string.IsNullOrWhiteSpace(err) ? "Could not update property." : err);
         }
         return (true, null);
+    }
+
+    public async Task<(bool Success, string? Error)> UpdatePropertyPhotosAsync(
+        int propertyId,
+        List<string> photoUrls,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = CreateAuthorizedRequest(HttpMethod.Put, $"properties/{propertyId}/photos", token);
+            request.Content = JsonContent.Create(new { PhotoUrls = photoUrls });
+
+            using var response = await http.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                return (false, string.IsNullOrWhiteSpace(err) ? "Không thể cập nhật ảnh cơ sở lưu trú." : err);
+            }
+            return (true, null);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
     }
 
     public async Task<(bool Success, string? Error)> DeletePropertyAsync(

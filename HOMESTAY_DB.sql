@@ -1,16 +1,34 @@
 -- =========================================================================
--- DATABASE: HOMESTAY_DB (BẢN CHUẨN HÓA V2 - DỮ LIỆU ĐẦY ĐỦ 55+ KHÁCH SẠN TRAVELOKA)
--- HỖ TRỢ CHẠY 1 LẦN DUY NHẤT (F5) TRÊN CẢ AZURE SQL DATABASE VÀ LOCAL SQL SERVER
+-- DATABASE: HOMESTAY_DB (DỰ ÁN STAYLY - NỀN TẢNG ĐẶT PHÒNG & QUẢN TRỊ HOMESTAY)
+-- BẢN CHUẨN HÓA V2 - DỮ LIỆU ĐẦY ĐỦ 55+ KHÁCH SẠN VÀ HOMESTAY CAO CẤP
+-- HỖ TRỢ CHẠY 1 LẦN DUY NHẤT (F5) TRÊN CẢ LOCAL SQL SERVER VÀ AZURE SQL DATABASE
 -- =========================================================================
--- HƯỚNG DẪN CHẠY:
--- 1. Trong SSMS, kết nối tới Azure SQL Server (hoặc Localhost)
--- 2. Chọn Database là: HOMESTAY_DB (ở dropdown database trên thanh công cụ)
--- 3. Nhấn F5 (hoặc nút Execute) để chạy 1 lần.
+-- HƯỚNG DẪN KHỞI TẠO CSDL:
+-- 1. Mở SQL Server Management Studio (SSMS) hoặc Azure Data Studio.
+-- 2. Kết nối tới máy chủ SQL Server của bạn (Localhost hoặc Azure SQL).
+-- 3. Mở tệp HOMESTAY_DB.sql này và nhấn F5 (Execute) để khởi chạy:
+--    * Trên Local SQL Server: Script tự động tạo CSDL HOMESTAY_DB nếu chưa có.
+--    * Trên Azure SQL Database: Tạo trước 1 database rỗng tên HOMESTAY_DB rồi nhấn F5.
 -- =========================================================================
 
 SET ANSI_NULLS ON;
 GO
 SET QUOTED_IDENTIFIER ON;
+GO
+
+-- 1. TỰ ĐỘNG TẠO DATABASE VÀ CHUYỂN CONTEXT NẾU CHẠY TRÊN LOCAL SQL SERVER
+IF DB_ID('HOMESTAY_DB') IS NULL AND SERVERPROPERTY('EngineEdition') <> 5
+BEGIN
+    CREATE DATABASE [HOMESTAY_DB];
+    PRINT N'-> Đã tạo mới cơ sở dữ liệu HOMESTAY_DB thành công.';
+END
+GO
+
+IF SERVERPROPERTY('EngineEdition') <> 5
+BEGIN
+    EXEC('USE [HOMESTAY_DB]');
+    PRINT N'-> Đang sử dụng cơ sở dữ liệu HOMESTAY_DB.';
+END
 GO
 
 -- TỰ ĐỘNG DỌN DẸP BẢNG CŨ (NẾU CÓ) THEO ĐÚNG THỨ TỰ KHÓA NGOẠI ĐỂ CÓ THỂ CHẠY LẠI NHIỀU LẦN (IDEMPOTENT)
@@ -92,7 +110,7 @@ GO
 SET IDENTITY_INSERT NguoiDung ON;
 INSERT INTO NguoiDung (MaNguoiDung, Email, HoTen, NgaySinh, GioiTinh, DienThoai, MatKhau, MaVaiTro, TrangThai, NgayTao, NganHang, SoTaiKhoan, TenNguoiThuHuong, CCCD) VALUES
 -- Admin hệ thống
-(100, N'admin@gmail.com', N'Trần Nhật Trường', '1995-06-23', 'M', '0938110271', 'AQAAAAIAAYagAAAAEMbXkcRMP/K5kRSyRUY61DEuQdsEJMLEBBm9NU+NqBbtDYrwhl4/o1kspo6JW4U4+w==', 3, 1, GETDATE(), N'Vietcombank', '0938110271', N'TRAN NHAT TRUONG', '079200000001'),
+(100, N'admin@gmail.com', N'Trần Nhật Trường', '1995-06-23', 'M', '0938110271', 'AQAAAAIAAYagAAAAELVHIbpHH0eS/SfGq+GBp6qYIEJ2XsuSctI575vY+x8tLkuvLFR5H31fr005Qh79bA==', 3, 1, GETDATE(), N'Vietcombank', '0938110271', N'TRAN NHAT TRUONG', '079200000001'),
 (101, N'admin@stayly.com', N'Admin Stayly Hệ Thống', '1996-01-01', 'M', '0999888777', 'AQAAAAIAAYagAAAAEMbXkcRMP/K5kRSyRUY61DEuQdsEJMLEBBm9NU+NqBbtDYrwhl4/o1kspo6JW4U4+w==', 3, 1, GETDATE(), N'Techcombank', '1903999888777', N'ADMIN STAYLY', '079200000002'),
 
 -- Tài khoản Chủ cơ sở lưu trú (Owner)

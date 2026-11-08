@@ -127,6 +127,12 @@ public sealed class UpdatePropertyRequest
     public int? HomestayChildCapacity { get; set; }
     public int? HomestayRoomTypeId { get; set; }
     public bool Resubmit { get; set; } = false;
+    public List<string>? PhotoUrls { get; set; }
+}
+
+public sealed class UpdatePropertyPhotosRequest
+{
+    public List<string>? PhotoUrls { get; set; }
 }
 
 public sealed class CreateRoomRequest

@@ -456,6 +456,16 @@ public sealed class UpdatePropertyInput
     public int? HomestayChildCapacity { get; set; }
     public int? HomestayRoomTypeId { get; set; }
     public bool Resubmit { get; set; } = false;
+    public List<string>? PhotoUrls { get; set; }
+    public List<IFormFile>? PhotoFiles { get; set; }
+}
+
+public sealed class UpdatePropertyPhotosInput
+{
+    [Required]
+    public int PropertyId { get; set; }
+    public List<string> ExistingPhotoUrls { get; set; } = [];
+    public List<IFormFile>? PhotoFiles { get; set; }
 }
 
 public sealed record OwnerPropertyDetailsResponse(

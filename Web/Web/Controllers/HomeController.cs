@@ -1004,6 +1004,57 @@ public sealed class HomeController(HomestayApiClient api, IConfiguration configu
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdatePropertyPhotos(
+        UpdatePropertyPhotosInput input,
+        CancellationToken cancellationToken)
+    {
+        var token = HttpContext.Session.GetString("token");
+        var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || (Request.Headers.Accept.ToString()?.Contains("application/json") ?? false);
+
+        if (token is null)
+        {
+            if (isAjax)
+                return Unauthorized(new { success = false, message = "Vui lòng đăng nhập lại." });
+            return RedirectToAction(nameof(Login));
+        }
+
+        var finalPhotoUrls = new List<string>(input.ExistingPhotoUrls.Where(u => !string.IsNullOrWhiteSpace(u)));
+
+        // Tải lên các ảnh mới nếu có
+        if (input.PhotoFiles != null && input.PhotoFiles.Count > 0)
+        {
+            var (photosOk, uploadedUrls, uploadErr) = await api.UploadImagesAsync(input.PhotoFiles, $"stayly/properties/{input.PropertyId}", token, cancellationToken);
+            if (photosOk && uploadedUrls.Count > 0)
+            {
+                finalPhotoUrls.AddRange(uploadedUrls);
+            }
+            else if (!photosOk && !string.IsNullOrWhiteSpace(uploadErr))
+            {
+                if (isAjax)
+                    return BadRequest(new { success = false, message = $"Tải ảnh khuôn viên thất bại: {uploadErr}" });
+                TempData["Error"] = $"Tải ảnh khuôn viên thất bại: {uploadErr}";
+                return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
+            }
+        }
+
+        var (success, msg) = await api.UpdatePropertyPhotosAsync(input.PropertyId, finalPhotoUrls, token, cancellationToken);
+        if (isAjax)
+        {
+            if (!success)
+                return BadRequest(new { success = false, message = msg ?? "Không thể cập nhật ảnh cơ sở." });
+            return Ok(new { success = true, message = "Cập nhật ảnh khuôn viên cơ sở thành công.", photoUrls = finalPhotoUrls });
+        }
+
+        if (!success)
+            TempData["Error"] = msg ?? "Không thể cập nhật ảnh cơ sở.";
+        else
+            TempData["Success"] = "Cập nhật ảnh khuôn viên cơ sở thành công.";
+
+        return RedirectToAction(nameof(Dashboard), new { tab = "properties" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteProperty(int id, CancellationToken cancellationToken)
     {
         var token = HttpContext.Session.GetString("token");

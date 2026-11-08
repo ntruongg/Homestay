@@ -645,8 +645,79 @@ public sealed class PropertiesController(HomestayDbContext db) : ControllerBase
             }
         }
 
+        // Cập nhật hình ảnh cơ sở nếu có
+        if (request.PhotoUrls != null)
+        {
+            var existingPropImages = await db.HinhAnhs
+                .Where(i => i.MaCoSoLuuTru == id)
+                .ToListAsync(cancellationToken);
+
+            var targetUrls = request.PhotoUrls.Where(u => !string.IsNullOrWhiteSpace(u)).Select(u => u.Trim()).Distinct().ToList();
+
+            var toRemove = existingPropImages.Where(i => !targetUrls.Contains(i.UrlHinhAnh)).ToList();
+            foreach (var img in toRemove)
+            {
+                db.HinhAnhs.Remove(img);
+            }
+
+            var currentUrls = existingPropImages.Select(i => i.UrlHinhAnh).ToList();
+            var toAdd = targetUrls.Where(u => !currentUrls.Contains(u)).ToList();
+            foreach (var url in toAdd)
+            {
+                db.HinhAnhs.Add(new HinhAnh
+                {
+                    MaCoSoLuuTru = id,
+                    MaPhong = null,
+                    UrlHinhAnh = url
+                });
+            }
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return Ok(new { message = "Cập nhật cơ sở lưu trú thành công.", id = property.MaCoSoLuuTru, approvalStatus = property.TrangThaiDuyet });
+    }
+
+    [Authorize(Roles = "OWNER")]
+    [HttpPut("{id:int}/photos")]
+    public async Task<IActionResult> UpdatePropertyPhotos(int id, UpdatePropertyPhotosRequest request, CancellationToken cancellationToken)
+    {
+        var ownerId = GetAccountId();
+        var property = await db.CoSoLuuTrus
+            .FirstOrDefaultAsync(p => p.MaCoSoLuuTru == id && p.MaChuCoSoLuuTru == ownerId, cancellationToken);
+
+        if (property is null)
+            return NotFound("Cơ sở lưu trú không tồn tại hoặc bạn không có quyền sở hữu.");
+
+        var existingImages = await db.HinhAnhs
+            .Where(i => i.MaCoSoLuuTru == id)
+            .ToListAsync(cancellationToken);
+
+        var targetUrls = (request.PhotoUrls ?? new List<string>())
+            .Where(u => !string.IsNullOrWhiteSpace(u))
+            .Select(u => u.Trim())
+            .Distinct()
+            .ToList();
+
+        var toRemove = existingImages.Where(i => !targetUrls.Contains(i.UrlHinhAnh)).ToList();
+        foreach (var img in toRemove)
+        {
+            db.HinhAnhs.Remove(img);
+        }
+
+        var currentUrls = existingImages.Select(i => i.UrlHinhAnh).ToList();
+        var toAdd = targetUrls.Where(u => !currentUrls.Contains(u)).ToList();
+        foreach (var url in toAdd)
+        {
+            db.HinhAnhs.Add(new HinhAnh
+            {
+                MaCoSoLuuTru = id,
+                MaPhong = null,
+                UrlHinhAnh = url
+            });
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        return Ok(new { message = "Cập nhật ảnh cơ sở lưu trú thành công.", photoUrls = targetUrls });
     }
 
     [Authorize(Roles = "OWNER")]
